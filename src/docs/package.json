@@ -1,0 +1,19 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Enhanced documentation for Smart Health Manager",
+  "scripts": {
+    "build:css": "postcss styles.css -o output.css",
+    "build:html": "node build-docs.js",
+    "build": "npm run build:css && npm run build:html"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.13",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "postcss-cli": "^11.0.0",
+    "showdown": "^2.1.0",
+    "tailwindcss": "^3.4.3"
+  }
+}

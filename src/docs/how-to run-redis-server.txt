@@ -1,0 +1,3 @@
+run this script in terminal
+------------------
+cd redis; .\redis-server.exe redis.windows.conf

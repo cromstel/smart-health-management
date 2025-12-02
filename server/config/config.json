@@ -1,0 +1,41 @@
+{
+  "development": {
+    "username": "root",
+    "password": "Password#123",
+    "database": "smart_health_manager",
+    "host": "localhost",
+    "dialect": "mysql",
+    "port": 3306,
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
+  },
+  "test": {
+    "username": "root",
+    "password": "Password#123",
+    "database": "smart_health_manager",
+    "host": "localhost",
+    "dialect": "mysql",
+    "port": 3306,
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
+  },
+  "production": {
+    "username": "webapp",
+    "password": "webApp123!",
+    "database": "smart_health_manager",
+    "host": "localhost",
+    "dialect": "mysql",
+    "port": 3306,
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
+  }
+}

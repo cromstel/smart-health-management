@@ -1,0 +1,142 @@
+/* Two Factor Page Styles */
+
+.two-factor-page {
+  background-color: var(--dark-bg);
+}
+
+.two-factor-card {
+  background-color: var(--navy-blue);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 31, 63, 0.8);
+}
+
+.two-factor-branding-icon {
+  /* Background removed */
+}
+
+.two-factor-branding-badge {
+  background-color: var(--dark-bg);
+}
+
+.two-factor-title,
+.two-factor-subtitle {
+  color: var(--light-text);
+}
+
+.two-factor-description {
+  color: rgba(234, 234, 234, 0.7);
+}
+
+.two-factor-security-badge {
+  background-color: rgba(0, 191, 255, 0.1);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+}
+
+.two-factor-security-badge-icon,
+.two-factor-shield-icon,
+.two-factor-hipaa-link {
+  color: var(--sea-blue);
+}
+
+.two-factor-security-text {
+  color: var(--light-text);
+}
+
+.two-factor-error-text {
+  color: #ef4444;
+}
+
+.two-factor-otp-input {
+  gap: 0.5rem;
+}
+
+.two-factor-otp-slot {
+  width: 3rem;
+  height: 3rem;
+  background-color: rgba(234, 234, 234, 0.05);
+  border: 1px solid rgba(234, 234, 234, 0.2);
+  color: var(--light-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.two-factor-button {
+  background-color: var(--sea-blue);
+  color: var(--navy-blue);
+  border: none;
+}
+
+.two-factor-button:hover {
+  background-color: #0099CC;
+}
+
+.two-factor-link-button {
+  color: rgba(234, 234, 234, 0.6);
+}
+
+.two-factor-footer-border {
+  border-color: rgba(234, 234, 234, 0.1);
+}
+
+.two-factor-footer-text {
+  color: rgba(234, 234, 234, 0.6);
+}
+
+.two-factor-background-pattern {
+  background-image: url("@/assets/images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.two-factor-heart-icon,
+.two-factor-shield-icon {
+  color: var(--sea-blue);
+}
+
+/* SVG Styles */
+.two-factor-svg-stop-0 {
+  stop-color: #87CEEB;
+  stop-opacity: 1;
+}
+
+.two-factor-svg-stop-100 {
+  stop-color: #E0F6FF;
+  stop-opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .two-factor-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .two-factor-page > div:first-child {
+    flex: none;
+    height: 300px;
+    padding: 1rem;
+  }
+
+  .two-factor-page > div:last-child {
+    flex: 1;
+    padding: 2rem 1rem;
+  }
+
+  .two-factor-card {
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .two-factor-page > div:first-child {
+    height: 200px;
+    padding: 0.5rem;
+  }
+
+  .two-factor-page > div:last-child {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,97 @@
+
+[1m[44m DEV [49m[22m [34mv4.0.8 [39m[90mC:/Users/support/Desktop/Dev-Projects/health-management/server[39m
+
+c[3J[1m[44m RERUN [49m[22m [34m[2mrerun all tests [22m[39m
+
+ [32mΓ£ô[39m src/tests/pharmacyReportsExport.integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/financialModule.test.ts [2m([22m[2m6 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 97[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/purchaseOrderTransitions.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/drugInteractions.unit.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+[90mstdout[2m | src/tests/scheduleReminders.test.ts[2m > [22m[2mscheduleReminders[2m > [22m[2mshould handle ECONNREFUSED error without throwing
+[22m[39m[ReminderScheduler] Starting reminder scheduling job...
+
+[90mstdout[2m | src/tests/scheduleReminders.test.ts[2m > [22m[2mscheduleReminders[2m > [22m[2mshould handle ECONNREFUSED error without throwing
+[22m[39m[ReminderScheduler] Reminder scheduling job completed
+
+ [32mΓ£ô[39m src/tests/patientLoadPrediction.service.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/scheduleReminders.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/storageUsage.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 575[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m returns usage metrics [33m 573[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/pharmacyReportsExport.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/batchRecall.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/dashboardForecast.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ» Failed Suites 4 ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+ FAIL  src/tests/auth.test.ts [ src/tests/auth.test.ts ]
+ FAIL  src/tests/passwordEnforcement.test.ts [ src/tests/passwordEnforcement.test.ts ]
+ FAIL  src/tests/superAdmin.test.ts [ src/tests/superAdmin.test.ts ]
+ FAIL  src/tests/middleware/requirePermission.test.ts [ src/tests/middleware/requirePermission.test.ts ]
+Error: JWT_SECRET environment variable is required and must not be empty
+ Γ¥» createJWTConfig src/config/jwt.ts:167:11
+    165|   const secret = process.env.JWT_SECRET;
+    166|   if (!secret) {
+    167|     throw new Error('JWT_SECRET environment variable is required and mΓÇª
+       |           ^
+    168|   }
+    169| 
+ Γ¥» src/config/jwt.ts:184:42
+ Γ¥» src/middleware/auth.ts:2:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/4]ΓÄ»
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (14)[39m
+[2m      Tests [22m [1m[32m20 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (22)[39m
+[2m   Start at [22m 00:23:03
+[2m   Duration [22m 3.33s
+
+[1m[41m FAIL [49m[22m [31mTests failed. Watching for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+ [32mΓ£ô[39m src/tests/financialModule.test.ts [2m([22m[2m6 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 94[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/pharmacyReportsExport.integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/patientLoadPrediction.service.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/drugInteractions.unit.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/purchaseOrderTransitions.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+[90mstdout[2m | src/tests/scheduleReminders.test.ts[2m > [22m[2mscheduleReminders[2m > [22m[2mshould handle ECONNREFUSED error without throwing
+[22m[39m[ReminderScheduler] Starting reminder scheduling job...
+
+[90mstdout[2m | src/tests/scheduleReminders.test.ts[2m > [22m[2mscheduleReminders[2m > [22m[2mshould handle ECONNREFUSED error without throwing
+[22m[39m[ReminderScheduler] Reminder scheduling job completed
+
+ [32mΓ£ô[39m src/tests/scheduleReminders.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/storageUsage.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 564[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m returns usage metrics [33m 562[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/pharmacyReportsExport.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/batchRecall.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32mΓ£ô[39m src/tests/dashboardForecast.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ» Failed Suites 4 ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+ FAIL  src/tests/auth.test.ts [ src/tests/auth.test.ts ]
+ FAIL  src/tests/passwordEnforcement.test.ts [ src/tests/passwordEnforcement.test.ts ]
+ FAIL  src/tests/superAdmin.test.ts [ src/tests/superAdmin.test.ts ]
+ FAIL  src/tests/middleware/requirePermission.test.ts [ src/tests/middleware/requirePermission.test.ts ]
+Error: JWT_SECRET environment variable is required and must not be empty
+ Γ¥» createJWTConfig src/config/jwt.ts:167:11
+    165|   const secret = process.env.JWT_SECRET;
+    166|   if (!secret) {
+    167|     throw new Error('JWT_SECRET environment variable is required and mΓÇª
+       |           ^
+    168|   }
+    169| 
+ Γ¥» src/config/jwt.ts:184:42
+ Γ¥» src/middleware/auth.ts:2:1
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/4]ΓÄ»
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m10 passed[39m[22m[90m (14)[39m
+[2m      Tests [22m [1m[32m20 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (22)[39m
+[2m   Start at [22m 00:23:03
+[2m   Duration [22m 2.60s
+
+[1m[41m FAIL [49m[22m [31mTests failed. Watching for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mpackage.json [22m[39m
+

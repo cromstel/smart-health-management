@@ -1,0 +1,24 @@
+# FAQ – Smart Health Management System
+
+**Q1: What is SHMS?**  
+      -  A: A web-based health management platform for patient records, appointments, hospital operations, and financials.
+
+**Q2: Which databases are supported?**  
+      -  A: MySQL and PostgreSQL are officially supported.
+
+**Q3: Which versions are supported with security updates?**  
+      -  A: All versions are supported. Refer to [SECURITY.md](SECURITY.md) for details.
+
+**Q4: Can I deploy SHMS in production?**  
+      -  A: Yes. See [deployment-guide.md](deployment-guide.md) for instructions.
+
+**Q5: How do I contribute?**  
+      -  A: Follow the guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Q6: How can I report a security vulnerability?**  
+      -  A: Use the form at [Cromstel IT Contact Page](https://cromstelit.com/contact-us/).
+
+**Q7: Does SHMS support multi-hospital setups?**  
+      -  A: Yes, multi-hospital management is fully supported.
+
+For more questions, contact support via the website or GitHub issues.
