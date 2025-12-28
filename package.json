@@ -46,7 +46,7 @@
     "react": "^19.0.0",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.0.0",
-    "react-hook-form": "^7.66.0",
+    "react-hook-form": "^7.68.0",
     "react-router-dom": "^7.1.1",
     "read-excel-file": "^6.0.1",
     "recharts": "^2.15.4",
