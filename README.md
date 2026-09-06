@@ -103,25 +103,6 @@ GHS_DB_PORT=3306
 GHS_DB_NAME=your_ghs_db_name
 GHS_DB_USER=your_ghs_db_user
 GHS_DB_PASSWORD=your_ghs_db_password
-
-# OneDrive OAuth
-ONEDRIVE_CLIENT_ID=your_onedrive_client_id
-ONEDRIVE_REDIRECT_URI=your_onedrive_redirect_uri
-ONEDRIVE_CLIENT_SECRET=your_onedrive_client_secret
-
-# Google Drive OAuth
-GOOGLE_DRIVE_CLIENT_ID=your_google_drive_client_id
-GOOGLE_DRIVE_REDIRECT_URI=your_google_drive_redirect_uri
-GOOGLE_DRIVE_CLIENT_SECRET=your_google_drive_client_secret
-
-# Stripe Configuration
-STRIPE_SECRET_KEY=your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
-STRIPE_CURRENCY=usd
-
-# HTTPS Configuration
-HTTPS_KEY_PATH=./certs/key.pem
-HTTPS_CERT_PATH=./certs/cert.pem
 ```
 
 If you prefer separate server env files, you can still use `server/.env`.

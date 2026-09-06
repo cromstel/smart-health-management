@@ -13,7 +13,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Bell, LogOut, User, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export function Header({ children }: { children?: React.ReactNode }) {
+export function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -23,9 +23,8 @@ export function Header({ children }: { children?: React.ReactNode }) {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border bg-card px-4 md:px-6">
-      {children}
-      <SidebarTrigger className="hidden md:flex" />
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border bg-card px-6">
+      <SidebarTrigger />
       <div className="flex-1" />
       <Button variant="ghost" size="icon">
         <Bell className="h-5 w-5" />

@@ -14,7 +14,7 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
-import csrf from 'csurf';
+import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
 import authRoutes from './routes/auth.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import patientRoutes from './routes/patient.routes.js';
@@ -35,17 +35,12 @@ import patientLoadPredictionRoutes from './routes/patientLoadPrediction.routes.j
 import './jobs/inventory.job.js';
 import './jobs/backup.job.js';
 import { scheduleBackups } from './services/cron.service.js';
-import { initReminderScheduler } from './services/reminderScheduler.service.js';
 import { rateLimit } from 'express-rate-limit';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const HTTPS_PORT = process.env.HTTPS_PORT ? parseInt(process.env.HTTPS_PORT) : 8443;
-
-if (!process.env.SESSION_SECRET) {
-  throw new Error('SESSION_SECRET is not defined in environment variables.');
-}
-const SESSION_SECRET = process.env.SESSION_SECRET;
+const HTTPS_PORT = process.env.HTTPS_PORT || 8443;
+const SESSION_SECRET = process.env.SESSION_SECRET || 'supersecretkey'; // Fallback for development
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,14 +57,10 @@ const apiLimiter = rateLimit({
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGINS || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Accept', 'Cache-Control']
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
 }));
-// Request size limits to prevent DoS attacks
-app.use(express.json({ limit: process.env.MAX_JSON_SIZE || '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: process.env.MAX_URLENCODED_SIZE || '10mb' }));
+app.use(express.json());
 app.use(morgan('dev'));
 app.use(cookieParser() as any);
 app.use(session({
@@ -78,24 +69,9 @@ app.use(session({
   saveUninitialized: true,
   cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' }
 }) as any);
-
-// CSRF protection middleware
-const csrfProtection = csrf({
-  cookie: {
-    key: '_csrf',
-    httpOnly: process.env.NODE_ENV === 'production',
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  }
-});
-app.use(csrfProtection);
-
-// Route to get CSRF token
-app.get('/api/csrf-token', (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
+app.use(generateCsrfToken); // Generate token for all requests
+app.use(validateCsrfToken); // Validate token for non-GET/HEAD/OPTIONS requests
 scheduleBackups();
-initReminderScheduler();
 
 // Apply the rate limiting middleware to all API requests
 app.use('/api/', apiLimiter);
@@ -130,8 +106,6 @@ app.use('/api/patient-load-predictions', patientLoadPredictionRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-export default app;
-
 // HTTP server
 app.listen(PORT, () => {
   console.log(`🚀 HTTP Server running on port ${PORT}`);
@@ -139,17 +113,10 @@ app.listen(PORT, () => {
 });
 
 // HTTPS server (for production or when HTTPS_PORT is defined)
-if (HTTPS_PORT) {
-  const HTTPS_KEY_PATH = process.env.HTTPS_KEY_PATH;
-  const HTTPS_CERT_PATH = process.env.HTTPS_CERT_PATH;
-
-  if (!HTTPS_KEY_PATH || !HTTPS_CERT_PATH) {
-    throw new Error('HTTPS_KEY_PATH and HTTPS_CERT_PATH must be defined in environment variables in production.');
-  }
-
+if (process.env.NODE_ENV === 'production' || HTTPS_PORT) {
   try {
-    const privateKey = fs.readFileSync(HTTPS_KEY_PATH, 'utf8');
-    const certificate = fs.readFileSync(HTTPS_CERT_PATH, 'utf8');
+    const privateKey = fs.readFileSync(path.join(__dirname, '../certs/key.pem'), 'utf8');
+    const certificate = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'), 'utf8');
     const credentials = { key: privateKey, cert: certificate };
 
     const httpsServer = https.createServer(credentials, app);
@@ -159,6 +126,6 @@ if (HTTPS_PORT) {
     });
   } catch (error) {
     console.error('❌ Failed to start HTTPS server:', error);
-    console.warn(`💡 Ensure certificate files exist at ${HTTPS_KEY_PATH} and ${HTTPS_CERT_PATH} for HTTPS.`);
+    console.warn('💡 Ensure server/certs/key.pem and server/certs/cert.pem exist for HTTPS.');
   }
 }

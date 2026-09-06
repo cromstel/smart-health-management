@@ -104,17 +104,7 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
         }
       );
 
-      // Sanitize filename to prevent path traversal
-      const sanitizedFileName = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
-      const tempFilePath = path.join(process.cwd(), 'uploads', sanitizedFileName);
-
-      // Ensure the path is within the uploads directory
-      const uploadsDir = path.resolve(process.cwd(), 'uploads');
-      const resolvedPath = path.resolve(tempFilePath);
-      if (!resolvedPath.startsWith(uploadsDir)) {
-        throw new Error('Invalid file path');
-      }
-
+      const tempFilePath = path.join(process.cwd(), 'uploads', fileName);
       const writer = fs.createWriteStream(tempFilePath);
 
       response.data.pipe(writer);

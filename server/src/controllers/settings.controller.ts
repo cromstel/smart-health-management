@@ -1,13 +1,12 @@
 import type { Response } from 'express';
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
-import { rescheduleReminderJob } from '../services/reminderScheduler.service.js';
 
 export const getSettings = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const [settingsRows] = await pool.query(
-      `SELECT setting_key, setting_value FROM settings WHERE setting_key IN (?, ?, ?, ?, ?, ?, ?)`,
-              ['systemName', 'timezone', 'language', 'currency', 'darkMode', 'autoSave', 'reminder_schedule']
+      `SELECT setting_key, setting_value FROM settings WHERE setting_key IN (?, ?, ?, ?, ?, ?)`,
+      ['systemName', 'timezone', 'language', 'currency', 'darkMode', 'autoSave']
     );
 
     const settings = (settingsRows as any[]).reduce((acc, row) => {
@@ -28,7 +27,7 @@ export const getSettings = async (_req: AuthRequest, res: Response): Promise<Res
 
 export const updateSettings = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    const updates = req.body; // may include reminder_schedule
+    const updates = req.body;
     const updatePromises = Object.entries(updates).map(([key, value]) => {
       // Convert boolean values to strings for consistent database storage
       const storedValue = typeof value === 'boolean' ? value.toString() : value;
@@ -38,12 +37,6 @@ export const updateSettings = async (req: AuthRequest, res: Response): Promise<R
       );
     });
     await Promise.all(updatePromises);
-
-    // If reminder_schedule changed, reschedule the job
-    if (Object.prototype.hasOwnProperty.call(updates, 'reminder_schedule')) {
-      rescheduleReminderJob(updates.reminder_schedule as string);
-    }
-
     res.status(200).json({ message: 'Settings updated successfully' });
   } catch (error) {
     console.error('Update settings error:', error);

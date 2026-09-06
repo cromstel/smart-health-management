@@ -48,13 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await api.login(email, password) as any;
       console.log('API Login Response:', response);
       
-      // Token is now stored in httpOnly cookie by backend
-      // Keep localStorage for backward compatibility during transition
-      // TODO: Remove localStorage after full migration
-      if (response.token) {
-        localStorage.setItem('token', response.token);
-      }
-      
+      // Store token
+      localStorage.setItem('token', response.token);
       setUser(response.user);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : 'Login failed';
@@ -62,17 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
-    try {
-      // Call logout endpoint to clear httpOnly cookie
-      await api.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear localStorage token (backward compatibility)
-      localStorage.removeItem('token');
-      setUser(null);
-    }
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
   };
 
   useEffect(() => {
@@ -93,37 +80,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchUser();
 
     let es: EventSource | null = null;
-    if (typeof window !== 'undefined' && 'EventSource' in window && API_ORIGIN) {
-      try {
-        es = new EventSource(`${API_ORIGIN}/api/roles/stream`, { withCredentials: true });
-        es.onopen = () => {
-          console.log('EventSource connected successfully');
-        };
-        es.onmessage = async (e) => {
-          try {
-            const msg = JSON.parse(e.data);
-            if (['permission_updated', 'role_updated', 'role_deleted', 'role_created'].includes(msg?.type)) {
-              console.log('Received role/permission update:', msg.type);
-              await fetchUser(); // Re-fetch user data on permission/role updates
-            }
-          } catch (error) {
-            console.error('EventSource message parsing error:', error, 'Raw data:', e.data);
+    if (typeof window !== 'undefined' && 'EventSource' in window) {
+      es = new EventSource(`${API_ORIGIN}/api/roles/stream`);
+      es.onmessage = async (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (['permission_updated', 'role_updated', 'role_deleted', 'role_created'].includes(msg?.type)) {
+            await fetchUser(); // Re-fetch user data on permission/role updates
           }
-        };
-        es.onerror = (error) => {
-          console.error('EventSource connection error:', {
-            readyState: es?.readyState,
-            url: es?.url,
-            error: error
-          });
-          // Don't close immediately on first error, let EventSource handle reconnection
-          if (es?.readyState === EventSource.CLOSED) {
-            console.log('EventSource connection closed, will not reconnect');
-          }
-        };
-      } catch (error) {
-        console.error('Failed to create EventSource:', error);
-      }
+        } catch (error) {
+          console.error('EventSource message error:', error);
+          // silently ignore
+        }
+      };
+      es.onerror = (error) => {
+        console.error('EventSource error:', error);
+        es?.close();
+      };
     }
 
     return () => {

@@ -17,15 +17,6 @@ import {
   forecast,
   createCustomer,
   createCharge,
-  createPaymentIntentEndpoint,
-  confirmPaymentIntentEndpoint,
-  createSetupIntentEndpoint,
-  attachPaymentMethodEndpoint,
-  listPaymentMethodsEndpoint,
-  detachPaymentMethodEndpoint,
-  createRefundEndpoint,
-  getPaymentIntentEndpoint,
-  getCustomerEndpoint,
 } from '../controllers/financial.controller.js';
 
 const router = Router();
@@ -53,25 +44,8 @@ router.post('/tax/calculate', requirePermission('financial', 'view'), calculateT
 // Forecasting
 router.get('/forecast', requirePermission('financial', 'view'), forecast);
 // Exports
-// Stripe - Legacy API (deprecated)
+// Stripe
 router.post('/customers', requirePermission('financial', 'add'), createCustomer);
 router.post('/charges', requirePermission('financial', 'add'), createCharge);
-
-// Stripe - Modern PaymentIntents API
-router.post('/payment-intents', requirePermission('financial', 'add'), createPaymentIntentEndpoint);
-router.post('/payment-intents/confirm', requirePermission('financial', 'add'), confirmPaymentIntentEndpoint);
-router.get('/payment-intents/:paymentIntentId', requirePermission('financial', 'view'), getPaymentIntentEndpoint);
-
-// Setup Intents for saving payment methods
-router.post('/setup-intents', requirePermission('financial', 'add'), createSetupIntentEndpoint);
-router.post('/payment-methods/attach', requirePermission('financial', 'add'), attachPaymentMethodEndpoint);
-router.get('/customers/:customerId/payment-methods', requirePermission('financial', 'view'), listPaymentMethodsEndpoint);
-router.delete('/payment-methods/:paymentMethodId', requirePermission('financial', 'edit'), detachPaymentMethodEndpoint);
-
-// Customers
-router.get('/customers/:customerId', requirePermission('financial', 'view'), getCustomerEndpoint);
-
-// Refunds
-router.post('/refunds', requirePermission('financial', 'add'), createRefundEndpoint);
 
 export default router;

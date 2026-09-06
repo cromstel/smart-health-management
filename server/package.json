@@ -5,68 +5,47 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../.env -- tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:migrate": "npx sequelize-cli db:migrate",
     "db:seed": "node src/database/seed.js",
-    "test": "SET STRIPE_SECRET_KEY=test_key && SET ENCRYPTION_KEY=test_enc_key && SET ENCRYPTION_IV=test_enc_iv && SET STRIPE_WEBHOOK_SECRET=test_webhook_secret && SET PASSWORD_MAX_POSTPONES=3 && SET STRIPE_CURRENCY=usd && SET HTTPS_KEY_PATH=test_key_path && SET HTTPS_CERT_PATH=test_cert_path && tsx src/database/setup-test-db.ts setup && vitest --run --coverage",
-    "lint": "eslint .",
-    "jwt:generate-key": "tsx src/utils/jwt/keyGenerator.ts generate-hs256",
-    "jwt:generate-rsa": "tsx src/utils/jwt/keyGenerator.ts generate-rsa",
-    "jwt:rotate-keys": "tsx src/utils/jwt/keyManager.ts rotate",
-    "jwt:emergency-rotate": "tsx src/utils/jwt/keyManager.ts emergency-rotate",
-    "jwt:validate-keys": "tsx src/utils/jwt/keyManager.ts validate",
-    "jwt:cleanup-tokens": "tsx src/utils/jwt/tokenCleanup.ts",
-    "test:teardown": "tsx src/database/setup-test-db.ts teardown"
+    "test": "vitest",
+    "lint": "eslint ."
   },
   "keywords": [
     "healthcare",
     "hospital",
     "management"
   ],
-  "author": "CromStel IT Solutions",
-  "license": "Apache-2.0",
+  "author": "",
+  "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.940.0",
-    "@aws-sdk/lib-storage": "^3.940.0",
-    "@aws-sdk/s3-request-presigner": "^3.940.0",
     "@types/node-cron": "^3.0.11",
-    "archiver": "^7.0.1",
-    "archiver-utils": "^5.0.2",
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "check-disk-space": "^3.3.1",
-    "connect-redis": "^9.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "dotenv-cli": "^11.0.0",
-    "exceljs": "^4.4.0",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
-    "express-validator": "^7.2.1",
+    "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "ical-generator": "^10.0.0",
-    "ioredis": "^5.8.2",
-    "jose": "^5.2.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "multer": "^2.0.2",
+    "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.5",
     "node-cron": "^4.2.1",
-    "node-forge": "^1.3.2",
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.15.0",
     "rrule": "^2.8.1",
     "smart-health-manager": "file:..",
     "stripe": "^14.25.0",
     "twilio": "^5.10.5",
-    "unzipper": "^0.12.3",
     "uuid": "^13.0.0",
-    "zip-stream": "^7.0.2"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
@@ -78,13 +57,12 @@
     "@types/uuid": "^10.0.0",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
-    "snyk": "^1.1301.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.8"
   },
   "overrides": {
-    "@types/stripe": "^15.0.0"
+    "@types/stripe": "8.0.0"
   }
 }

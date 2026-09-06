@@ -11,20 +11,8 @@ type ReportType = 'stock_levels' | 'expiry_dates' | 'low_stock';
 
 function toCSV(rows: any[]): string {
   if (!rows.length) return '';
-  // Sanitize headers to prevent prototype pollution and invalid property names
-  const headers = Object.keys(rows[0]).filter(h =>
-    typeof h === 'string' &&
-    h.length > 0 &&
-    !h.startsWith('__') &&
-    h !== 'constructor' &&
-    h !== 'prototype'
-  );
-  const lines = [headers.join(','), ...rows.map((r) =>
-    headers.map((h) =>
-      // Safe property access to prevent prototype pollution
-      JSON.stringify(Object.prototype.hasOwnProperty.call(r, h) ? r[h] : '').replace(/,/g, ';')
-    ).join(',')
-  )];
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(','), ...rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? '').replace(/,/g, ';')).join(','))];
   return lines.join('\n');
 }
 
@@ -119,7 +107,7 @@ export default function InventoryReportsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Report</CardTitle>
-            <select className="border rounded p-2" value={reportType} onChange={(e) => setReportType(e.target.value as ReportType)} aria-label="Report type selection">
+            <select className="border rounded p-2" value={reportType} onChange={(e) => setReportType(e.target.value as ReportType)}>
               <option value="stock_levels">Stock Levels</option>
               <option value="expiry_dates">Expiry Dates</option>
               <option value="low_stock">Low Stock</option>
@@ -168,27 +156,24 @@ export default function InventoryReportsPage() {
                   <div key={idx} className="grid grid-cols-5 gap-2">
                     <Input placeholder="Batch #" value={b.batchNumber} onChange={(e) => {
                       const copy = [...batchView.batches];
-                      const sanitizedValue = e.target.value.replace(/[<>\"'&]/g, ''); // Sanitize input
-                      copy[idx] = { ...copy[idx], batchNumber: sanitizedValue };
+                      copy[idx].batchNumber = e.target.value;
                       setBatchView({ medicine: batchView.medicine, batches: copy });
                     }} />
                     <Input type="date" value={b.expiryDate} onChange={(e) => {
                       const copy = [...batchView.batches];
-                      copy[idx] = { ...copy[idx], expiryDate: e.target.value };
+                      copy[idx].expiryDate = e.target.value;
                       setBatchView({ medicine: batchView.medicine, batches: copy });
                     }} />
                     <Input type="number" value={b.quantity} onChange={(e) => {
                       const copy = [...batchView.batches];
-                      const quantity = Math.max(0, Number(e.target.value) || 0); // Ensure non-negative
-                      copy[idx] = { ...copy[idx], quantity };
+                      copy[idx].quantity = Number(e.target.value);
                       setBatchView({ medicine: batchView.medicine, batches: copy });
                     }} />
                     <Button variant="outline" onClick={() => {
                       const copy = [...batchView.batches];
-                      const newRecalled = !copy[idx].recalled;
-                      copy[idx] = { ...copy[idx], recalled: newRecalled };
+                      copy[idx].recalled = !copy[idx].recalled;
                       setBatchView({ medicine: batchView.medicine, batches: copy });
-                      toast.info(newRecalled ? 'Batch recalled' : 'Recall removed');
+                      toast.info(copy[idx].recalled ? 'Batch recalled' : 'Recall removed');
                     }}>{b.recalled ? 'Un-recall' : 'Recall'}</Button>
                     <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: batchView.batches.filter((_, i) => i !== idx) })}>Remove</Button>
                   </div>

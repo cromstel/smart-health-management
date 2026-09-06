@@ -25,16 +25,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Building2,
-  Calendar,
-  Edit,
-  Mail,
-  Phone,
-  Plus,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { Plus, Search, Building2, Mail, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
 
 import { toast } from 'sonner';
 

@@ -1,26 +1,15 @@
 // server/src/controllers/superAdmin.controller.ts
 
 import { Request, Response } from 'express';
-import rateLimit from 'express-rate-limit';
 import child_process from 'child_process';
-const { spawn } = child_process;
+const { exec } = child_process;
 
-import fs from 'fs';
-import fsPromises from 'fs/promises';
+import fs from 'fs/promises';
 import path from 'path';
 import type { AuthRequest } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import config from '../../config/config.json';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
-
-// Rate limiter for expensive operations
-const systemOperationLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 system operations per windowMs
-  message: 'Too many system operations from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 // Get system status and statistics
 export const getSystemStatus = async (_req: Request, res: Response): Promise<void> => {
@@ -147,9 +136,6 @@ export const getAuditLogs = async (req: Request, res: Response): Promise<void> =
 // Trigger system backup
 export const triggerBackup = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Apply rate limiting
-    await systemOperationLimiter(req as any, res as any, () => {});
-
     const env = process.env.NODE_ENV || 'development';
     const dbConfig = (config as any)[env];
 
@@ -159,42 +145,25 @@ export const triggerBackup = async (req: Request, res: Response): Promise<void> 
     }
 
     const { username, password, database, host, port } = dbConfig;
-
-    // Validate database config values to prevent injection
-    if (typeof username !== 'string' || typeof password !== 'string' ||
-        typeof database !== 'string' || typeof host !== 'string' ||
-        typeof port !== 'number') {
-      res.status(500).json({ error: 'Invalid database configuration' });
-      return;
-    }
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupDir = path.join(process.cwd(), 'backups');
-    await fsPromises.mkdir(backupDir, { recursive: true });
+    await fs.mkdir(backupDir, { recursive: true });
     const backupPath = path.join(backupDir, `backup_${timestamp}.sql`);
 
-    // Use spawn with array arguments to prevent shell injection
+    const command = `mysqldump -h ${host} -P ${port} -u ${username} -p${password} ${database} > ${backupPath}`;
+
     await new Promise<void>((resolve, reject) => {
-      const mysqldump = spawn('mysqldump', [
-        '-h', host,
-        '-P', port.toString(),
-        '-u', username,
-        `-p${password}`, // Note: Password is passed in command, but validated above
-        database
-      ]);
-
-      const output = fs.createWriteStream(backupPath);
-      mysqldump.stdout.pipe(output);
-
-      mysqldump.on('close', (code) => {
-        if (code !== 0) {
-          reject(new Error(`mysqldump exited with code ${code}`));
-        } else {
-          resolve();
+      exec(command, (error, _stdout, stderr) => {
+        if (error) {
+          console.error(`exec error: ${error}`);
+          return reject(error);
         }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+        }
+        console.log(`stdout: ${_stdout}`);
+        resolve();
       });
-
-      mysqldump.on('error', reject);
     });
 
     const authReq = req as AuthRequest;
@@ -218,36 +187,22 @@ export const triggerBackup = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'Failed to trigger backup' });
     const authReq = req as AuthRequest;
     if (authReq.user) {
-      try {
-        const connection = await pool.getConnection();
-        await connection.query(
-          `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)` +
-          ` VALUES (UUID(), ?, ?, ?, ?, ?)`,
-          [authReq.user.id, 'backup_failed', 'system', `System backup failed: ${(_error as Error).message}`, req.ip]
-        );
-        connection.release();
-      } catch (logError) {
-        console.error('Error logging backup failure:', logError);
-      }
+      const connection = await pool.getConnection();
+      await connection.query(
+        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)` +
+        ` VALUES (UUID(), ?, ?, ?, ?, ?)`,
+        [authReq.user.id, 'backup_failed', 'system', `System backup failed: ${(_error as Error).message}`, req.ip]
+      );
+      connection.release();
     }
   }
 };
 
 export const restoreBackup = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Apply rate limiting
-    await systemOperationLimiter(req as any, res as any, () => {});
-
     const { backupFileName } = req.body;
     if (!backupFileName) {
       res.status(400).json({ error: 'Backup file name is required' });
-      return;
-    }
-
-    // Sanitize backup file name to prevent path traversal
-    const sanitizedBackupFileName = path.basename(backupFileName);
-    if (sanitizedBackupFileName !== backupFileName) {
-      res.status(400).json({ error: 'Invalid backup file name' });
       return;
     }
 
@@ -260,75 +215,44 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     }
 
     const { username, password, database, host, port } = dbConfig;
-
-    // Validate database config values to prevent injection
-    if (typeof username !== 'string' || typeof password !== 'string' ||
-        typeof database !== 'string' || typeof host !== 'string' ||
-        typeof port !== 'number') {
-      res.status(500).json({ error: 'Invalid database configuration' });
-      return;
-    }
-
-    const backupPath = path.join(process.cwd(), 'backups', sanitizedBackupFileName);
-
-    // Ensure backup path is within the backups directory
-    const backupsDir = path.resolve(process.cwd(), 'backups');
-    const resolvedBackupPath = path.resolve(backupPath);
-    if (!resolvedBackupPath.startsWith(backupsDir)) {
-      res.status(400).json({ error: 'Invalid backup file path' });
-      return;
-    }
+    const backupPath = path.join(process.cwd(), 'backups', backupFileName);
 
     // Check if backup file exists
     try {
-      await fsPromises.access(backupPath);
+      await fs.access(backupPath);
     } catch (_error) {
       res.status(404).json({ error: 'Backup file not found' });
       return;
     }
 
-    // Drop existing database and then restore using spawn for security
+    // Drop existing database and then restore
+    const dropDbCommand = `mysql -h ${host} -P ${port} -u ${username} -p${password} -e "DROP DATABASE IF EXISTS ${database}; CREATE DATABASE ${database};"`;
+    const restoreCommand = `mysql -h ${host} -P ${port} -u ${username} -p${password} ${database} < ${backupPath}`;
+
     await new Promise<void>((resolve, reject) => {
-      const mysql = spawn('mysql', [
-        '-h', host,
-        '-P', port.toString(),
-        '-u', username,
-        `-p${password}`,
-        '-e', `DROP DATABASE IF EXISTS ${database}; CREATE DATABASE ${database};`
-      ]);
-
-      mysql.on('close', (code) => {
-        if (code !== 0) {
-          reject(new Error(`mysql drop/create exited with code ${code}`));
-        } else {
-          resolve();
+      exec(dropDbCommand, (error, _stdout, stderr) => {
+        if (error) {
+          console.error(`exec error (dropDb): ${error}`);
+          return reject(error);
         }
+        if (stderr) {
+          console.error(`stderr (dropDb): ${stderr}`);
+        }
+        resolve();
       });
-
-      mysql.on('error', reject);
     });
 
     await new Promise<void>((resolve, reject) => {
-      const mysql = spawn('mysql', [
-        '-h', host,
-        '-P', port.toString(),
-        '-u', username,
-        `-p${password}`,
-        database
-      ]);
-
-      const input = fs.createReadStream(backupPath);
-      input.pipe(mysql.stdin);
-
-      mysql.on('close', (code) => {
-        if (code !== 0) {
-          reject(new Error(`mysql restore exited with code ${code}`));
-        } else {
-          resolve();
+      exec(restoreCommand, (error, _stdout, stderr) => {
+        if (error) {
+          console.error(`exec error (restore): ${error}`);
+          return reject(error);
         }
+        if (stderr) {
+          console.error(`stderr (restore): ${stderr}`);
+        }
+        resolve();
       });
-
-      mysql.on('error', reject);
     });
 
     const authReq = req as AuthRequest;
@@ -337,14 +261,14 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
       await connection.query(
         `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
          VALUES (UUID(), ?, 'restore', 'system', ?, ?)`,
-        [authReq.user.id, `System restored from backup: ${sanitizedBackupFileName}`, req.ip]
+        [authReq.user.id, `System restored from backup: ${backupFileName}`, req.ip]
       );
       connection.release();
     }
 
     res.status(200).json({
       message: 'System restored successfully from backup',
-      backupFileName: sanitizedBackupFileName,
+      backupFileName,
       timestamp: new Date().toISOString()
     });
   } catch (_error) {
@@ -375,12 +299,12 @@ export const getSystemHealth = async (_req: Request, res: Response): Promise<voi
 export const getBackups = async (_req: Request, res: Response): Promise<void> => {
   try {
     const backupDir = path.join(process.cwd(), 'backups');
-    const files = await fsPromises.readdir(backupDir);
+    const files = await fs.readdir(backupDir);
     const backups = await Promise.all(
       files
-        .filter((file: string) => file.endsWith('.sql'))
-        .map(async (file: string) => {
-          const stats = await fsPromises.stat(path.join(backupDir, file));
+        .filter(file => file.endsWith('.sql'))
+        .map(async file => {
+          const stats = await fs.stat(path.join(backupDir, file));
           return {
             name: file,
             size: stats.size,

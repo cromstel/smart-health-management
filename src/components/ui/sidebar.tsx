@@ -26,7 +26,7 @@ import {
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "100vw"
+const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -81,8 +81,7 @@ function SidebarProvider({
       }
 
       // This sets the cookie to keep the sidebar state.
-      const isSecure = window.location.protocol === 'https:';
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; ${isSecure ? 'secure; ' : ''}samesite=strict`
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
     [setOpenProp, open]
   )
@@ -193,7 +192,6 @@ function Sidebar({
             } as React.CSSProperties
           }
           side={side}
-          onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>

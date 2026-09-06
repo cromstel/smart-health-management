@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { broadcast } from '../events/permissions.js';
-import { cacheService, CacheKeys } from '../services/cache.service.js';
 
 export const getRoles = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -83,11 +82,6 @@ export const updateRole = async (req: AuthRequest, res: Response): Promise<Respo
       [userId, id, JSON.stringify(before), JSON.stringify(after), req.ip, req.headers['user-agent'] || '']
     );
     broadcast({ type: 'role_updated', roleId: id });
-    
-    // Invalidate cache for this role's permissions
-    await cacheService.invalidatePattern(CacheKeys.invalidateRole(id));
-    await cacheService.invalidatePattern(CacheKeys.invalidatePermissions());
-    
     res.json({ message: 'Role updated successfully' });
   } catch (error) {
     console.error('Update role error:', error);
@@ -109,11 +103,6 @@ export const deleteRole = async (req: AuthRequest, res: Response): Promise<Respo
       [userId, id, JSON.stringify(before), null, req.ip, req.headers['user-agent'] || '']
     );
     broadcast({ type: 'role_deleted', roleId: id });
-    
-    // Invalidate cache for this role's permissions
-    await cacheService.invalidatePattern(CacheKeys.invalidateRole(id));
-    await cacheService.invalidatePattern(CacheKeys.invalidatePermissions());
-    
     res.json({ message: 'Role deleted successfully' });
   } catch (error) {
     console.error('Delete role error:', error);
@@ -164,10 +153,6 @@ export const updateRolePermissions = async (req: AuthRequest, res: Response): Pr
       broadcast({ type: 'permission_updated', roleId: id, module: p.module, department_id: dept });
     }
 
-    // Invalidate all permission caches for this role
-    await cacheService.invalidatePattern(CacheKeys.invalidateRole(id));
-    await cacheService.invalidatePattern(CacheKeys.invalidatePermissions());
-    
     res.json({ message: 'Permissions updated successfully' });
   } catch (error) {
     console.error('Update role permissions error:', error);

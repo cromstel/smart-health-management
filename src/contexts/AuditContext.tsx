@@ -14,7 +14,7 @@ interface AuditContextType {
   logAction: (action: string, module: string, details?: Partial<AuditLog>) => void;
 }
 
-export const AuditContext = createContext<AuditContextType | undefined>(undefined);
+const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
 export function AuditProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -59,10 +59,10 @@ export function AuditProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useAudit = () => {
+export function useAudit() {
   const context = useContext(AuditContext);
   if (context === undefined) {
     throw new Error('useAudit must be used within an AuditProvider');
   }
   return context;
-};
+}

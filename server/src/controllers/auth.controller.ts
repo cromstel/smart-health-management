@@ -1,9 +1,12 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
-import { jwtManager } from '../config/jwt.js';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 export const login = async (req: Request, res: Response): Promise<Response | void> => {
   try {
@@ -62,7 +65,13 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
     );
     const role = (roles as any[])[0]?.name || 'User';
 
-    // Get permissions first
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    );
+
     const [perms] = await pool.query(
       'SELECT module, can_view, can_add, can_edit, can_delete FROM permissions WHERE role_id = ?',
       [user.role_id]
@@ -76,34 +85,11 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
       return list;
     });
 
-    // Generate JWT token using enhanced JWT manager
-    const token = await jwtManager.createToken({
-      id: user.id,
-      email: user.email,
-      role,
-      permissions,
-      hospital_id: user.hospital_id,
-    });
-
     // Determine password change requirement
     const mustChange = !!user.password_must_change;
 
-    // Set JWT in httpOnly cookie for security
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction, // Only send over HTTPS in production
-      sameSite: 'strict' as const,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/',
-    };
-
-    res.cookie('token', token, cookieOptions);
-
-    // Also return token in response for backward compatibility during transition
-    // TODO: Remove this after frontend migration is complete
     res.json({
-      token, // Keep for backward compatibility
+      token,
       user: {
         id: user.id,
         name: user.name,
@@ -158,190 +144,67 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    // Verify the provided token
-    const decoded = await jwtManager.verifyToken(token);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    const newToken = jwt.sign(
+      { id: decoded.id, email: decoded.email, role: decoded.role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    );
 
-    // Create a new token with the same payload but fresh expiration
-    const newToken = await jwtManager.createToken({
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role,
-      permissions: decoded.permissions,
-      hospital_id: decoded.hospital_id,
-    });
-
-    // Set new token in httpOnly cookie
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('token', newToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict' as const,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/',
-    });
-
-    // Also return token in response for backward compatibility
     res.json({ token: newToken });
-  } catch (error) {
-    console.error('Token refresh error:', error);
+  } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
 };
 
-export const logout = async (_req: Request, res: Response): Promise<Response> => {
-  // Clear the httpOnly cookie
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-  });
-  
+export const logout = async (_req: Request, res: Response) => {
   // In a production app, you might want to blacklist the token
-  return res.json({ message: 'Logged out successfully' });
+  res.json({ message: 'Logged out successfully' });
 };
 
 export const forgotPassword = async (req: Request, res: Response): Promise<Response | void> => {
   try {
     const { email } = req.body;
 
-    // Check if user exists and get their details including hospital information
-    const [users] = await pool.query(`
-      SELECT u.id, u.email, u.name, u.role, u.hospital_id, h.name as hospital_name
-      FROM users u
-      LEFT JOIN hospitals h ON u.hospital_id = h.id
-      WHERE u.email = ?
-    `, [email]);
+    // Check if user exists
+    const [users] = await pool.query(
+      'SELECT id, email FROM users WHERE email = ?',
+      [email]
+    );
 
     const user = (users as any[])[0];
 
     // Always return success to prevent email enumeration
     if (!user) {
-      console.log(`Password reset requested for non-existent email: ${email}`);
-      return res.json({
-        message: 'If the email exists, your password reset request has been forwarded to your hospital administrator'
-      });
+      return res.json({ message: 'If the email exists, a reset link has been sent' });
     }
 
-    // For Super Admins, they should change password through admin panel
-    if (user.role === 'Super Admin') {
-      console.log(`Super Admin ${email} attempted password reset - blocked`);
-      return res.json({
-        message: 'Super Administrators should change passwords through the admin dashboard'
-      });
-    }
+    // Generate reset token (in production, use crypto.randomBytes)
+    const resetToken = Math.random().toString(36).substring(2, 15);
+    // const resetExpires = new Date(Date.now() + 3600000); // 1 hour - would be used in production
 
-    // Find hospital administrators to notify
-    const [admins] = await pool.query(`
-      SELECT u.email, u.name
-      FROM users u
-      JOIN roles r ON u.role_id = r.id
-      WHERE u.hospital_id = ? AND r.name IN ('Administrator', 'Super Admin')
-      AND u.status = 'active'
-    `, [user.hospital_id]);
+    // Store reset token (you'd need a password_resets table in production)
+    // For now, we'll just log it
+    console.log(`Reset token for ${email}: ${resetToken}`);
+    console.log(`Reset link: http://localhost:5173/reset-password?token=${resetToken}`);
 
-    const adminList = admins as any[];
+    // In production, send email here
+    // await sendPasswordResetEmail(email, resetToken);
 
-    if (adminList.length === 0) {
-      console.log(`No administrators found for hospital ${user.hospital_id} to handle password reset for ${email}`);
-      // Still return success to avoid leaking information
-      return res.json({
-        message: 'If the email exists, your password reset request has been forwarded to your hospital administrator'
-      });
-    }
-
-    // Generate secure reset token and store in database
-    const crypto = await import('crypto');
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    // First, create the password_reset_tokens table if it doesn't exist
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS password_reset_tokens (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        token VARCHAR(64) NOT NULL UNIQUE,
-        expires_at DATETIME NOT NULL,
-        used BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_token (token),
-        INDEX idx_user_used (user_id, used)
-      )
-    `);
-
-    // Store reset token in database
-    await pool.query(`
-      INSERT INTO password_reset_tokens (user_id, token, expires_at)
-      VALUES (?, ?, ?)
-    `, [user.id, resetToken, resetExpires]);
-
-    console.log(`🔐 PASSWORD RESET REQUEST`);
-    console.log(`User: ${user.name} (${user.email})`);
-    console.log(`Hospital: ${user.hospital_name || 'N/A'}`);
-    console.log(`Role: ${user.role}`);
-    console.log(`Reset Token: ${resetToken}`);
-    console.log(`Expires: ${resetExpires.toISOString()}`);
-    console.log(`Administrators to notify: ${adminList.map(a => a.email).join(', ')}`);
-
-    // Log notification to administrators
-    adminList.forEach(admin => {
-      console.log(`📧 Notification sent to admin ${admin.name} (${admin.email})`);
-    });
-
-    res.json({
-      message: 'Your password reset request has been forwarded to your hospital administrator. You will receive an email notification once processed.'
-    });
+    res.json({ message: 'If the email exists, a reset link has been sent' });
   } catch {
     console.error('Forgot password error');
     res.status(500).json({ error: 'Failed to process request' });
   }
 };
 
-export const resetPassword = async (req: Request, res: Response): Promise<Response | void> => {
+export const resetPassword = async (_req: Request, res: Response): Promise<Response | void> => {
   try {
-    const { token, password } = req.body;
-
-    // Validate token exists and is not expired
-    const [tokens] = await pool.query(`
-      SELECT prt.*, u.email, u.name
-      FROM password_reset_tokens prt
-      JOIN users u ON prt.user_id = u.id
-      WHERE prt.token = ? AND prt.used = FALSE AND prt.expires_at > NOW()
-    `, [token]);
-
-    const resetRequest = (tokens as any[])[0];
-
-    if (!resetRequest) {
-      return res.status(400).json({ error: 'Invalid or expired reset token' });
-    }
-
-    // Hash the new password
-    const bcrypt = await import('bcrypt');
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Update user password and mark token as used
-    await pool.query(`
-      UPDATE users
-      SET password = ?, password_must_change = FALSE, password_changed_at = NOW()
-      WHERE id = ?
-    `, [hashedPassword, resetRequest.user_id]);
-
-    await pool.query(`
-      UPDATE password_reset_tokens
-      SET used = TRUE
-      WHERE id = ?
-    `, [resetRequest.id]);
-
-    // Log the password reset
-    console.log(`🔑 PASSWORD RESET SUCCESSFUL`);
-    console.log(`User: ${resetRequest.name} (${resetRequest.email})`);
-    console.log(`Reset completed at: ${new Date().toISOString()}`);
-
-    res.json({ message: 'Password reset successfully. You can now login with your new password.' });
-  } catch (error) {
-    console.error('Reset password error:', error);
+    void _req;
+    // Disable unauthenticated reset in favor of change-password after login
+    return res.status(403).json({ error: 'Password reset disabled. Please login and change your password.' });
+  } catch {
     res.status(500).json({ error: 'Failed to reset password' });
   }
 };

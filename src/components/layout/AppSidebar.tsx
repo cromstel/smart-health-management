@@ -22,13 +22,13 @@ import {
   Pill,
   DollarSign,
   Settings,
+  Activity,
   Shield,
   FileCheck,
   ClipboardList,
   BarChart3,
   ClipboardCheck,
 } from 'lucide-react';
-import { Logo } from '@/components/ui';
 
 const menuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -74,16 +74,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4 text-center">
-        <Link to="/dashboard" className="flex flex-col items-center gap-2">
-          <div className="flex items-center justify-center">
-            <Logo size="lg" variant="circle" className="h-8 w-8" />
-          </div>
-          <div className="text-center">
-            <h2 className="text-sm font-bold text-sidebar-foreground">Smart Health Manager</h2>
-            <p className="text-xs text-sidebar-foreground/70">Healthcare Management Portal</p>
-          </div>
-        </Link>
+      <SidebarHeader className="border-b border-sidebar-border p-4">
+        <div className="flex items-center gap-2">
+          <Activity className="h-6 w-6 text-sidebar-primary" />
+          <span className="text-lg font-bold text-sidebar-foreground">Health Manager</span>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

@@ -11,8 +11,6 @@ vi.mock('../config/database.js', () => {
   }
 })
 
-vi.stubEnv('PASSWORD_MAX_POSTPONES', '3')
-
 const pool: any = (await import('../config/database.js')).default
 
 function mockRes() {
@@ -55,7 +53,7 @@ describe('Postpone Password Change', () => {
 
   it('rejects postpone for Super Admin with default password', async () => {
     pool.query
-      .mockResolvedValueOnce([[{ id: '1', password: 'mocked_password_hash', role: 'Super Admin', password_must_change: 1, password_postpone_count: 0 }]])
+      .mockResolvedValueOnce([[{ id: '1', password: '$2b$10$hash', role: 'Super Admin', password_must_change: 1, password_postpone_count: 0 }]])
     const req = { user: { id: '1' }, body: {}, headers: {}, ip: '127.0.0.1' } as unknown as AuthRequest
     const res = mockRes()
     await authController.postponePasswordChange(req, res as any)

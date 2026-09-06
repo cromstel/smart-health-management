@@ -73,42 +73,14 @@ export class LocalStorageProvider implements IStorageProvider {
     return { filePath: doc.file_path as string, fileName: doc.name as string };
   }
 
-  async getMetadata(documentId: string): Promise<any> {
-    const [rows] = await pool.query(
-      'SELECT document_id, name, file_size, mime_type, uploaded_by, uploaded_at, patient_id, category, storage_type, file_path FROM documents WHERE document_id = ?',
-      [documentId]
-    );
-    const doc = (rows as any[])[0];
-    if (!doc) {
-      throw new Error('Document not found');
-    }
-    return doc;
+  async getMetadata(_documentId: string): Promise<any> {
+    // This will require querying the database
+    throw new Error('Method not implemented. Requires database access.');
   }
 
-  async delete(documentId: string): Promise<void> {
-    const [rows] = await pool.query('SELECT file_path FROM documents WHERE document_id = ?', [documentId]);
-    const doc = (rows as any[])[0];
-    if (!doc) {
-      throw new Error('Document not found');
-    }
-
-    // Delete the file from filesystem
-    if (fs.existsSync(doc.file_path)) {
-      fs.unlinkSync(doc.file_path);
-
-      // Also try to remove the version directory if empty
-      const versionDir = path.dirname(doc.file_path);
-      try {
-        if (fs.readdirSync(versionDir).length === 0) {
-          fs.rmdirSync(versionDir);
-        }
-      } catch (_error) {
-        // Ignore if directory not empty or other issues
-      }
-    }
-
-    // Delete from database
-    await pool.query('DELETE FROM documents WHERE document_id = ?', [documentId]);
+  async delete(_documentId: string): Promise<void> {
+    // This will require querying the database to get the file_path and then deleting the file
+    throw new Error('Method not implemented. Requires database access.');
   }
 }
 

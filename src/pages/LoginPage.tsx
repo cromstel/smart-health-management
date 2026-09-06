@@ -3,195 +3,85 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Eye, EyeOff, Shield, Heart, Lock, Mail } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Logo } from '@/components/ui';
-import './LoginPage.css';
-
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (error: any) {
-      setError(error.message || 'Login failed. Please check your credentials.');
+    } catch (e) {
+      void e
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="h-screen w-screen flex items-center login-page">
-      {/* Login Form */}
-      <div className="w-full max-w-md h-full flex flex-col justify-center p-8 pl-16 relative overflow-hidden">
-
-        {/* Medical Cross Icon Background */}
-        <div className="absolute top-10 right-10 opacity-10">
-          <Heart className="w-32 h-32 login-heart-icon" />
-        </div>
-        <div className="absolute bottom-10 left-10 opacity-10">
-          <Shield className="w-24 h-24 login-shield-icon" />
-        </div>
-
-        <Card className="w-full max-w-lg shadow-2xl relative z-10 login-card">
-          <CardHeader className="space-y-6 pt-8 pb-8">
-          {/* Hospital Branding */}
-          <div className="flex flex-col items-center justify-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center login-branding-icon">
-                <Logo size="xl" variant="circle" className="w-12 h-12" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center login-branding-badge">
-                <Shield className="w-3 h-3 text-white" />
-              </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-purple-700 overflow-hidden">
+      <Card className="w-full max-w-md mx-auto p-8 backdrop-blur-sm bg-white/10 dark:bg-gray-900/20 shadow-lg rounded-lg">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col items-center justify-center gap-2 text-white mb-6">
+            <img src="/logo.png" alt="Smart Health Manager" className="h-12 w-auto" />
+            <h1 className="text-2xl font-bold text-white">Smart Health Manager</h1>
+          </div>
+          <CardTitle className="text-center text-white text-3xl font-extrabold mb-2">Welcome Back!</CardTitle>
+          <CardDescription className="text-center text-gray-200 text-lg">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="font-medium text-gray-100">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white/20 border-gray-600 text-white placeholder-gray-300 focus:border-blue-400 focus:ring-blue-400"
+              />
             </div>
-              <div className="text-center">
-                <h1 className="text-2xl font-bold login-title">
-                  Smart Health Manager
-                </h1>
-                <p className="text-sm mt-1 opacity-80 login-subtitle">
-                  Healthcare Management Portal
-                </p>
-              </div>
-            </div>
-
-            {/* Welcome Message */}
-            <div className="text-center space-y-2">
-              <CardTitle className="text-2xl font-bold login-title">
-                Secure Login
-              </CardTitle>
-              <CardDescription className="login-description">
-                Access your healthcare management dashboard
-              </CardDescription>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Error Alert */}
-            {error && (
-              <Alert className="login-error-alert">
-                <AlertCircle className="h-4 w-4 login-error-icon" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Field */}
-              <div className="space-y-2">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your.email@hospital.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="h-12 text-base pl-12 placeholder:text-gray-400 login-input"
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span></span>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm hover:underline transition-colors login-forgot-link"
-                  >
-                    Forgot Password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="h-12 text-base pl-12 pr-12 placeholder:text-gray-400 login-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-md hover:bg-opacity-20 hover:bg-white transition-colors login-show-password"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Login Button */}
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 text-base font-semibold transition-all duration-200 hover:scale-105 login-button"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    Signing In...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <Lock className="w-5 h-5" />
-                    Sign In Securely
-                  </div>
-                )}
-              </Button>
-            </form>
-
-            {/* Additional Links */}
-            <div className="text-center space-y-2 pt-4 login-links-border">
-              <p className="text-sm login-links-text">
-                New to our platform?{' '}
-                <Link
-                  to="/register"
-                  className="hover:underline transition-colors font-medium login-register-link"
-                >
-                  Create Account
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Label htmlFor="password" className="font-medium text-gray-100">Password</Label>
+                <Link to="/forgot-password"className="ml-auto inline-block text-sm underline text-blue-200 hover:text-blue-100">
+                    Forgot your password?
                 </Link>
-              </p>
-              <p className="text-sm login-links-text">
-                Need help? Contact your system administrator
-              </p>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white/20 border-gray-600 text-white placeholder-gray-300 focus:border-blue-400 focus:ring-blue-400"
+              />
             </div>
-          </CardContent>
-
-          <CardFooter className="pt-6 text-center login-footer-border">
-            <p className="text-sm w-full login-footer-text">
-              Protected by Enterprise-Grade Security •
-              <span className="ml-1 font-medium login-hipaa-link">
-                HIPAA Compliant
-              </span>
-            </p>
-          </CardFooter>
-        </Card>
-      </div>
-
+            <Button type="submit" className="w-full py-2 px-4 rounded-md text-lg font-semibold transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="mt-6 text-center text-base text-gray-200">
+            Don't have an account?{' '}
+            <Link to="/signup" className="underline text-blue-200 hover:text-blue-100">
+                Sign up
+            </Link>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

@@ -3,54 +3,50 @@ import type { User } from "@/contexts/AuthContext";
 
 interface SystemHealthResponse { status: string; }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '');
 
 class ApiService {
   private cache: { [url: string]: any } = {};
+
+  getPatientsFromLocalStorage(): any[] | null {
+    try {
+      const data = localStorage.getItem('cached_patients');
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  savePatientsToLocalStorage(patients: any[]): void {
+    try {
+      localStorage.setItem('cached_patients', JSON.stringify(patients));
+    } catch (e) {
+      console.warn('Failed to save patients to localStorage', e);
+    }
+  }
+
+  generateOfflineId(): string {
+    return 'offline-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+  }
 
   private getHeaders(includeAuth = true): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    // Get CSRF token from cookie (set by backend)
-    if (typeof document !== 'undefined') {
-      const csrfToken = this.getCookie('XSRF-TOKEN');
-      if (csrfToken) {
-        headers['X-XSRF-TOKEN'] = csrfToken;
-      }
-    }
-
-    // For backward compatibility: still support Authorization header if token exists in localStorage
-    // TODO: Remove this after full migration to httpOnly cookies
     if (includeAuth) {
       const token = localStorage.getItem('token');
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`; // Include auth header only if token exists
       }
     }
 
     return headers;
   }
 
-  private getCookie(name: string): string | null {
-    if (typeof document === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-      return parts.pop()?.split(';').shift() || null;
-    }
-    return null;
-  }
-
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      // Handle 401 Unauthorized - clear token and redirect to login
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        // Token in httpOnly cookie will be cleared by backend on next request
-      }
       const error = await response.json().catch(() => ({ error: 'Request failed' }));
       throw new Error(error.error || 'Request failed');
     }
@@ -62,42 +58,24 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: this.getHeaders(false),
-      credentials: 'include', // Important: send cookies (httpOnly token)
       body: JSON.stringify({ email, password }),
     });
-    const data = await this.handleResponse(response);
-    
-    // For backward compatibility: still store token in localStorage if returned
-    // TODO: Remove this after full migration to httpOnly cookies
-    if ((data as any).token) {
-      localStorage.setItem('token', (data as any).token);
-    }
-    
-    return data;
+    return this.handleResponse(response);
   }
 
   async register(data: { email: string; password: string; name: string; roleId?: string }) {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: this.getHeaders(false),
-      credentials: 'include', // Send cookies
       body: JSON.stringify(data),
     });
-    const result = await this.handleResponse(response);
-    
-    // For backward compatibility: store token if returned
-    if ((result as any).token) {
-      localStorage.setItem('token', (result as any).token);
-    }
-    
-    return result;
+    return this.handleResponse(response);
   }
 
   async forgotPassword(email: string) {
     const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: this.getHeaders(false),
-      credentials: 'include',
       body: JSON.stringify({ email }),
     });
     return this.handleResponse(response);
@@ -107,7 +85,6 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
       method: 'POST',
       headers: this.getHeaders(false),
-      credentials: 'include',
       body: JSON.stringify({ token, password }),
     });
     return this.handleResponse(response);
@@ -117,7 +94,6 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
       method: 'POST',
       headers: this.getHeaders(),
-      credentials: 'include',
       body: JSON.stringify({ code }),
     });
     return this.handleResponse(response);
@@ -127,7 +103,6 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
       method: 'POST',
       headers: this.getHeaders(),
-      credentials: 'include',
       body: JSON.stringify({ currentPassword, newPassword }),
     });
     return this.handleResponse(response);
@@ -137,16 +112,6 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/auth/postpone-password-change`, {
       method: 'POST',
       headers: this.getHeaders(),
-      credentials: 'include',
-    });
-    return this.handleResponse(response);
-  }
-
-  async logout() {
-    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      credentials: 'include', // Send cookies
     });
     return this.handleResponse(response);
   }
@@ -176,7 +141,6 @@ class ApiService {
     }
     const response = await fetch(url, {
       headers: this.getHeaders(),
-      credentials: 'include', // Send cookies for authentication
     });
     const data = await this.handleResponse(response) as any[];
     this.cache[url] = data;
@@ -193,7 +157,6 @@ class ApiService {
     }
     const response = await fetch(url, {
       headers: this.getHeaders(),
-      credentials: 'include', // Send cookies for authentication
     });
     const data = await this.handleResponse(response);
     this.cache[url] = data;
@@ -205,7 +168,6 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}/patients`, {
         method: 'POST',
         headers: this.getHeaders(),
-        credentials: 'include', // Send cookies for authentication
         body: JSON.stringify(data),
       });
       return this.handleResponse(response);
@@ -324,186 +286,15 @@ class ApiService {
     return data;
   }
 
-  async updateAppointment(id: string, data: any) {
-    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async deleteAppointment(id: string) {
-    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async createAppointment(data: any) {
+  async createAppointment(_data: any) {
     const response = await fetch(`${API_BASE_URL}/appointments`, {
       method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  // Purchase Order endpoints
-  async getPurchaseOrders() {
-    const url = API_BASE_URL + '/purchase-orders';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  async updatePurchaseOrder(id: string, data: any) {
-    const response = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  // Pharmacy reports with parameter
-  async getPharmacyReport(reportType: string) {
-    const url = `${API_BASE_URL}/pharmacy/reports?reportType=${reportType}`;
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  // Pharmacy reports with parameter
-  async getPharmacyReports() {
-    const response = await fetch(`${API_BASE_URL}/pharmacy/reports`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  // Dashboard analytics endpoints
-  async getPatientLoadPredictions() {
-    const response = await fetch(`${API_BASE_URL}/patient-load-predictions`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async getGhanaHealthData() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/ghana-health-data`, {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
 
   // Super Admin endpoints
-  async getSystemStatus() {
-    const response = await fetch(`${API_BASE_URL}/super-admin/system-status`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async getAllUsers() {
-    const url = API_BASE_URL + '/super-admin/users';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  async updateUserStatus(userId: string, status: 'active' | 'inactive' | 'locked') {
-    const response = await fetch(`${API_BASE_URL}/super-admin/users/${userId}/status`, {
-      method: 'PATCH',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ status }),
-    });
-    return this.handleResponse(response);
-  }
-
-  async getAllHospitalsAdmin() {
-    const url = API_BASE_URL + '/super-admin/hospitals';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  async getAuditLogs(limit = 100, offset = 0) {
-    const response = await fetch(`${API_BASE_URL}/super-admin/audit-logs?limit=${limit}&offset=${offset}`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async triggerBackup() {
-    const response = await fetch(`${API_BASE_URL}/super-admin/backup`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async triggerUpgrade(version: string, description: string) {
-    const response = await fetch(`${API_BASE_URL}/super-admin/upgrade`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ version, description }),
-    });
-    return this.handleResponse(response);
-  }
-
-  async getSystemSettings() {
-    const url = API_BASE_URL + '/super-admin/settings';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  async updateSystemSetting(settingId: string, settingValue: string) {
-    const response = await fetch(`${API_BASE_URL}/super-admin/settings/${settingId}`, {
-      method: 'PATCH',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ setting_value: settingValue }),
-    });
-    return this.handleResponse(response);
-  }
-
   async triggerRestore(_backupPath: string) {
     const response = await fetch(`${API_BASE_URL}/super-admin/restore`, {
       method: 'POST',
@@ -521,6 +312,23 @@ class ApiService {
 
   async getBackups() {
     const response = await fetch(`${API_BASE_URL}/super-admin/backups`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateAppointment(id: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteAppointment(id: string) {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      method: 'DELETE',
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
@@ -659,19 +467,35 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Financial endpoints
-  async getAccounts() {
-    const url = API_BASE_URL + '/financial/accounts';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
+  // Predictions & Ghana Health
+  async getPatientLoadPredictions() {
+    const response = await fetch(`${API_BASE_URL}/patient-load-predictions`, {
       headers: this.getHeaders(),
     });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
+    return this.handleResponse(response);
+  }
+
+  async getGhanaHealthData(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/dashboard/ghana-health-data`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Financial endpoints
+  async getAccounts() {
+    const response = await fetch(`${API_BASE_URL}/financial/accounts`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getTransactions(params?: any) {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    const response = await fetch(`${API_BASE_URL}/financial/transactions${queryString}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
   }
 
   async createAccount(data: any) {
@@ -683,35 +507,6 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getTransactions(params?: { accountId?: string; dateFrom?: string; dateTo?: string }) {
-    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
-    const url = API_BASE_URL + '/financial/transactions' + queryString;
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  async getTransactionById(id: string) {
-    const url = API_BASE_URL + '/financial/transactions/' + id;
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
   async createTransaction(data: any) {
     const response = await fetch(`${API_BASE_URL}/financial/transactions`, {
       method: 'POST',
@@ -721,16 +516,24 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getFinancialReports(params?: { reportType?: string; dateFrom?: string; dateTo?: string }) {
-    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
-    const response = await fetch(`${API_BASE_URL}/financial/reports${queryString}`, {
+  // Pharmacy & Inventory endpoints
+  async getPharmacyReport(params?: any) {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    const response = await fetch(`${API_BASE_URL}/pharmacy/reports${queryString}`, {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
 
-  async createInvoice(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/invoices`, {
+  async getMedicines() {
+    const response = await fetch(`${API_BASE_URL}/pharmacy/medicines`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createPharmacyItem(data: any) {
+    const response = await fetch(`${API_BASE_URL}/pharmacy/medicines`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
@@ -738,17 +541,24 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async finalizeInvoice(id: string, data?: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/invoices/${id}/finalize`, {
-      method: 'POST',
+  async updatePharmacyItem(id: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}/pharmacy/medicines/${id}`, {
+      method: 'PUT',
       headers: this.getHeaders(),
-      body: JSON.stringify(data || {}),
+      body: JSON.stringify(data),
     });
     return this.handleResponse(response);
   }
 
-  async recordPayment(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/payments`, {
+  async getSuppliers() {
+    const response = await fetch(`${API_BASE_URL}/suppliers`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createSupplier(data: any) {
+    const response = await fetch(`${API_BASE_URL}/suppliers`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
@@ -756,8 +566,15 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createExpense(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/expenses`, {
+  async getPurchaseOrders() {
+    const response = await fetch(`${API_BASE_URL}/purchase-orders`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createPurchaseOrder(data: any) {
+    const response = await fetch(`${API_BASE_URL}/purchase-orders`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
@@ -765,53 +582,9 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createPayroll(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/payroll`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async createTaxRule(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/tax-rules`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async calculateTax(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/tax/calculate`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async forecast(params?: { period?: string; forecastType?: string }) {
-    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
-    const response = await fetch(`${API_BASE_URL}/financial/forecast${queryString}`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async createCustomer(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/customers`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async createCharge(data: any) {
-    const response = await fetch(`${API_BASE_URL}/financial/charges`, {
-      method: 'POST',
+  async updatePurchaseOrder(id: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
+      method: 'PUT',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
@@ -820,31 +593,10 @@ class ApiService {
 
   // Roles endpoints
   async getRoles() {
-    const url = API_BASE_URL + '/roles';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}/roles`, {
       headers: this.getHeaders(),
     });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
-  async getRoleById(id: string) {
-    const url = API_BASE_URL + '/roles/' + id;
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
+    return this.handleResponse(response);
   }
 
   async createRole(data: any) {
@@ -856,45 +608,12 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateRole(id: string, data: any) {
-    const response = await fetch(`${API_BASE_URL}/roles/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async deleteRole(id: string) {
-    const response = await fetch(`${API_BASE_URL}/roles/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async updateRolePermissions(id: string, data: any) {
-    const response = await fetch(`${API_BASE_URL}/roles/${id}/permissions`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
   // Settings endpoints
   async getSettings() {
-    const url = API_BASE_URL + '/settings';
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}/settings`, {
       headers: this.getHeaders(),
     });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
+    return this.handleResponse(response);
   }
 
   async updateSettings(data: any) {
@@ -906,153 +625,86 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Helper methods for localStorage support
-  private getPatientsFromLocalStorage() {
-    try {
-      const cached = localStorage.getItem('cachedPatients');
-      if (!cached) return null;
-      const parsed = JSON.parse(cached);
-      const oneHourAgo = Date.now() - 1000 * 60 * 60;
-      if (parsed.timestamp > oneHourAgo) {
-        return parsed.data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error reading patients from localStorage:', error);
-      return null;
+  // Super Admin endpoints
+  async getAuditLogs(limitOrParams?: number | any, offset?: number) {
+    let queryString = '';
+    if (typeof limitOrParams === 'number') {
+      queryString = `?limit=${limitOrParams}${offset !== undefined ? `&offset=${offset}` : ''}`;
+    } else if (limitOrParams) {
+      queryString = '?' + new URLSearchParams(limitOrParams).toString();
     }
-  }
-
-  private savePatientsToLocalStorage(data: any[]) {
-    try {
-      localStorage.setItem('cachedPatients', JSON.stringify({
-        data,
-        timestamp: Date.now(),
-      }));
-    } catch (error) {
-      console.error('Error saving patients to localStorage:', error);
-    }
-  }
-
-  private generateOfflineId() {
-    return `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  // Pharmacy endpoints
-  async getMedicines() {
-    const response = await fetch(`${API_BASE_URL}/pharmacy/medicines`, {
+    const response = await fetch(`${API_BASE_URL}/super-admin/audit-logs${queryString}`, {
       headers: this.getHeaders(),
-      credentials: 'include',
     });
     return this.handleResponse(response);
   }
 
-  async createPharmacyItem(medicine: any) {
-    const response = await fetch(`${API_BASE_URL}/pharmacy/medicines`, {
+  async getSystemStatus() {
+    const response = await fetch(`${API_BASE_URL}/super-admin/status`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async triggerBackup() {
+    const response = await fetch(`${API_BASE_URL}/super-admin/backup`, {
       method: 'POST',
       headers: this.getHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(medicine),
     });
     return this.handleResponse(response);
   }
 
-  async updatePharmacyItem(id: string, updates: any) {
-    const response = await fetch(`${API_BASE_URL}/pharmacy/medicines/${id}`, {
+  async getAllHospitalsAdmin() {
+    const response = await fetch(`${API_BASE_URL}/super-admin/hospitals`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async triggerUpgrade(version?: string, description?: string) {
+    const response = await fetch(`${API_BASE_URL}/super-admin/upgrade`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ version, description }),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getSystemSettings() {
+    const response = await fetch(`${API_BASE_URL}/super-admin/settings`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateSystemSetting(settingIdOrData: string | any, value?: any) {
+    const body = typeof settingIdOrData === 'string'
+      ? { key: settingIdOrData, value }
+      : settingIdOrData;
+    const response = await fetch(`${API_BASE_URL}/super-admin/settings`, {
       method: 'PUT',
       headers: this.getHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(updates),
+      body: JSON.stringify(body),
     });
     return this.handleResponse(response);
   }
 
-  // Supplier endpoints
-  async getSuppliers() {
-    const response = await fetch(`${API_BASE_URL}/suppliers`, {
+  async getAllUsers() {
+    const response = await fetch(`${API_BASE_URL}/super-admin/users`, {
       headers: this.getHeaders(),
-      credentials: 'include',
     });
     return this.handleResponse(response);
   }
 
-  async createSupplier(supplier: { name: string; contact_person?: string; email?: string; phone?: string; address?: string }) {
-    const response = await fetch(`${API_BASE_URL}/suppliers`, {
-      method: 'POST',
+  async updateUserStatus(id: string, status: string) {
+    const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/status`, {
+      method: 'PUT',
       headers: this.getHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(supplier),
+      body: JSON.stringify({ status }),
     });
     return this.handleResponse(response);
   }
-
-  // Purchase Order endpoints
-  async createPurchaseOrder(order: any) {
-    const response = await fetch(`${API_BASE_URL}/purchase-orders`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(order),
-    });
-    return this.handleResponse(response);
-  }
-
-  // Sync offline patients when back online
-  async syncOfflinePatients(): Promise<{ synced: number; conflicts: number }> {
-    const offlinePatients = JSON.parse(localStorage.getItem('offlinePatients') || '[]') as any[];
-    let synced = 0;
-    let conflicts = 0;
-
-    for (const offline of offlinePatients) {
-      try {
-        if (offline.offlineAction === 'CREATE') {
-          // Check if server has it (by patient_id or similar)
-          const existing = await this.getPatients();
-          const exists = existing.some((p: any) => p.patient_id === offline.patient_id);
-          if (!exists) {
-            await fetch(`${API_BASE_URL}/patients`, {
-              method: 'POST',
-              headers: this.getHeaders(),
-              body: JSON.stringify(offline),
-            });
-            synced++;
-          } else {
-            conflicts++; // Server has it, conflict
-          }
-        } else if (offline.offlineAction === 'UPDATE') {
-          // For updates, server has priority if modified later
-          const serverPatient = await this.getPatient(offline.id);
-          if (serverPatient) {
-            const serverUpdate = new Date(serverPatient.updated_at || 0);
-            const clientUpdate = new Date(offline.clientUpdatedAt || 0);
-            if (clientUpdate > serverUpdate) {
-              await fetch(`${API_BASE_URL}/patients/${offline.id}`, {
-                method: 'PUT',
-                headers: this.getHeaders(),
-                body: JSON.stringify(offline),
-              });
-              synced++;
-            } else {
-              conflicts++; // Server version newer
-            }
-          }
-        } else if (offline.offlineAction === 'DELETE') {
-          // Try to delete, ignore if not found
-          await fetch(`${API_BASE_URL}/patients/${offline.id}`, {
-            method: 'DELETE',
-            headers: this.getHeaders(),
-          }).catch(() => {}); // Ignore 404
-          synced++;
-        }
-      } catch (error) {
-        console.error('Failed to sync offline patient:', error);
-      }
-    }
-
-    // Clear synced items from localStorage
-    localStorage.removeItem('offlinePatients');
-    return { synced, conflicts };
-  }
+  
 }
 
 export const api = new ApiService();

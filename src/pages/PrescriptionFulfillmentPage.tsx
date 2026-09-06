@@ -89,8 +89,8 @@ export default function PrescriptionFulfillmentPage() {
         <CardContent>
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="patient-select">Patient</Label>
-              <select id="patient-select" aria-label="Select patient" className="border rounded p-2" value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })}>
+              <Label>Patient</Label>
+              <select className="border rounded p-2" value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })}>
                 <option value="">Select patient</option>
                 {patients.map((p) => (
                   <option key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.last_name}` : p.name}</option>
@@ -98,8 +98,8 @@ export default function PrescriptionFulfillmentPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="medicine-select">Medicine</Label>
-              <select id="medicine-select" aria-label="Select medicine" className="border rounded p-2" value={form.medicineId} onChange={(e) => setForm({ ...form, medicineId: e.target.value })}>
+              <Label>Medicine</Label>
+              <select className="border rounded p-2" value={form.medicineId} onChange={(e) => setForm({ ...form, medicineId: e.target.value })}>
                 <option value="">Select medicine</option>
                 {medicines.map((m: any) => (
                   <option key={m.id} value={m.id}>{m.medicine_name || m.name}</option>

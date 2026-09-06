@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { Logo } from '@/components/ui';
+import { Shield, AlertCircle } from 'lucide-react';
 
 const SuperAdminLogin = React.memo(() => {
   const [email, setEmail] = useState('');
@@ -43,7 +42,7 @@ const SuperAdminLogin = React.memo(() => {
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 rounded-full bg-indigo-500/20 flex items-center justify-center shadow-lg">
-              <Logo size="xl" variant="circle" className="w-12 h-12" />
+              <Shield className="w-10 h-10 text-indigo-400" />
             </div>
           </div>
           <CardTitle className="text-3xl font-bold text-gray-50">Super Admin Portal</CardTitle>

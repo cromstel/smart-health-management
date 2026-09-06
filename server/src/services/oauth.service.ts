@@ -4,10 +4,6 @@ export const refreshOneDriveToken = async (refreshToken: string): Promise<{ acce
   const client_id = process.env.ONEDRIVE_CLIENT_ID;
   const client_secret = process.env.ONEDRIVE_CLIENT_SECRET;
 
-  if (!client_id || !client_secret) {
-    throw new Error('ONEDRIVE_CLIENT_ID and ONEDRIVE_CLIENT_SECRET must be set in the environment.');
-  }
-
   try {
     const tokenResponse = await axios.post(
       'https://login.microsoftonline.com/common/oauth2/v2.0/token',
@@ -35,10 +31,6 @@ export const refreshOneDriveToken = async (refreshToken: string): Promise<{ acce
 export const refreshGoogleDriveToken = async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
   const client_id = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const client_secret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
-
-  if (!client_id || !client_secret) {
-    throw new Error('GOOGLE_DRIVE_CLIENT_ID and GOOGLE_DRIVE_CLIENT_SECRET must be set in the environment.');
-  }
 
   try {
     const tokenResponse = await axios.post(

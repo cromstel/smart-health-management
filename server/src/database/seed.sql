@@ -126,8 +126,7 @@ INSERT INTO transactions (id, transaction_id, date, description, account_id, deb
 INSERT INTO settings (setting_key, setting_value, category, updated_by) VALUES
 ('system_name', 'Smart Health Manager', 'general', 2),
 ('default_language', 'en', 'localization', 2),
-('patient_portal_enabled', 'true', 'features', 2),
-('reminder_schedule', '0 * * * *', 'system', 1);
+('patient_portal_enabled', 'true', 'features', 2);
 
 -- 17. Seed Super Admin Settings
 INSERT INTO super_admin_settings (setting_key, setting_value, category, updated_by) VALUES

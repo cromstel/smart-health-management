@@ -17,7 +17,6 @@ export default [
       'src/docs/dist/**',
       'src/docs/node_modules/**',
       'src/docs/**/*.js',
-      'src/tests/**',
       'dist/**',
     ]
   },

@@ -1,90 +1,84 @@
 import type { Response } from 'express';
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
-import { cacheService } from '../services/cache.service.js';
 
 export const getDashboardStats = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    // Check cache first (1 minute TTL for dashboard stats)
-    const cacheKey = 'dashboard:stats';
-    const cachedStats = await cacheService.get<any>(cacheKey);
-    if (cachedStats) {
-      return res.json(cachedStats);
-    }
+    // Get total patients
+    const [patientCount] = await pool.query(
+      'SELECT COUNT(*) as count FROM patients WHERE status = "active"'
+    );
+    const totalPatients = (patientCount as any[])[0].count;
 
-    // Optimized: Execute independent queries in parallel
-    const [
-      patientCount,
-      appointmentCount,
-      hospitalCount,
-      revenueData,
-      patientGrowth,
-      weeklyAppointments,
-      recentActivities
-    ] = await Promise.all([
-      pool.query('SELECT COUNT(*) as count FROM patients WHERE status = "active"'),
-      pool.query('SELECT COUNT(*) as count FROM appointments WHERE appointment_date = CURDATE() AND status = "scheduled"'),
-      pool.query('SELECT COUNT(*) as count FROM hospitals WHERE status = "active"'),
-      pool.query(
-        `SELECT SUM(credit) as revenue 
-         FROM transactions t
-         JOIN accounts a ON t.account_id = a.id
-         WHERE a.type = 'income' 
-         AND MONTH(t.date) = MONTH(CURDATE())
-         AND YEAR(t.date) = YEAR(CURDATE())`
-      ),
-      pool.query(
-        `SELECT 
-          DATE_FORMAT(created_at, '%b') as month,
-          COUNT(*) as patients
-         FROM patients
-         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-         GROUP BY MONTH(created_at), DATE_FORMAT(created_at, '%b')
-         ORDER BY created_at`
-      ),
-      pool.query(
-        `SELECT 
-          DAYNAME(appointment_date) as day,
-          COUNT(*) as appointments
-         FROM appointments
-         WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-         GROUP BY DAYOFWEEK(appointment_date), DAYNAME(appointment_date)
-         ORDER BY DAYOFWEEK(appointment_date)`
-      ),
-      pool.query(
-        `SELECT
-            action,
-            module as name,
-            created_at as time
-        FROM
-            audit_logs
-        ORDER BY
-            created_at DESC
-        LIMIT 10`
-      ),
-    ]);
+    // Get today's appointments
+    const [appointmentCount] = await pool.query(
+      'SELECT COUNT(*) as count FROM appointments WHERE appointment_date = CURDATE() AND status = "scheduled"'
+    );
+    const todayAppointments = (appointmentCount as any[])[0].count;
 
-    const totalPatients = (patientCount[0] as any[])[0].count;
-    const todayAppointments = (appointmentCount[0] as any[])[0].count;
-    const activeHospitals = (hospitalCount[0] as any[])[0].count;
-    const monthlyRevenue = (revenueData[0] as any[])[0].revenue || 0;
+    // Get active hospitals
+    const [hospitalCount] = await pool.query(
+      'SELECT COUNT(*) as count FROM hospitals WHERE status = "active"'
+    );
+    const activeHospitals = (hospitalCount as any[])[0].count;
 
-    const result = {
+    // Get monthly revenue (from transactions)
+    const [revenueData] = await pool.query(
+      `SELECT SUM(credit) as revenue 
+       FROM transactions t
+       JOIN accounts a ON t.account_id = a.id
+       WHERE a.type = 'income' 
+       AND MONTH(t.date) = MONTH(CURDATE())
+       AND YEAR(t.date) = YEAR(CURDATE())`
+    );
+    const monthlyRevenue = (revenueData as any[])[0].revenue || 0;
+
+    // Get patient growth data (last 6 months)
+    const [patientGrowth] = await pool.query(
+      `SELECT 
+        DATE_FORMAT(created_at, '%b') as month,
+        COUNT(*) as patients
+       FROM patients
+       WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+       GROUP BY MONTH(created_at), DATE_FORMAT(created_at, '%b')
+       ORDER BY created_at`
+    );
+
+    // Get weekly appointments
+    const [weeklyAppointments] = await pool.query(
+      `SELECT 
+        DAYNAME(appointment_date) as day,
+        COUNT(*) as appointments
+       FROM appointments
+       WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+       GROUP BY DAYOFWEEK(appointment_date), DAYNAME(appointment_date)
+       ORDER BY DAYOFWEEK(appointment_date)`
+    );
+
+    // Get recent activities (last 10)
+    const [recentActivities] = await pool.query(
+      `SELECT
+          action,
+          module as name,
+          created_at as time
+      FROM
+          audit_logs
+      ORDER BY
+          created_at DESC
+      LIMIT 10`
+    );
+
+    res.json({
       stats: {
         totalPatients,
         todayAppointments,
         activeHospitals,
         monthlyRevenue
       },
-      patientGrowth: patientGrowth[0] as any[],
-      weeklyAppointments: weeklyAppointments[0] as any[],
-      recentActivities: recentActivities[0] as any[],
-    };
-
-    // Cache the result for 1 minute
-    await cacheService.set(cacheKey, result, 60);
-
-    res.json(result);
+      patientGrowth,
+      weeklyAppointments,
+      recentActivities
+    });
   } catch (error) {
     console.error('Get dashboard stats error:', error);
     res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
@@ -162,17 +156,12 @@ export const getFinancialForecast = async (_req: AuthRequest, res: Response): Pr
 
 export const getResourceOptimization = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    // Optimized: Use JOIN instead of correlated subquery
     const [byDept] = await pool.query(
-      `SELECT 
-         d.id AS department_id, 
-         d.name AS department_name,
-         COUNT(DISTINCT a.id) AS weekly_appointments,
-         COUNT(DISTINCT s.id) AS staff_count
+      `SELECT d.id AS department_id, d.name AS department_name,
+              COUNT(a.id) AS weekly_appointments,
+              (SELECT COUNT(*) FROM staff s WHERE s.department_id = d.id) AS staff_count
        FROM departments d
-       LEFT JOIN appointments a ON a.department_id = d.id 
-         AND a.appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-       LEFT JOIN staff s ON s.department_id = d.id
+       LEFT JOIN appointments a ON a.department_id = d.id AND a.appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
        GROUP BY d.id, d.name`
     )
     const recommendations = (byDept as any[]).map((r) => {

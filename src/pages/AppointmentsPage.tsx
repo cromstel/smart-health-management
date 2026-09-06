@@ -66,7 +66,47 @@ interface Doctor {
   departmentId: string;
 }
 
-
+const mockAppointments: DisplayAppointment[] = [
+  {
+    id: 'uuid1',
+    appointmentId: 'A001',
+    patientName: 'Sarah Johnson',
+    doctorId: 'doc1',
+    doctorName: 'Dr. Michael Chen',
+    time: '09:00 AM',
+    date: '2024-01-20',
+    department: 'Cardiology',
+    status: 'Scheduled',
+    type: 'Consultation',
+    notes: 'Initial consultation',
+  },
+  {
+    id: 'uuid2',
+    appointmentId: 'A002',
+    patientName: 'James Wilson',
+    doctorId: 'doc2',
+    doctorName: 'Dr. Emily Davis',
+    time: '10:30 AM',
+    date: '2024-01-20',
+    department: 'Orthopedics',
+    status: 'Scheduled',
+    type: 'Follow-up',
+    notes: 'Follow-up on knee injury',
+  },
+  {
+    id: 'uuid3',
+    appointmentId: 'A003',
+    patientName: 'Maria Garcia',
+    doctorId: 'doc3',
+    doctorName: 'Dr. Robert Lee',
+    time: '02:00 PM',
+    date: '2024-01-20',
+    department: 'Pediatrics',
+    status: 'Completed',
+    type: 'Check-up',
+    notes: 'Annual check-up',
+  },
+];
 
 export default function AppointmentsPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
@@ -122,7 +162,7 @@ export default function AppointmentsPage() {
     } catch (error: any) {
       console.error('Failed to load appointments:', error);
       toast.error(`Failed to load appointments: ${error.message}`);
-      setAppointments([]);
+      setAppointments(mockAppointments);
     }
   }, [logAction, user?.hospital_id]);
 

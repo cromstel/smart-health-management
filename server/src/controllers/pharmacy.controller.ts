@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
-import { buildXlsx } from '../services/reportFormatters/xlsx.js';
+import { buildXlsx } from '../services/reportFormatters/xlsx.js'
 
 import type { AuthRequest } from '../middleware/auth.js';
 
@@ -126,15 +126,15 @@ export const generatePharmacyReport = async (req: AuthRequest, res: Response): P
     const [rows] = await pool.query(query, params);
     const list = rows as any[]
     if (format === 'xlsx') {
-      const buf = await buildXlsx(String(reportType), list)
+      const buf = buildXlsx(String(reportType), list)
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       res.setHeader('Content-Disposition', `attachment; filename="pharmacy_${String(reportType)}.xlsx"`)
       res.send(buf)
       return
     }
     if (format === 'pdf') {
-      res.status(501).json({ error: 'PDF reporting is not implemented' });
-      return;
+      res.status(501).json({ error: 'PDF reporting is not implemented' })
+      return
     }
     if (format === 'csv') {
       const headers = Object.keys(list[0] || {})

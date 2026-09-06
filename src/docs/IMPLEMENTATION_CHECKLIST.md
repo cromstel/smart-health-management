@@ -52,7 +52,7 @@
 
 ---
 
-## 🎯 Phase 3: Advanced Features ✅ COMPLETED
+## 📊 Phase 3: Core Modules ✅ COMPLETED
 
 ### Dashboard Module ✅
 - [x] Main dashboard layout
@@ -111,7 +111,7 @@
 
 ---
 
-### Hospital & Staff Management ✅ COMPLETED (Frontend)
+## 🏥 Phase 4: Hospital & Staff Management ✅ COMPLETED (Frontend)
 
 ### Hospital Management Module ✅
 - [x] Hospital list with cards view
@@ -146,7 +146,7 @@
 
 ---
 
-### Document Management ✅ COMPLETED (Frontend)
+## 📁 Phase 5: Document Management ✅ COMPLETED (Frontend)
 
 ### Document Module ✅
 - [x] Document library with search
@@ -169,7 +169,7 @@
 
 ---
 
-### Pharmacy & Inventory ✅ COMPLETED (Frontend)
+## 💊 Phase 6: Pharmacy & Inventory ✅ COMPLETED (Frontend)
 
 ### Pharmacy Module ✅
 - [x] Medicine inventory list
@@ -198,20 +198,6 @@
 - [x] Batch tracking UI and recall flags in `src/pages/InventoryReportsPage.tsx` (local persistence)
 - [x] Barcode UI with manual entry and validation in `src/pages/PharmacyPage.tsx`
 - [x] Financial linkage: create accounting entries on PO completion (client-side trigger)
-
-### Super Admin User Management Module ✅ COMPLETED
-- [x] User creation and authentication workflows implemented
-- [x] Role-based access control specifications implemented
-- [x] Permission levels and scope definitions implemented
-- [x] Security protocols and audit logging requirements met
-- [x] Backward compatibility with existing user management ensured
-- [x] Test cases for super admin functionality created and passed
-- [x] All changes documented in version history
-- [x] Relevant cross-references to other system documentation added
-- [x] Documentation is clear, consistent, and technically accurate
-- [x] Documentation follows existing style and formatting
-- [x] Examples included in documentation where applicable
-- [x] All technical details verified with the development team
 - [x] Prescription fulfillment workflow and patient medication history in `src/pages/PrescriptionFulfillmentPage.tsx`
 - [x] Inventory reporting dashboard with export and scheduled generation in `src/pages/InventoryReportsPage.tsx`
 
@@ -660,93 +646,6 @@ See [PHASE_10_COMPLETION_SUMMARY.md](PHASE_10_COMPLETION_SUMMARY.md) for more de
 
 ---
 
-## 📌 Super Admin Implementation Details (Nov 24, 2025)
-
-### Frontend Components
-- **SuperAdminUsers.tsx**: Complete user management interface with search, filtering, status updates, and permission controls
-- **SuperAdminDashboard.tsx**: System monitoring dashboard with real-time statistics and administrative actions
-- **SuperAdminSettings.tsx**: Global system configuration management
-- **SuperAdminAuditLogs.tsx**: Comprehensive audit logging viewer with advanced filtering
-- **SuperAdminOperations.tsx**: System operations panel (backup, upgrade, maintenance)
-- **SuperAdminHospitals.tsx**: Hospital oversight and management interface
-- **SuperAdminLogin.tsx**: Dedicated super admin authentication portal
-
-### Backend Implementation
-- **superAdmin.controller.ts**: 9 comprehensive controller functions for system management
-- **superAdmin.routes.ts**: Protected API routes with strict permission enforcement
-- **RBAC Integration**: Super Admin role with granular permission matrix
-- **Audit Logging**: Full audit trail for all administrative actions
-- **Security Protocols**: Enhanced authentication, session management, and data protection
-
-### API Endpoints
-- `GET /api/super-admin/system-status`: System metrics and health monitoring
-- `GET /api/super-admin/users`: User management with role information
-- `PATCH /api/super-admin/users/:userId/status`: User account status management
-- `GET /api/super-admin/hospitals`: Hospital oversight data
-- `GET /api/super-admin/audit-logs`: Comprehensive audit log access
-- `POST /api/super-admin/backup`: System backup initiation
-- `POST /api/super-admin/upgrade`: Version upgrade management
-- `GET /api/super-admin/settings`: Global configuration management
-- `PATCH /api/super-admin/settings/:id`: Setting updates with validation
-
-### Testing Implementation
-- **Unit Tests**: SuperAdminUsers.test.tsx - Complete component functional testing
-- **Integration Tests**: SuperAdminDashboard.integration.test.tsx - End-to-end workflow validation
-- **Security Tests**: Authentication, authorization, and permission enforcement
-- **API Tests**: Full endpoint testing with error scenarios
-
-### Authentication & Security
-- **Separate Login Portal**: Dedicated super admin authentication at `/super-admin/login`
-- **Enhanced Permission Checking**: Client-side and server-side permission validation
-- **Session Management**: Specialized timeout and renewal for admin sessions
-- **Audit Trail**: Every administrative action is logged with context and metadata
-
-### Navigation & UI
-- **Dedicated Layout**: SuperAdminLayout.tsx for admin-specific navigation
-- **Permission-Gated Actions**: All UI elements respect user permissions
-- **Dark Theme Integration**: Consistent with main application design
-- **Responsive Design**: Full mobile and tablet support for administrative tasks
-
-### Data Management
-- **Caching Strategy**: Smart caching for performance optimization
-- **Real-time Updates**: Live system monitoring and status updates
-- **Offline Compatibility**: Administrative actions queue for later sync
-- **Error Handling**: Comprehensive error states with user-friendly messaging
-
-### Documentation Cross-References
-- **API Documentation**: Complete endpoint specifications in docs/
-- **Security Guidelines**: Security protocols detailed in SECURITY.md
-- **Architecture Overview**: System design in docs/Architecture.md
-- **Deployment Guide**: Configuration requirements in deployment guides
-
-### Verification Checklist
-- ✅ **User Management**: Create, read, update, deactivate user accounts
-- ✅ **Role-Based Access**: Dynamic permission assignment and validation
-- ✅ **Security Protocols**: Secure authentication, authorization, audit logging
-- ✅ **System Operations**: Backup, restore, upgrade, monitoring capabilities
-- ✅ **Backward Compatibility**: Seamless integration with existing user system
-- ✅ **Testing Coverage**: Unit, integration, and security tests implemented
-- ✅ **Documentation**: Complete technical documentation and version history
-
-### Backend Verification
-- Controller implementations verified and tested
-- Database migrations applied and tested
-- API endpoints functional with proper error handling
-- Security middleware integrated and tested
-- Audit logging tables and triggers operational
-
-### Frontend Verification
-- Components render correctly with various permission states
-- API integrations working with proper error handling
-- Navigation and routing functional
-- Responsive design verified across devices
-- Accessibility compliance maintained
-
-### Final Assessment
-All 12 checklist items from the Super Admin User Management Module have been successfully implemented, tested, and documented. The module provides comprehensive system administration capabilities while maintaining security, performance, and usability standards.
-
----
-
 ## 📝 Notes
 
 ### Known Issues
@@ -829,6 +728,103 @@ All 12 checklist items from the Super Admin User Management Module have been suc
   - [x] Implement email notifications for appointment confirmations, reminders, and cancellations.
   - [x] Implement SMS notifications for critical alerts and reminders.
 | 1.2.0 | Jan 20, 2024 | Database schema finalized, seed data added, setup scripts created |
-### Final Assessment
+| 1.3.0 | Jan 20, 2024 | Phase 2 completed - Full authentication & security implementation |
 | 1.4.0 | Jan 20, 2024 | Phase 3 completed - Core modules with backend API integration |
-| 1.5.0 | Nov 24, 2025 | Super Admin User Management Module completed - full RBAC, security protocols, and comprehensive testing |
+
+---
+
+**Last Updated:** November 2025
+**Maintained By:** Development Team
+**Review Frequency:** Weekly
+
+---
+
+## 📌 Implementation Notes (2025-11-21)
+
+- Appointment Controller (CRUD, scheduling, ICS): `server/src/controllers/appointment.controller.ts:123`, routes `server/src/routes/appointment.routes.ts:1-39`
+- Hospital Controller (CRUD, location fields): `server/src/controllers/hospital.controller.ts:32-75`, routes `server/src/routes/hospital.routes.ts:1-12`
+- Staff Controller (CRUD, RBAC via middleware): `server/src/controllers/staff.controller.ts:6-102`, routes `server/src/routes/staff.routes.ts:1-12`
+- Document Controller (CRUD, file handling, storage providers): `server/src/controllers/document.controller.ts:104-197`; storage provider API `server/src/services/storage.service.ts:67-74`
+- Financial Controller (transactions, accounts, reports): `server/src/controllers/financial.controller.ts:85-299`, tests `server/src/tests/financialModule.test.ts:1-74`
+- Role Controller (roles CRUD, permissions update, SSE): `server/src/controllers/role.controller.ts:7-161`, routes `server/src/routes/role.routes.ts:1-37`
+- RBAC Enforcement: `server/src/middleware/auth.ts`; scoping tests `server/src/tests/middleware/requirePermission.test.ts:1-60`
+- System Integration (frontend ↔ backend): routes `src/App.tsx:89-126`, module pages (Patients, Appointments, Hospitals, Staff, Documents, Pharmacy, Financial, Roles)
+- Loading States & Error Handling: examples `src/pages/DocumentsPage.tsx:201-236`, `src/pages/HospitalsPage.tsx:76-94`; patterns `src/docs/FINANCIAL_PAGE_IMPROVEMENTS.md`
+- Caching & Invalidation: `src/services/api.ts` in-memory cache and localStorage fallback; invalidation at `src/services/api.ts:476`, `src/services/api.ts:487-498`, `src/services/api.ts:577-590`
+- Ghana Health Service Integration: service scaffold `server/src/services/ghanaHealthService.service.ts:11-27`; controller hook `server/src/controllers/dashboard.controller.ts:88-98`
+- Offline Support: local storage and queued actions for Patients `src/services/api.ts:110-206`, `src/services/api.ts:693-704`
+
+Documentation references: `src/docs/PHASE_2_COMPLETION_SUMMARY.md`, `src/docs/FINANCIAL_PAGE_IMPROVEMENTS.md`, `src/docs/Comprehensive Project Task Scan & Gantt Plan — Health Management.md`.
+
+## ✅ Completed Phases
+
+### Phase 1: Foundation & Setup - ✅ COMPLETE
+All project setup, infrastructure, and core components implemented.
+
+### Phase 2: Authentication & Security - ✅ COMPLETE  
+Full authentication system with 2FA, password recovery, session timeout, and audit logging.  
+📄 [View Phase 2 Completion Summary](./PHASE_2_COMPLETION_SUMMARY.md)
+
+---
+
+## 📝 Recent Updates (Jan 20, 2024)
+
+### Completed (Latest Update)
+- ✅ **Phase 3 - Core Modules (85%)**
+  - ✅ Dashboard API integration with real-time stats
+  - ✅ Patient management full CRUD API
+  - ✅ Appointments full CRUD API
+  - ✅ Dashboard controller with aggregated data
+  - ✅ Loading states and error handling
+  - ✅ Audit logging for all actions
+  - ✅ Data transformation layer
+  - ✅ Fallback to mock data on errors
+
+### Previously Completed
+- ✅ **Phase 2 - Authentication & Security (100%)**
+  - ✅ Two-factor authentication (UI + API)
+  - ✅ Password recovery flow (forgot/reset password)
+  - ✅ Session timeout with activity tracking
+  - ✅ Audit logging system (context + viewer page)
+  - ✅ Password reset token handling
+  - ✅ 2FA verification endpoint
+  - ✅ Audit logs page with filtering
+  - ✅ Session timeout warnings
+
+### Previously Completed
+- ✅ Backend server setup with Express + TypeScript
+- ✅ MySQL database schema creation (complete with all tables)
+- ✅ Authentication API with JWT (login, register, refresh, logout)
+- ✅ Patient management API (full CRUD operations)
+- ✅ API service layer for frontend
+- ✅ Token-based authentication integration
+- ✅ Security middleware (helmet, CORS, rate limiting)
+- ✅ Input validation with express-validator
+- ✅ Error handling middleware
+- ✅ Account lockout mechanism
+- ✅ Database seed data with default roles and admin user
+- ✅ Setup script for easy installation
+- ✅ Complete README with setup instructions
+- ✅ Environment configuration files
+- ✅ TypeScript type safety throughout backend
+
+### In Progress
+- 🟡 Completing remaining backend controllers
+- 🟡 Integrating frontend with backend APIs
+- 🟡 Adding loading states and error handling
+
+### Next Up
+- ⏳ Complete all module controllers
+- ⏳ Full API integration
+- ⏳ Comprehensive testing
+- ⏳ Production deployment setup
+#### Helper Exports Refactor
+- [x] Move Appointments helper functions to `src/utils/appointments.ts`
+- [x] Keep page file exporting only the default component to avoid fast-refresh warnings
+- [x] Add unit tests for `formatIcalDate` and `generateIcsFile`
+- [x] Document usage and export patterns for helpers
+
+Helpers:
+- `formatIcalDate(date)` – returns iCal-compliant timestamp
+- `generateIcsFile(appointment)` – returns `.ics` content string
+- `downloadIcsFile(filename, content)` – triggers browser download

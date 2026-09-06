@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/ui';
 import {
   LayoutDashboard,
   Users,
@@ -9,7 +8,8 @@ import {
   FileText,
   Settings,
   Wrench,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 const navItems = [
@@ -36,7 +36,7 @@ export function SuperAdminSidebar() {
       <div className="p-6 border-b border-gray-800">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-[#00BFFF]/10 flex items-center justify-center">
-            <Logo size="md" variant="square" className="w-6 h-6" />
+            <Shield className="w-6 h-6 text-[#00BFFF]" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white">Super Admin</h1>

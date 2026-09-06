@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import pool from '../config/database.js'
-import {
+import { 
   getAccounts,
   createAccount,
   createTransaction,
-  generateReport
+  generateReport,
+  exportPdf,
+  exportExcel
 } from '../controllers/financial.controller.js'
 
 const makeRes = () => {
@@ -57,16 +59,16 @@ describe('Financial Module', () => {
   })
 
   it.skip('exports PDF', async () => {
-    // const req: any = { query: { reportType: 'income_statement', startDate: '2025-01-01', endDate: '2025-12-31' } }
+    const req: any = { query: { reportType: 'income_statement', startDate: '2025-01-01', endDate: '2025-12-31' } }
     const res = makeRes()
-    // await exportPdf(req, res)
+    await exportPdf(req, res)
     expect(res.statusCode).toBe(200)
   })
 
   it.skip('exports Excel', async () => {
-    // const req: any = { query: { reportType: 'cash_flow', startDate: '2025-01-01', endDate: '2025-12-31' } }
+    const req: any = { query: { reportType: 'cash_flow', startDate: '2025-01-01', endDate: '2025-12-31' } }
     const res = makeRes()
-    // await exportExcel(req, res)
+    await exportExcel(req, res)
     expect(res.statusCode).toBe(200)
   })
 })

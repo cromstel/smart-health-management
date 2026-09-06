@@ -59,7 +59,7 @@ export class OneDriveStorageProvider implements IStorageProvider {
       console.error('OneDrive upload error:', error);
       throw new Error('Failed to upload file to OneDrive');
     }
-  }
+    }
 
   async download(documentId: string): Promise<{ filePath: string; fileName: string }> {
     const accessToken = await this.getValidAccessToken();
@@ -104,7 +104,8 @@ export class OneDriveStorageProvider implements IStorageProvider {
       console.error('OneDrive download error:', error);
       throw new Error('Failed to download file from OneDrive');
     }
-  }
+
+    }
 
   async preview(documentId: string): Promise<{ filePath: string; fileName: string }> {
     const accessToken = await this.getValidAccessToken();
@@ -145,7 +146,8 @@ export class OneDriveStorageProvider implements IStorageProvider {
       console.error('OneDrive preview error:', error);
       throw new Error('Failed to preview file from OneDrive');
     }
-  }
+
+    }
 
   async getMetadata(documentId: string): Promise<any> {
     const accessToken = await this.getValidAccessToken();

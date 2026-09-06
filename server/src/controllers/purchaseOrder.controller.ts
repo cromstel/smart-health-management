@@ -41,10 +41,6 @@ export const createPurchaseOrder = async (req: AuthRequest, res: Response): Prom
   try {
     await connection.beginTransaction();
     const { supplier_id, order_date, expected_delivery_date, items } = req.body;
-    if (!Array.isArray(items)) {
-      await connection.rollback();
-      return res.status(400).json({ error: 'Invalid input: items must be an array' });
-    }
     const id = uuidv4();
     const hospital_id = req.user?.hospital_id;
     const status = 'Pending';
@@ -104,10 +100,6 @@ export const updatePurchaseOrder = async (req: AuthRequest, res: Response): Prom
         const updates = { ...req.body };
         delete updates.status;
         const items = req.body.items;
-        if (items !== undefined && !Array.isArray(items)) {
-          await connection.rollback();
-          return res.status(400).json({ error: 'Invalid input: items must be an array' });
-        }
         if (status) status = normalizeStatus(status);
 
         if (Object.keys(updates).length > 0) {

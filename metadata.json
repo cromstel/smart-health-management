@@ -1,0 +1,6 @@
+{
+  "name": "Smart Health Manager",
+  "description": "A comprehensive healthcare and hospital management application for managing patients, appointments, staff, pharmacy, and hospital records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

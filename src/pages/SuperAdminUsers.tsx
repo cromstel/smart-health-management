@@ -156,7 +156,7 @@ export default function SuperAdminUsers() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-[#001F3F]/50 border-gray-700 text-white" aria-label="Filter by user status">
+              <SelectTrigger className="w-full md:w-48 bg-[#001F3F]/50 border-gray-700 text-white">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -167,7 +167,7 @@ export default function SuperAdminUsers() {
               </SelectContent>
             </Select>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-[#001F3F]/50 border-gray-700 text-white" aria-label="Filter by user role">
+              <SelectTrigger className="w-full md:w-48 bg-[#001F3F]/50 border-gray-700 text-white">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>

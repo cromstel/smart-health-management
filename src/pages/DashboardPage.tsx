@@ -48,7 +48,7 @@ export default function DashboardPage() {
 
       // Fetch Ghana Health Service data
       const ghanaData = await api.getGhanaHealthData();
-      setGhanaHealthData((ghanaData as any)?.ghanaHealthData || []);
+      setGhanaHealthData(ghanaData || []);
 
     } catch (error) {
       console.error('Failed to load dashboard data:', error);

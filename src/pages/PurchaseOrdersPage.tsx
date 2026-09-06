@@ -115,8 +115,8 @@ export default function PurchaseOrdersPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="supplier-select">Supplier</Label>
-                  <select id="supplier-select" aria-label="Select supplier" className="border rounded p-2" value={newOrder.supplier_id} onChange={(e) => setNewOrder({ ...newOrder, supplier_id: e.target.value })}>
+                  <Label>Supplier</Label>
+                  <select className="border rounded p-2" value={newOrder.supplier_id} onChange={(e) => setNewOrder({ ...newOrder, supplier_id: e.target.value })}>
                     <option value="">Select supplier</option>
                     {suppliers.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -140,7 +140,7 @@ export default function PurchaseOrdersPage() {
                 <div className="space-y-2">
                   {items.map((it, idx) => (
                     <div key={idx} className="grid grid-cols-4 gap-2">
-                      <select id={`medicine-select-${idx}`} aria-label={`Select medicine for item ${idx + 1}`} className="border rounded p-2" value={it.medicine_id} onChange={(e) => updateItem(idx, { medicine_id: e.target.value })}>
+                      <select className="border rounded p-2" value={it.medicine_id} onChange={(e) => updateItem(idx, { medicine_id: e.target.value })}>
                         <option value="">Select medicine</option>
                         {medicines.map((m: any) => (
                           <option key={m.id} value={m.id}>{m.medicine_name || m.name}</option>

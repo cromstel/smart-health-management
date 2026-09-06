@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import path from 'path';
+
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
@@ -7,14 +7,7 @@ import fs from 'fs';
 import axios from 'axios';
 import { getStorageProvider } from '../services/storage.service.js';
 
-// Helper function to validate ID
-const validateId = (id: string, res: Response): boolean => {
-  if (isNaN(parseInt(id, 10))) {
-    res.status(400).json({ error: 'Invalid ID format' });
-    return false;
-  }
-  return true;
-};
+
 
 export const getDocuments = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -53,8 +46,8 @@ export const getDocuments = async (req: AuthRequest, res: Response): Promise<Res
       params.push(storageLocation);
     }
 
-    if (req.query.tags && typeof req.query.tags === 'string') {
-      const tags = req.query.tags.split(',');
+    if (req.query.tags) {
+      const tags = (req.query.tags as string).split(',');
       query += `
         AND d.id IN (
           SELECT dt.document_id
@@ -77,7 +70,6 @@ export const getDocuments = async (req: AuthRequest, res: Response): Promise<Res
 export const getDocumentById = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    if (!validateId(id, res)) return;
     const user = req.user;
 
     if (!user) {
@@ -89,7 +81,7 @@ export const getDocumentById = async (req: AuthRequest, res: Response): Promise<
        FROM documents d
        LEFT JOIN patients p ON d.patient_id = p.id
        WHERE d.id = ?`,
-      [parseInt(id, 10)]
+      [id]
     );
     const document = (documents as any[])[0];
 
@@ -125,7 +117,7 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const currentStorageProvider = getStorageProvider(storageLocation, Number(req.user.id));
+    const currentStorageProvider = getStorageProvider(storageLocation, req.user.id);
 
     const { filename, mimetype, size } = file as any;
     const now = new Date();
@@ -137,11 +129,11 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       const [result] = await connection.query(
         `INSERT INTO documents (patient_id, document_id, name, file_type, file_size, category, file_path, storage_type, uploaded_by, uploaded_at, notes)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [patientId || null, documentIdStr ? parseInt(documentIdStr, 10) : null, filename, mimetype, size, category || null, finalPath, storageType, req.user?.id || null, now, notes || null]
+        [patientId || null, documentIdStr, filename, mimetype, size, category || null, finalPath, storageType, req.user?.id || null, now, notes || null]
       );
       const documentId = (result as any).insertId;
 
-      if (tags && typeof tags === 'string') {
+      if (tags) {
         const tagList = tags.split(',').map((tag: string) => tag.trim());
         for (const tagName of tagList) {
           const [tag] = await connection.query('SELECT id FROM tags WHERE name = ?', [tagName]);
@@ -178,10 +170,9 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
 export const updateDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    if (!validateId(id, res)) return;
     const updates = req.body;
     const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), parseInt(id, 10)];
+    const values = [...Object.values(updates), id];
 
     await pool.query(
       `UPDATE documents SET ${fields} WHERE id = ?`,
@@ -197,8 +188,7 @@ export const updateDocument = async (req: AuthRequest, res: Response): Promise<R
 export const deleteDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    if (!validateId(id, res)) return;
-    await pool.query('DELETE FROM documents WHERE id = ?', [parseInt(id, 10)]);
+    await pool.query('DELETE FROM documents WHERE id = ?', [id]);
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {
     console.error('Delete document error:', error);
@@ -206,98 +196,25 @@ export const deleteDocument = async (req: AuthRequest, res: Response): Promise<R
   }
 };
 
-// Rate limiting map for expensive operations with TTL cleanup
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-// Clean up expired rate limit entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, data] of rateLimitMap.entries()) {
-    if (now > data.resetTime) {
-      rateLimitMap.delete(key);
-    }
-  }
-}, 60000); // Clean up every minute
-
-// Check rate limit for expensive operations
-const checkRateLimit = (userId: string, operation: string): boolean => {
-  const now = Date.now();
-  const key = `${userId}:${operation}`;
-  const rateData = rateLimitMap.get(key);
-  
-  if (!rateData || now > rateData.resetTime) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + 60000 }); // 1 minute window
-    return true;
-  }
-  
-  if (rateData.count >= 10) { // Limit to 10 operations per minute
-    return false;
-  }
-  
-  rateData.count++;
-  return true;
-};
-
 export const downloadDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    if (!validateId(id, res)) return;
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Check rate limit for file downloads
-    if (!checkRateLimit(req.user.id.toString(), 'download')) {
-      return res.status(429).json({ error: 'Rate limit exceeded: Too many download requests' });
-    }
-
-    const [rows] = await pool.query('SELECT storage_type, patient_id FROM documents WHERE id = ?', [parseInt(id, 10)]);
+    const [rows] = await pool.query('SELECT storage_type FROM documents WHERE id = ?', [id]);
     const doc = (rows as any[])[0];
-    if (!doc) {
+    if (!docDetails) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // Check patient access permissions
-    if (req.user.role === 'patient' && doc.patient_id !== req.user.id) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-
-    const currentStorageProvider = getStorageProvider(doc.storage_type, Number(req.user.id));
+    const currentStorageProvider = getStorageProvider(doc.storage_type, req.user.id);
     const { filePath, fileName } = await currentStorageProvider.download(id);
-
-    // Enhanced Path Traversal Mitigation
-    let resolvedPath: string;
-
-    if (doc.storage_type === 'local') {
-      const uploadsDir = path.resolve(__dirname, '../../uploads');
-      const normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-      resolvedPath = path.resolve(uploadsDir, normalizedPath);
-
-      // Strict path validation
-      if (!resolvedPath.startsWith(uploadsDir)) {
-        return res.status(400).json({ error: 'Invalid file path: traversal detected' });
-      }
-    } else {
-      // For external providers, validate temp directory path
-      const tempDir = path.resolve(__dirname, '../../temp');
-      const normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-      resolvedPath = path.resolve(tempDir, normalizedPath);
-
-      if (!resolvedPath.startsWith(tempDir)) {
-        return res.status(400).json({ error: 'Invalid file path: traversal detected' });
-      }
-    }
-
-    if (!fs.existsSync(resolvedPath)) {
+    if (!fs.existsSync(filePath)) {
       return res.status(410).json({ error: 'File missing' });
     }
-
-    // Enhanced filename sanitization
-    const safeFileName = path.basename(fileName || 'document')
-      .replace(/[^\w\-_.]/g, '_') // Allow only alphanumeric, dash, underscore, dot
-      .substring(0, 255); // Limit length
-
-    return res.download(resolvedPath, safeFileName);
+    res.download(filePath, fileName);
   } catch (error) {
     if ((error as any).message === 'Document not found') {
       return res.status(404).json({ error: (error as any).message });
@@ -310,94 +227,28 @@ export const downloadDocument = async (req: AuthRequest, res: Response): Promise
 export const previewDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    console.log(`DEBUG: Starting preview for document ID: ${id}`);
-    if (!validateId(id, res)) return;
     if (!req.user || !req.user.id) {
-      console.log(`DEBUG: Authentication failed for user: ${req.user}`);
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Check rate limit for file previews
-    if (!checkRateLimit(req.user.id.toString(), 'preview')) {
-      return res.status(429).json({ error: 'Rate limit exceeded: Too many preview requests' });
-    }
-
-    console.log(`DEBUG: Fetching document metadata for ID: ${id}`);
-    const [rows] = await pool.query('SELECT storage_type, patient_id, file_type FROM documents WHERE id = ?', [parseInt(id, 10)]);
+    const [rows] = await pool.query('SELECT storage_type FROM documents WHERE id = ?', [id]);
     const doc = (rows as any[])[0];
     if (!doc) {
-      console.log(`DEBUG: Document not found in database for ID: ${id}`);
       return res.status(404).json({ error: 'Document not found' });
     }
-    console.log(`DEBUG: Document found - storage_type: ${doc.storage_type}, patient_id: ${doc.patient_id}, file_type: ${doc.file_type}`);
 
-    // Check patient access permissions
-    if (req.user.role === 'patient' && doc.patient_id !== req.user.id) {
-      console.log(`DEBUG: Permission denied - user role: ${req.user.role}, user id: ${req.user.id}, doc patient_id: ${doc.patient_id}`);
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-
-    console.log(`DEBUG: Getting storage provider for storage_type: ${doc.storage_type}`);
-    const currentStorageProvider = getStorageProvider(doc.storage_type, Number(req.user.id));
+    const currentStorageProvider = getStorageProvider(doc.storage_type, req.user.id);
     const { filePath } = await currentStorageProvider.preview(id);
-    console.log(`DEBUG: Storage provider returned filePath: ${filePath}`);
-
-    // Secure Path Traversal Mitigation
-    const baseDir = doc.storage_type === 'local'
-      ? path.resolve(__dirname, '../../uploads')
-      : path.resolve(__dirname, '../../temp');
-    console.log(`DEBUG: Base directory: ${baseDir}`);
-
-    const streamPath = path.resolve(baseDir, filePath);
-    console.log(`DEBUG: Resolved streamPath: ${streamPath}`);
-
-    // Strict path validation - prevent directory traversal
-    if (!streamPath.startsWith(baseDir)) {
-      console.log(`DEBUG: Path traversal detected - streamPath: ${streamPath}, baseDir: ${baseDir}`);
-      return res.status(400).json({ error: 'Invalid file path: traversal detected' });
+    const [docRows] = await pool.query('SELECT file_type FROM documents WHERE document_id = ?', [id]);
+    const docDetails = (docRows as any[])[0];
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
     }
-
-    if (!fs.existsSync(streamPath)) {
-      console.log(`DEBUG: File does not exist at streamPath: ${streamPath}`);
+    if (!fs.existsSync(filePath)) {
       return res.status(410).json({ error: 'File missing' });
     }
-    console.log(`DEBUG: File exists at streamPath: ${streamPath}`);
-
-    // Check file size limit for previews (10MB limit)
-    const stats = fs.statSync(streamPath);
-    const maxPreviewSize = 10 * 1024 * 1024; // 10MB
-    if (stats.size > maxPreviewSize) {
-      return res.status(413).json({ error: 'File too large for preview' });
-    }
-
-    // Validate content type to prevent malicious file types
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain', 'text/html'
-    ];
-
-    if (!allowedTypes.includes(doc.file_type as string)) {
-      console.log(`DEBUG: Unsupported file type: ${doc.file_type}`);
-      return res.status(415).json({ error: 'Unsupported file type for preview' });
-    }
-
-    res.setHeader('Content-Type', doc.file_type as string);
-
-    // Create secure read stream with error handling and timeout
-    const readStream = fs.createReadStream(streamPath, {
-      highWaterMark: 64 * 1024, // 64KB chunks
-      timeout: 30000 // 30 second timeout
-    });
-
-    readStream.on('error', (streamError) => {
-      console.error('File stream error:', streamError);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Failed to read file for preview' });
-      }
-    });
-
-    console.log(`DEBUG: Starting file stream for preview`);
-    readStream.pipe(res);
+    res.setHeader('Content-Type', docDetails.file_type as string);
+    fs.createReadStream(filePath).pipe(res);
   } catch (error) {
     if ((error as any).message === 'Document not found') {
       return res.status(404).json({ error: (error as any).message });
@@ -410,16 +261,6 @@ export const previewDocument = async (req: AuthRequest, res: Response): Promise<
 export const initiateOneDriveOAuth = (_req: AuthRequest, res: Response): void => {
   const client_id = process.env.ONEDRIVE_CLIENT_ID;
   const redirect_uri = process.env.ONEDRIVE_REDIRECT_URI;
-
-  if (!client_id) {
-    res.status(500).json({ error: 'ONEDRIVE_CLIENT_ID is not set in environment variables.' });
-    return;
-  }
-  if (!redirect_uri) {
-    res.status(500).json({ error: 'ONEDRIVE_REDIRECT_URI is not set in environment variables.' });
-    return;
-  }
-
   const scope = 'Files.ReadWrite.All User.Read'; // Adjust scopes as needed
   const response_type = 'code';
   const authorizeUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${client_id}&scope=${scope}&response_type=${response_type}&redirect_uri=${redirect_uri}`;
@@ -429,16 +270,6 @@ export const initiateOneDriveOAuth = (_req: AuthRequest, res: Response): void =>
 export const initiateGoogleDriveOAuth = (_req: AuthRequest, res: Response): void => {
   const client_id = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const redirect_uri = process.env.GOOGLE_DRIVE_REDIRECT_URI;
-
-  if (!client_id) {
-    res.status(500).json({ error: 'GOOGLE_DRIVE_CLIENT_ID is not set in environment variables.' });
-    return;
-  }
-  if (!redirect_uri) {
-    res.status(500).json({ error: 'GOOGLE_DRIVE_REDIRECT_URI is not set in environment variables.' });
-    return;
-  }
-
   const scope = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile'; // Adjust scopes as needed
   const response_type = 'code';
   const access_type = 'offline';
@@ -457,19 +288,6 @@ export const handleOneDriveCallback = async (req: AuthRequest, res: Response): P
     const client_id = process.env.ONEDRIVE_CLIENT_ID;
     const client_secret = process.env.ONEDRIVE_CLIENT_SECRET;
     const redirect_uri = process.env.ONEDRIVE_REDIRECT_URI;
-
-    if (!client_id) {
-      res.status(500).json({ error: 'ONEDRIVE_CLIENT_ID is not set in environment variables.' });
-      return;
-    }
-    if (!client_secret) {
-      res.status(500).json({ error: 'ONEDRIVE_CLIENT_SECRET is not set in environment variables.' });
-      return;
-    }
-    if (!redirect_uri) {
-      res.status(500).json({ error: 'ONEDRIVE_REDIRECT_URI is not set in environment variables.' });
-      return;
-    }
 
     const tokenResponse = await axios.post(
       'https://login.microsoftonline.com/common/oauth2/v2.0/token',
@@ -515,19 +333,6 @@ export const handleGoogleDriveCallback = async (req: AuthRequest, res: Response)
     const client_id = process.env.GOOGLE_DRIVE_CLIENT_ID;
     const client_secret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
     const redirect_uri = process.env.GOOGLE_DRIVE_REDIRECT_URI;
-
-    if (!client_id) {
-      res.status(500).json({ error: 'GOOGLE_DRIVE_CLIENT_ID is not set in environment variables.' });
-      return;
-    }
-    if (!client_secret) {
-      res.status(500).json({ error: 'GOOGLE_DRIVE_CLIENT_SECRET is not set in environment variables.' });
-      return;
-    }
-    if (!redirect_uri) {
-      res.status(500).json({ error: 'GOOGLE_DRIVE_REDIRECT_URI is not set in environment variables.' });
-      return;
-    }
 
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',
