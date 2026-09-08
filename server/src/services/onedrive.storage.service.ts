@@ -57,7 +57,7 @@ export class OneDriveStorageProvider implements IStorageProvider {
       return { filePath, storageType: 'onedrive', documentId: documentIdStr };
     } catch (error) {
       console.error('OneDrive upload error:', error);
-      throw new Error('Failed to upload file to OneDrive');
+      throw new Error('Failed to upload file to OneDrive', { cause: error });
     }
     }
 
@@ -102,7 +102,7 @@ export class OneDriveStorageProvider implements IStorageProvider {
 
     } catch (error) {
       console.error('OneDrive download error:', error);
-      throw new Error('Failed to download file from OneDrive');
+      throw new Error('Failed to download file from OneDrive', { cause: error });
     }
 
     }
@@ -144,7 +144,7 @@ export class OneDriveStorageProvider implements IStorageProvider {
       });
     } catch (error) {
       console.error('OneDrive preview error:', error);
-      throw new Error('Failed to preview file from OneDrive');
+      throw new Error('Failed to preview file from OneDrive', { cause: error });
     }
 
     }
@@ -171,7 +171,7 @@ export class OneDriveStorageProvider implements IStorageProvider {
       return metadataResponse.data;
     } catch (error) {
       console.error('OneDrive getMetadata error:', error);
-      throw new Error('Failed to get metadata from OneDrive');
+      throw new Error('Failed to get metadata from OneDrive', { cause: error });
     }
   }
 
@@ -196,7 +196,7 @@ export class OneDriveStorageProvider implements IStorageProvider {
       );
     } catch (error) {
       console.error('OneDrive delete error:', error);
-      throw new Error('Failed to delete file from OneDrive');
+      throw new Error('Failed to delete file from OneDrive', { cause: error });
     }
   }
 }

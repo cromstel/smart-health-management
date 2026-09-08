@@ -53,7 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(response.user);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : 'Login failed';
-      throw new Error(errMsg);
+      const error = new Error(errMsg);
+      (error as any).cause = e;
+      throw error;
     }
   };
 
@@ -80,27 +82,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchUser();
 
     let es: EventSource | null = null;
-    if (typeof window !== 'undefined' && 'EventSource' in window) {
-      es = new EventSource(`${API_ORIGIN}/api/roles/stream`);
-      es.onmessage = async (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          if (['permission_updated', 'role_updated', 'role_deleted', 'role_created'].includes(msg?.type)) {
-            await fetchUser(); // Re-fetch user data on permission/role updates
+    try {
+      if (typeof window !== 'undefined' && 'EventSource' in window) {
+        const streamUrl = `${API_ORIGIN}/api/roles/stream`;
+        es = new EventSource(streamUrl);
+        es.onmessage = async (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (['permission_updated', 'role_updated', 'role_deleted', 'role_created'].includes(msg?.type)) {
+              await fetchUser(); // Re-fetch user data on permission/role updates
+            }
+          } catch {
+            // Heartbeats or unparsed messages are safely ignored
           }
-        } catch (error) {
-          console.error('EventSource message error:', error);
-          // silently ignore
-        }
-      };
-      es.onerror = (error) => {
-        console.error('EventSource error:', error);
-        es?.close();
-      };
+        };
+        es.onerror = () => {
+          // SSE will automatically attempt reconnect according to browser specs.
+          // Cleanly close if readyState is closed.
+          if (es && es.readyState === EventSource.CLOSED) {
+            es.close();
+          }
+        };
+      }
+    } catch {
+      // Gracefully ignore if EventSource cannot be instantiated in current environment
     }
 
     return () => {
-      es?.close();
+      if (es) {
+        es.close();
+      }
     };
   }, []);
 

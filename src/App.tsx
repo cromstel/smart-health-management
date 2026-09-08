@@ -1,12 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuditProvider } from './contexts/AuditContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import TwoFactorPage from './pages/TwoFactorPage';
 import DashboardPage from './pages/DashboardPage';
+import AiAssistantPage from './pages/AiAssistantPage';
 import PatientsPage from './pages/PatientsPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import HospitalsPage from './pages/HospitalsPage';
@@ -30,6 +34,9 @@ import SuperAdminSettings from './pages/SuperAdminSettings';
 import SuperAdminOperations from './pages/SuperAdminOperations';
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminRoute } from './components/SuperAdminRoute';
+import SharedPatientSummaryPage from './pages/SharedPatientSummaryPage';
+
+import { ShortcutManager } from './components/ShortcutManager';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -40,25 +47,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Regular Login Routes */}
+      {/* Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/forgot-password"
-        element={
-          <ProtectedRoute>
-            <ForgotPasswordPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/reset-password"
-        element={
-          <ProtectedRoute>
-            <ResetPasswordPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/signup" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/two-factor" element={<TwoFactorPage />} />
+      <Route path="/shared/patient-summary/:token" element={<SharedPatientSummaryPage />} />
       
       {/* Super Admin Routes */}
       <Route path="/super-admin/login" element={<SuperAdminLogin />} />
@@ -90,6 +86,7 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="ai-assistant" element={<AiAssistantPage />} />
         <Route path="patients" element={<PatientsPage />} />
         <Route path="appointments" element={<AppointmentsPage />} />
         <Route path="hospitals" element={<HospitalsPage />} />
@@ -112,13 +109,16 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AuditProvider>
-          <div className="dark">
-            <AppRoutes />
-          </div>
-        </AuditProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuditProvider>
+            <NotificationProvider>
+              <ShortcutManager />
+              <AppRoutes />
+            </NotificationProvider>
+          </AuditProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

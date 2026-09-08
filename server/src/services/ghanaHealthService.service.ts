@@ -27,7 +27,7 @@ export const fetchGhanaHealthData = async (): Promise<any> => {
     return rows;
   } catch (error) {
     console.error('Error fetching data from Ghana Health Service database:', error);
-    throw new Error('Failed to fetch data from Ghana Health Service database');
+    throw new Error('Failed to fetch data from Ghana Health Service database', { cause: error });
   }
 };
 
@@ -57,7 +57,7 @@ export const importGhanaPatients = async (): Promise<{ imported: number; updated
     return { imported, updated }
   } catch (error) {
     console.error('Error importing Ghana Health patients:', error)
-    throw new Error('Failed to import Ghana Health patients')
+    throw new Error('Failed to import Ghana Health patients', { cause: error })
   } finally {
     await connection.end()
   }

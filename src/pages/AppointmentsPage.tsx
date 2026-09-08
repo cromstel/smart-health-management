@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '@/services/api';
 import { useAudit } from '@/contexts/AuditContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Clock, User, MapPin, Edit, Trash2 } from 'lucide-react';
+import { Plus, Clock, User, MapPin, Edit, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { generateIcsFile, downloadIcsFile } from '@/utils/appointments';
@@ -110,8 +111,17 @@ const mockAppointments: DisplayAppointment[] = [
 
 export default function AppointmentsPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [appointments, setAppointments] = useState<DisplayAppointment[]>([]);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch !== null && urlSearch !== searchTerm) {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams, searchTerm]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -525,7 +535,18 @@ export default function AppointmentsPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Today's Appointments</CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <CardTitle>Appointments</CardTitle>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Filter appointments..."
+                  className="pl-9 w-60 h-8 text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {(!hasPermission('appointments:view') || !canActOnHospital(user?.hospital_id)) ? (
@@ -536,14 +557,26 @@ export default function AppointmentsPage() {
               <div className="text-center py-12">
                 <p className="text-muted-foreground">Loading appointments...</p>
               </div>
-            ) : appointments.length === 0 ? (
+            ) : appointments.filter(a =>
+                a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                a.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                a.type.toLowerCase().includes(searchTerm.toLowerCase())
+              ).length === 0 ? (
  			   <div className="text-center py-12">
-                 <p className="text-muted-foreground">No appointments found.</p>
+                 <p className="text-muted-foreground">No appointments found matching your criteria.</p>
                </div>
  
  			  ) : (
               <div className="space-y-4">
-              {appointments.map((appointment) => (
+              {appointments
+                .filter(a =>
+                  a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.type.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((appointment) => (
                 <div
                   key={appointment.id}
                   className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors"

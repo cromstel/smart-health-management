@@ -44,44 +44,49 @@
 :root {
   --radius: 0.625rem;
   --navy-blue: #001F3F;
+  --sea-blue: #0284C7;
+  --dark-bg: #F8FAFC;
+  --light-text: #0F172A;
+
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #001F3F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #0284C7;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0284C7;
+  --chart-1: #0284C7;
+  --chart-2: #0D9488;
+  --chart-3: #E11D48;
+  --chart-4: #D97706;
+  --chart-5: #16A34A;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #0284C7;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #0284C7;
+}
+
+.dark {
+  --navy-blue: #001F3F;
   --sea-blue: #00BFFF;
   --dark-bg: #0A192F;
   --light-text: #EAEAEA;
 
-  --background: #0A192F;
-  --foreground: #EAEAEA;
-  --card: #112240;
-  --card-foreground: #EAEAEA;
-  --popover: #112240;
-  --popover-foreground: #EAEAEA;
-  --primary: #001F3F;
-  --primary-foreground: #EAEAEA;
-  --secondary: #1a3a52;
-  --secondary-foreground: #EAEAEA;
-  --muted: #1a2332;
-  --muted-foreground: #8892b0;
-  --accent: #00BFFF;
-  --accent-foreground: #0A192F;
-  --destructive: #ef4444;
-  --border: #1e3a5f;
-  --input: #1e3a5f;
-  --ring: #00BFFF;
-  --chart-1: #00BFFF;
-  --chart-2: #0ea5e9;
-  --chart-3: #06b6d4;
-  --chart-4: #14b8a6;
-  --chart-5: #10b981;
-  --sidebar: #001F3F;
-  --sidebar-foreground: #EAEAEA;
-  --sidebar-primary: #00BFFF;
-  --sidebar-primary-foreground: #001F3F;
-  --sidebar-accent: #1a3a52;
-  --sidebar-accent-foreground: #EAEAEA;
-  --sidebar-border: #1e3a5f;
-  --sidebar-ring: #00BFFF;
-}
-
-.dark {
   --background: #0A192F;
   --foreground: #EAEAEA;
   --card: #112240;
@@ -121,5 +126,115 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Specialized CSS Print Stylesheet for Patient Summaries & Vital Records */
+@media print {
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    font-family: 'Times New Roman', serif !important;
+  }
+
+  /* Hide interactive, clinical utilities, sidebars, and PWA overlays */
+  header, 
+  nav, 
+  aside, 
+  footer, 
+  button, 
+  [id^="pwa-"],
+  [id^="shortcuts-"],
+  .no-print,
+  .sidebar,
+  .sidebar-trigger,
+  .dialog-overlay,
+  .dialog-content,
+  .toast,
+  .recharts-responsive-container,
+  input,
+  textarea,
+  select,
+  .badge-outline {
+    display: none !important;
+  }
+
+  /* Force print layouts to take up full-width and remove screen paddings */
+  main, .print-container, .max-w-5xl, .max-w-7xl {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Styled medical record tables */
+  table, .table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 15px !important;
+    margin-bottom: 15px !important;
+    page-break-inside: avoid !important;
+  }
+
+  th, td, tr {
+    border: 1.5px solid #000000 !important;
+    padding: 6px 10px !important;
+    font-size: 10pt !important;
+    color: #000000 !important;
+    background: transparent !important;
+    text-align: left !important;
+  }
+
+  th {
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    font-size: 9.5pt !important;
+  }
+
+  /* Formatting and page break management */
+  h1, h2, h3, h4 {
+    color: #000000 !important;
+    font-weight: bold !important;
+    page-break-after: avoid !important;
+    margin-top: 20px !important;
+    margin-bottom: 8px !important;
+  }
+
+  h1 { font-size: 18pt !important; border-bottom: 2px solid #000000 !important; padding-bottom: 5px !important; }
+  h2 { font-size: 14pt !important; border-bottom: 1px solid #333333 !important; padding-bottom: 3px !important; }
+  h3 { font-size: 12pt !important; }
+
+  .page-break {
+    page-break-before: always !important;
+  }
+
+  /* Cards converted to clean outlines with simple black border headers */
+  .card {
+    border: 1px solid #000000 !important;
+    border-radius: 4px !important;
+    padding: 12px !important;
+    margin-bottom: 15px !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
+  }
+
+  .card-header, .card-title {
+    border-bottom: 1px solid #000000 !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 8px !important;
+    font-weight: bold !important;
+  }
+
+  /* Specific visual improvements for patient status and charts */
+  .badge {
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    background: transparent !important;
+    font-weight: bold !important;
+    padding: 1px 4px !important;
+    font-size: 9pt !important;
   }
 }

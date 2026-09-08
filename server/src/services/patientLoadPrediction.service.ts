@@ -31,6 +31,6 @@ export const predictPatientLoads = async (): Promise<any> => {
     return predictions
   } catch (error) {
     console.error('Error in predictPatientLoads:', error)
-    throw new Error('Failed to predict patient loads')
+    throw new Error('Failed to predict patient loads', { cause: error })
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Barcode, Plus, Pill, AlertTriangle, TrendingDown, Search, List } from 'lucide-react';
+import { Package, Barcode, Plus, Pill, AlertTriangle, TrendingDown, Search, List, Clock } from 'lucide-react';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAudit } from '@/contexts/AuditContext';
+import { MedicationComplianceTracker } from '@/components/pharmacy/MedicationComplianceTracker';
 
 interface Medicine {
   id: string;
@@ -43,8 +44,25 @@ interface Medicine {
 export default function PharmacyPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
   const { logAction } = useAudit();
+  const [activeTab, setActiveTab] = useState<'inventory' | 'compliance'>('inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+
+  const handleDeductStock = (medicineId: string, quantity: number) => {
+    setMedicines((prev) =>
+      prev.map((m) => {
+        if (m.id === medicineId) {
+          const newStock = Math.max(0, m.stock - quantity);
+          return {
+            ...m,
+            stock: newStock,
+            status: newStock <= m.minStock ? (newStock === 0 ? 'Out of Stock' : 'Low Stock') : 'In Stock'
+          };
+        }
+        return m;
+      })
+    );
+  };
  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -221,12 +239,38 @@ export default function PharmacyPage() {
         )}
 	{!loading && (
 		<>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2 border-b border-slate-100">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Pharmacy & Inventory</h1>
-          <p className="text-muted-foreground">Manage medicines and supplies</p>
+          <p className="text-muted-foreground">Manage medicines, stock levels, and patient medication compliance</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200/50 shrink-0">
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+              activeTab === 'inventory'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Inventory Ledger
+          </button>
+          <button
+            onClick={() => setActiveTab('compliance')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
+              activeTab === 'compliance'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-red-500" /> Compliance Tracker
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'inventory' ? (
+        <>
+        <div className="flex gap-2 justify-end">
           <Button variant="outline" className="gap-2" disabled={creatingReorders} onClick={handleAutoReorder}>
             <Package className="h-4 w-4" />
             Reorder
@@ -319,7 +363,6 @@ export default function PharmacyPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -498,6 +541,10 @@ export default function PharmacyPage() {
 		  )}
         </CardContent>
       </Card>
+        </>
+      ) : (
+        <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+      )}
 	  </>
 	  )}
     </div>

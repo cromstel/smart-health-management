@@ -3,8 +3,8 @@ import type { User } from "@/contexts/AuthContext";
 
 interface SystemHealthResponse { status: string; }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '');
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+export const API_ORIGIN = API_BASE_URL.startsWith('http') ? API_BASE_URL.replace(/\/api$/, '') : '';
 
 class ApiService {
   private cache: { [url: string]: any } = {};
@@ -128,25 +128,38 @@ class ApiService {
     const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
     const url = API_BASE_URL + '/patients' + queryString;
 
-    // Check localStorage first for offline support
-    const cachedPatients = this.getPatientsFromLocalStorage();
-    if (cachedPatients) {
-      console.log('Returning cached patients from localStorage');
-      return Promise.resolve(cachedPatients);
+    try {
+      const response = await fetch(url, {
+        headers: this.getHeaders(),
+      });
+      const data = await this.handleResponse(response) as any[];
+      this.cache[url] = data;
+      // Save to localStorage
+      this.savePatientsToLocalStorage(data);
+      return data;
+    } catch (error) {
+      console.warn('Failed to fetch patients from network, trying cache:', error);
+      const cachedPatients = this.getPatientsFromLocalStorage();
+      if (cachedPatients) {
+        let filtered = [...cachedPatients];
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          filtered = filtered.filter(p => 
+            p.name?.toLowerCase().includes(s) || 
+            p.id?.toLowerCase().includes(s) ||
+            p.email?.toLowerCase().includes(s)
+          );
+        }
+        if (params?.status) {
+          filtered = filtered.filter(p => p.status?.toLowerCase() === params.status?.toLowerCase());
+        }
+        if (params?.hospital) {
+          filtered = filtered.filter(p => p.hospital_id === params.hospital || p.hospital_name === params.hospital);
+        }
+        return filtered;
+      }
+      throw error;
     }
-
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response) as any[];
-    this.cache[url] = data;
-    // Save to localStorage
-    this.savePatientsToLocalStorage(data);
-    return data;
   }
 
   async getPatient(id: string) {

@@ -24,7 +24,7 @@ export const refreshOneDriveToken = async (refreshToken: string): Promise<{ acce
     return { accessToken: access_token, refreshToken: new_refresh_token || refreshToken };
   } catch (error) {
     console.error('Error refreshing OneDrive token:', error);
-    throw new Error('Failed to refresh OneDrive token');
+    throw new Error('Failed to refresh OneDrive token', { cause: error });
   }
 };
 
@@ -52,6 +52,6 @@ export const refreshGoogleDriveToken = async (refreshToken: string): Promise<{ a
     return { accessToken: access_token, refreshToken: new_refresh_token || refreshToken };
   } catch (error) {
     console.error('Error refreshing Google Drive token:', error);
-    throw new Error('Failed to refresh Google Drive token');
+    throw new Error('Failed to refresh Google Drive token', { cause: error });
   }
 };

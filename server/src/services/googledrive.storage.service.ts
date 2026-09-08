@@ -71,7 +71,7 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
       return { filePath, storageType: 'googledrive', documentId: documentIdStr };
     } catch (error) {
       console.error('Google Drive upload error:', error);
-      throw new Error('Failed to upload file to Google Drive');
+      throw new Error('Failed to upload file to Google Drive', { cause: error });
     }
   }
 
@@ -115,7 +115,7 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
       });
     } catch (error) {
       console.error('Google Drive download error:', error);
-      throw new Error('Failed to download file from Google Drive');
+      throw new Error('Failed to download file from Google Drive', { cause: error });
     }
   }
 
@@ -145,7 +145,7 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
       return response.data;
     } catch (error) {
       console.error('Google Drive getMetadata error:', error);
-      throw new Error('Failed to get metadata from Google Drive');
+      throw new Error('Failed to get metadata from Google Drive', { cause: error });
     }
   }
 
@@ -164,7 +164,7 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
       );
     } catch (error) {
       console.error('Google Drive delete error:', error);
-      throw new Error('Failed to delete file from Google Drive');
+      throw new Error('Failed to delete file from Google Drive', { cause: error });
     }
   }
 
@@ -200,7 +200,7 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
       }
     } catch (error) {
       console.error('Google Drive getSignedUrl error:', error);
-      throw new Error('Failed to get signed URL from Google Drive');
+      throw new Error('Failed to get signed URL from Google Drive', { cause: error });
     }
   }
 }

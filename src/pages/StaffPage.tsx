@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,9 +26,9 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, Building2, Mail, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
-
+import { Plus, Search, Building2, Mail, Phone, Calendar, Edit, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { exportToCSV } from '@/utils/csv';
 
 interface Staff {
   id: string;
@@ -72,13 +73,22 @@ const mockStaff: Staff[] = [
 
 export default function StaffPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
+  const [searchParams] = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [activeTab, setActiveTab] = useState('all');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch !== null && urlSearch !== searchTerm) {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams, searchTerm]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -280,11 +290,63 @@ export default function StaffPage() {
     }
   };
 
-  const filteredStaff = staff.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleExportCSV = () => {
+    try {
+      const recordsToExport = filteredStaff.length > 0 ? filteredStaff : staff;
+      if (recordsToExport.length === 0) {
+        toast.error('No staff records available to export.');
+        return;
+      }
+      const dateStr = new Date().toISOString().split('T')[0];
+      exportToCSV(
+        `staff_export_${dateStr}`,
+        recordsToExport,
+        [
+          { key: 'id', label: 'Staff ID' },
+          { key: 'name', label: 'Full Name' },
+          { key: 'role', label: 'Role' },
+          { key: 'department', label: 'Department' },
+          { key: 'hospital', label: 'Hospital' },
+          { key: 'email', label: 'Email' },
+          { key: 'phone', label: 'Phone Number' },
+          { key: 'joinDate', label: 'Join Date' },
+          { key: 'status', label: 'Status' },
+        ]
+      );
+      toast.success(`Successfully exported ${recordsToExport.length} staff records to CSV`);
+    } catch (err: any) {
+      toast.error(`Export failed: ${err.message || 'Unknown error'}`);
+    }
+  };
+
+  const filteredStaff = staff.filter(member => {
+    const matchesSearch =
+      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (activeTab === 'doctors') {
+      const role = member.role.toLowerCase();
+      return role.includes('doctor') || role.includes('physician') || role.includes('surgeon');
+    }
+    if (activeTab === 'nurses') {
+      return member.role.toLowerCase().includes('nurse');
+    }
+    if (activeTab === 'other') {
+      const role = member.role.toLowerCase();
+      return (
+        !role.includes('doctor') &&
+        !role.includes('physician') &&
+        !role.includes('surgeon') &&
+        !role.includes('nurse')
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -481,7 +543,7 @@ export default function StaffPage() {
             </DialogContent>
           </Dialog>
 
-          <Tabs defaultValue="all" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="all">All Staff</TabsTrigger>
               <TabsTrigger value="doctors">Doctors</TabsTrigger>
@@ -489,19 +551,30 @@ export default function StaffPage() {
               <TabsTrigger value="other">Other</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all" className="space-y-4">
+            <TabsContent value={activeTab} className="space-y-4">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
                     <CardTitle>Staff Directory</CardTitle>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Search staff..."
-                        className="pl-9 w-64"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          placeholder="Search staff..."
+                          className="pl-9 w-64"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={handleExportCSV}
+                        title="Export staff records to CSV"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline">Export CSV</span>
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>

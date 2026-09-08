@@ -6,15 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Printer, Download, Clock } from 'lucide-react';
+import { exportToCSV } from '@/utils/csv';
 
 type ReportType = 'stock_levels' | 'expiry_dates' | 'low_stock';
-
-function toCSV(rows: any[]): string {
-  if (!rows.length) return '';
-  const headers = Object.keys(rows[0]);
-  const lines = [headers.join(','), ...rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? '').replace(/,/g, ';')).join(','))];
-  return lines.join('\n');
-}
 
 export default function InventoryReportsPage() {
   const [reportType, setReportType] = useState<ReportType>('stock_levels');
@@ -28,7 +23,7 @@ export default function InventoryReportsPage() {
       setLoading(true);
       const data = await api.getPharmacyReport(reportType);
       setRows(data as any[]);
-    } catch (_e) { /* Error ignored as per design */
+    } catch (_e) {
       toast.error('Failed to load report');
     } finally {
       setLoading(false);
@@ -45,16 +40,22 @@ export default function InventoryReportsPage() {
   }, []);
 
   const exportCSV = useCallback(() => {
-    const csv = toCSV(rows);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventory_${reportType}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Exported CSV');
+    if (!rows.length) {
+      toast.error('No inventory data to export');
+      return;
+    }
+    const dateStr = new Date().toISOString().split('T')[0];
+    exportToCSV(`inventory_${reportType}_${dateStr}`, rows);
+    toast.success('Inventory report exported to CSV');
   }, [rows, reportType]);
+
+  const handlePrint = () => {
+    if (!rows.length) {
+      toast.error('No data available to print');
+      return;
+    }
+    window.print();
+  };
 
   const scheduleReport = () => {
     localStorage.setItem('inventoryReportSchedule', scheduleTime);
@@ -86,64 +87,106 @@ export default function InventoryReportsPage() {
     return batchView.batches.filter((b) => new Date(b.expiryDate) < now && !b.recalled).length;
   }, [batchView]);
 
+  const reportTitle =
+    reportType === 'stock_levels'
+      ? 'Current Stock Levels Report'
+      : reportType === 'expiry_dates'
+      ? 'Medication Expiry Dates Report'
+      : 'Low Stock & Critical Inventory Report';
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Inventory Reports</h1>
-          <p className="text-muted-foreground">Generate, export and schedule reports</p>
-        </div>
-        <div className="flex gap-2 items-end">
-          <div className="space-y-2">
-            <Label>Daily Schedule (HH:MM)</Label>
-            <Input placeholder="08:00" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} />
-          </div>
-          <Button variant="outline" onClick={scheduleReport}>Schedule</Button>
-          <Button onClick={exportCSV}>Export CSV</Button>
+      {/* Print-only Official Header */}
+      <div className="hidden print:block mb-6 border-b border-gray-400 pb-4">
+        <h1 className="text-2xl font-bold text-black">Smart Health Manager — Inventory Report</h1>
+        <p className="text-sm text-gray-700 font-medium mt-1">{reportTitle}</p>
+        <div className="flex justify-between text-xs text-gray-600 mt-2">
+          <span>Generated: {new Date().toLocaleString()}</span>
+          <span>Total Records: {rows.length}</span>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
+      <div className="flex items-center justify-between flex-wrap gap-4 print:hidden">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Inventory Reports</h1>
+          <p className="text-muted-foreground">Generate, export, print and schedule inventory reports</p>
+        </div>
+        <div className="flex flex-wrap gap-2 items-end">
+          <div className="space-y-1">
+            <Label className="text-xs">Daily Schedule (HH:MM)</Label>
+            <Input
+              placeholder="08:00"
+              className="h-9 w-28 text-sm"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" className="h-9" onClick={scheduleReport}>
+            <Clock className="h-4 w-4 mr-1" />
+            Schedule
+          </Button>
+          <Button variant="outline" className="h-9 gap-1" onClick={handlePrint} title="Print printer-friendly report">
+            <Printer className="h-4 w-4" />
+            <span>Print</span>
+          </Button>
+          <Button className="h-9 gap-1" onClick={exportCSV} title="Export report to CSV">
+            <Download className="h-4 w-4" />
+            <span>Export CSV</span>
+          </Button>
+        </div>
+      </div>
+
+      <Card className="print:border-none print:shadow-none">
+        <CardHeader className="print:pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle>Report</CardTitle>
-            <select className="border rounded p-2" value={reportType} onChange={(e) => setReportType(e.target.value as ReportType)}>
-              <option value="stock_levels">Stock Levels</option>
-              <option value="expiry_dates">Expiry Dates</option>
-              <option value="low_stock">Low Stock</option>
-            </select>
+            <CardTitle>{reportTitle}</CardTitle>
+            <div className="print:hidden">
+              <select
+                className="border border-border bg-background text-foreground rounded-md px-3 py-1.5 text-sm"
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value as ReportType)}
+              >
+                <option value="stock_levels">Stock Levels</option>
+                <option value="expiry_dates">Expiry Dates</option>
+                <option value="low_stock">Low Stock</option>
+              </select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-12"><p className="text-muted-foreground">Loading report...</p></div>
           ) : rows.length === 0 ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">No data.</p></div>
+            <div className="text-center py-12"><p className="text-muted-foreground">No data available for this report.</p></div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {Object.keys(rows[0]).map((h) => (
-                    <TableHead key={h}>{h}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r, i) => (
-                  <TableRow key={i}>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {Object.keys(rows[0]).map((h) => (
-                      <TableCell key={h}>{String(r[h])}</TableCell>
+                      <TableHead key={h} className="capitalize font-semibold">
+                        {h.replace(/_/g, ' ')}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r, i) => (
+                    <TableRow key={i}>
+                      {Object.keys(rows[0]).map((h) => (
+                        <TableCell key={h}>{String(r[h] ?? '')}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {batchView && (
-        <Card>
+        <Card className="print:hidden">
           <CardHeader>
             <CardTitle>Batches for {batchView.medicine.name}</CardTitle>
           </CardHeader>

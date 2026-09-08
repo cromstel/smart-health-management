@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,11 +11,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Bell, LogOut, User, Settings } from 'lucide-react';
+import { LogOut, Settings, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { GlobalSearch } from '@/components/search/GlobalSearch';
+import { NotificationDropdown } from './NotificationDropdown';
+import { PWAInstallButton } from '@/components/PWAInstallButton';
 
 export function Header() {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -23,18 +28,42 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border bg-card px-6">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-3 sm:gap-4 border-b border-border bg-card px-4 sm:px-6">
       <SidebarTrigger />
+      <div className="flex-1 max-w-lg mx-auto sm:mx-0">
+        <GlobalSearch />
+      </div>
       <div className="flex-1" />
-      <Button variant="ghost" size="icon">
-        <Bell className="h-5 w-5" />
+
+      {/* PWA In-App Install Prompt */}
+      <PWAInstallButton />
+
+      {/* Theme Toggle Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        className="text-foreground hover:text-accent hover:bg-secondary"
+        title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      >
+        {isDark ? (
+          <Sun className="h-5 w-5 text-amber-400" />
+        ) : (
+          <Moon className="h-5 w-5 text-slate-700" />
+        )}
       </Button>
+
+      {/* Notification Bell Dropdown */}
+      <NotificationDropdown />
+
+      {/* User Profile Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
             <Avatar>
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {user?.name.split(' ').map(n => n[0]).join('') || 'U'}
+                {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -44,20 +73,16 @@ export function Header() {
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium">{user?.name}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
-              <p className="text-xs text-accent">{user?.role}</p>
+              <p className="text-xs text-accent font-semibold">{user?.role}</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/settings')}>
             <Settings className="mr-2 h-4 w-4" />
-            Settings
+            System Settings
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
+          <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </DropdownMenuItem>

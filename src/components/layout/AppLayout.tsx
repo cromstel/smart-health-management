@@ -3,6 +3,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
 import { PasswordChangeModal } from '@/components/security/PasswordChangeModal';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 export function AppLayout() {
   return (
@@ -13,6 +14,7 @@ export function AppLayout() {
           <Header />
           <main className="flex-1 p-6">
             <PasswordChangeModal />
+            <OfflineIndicator />
             <Outlet />
           </main>
         </div>

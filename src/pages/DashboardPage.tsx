@@ -1,10 +1,39 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Calendar, Hospital, DollarSign, TrendingUp, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  Users, 
+  Calendar, 
+  Hospital, 
+  DollarSign, 
+  TrendingUp, 
+  Activity, 
+  Heart, 
+  ArrowRight, 
+  ShieldCheck,
+  GripVertical,
+  MoveUp,
+  MoveDown,
+  Maximize2,
+  Minimize2,
+  Eye,
+  EyeOff,
+  Settings2,
+  Save,
+  RotateCcw,
+  Sparkles
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { api } from '@/services/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import RecentActivityWidget from '@/components/dashboard/RecentActivityWidget';
+import UpcomingAppointmentsAlertWidget from '@/components/dashboard/UpcomingAppointmentsAlertWidget';
+import CriticalVitalsAlertWidget from '@/components/dashboard/CriticalVitalsAlertWidget';
+import AppointmentDensityHeatMap from '@/components/dashboard/AppointmentDensityHeatMap';
+import StaffCapacityWidget from '@/components/dashboard/StaffCapacityWidget';
 
 const chartConfig = {
   patients: { label: 'Patients', color: '#00BFFF' },
@@ -20,7 +49,27 @@ interface PatientLoadPredictionsResponse {
   predictions: PatientLoadPrediction[];
 }
 
+interface DashboardModule {
+  id: string;
+  title: string;
+  gridClass: string; // col-span-1 or col-span-2
+  visible: boolean;
+}
+
+const DEFAULT_MODULES: DashboardModule[] = [
+  { id: 'appointments', title: 'Upcoming Appointments & Alerts', gridClass: 'col-span-2', visible: true },
+  { id: 'vitals', title: 'Critical Patient Vitals Alerts', gridClass: 'col-span-2', visible: true },
+  { id: 'staffCapacity', title: 'Staff Capacity & Load Balancer', gridClass: 'col-span-2', visible: true },
+  { id: 'aiInsights', title: 'Clinical AI Insights Hub', gridClass: 'col-span-2', visible: true },
+  { id: 'vitalsBanner', title: 'Quick Patient Vitals Access Banner', gridClass: 'col-span-2', visible: true },
+  { id: 'heatmap', title: 'Clinic Activity Heat Map', gridClass: 'col-span-2', visible: true },
+  { id: 'analytics', title: 'Patient Load Predictions & National Health Alerts', gridClass: 'col-span-2', visible: true },
+  { id: 'growth', title: 'Patient Growth & Weekly Appointments Visualizers', gridClass: 'col-span-2', visible: true },
+  { id: 'recent', title: 'Recent Activity Feed', gridClass: 'col-span-2', visible: true }
+];
+
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [patientGrowth, setPatientGrowth] = useState<any[]>([]);
@@ -28,6 +77,90 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [patientLoadPredictions, setPatientLoadPredictions] = useState<any[]>([]);
   const [ghanaHealthData, setGhanaHealthData] = useState<any[]>([]);
+
+  // Layout customization state
+  const [modules, setModules] = useState<DashboardModule[]>(() => {
+    const saved = localStorage.getItem('dashboard_layout');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const parsedIds = parsed.map((m: any) => m.id);
+        const missing = DEFAULT_MODULES.filter(m => !parsedIds.includes(m.id));
+        return [...parsed, ...missing];
+      } catch {
+        return DEFAULT_MODULES;
+      }
+    }
+    return DEFAULT_MODULES;
+  });
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  // Manual layout reordering and resizing methods
+  const handleMove = (id: string, direction: 'up' | 'down') => {
+    const index = modules.findIndex(m => m.id === id);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= modules.length) return;
+
+    const newModules = [...modules];
+    const temp = newModules[index];
+    newModules[index] = newModules[targetIndex];
+    newModules[targetIndex] = temp;
+    setModules(newModules);
+  };
+
+  const handleResize = (id: string) => {
+    setModules(prev => prev.map(m => {
+      if (m.id === id) {
+        return {
+          ...m,
+          gridClass: m.gridClass === 'col-span-2' ? 'col-span-1' : 'col-span-2'
+        };
+      }
+      return m;
+    }));
+  };
+
+  const handleToggleVisibility = (id: string) => {
+    setModules(prev => prev.map(m => {
+      if (m.id === id) {
+        return { ...m, visible: !m.visible };
+      }
+      return m;
+    }));
+  };
+
+  const handleSaveLayout = () => {
+    localStorage.setItem('dashboard_layout', JSON.stringify(modules));
+    setIsCustomizing(false);
+  };
+
+  const handleResetLayout = () => {
+    setModules(DEFAULT_MODULES);
+    localStorage.removeItem('dashboard_layout');
+    setIsCustomizing(false);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    const draggedIndex = modules.findIndex(m => m.id === draggedId);
+    const targetIndex = modules.findIndex(m => m.id === targetId);
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newModules = [...modules];
+    const [draggedItem] = newModules.splice(draggedIndex, 1);
+    newModules.splice(targetIndex, 0, draggedItem);
+
+    setModules(newModules);
+    setDraggedId(null);
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -134,12 +267,54 @@ export default function DashboardPage() {
   }
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-muted/20 border border-border/60 p-4 rounded-xl">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+          <p className="text-muted-foreground text-sm">Welcome back! Here's what's happening today.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isCustomizing ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs font-semibold h-9 gap-1.5 border-dashed border-red-500/50 text-red-600 hover:bg-red-50"
+                onClick={handleResetLayout}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Reset Layout</span>
+              </Button>
+              <Button
+                size="sm"
+                className="text-xs font-semibold h-9 gap-1.5"
+                onClick={handleSaveLayout}
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>Save Workspace</span>
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs font-semibold h-9 gap-1.5"
+              onClick={() => setIsCustomizing(true)}
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              <span>Customize Workspace</span>
+            </Button>
+          )}
         </div>
       </div>
+
+      {isCustomizing && (
+        <div className="p-3 bg-accent/10 border border-accent/30 text-accent-foreground text-xs rounded-xl flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-accent shrink-0" />
+          <span>
+            <strong>Workspace Customization Mode:</strong> Drag modules by their handle to reorder, or use action controls to hide/show and resize (Half-width vs Full-width) key dashboard modules.
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
@@ -161,106 +336,300 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Patient Load Predictions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul>
-              {patientLoadPredictions.map((prediction) => (
-                <li key={prediction.day}>
-                  {prediction.day}: {prediction.predictedLoad}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Ghana Health Service Data</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul>
-              {ghanaHealthData.map((item, index) => (
-                <li key={index}>
-                  {JSON.stringify(item)}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-accent" />
-              Patient Growth
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={patientGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
-                  <XAxis dataKey="month" stroke="#8892b0" />
-                  <YAxis stroke="#8892b0" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="patients"
-                    stroke="#00BFFF"
-                    strokeWidth={2}
-                    dot={{ fill: '#00BFFF' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {modules.map((module) => {
+          if (!module.visible && !isCustomizing) return null;
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-accent" />
-              Weekly Appointments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyAppointments}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
-                  <XAxis dataKey="day" stroke="#8892b0" />
-                  <YAxis stroke="#8892b0" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="appointments" fill="#00BFFF" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+          let component = null;
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between border-b border-border pb-3 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{activity.action}</p>
-                  <p className="text-xs text-muted-foreground">{activity.name}</p>
+          switch (module.id) {
+            case 'appointments':
+              component = <UpcomingAppointmentsAlertWidget />;
+              break;
+            case 'vitals':
+              component = <CriticalVitalsAlertWidget />;
+              break;
+            case 'staffCapacity':
+              component = <StaffCapacityWidget />;
+              break;
+            case 'vitalsBanner':
+              component = (
+                <Card className="border border-border bg-card">
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
+                        <Heart className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground">
+                          Patient Vitals & Biometric Trend Monitoring
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Log blood pressure, heart rate, and temperature readings or review longitudinal chart analytics.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs font-semibold gap-1.5 shrink-0"
+                      onClick={() => navigate('/patients?tab=vitals')}
+                    >
+                      <span>Open Patient Vitals</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+              break;
+            case 'heatmap':
+              component = <AppointmentDensityHeatMap />;
+              break;
+            case 'aiInsights':
+              component = (
+                <Card className="border border-border bg-card">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        Clinical AI Insights Hub
+                      </CardTitle>
+                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">ACTIVE COGNITION</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-3">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => {}}
+                        className="text-xs h-7"
+                      >
+                        Vitals Analysis
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {}}
+                        className="text-xs h-7"
+                      >
+                        Medication Alerts
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {}}
+                        className="text-xs h-7"
+                      >
+                        Follow-up Tests
+                      </Button>
+                    </div>
+
+                    <div className="text-xs space-y-3 leading-relaxed text-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+                      <p>
+                        <strong className="text-amber-950 font-bold">Patient #1024 (Sarah Johnson):</strong> Mild systolic blood pressure increase. Consider scheduling a lipid profile update and recommending reduced sodium intake.
+                      </p>
+                      <p>
+                        <strong className="text-amber-950 font-bold">Patient #2543 (Ebenezer Mensah):</strong> Oxygen levels occasionally dip during physical syncs (94% spO2). Suggest ambulatory pulse oximetry monitoring for a 24-hour cycle.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+              break;
+            case 'analytics':
+              component = (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Card className="border border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-accent" />
+                        Patient Load Predictions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {patientLoadPredictions.length > 0 ? (
+                        <ChartContainer config={chartConfig} className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={patientLoadPredictions} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" opacity={0.5} />
+                              <XAxis dataKey="day" stroke="#8892b0" fontSize={12} tickLine={false} axisLine={false} />
+                              <YAxis stroke="#8892b0" fontSize={12} tickLine={false} axisLine={false} />
+                              <ChartTooltip content={<ChartTooltipContent />} />
+                              <Bar dataKey="predictedLoad" fill="#00BFFF" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </ChartContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
+                          No prediction data available
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Hospital className="h-5 w-5 text-accent" />
+                        Ghana Health Service Alerts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {ghanaHealthData.length > 0 ? (
+                        <ul className="space-y-3">
+                          {ghanaHealthData.map((item, index) => (
+                            <li key={index} className="p-3 rounded-md bg-muted/40 border border-border/50 flex flex-col gap-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-sm text-foreground">{item.title || 'Health Alert'}</span>
+                                <Badge variant="outline" className="text-[10px] uppercase">{item.region || 'National'}</Badge>
+                              </div>
+                              <span className="text-xs text-muted-foreground">{item.description || JSON.stringify(item)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[200px] text-center p-4 bg-muted/20 rounded-md border border-dashed border-border">
+                          <ShieldCheck className="h-8 w-8 text-emerald-500 mb-2 opacity-80" />
+                          <span className="text-sm font-medium text-foreground">No Active Health Advisories</span>
+                          <span className="text-xs text-muted-foreground mt-1">National health parameters are currently stable.</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {typeof activity.time === 'string' ? activity.time : new Date(activity.time).toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              );
+              break;
+            case 'growth':
+              component = (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-accent" />
+                        Patient Growth
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer config={chartConfig} className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={patientGrowth}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
+                            <XAxis dataKey="month" stroke="#8892b0" />
+                            <YAxis stroke="#8892b0" />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Line
+                              type="monotone"
+                              dataKey="patients"
+                              stroke="#00BFFF"
+                              strokeWidth={2}
+                              dot={{ fill: '#00BFFF' }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-accent" />
+                        Weekly Appointments
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer config={chartConfig} className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={weeklyAppointments}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
+                            <XAxis dataKey="day" stroke="#8892b0" />
+                            <YAxis stroke="#8892b0" />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="appointments" fill="#00BFFF" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+              break;
+            case 'recent':
+              component = <RecentActivityWidget initialActivities={recentActivities} />;
+              break;
+            default:
+              break;
+          }
+
+          const colSpanClass = module.gridClass === 'col-span-1' ? 'col-span-1' : 'lg:col-span-2';
+
+          return (
+            <div
+              key={module.id}
+              className={`relative group/module transition-all duration-300 ${colSpanClass} ${
+                isCustomizing ? 'border-2 border-dashed border-accent/40 rounded-xl p-3 bg-accent/5 shadow-inner' : ''
+              } ${!module.visible ? 'opacity-40 filter grayscale' : ''}`}
+              draggable={isCustomizing}
+              onDragStart={(e) => handleDragStart(e, module.id)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(e, module.id)}
+            >
+              {isCustomizing && (
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-background border border-border px-2 py-1 rounded-lg shadow-md">
+                  <div className="flex items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground mr-1">
+                    <GripVertical className="h-4 w-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-wide">Drag</span>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => handleMove(module.id, 'up')}
+                    title="Move Up"
+                  >
+                    <MoveUp className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => handleMove(module.id, 'down')}
+                    title="Move Down"
+                  >
+                    <MoveDown className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => handleResize(module.id)}
+                    title={module.gridClass === 'col-span-2' ? 'Make Half Width' : 'Make Full Width'}
+                  >
+                    {module.gridClass === 'col-span-2' ? (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => handleToggleVisibility(module.id)}
+                    title={module.visible ? 'Hide Module' : 'Show Module'}
+                  >
+                    {module.visible ? (
+                      <Eye className="h-3.5 w-3.5 text-accent" />
+                    ) : (
+                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              )}
+              {component}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

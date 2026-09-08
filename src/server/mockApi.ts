@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
+import { GoogleGenAI } from '@google/genai';
 
 // Initial data seeded from seed.sql and demo records
 const users = [
@@ -7,6 +8,9 @@ const users = [
   { id: '3', role_id: 3, email: 'doctor@smarthealth.com', name: 'Dr. John Smith', role: 'doctor', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit', 'medical_history:view', 'medical_history:add', 'medical_history:edit'], hospital_id: 'HOSP-001', status: 'active' },
   { id: '4', role_id: 4, email: 'patient@smarthealth.com', name: 'John Doe', role: 'patient', permissions: ['appointments:view', 'appointments:add', 'medical_history:view'], hospital_id: 'HOSP-001', status: 'active' },
 ];
+
+// In-memory store for secure temporary view-only patient summary links
+const sharedLinks = new Map<string, { patientId: string; patientName: string; expiresAt: string }>();
 
 const hospitals = [
   { id: '1', hospital_id: 'HOSP-001', name: 'General Hospital', address: '123 Main St, Accra, Ghana', phone: '+233 30 212 3456', email: 'contact@generalhospital.gh', status: 'active', beds: 250, occupancy: 198 },
@@ -145,15 +149,24 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   if (pathname === '/api/roles/stream') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no',
     });
+    if (typeof (res as any).flushHeaders === 'function') {
+      (res as any).flushHeaders();
+    }
     res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`);
     const interval = setInterval(() => {
-      res.write(`data: ${JSON.stringify({ type: 'heartbeat', timestamp: new Date().toISOString() })}\n\n`);
-    }, 25000);
+      try {
+        res.write(`data: ${JSON.stringify({ type: 'heartbeat', timestamp: new Date().toISOString() })}\n\n`);
+      } catch {
+        clearInterval(interval);
+      }
+    }, 15000);
     req.on('close', () => clearInterval(interval));
+    req.on('error', () => clearInterval(interval));
     return true;
   }
 
@@ -686,6 +699,241 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
     const idx = documents.findIndex((d) => d.id === id);
     if (idx !== -1) documents.splice(idx, 1);
     sendJson(res, 200, { message: 'Document deleted' });
+    return true;
+  }
+
+  // Gemini Chat Proxy Endpoint
+  if (pathname === '/api/gemini/chat' && req.method === 'POST') {
+    readJsonBody(req).then(async (body) => {
+      const { messages, modelType, systemInstruction } = body;
+      
+      // Determine the model based on modelType (pro, flash, lite)
+      let resolvedModel = 'gemini-3.5-flash';
+      if (modelType === 'pro') {
+        resolvedModel = 'gemini-3.1-pro-preview';
+      } else if (modelType === 'lite') {
+        resolvedModel = 'gemini-3.1-flash-lite';
+      } else if (modelType === 'flash') {
+        resolvedModel = 'gemini-3.5-flash';
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        // Return a highly realistic simulated clinical AI response for preview testing
+        const lastUserMessage = messages?.[messages.length - 1]?.content || 'Hello';
+        let simulatedReply: string;
+
+        if (modelType === 'pro') {
+          simulatedReply = `[Simulation Mode - GEMINI_API_KEY is not set]\n\nAs a Senior Clinical Specialist powered by ${resolvedModel}, I have analyzed your query: "${lastUserMessage}".\n\nBased on clinical protocols and health guidelines:\n1. Ensure complete patient history and biometrics (blood pressure, temperature) are fully compiled.\n2. Cross-reference any active prescriptions with pharmacy stock levels.\n3. Consider setting up a clinical follow-up appointment during low-density hours (detectable on your dashboard heat map).\n\nPlease provide the GEMINI_API_KEY in the **Settings > Secrets** panel to activate real-time clinical reasoning.`;
+        } else if (modelType === 'lite') {
+          simulatedReply = `[Simulation Mode - GEMINI_API_KEY is not set]\n\nQuick Lookup Result (${resolvedModel}): Ready to assist! For the query: "${lastUserMessage}", please ensure that you have configured your Gemini API Key in the Settings menu to enable high-speed clinical responses.`;
+        } else {
+          simulatedReply = `[Simulation Mode - GEMINI_API_KEY is not set]\n\nHello! I am your Clinical Assistant powered by ${resolvedModel}. I can help you summarize records, look up medical codes, or manage daily operations.\n\nTo enable full intelligent multi-turn capabilities, please attach your GEMINI_API_KEY in the Settings > Secrets menu.`;
+        }
+
+        sendJson(res, 200, {
+          text: simulatedReply,
+          modelUsed: resolvedModel,
+          simulated: true
+        });
+        return;
+      }
+
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build'
+            }
+          }
+        });
+
+        // Map client messages to Content objects
+        const contents = (messages || []).map((m: any) => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }]
+        }));
+
+        const response = await ai.models.generateContent({
+          model: resolvedModel,
+          contents,
+          config: {
+            systemInstruction: systemInstruction || 'You are an expert clinical assistant. Provide accurate, professional medical insights, and always append a standard clinical disclaimer.',
+            temperature: modelType === 'pro' ? 0.3 : 0.7,
+          }
+        });
+
+        sendJson(res, 200, {
+          text: response.text || 'No response text generated by the model.',
+          modelUsed: resolvedModel,
+          simulated: false
+        });
+      } catch (error: any) {
+        console.error('Gemini API Error:', error);
+        sendJson(res, 500, {
+          error: error.message || 'Failed to call Gemini API',
+          modelUsed: resolvedModel
+        });
+      }
+    });
+    return true;
+  }
+
+  // Gemini Clinical Insights Endpoint
+  if (pathname === '/api/gemini/insights' && req.method === 'POST') {
+    readJsonBody(req).then(async (body) => {
+      const { patientId, patientName, vitalsList } = body;
+      const resolvedModel = 'gemini-3.5-flash';
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      const lastVitals = (vitalsList || []).slice(0, 5);
+      const latestReading = lastVitals[0];
+
+      if (!apiKey) {
+        // High-fidelity clinical AI response builder when key is missing
+        let patternSummary = 'Patient shows stable physiological trends within normal margins.';
+        let followUpTests = '*   No high-urgency tests required at this time.\n*   Routine annual wellness panel (CBC, metabolic profile).';
+        let medAdjustments = '*   No modifications suggested. Maintain active dosages.\n*   Advise patient on continuing current lifestyle guidelines.';
+        let alertWarning = '';
+
+        if (latestReading) {
+          const sys = latestReading.systolicBp;
+          const dia = latestReading.diastolicBp;
+          const hr = latestReading.heartRate;
+          const temp = latestReading.temperature;
+
+          if (sys >= 140 || dia >= 90) {
+            patternSummary = `Historical trends reflect sustained high blood pressure (${sys}/${dia} mmHg), indicative of Stage 2 Hypertension. Pulse rates fluctuate around ${hr} bpm.`;
+            followUpTests = `*   **12-Lead Electrocardiogram (ECG)**: Assess for cardiac remodeling or left ventricular hypertrophy.\n*   **Comprehensive Lipid Panel**: Quantify cardiovascular risk markers.\n*   **Basic Metabolic Panel (BMP)**: Benchmark renal function (eGFR, serum creatinine) prior to any dosage modification.\n*   **Ambulatory BP Monitoring (ABPM)**: Review diurnal dipping patterns over a 24-hour cycle.`;
+            medAdjustments = `*   **Lisinopril Adjustment**: Consider increasing standard dosage from 10mg to 20mg daily if BMP reveals normal renal function.\n*   **Calcium Channel Blocker**: Evaluate adding Amlodipine 5mg daily if BP remains uncontrolled past 2 weeks.\n*   **Lifestyle Optimization**: Stress sodium restriction (<1.5g/day) and active lifestyle tracking.`;
+            alertWarning = `⚠️ **Alert Triggered**: Blood pressure of ${sys}/${dia} mmHg is elevated.`;
+          } else if (temp >= 38.0) {
+            patternSummary = `Historical records suggest acute pyrexia (temperature ${temp}°C) combined with compensatory sinus tachycardia (${hr} bpm).`;
+            followUpTests = `*   **Complete Blood Count (CBC)**: Evaluate for leukocytosis / infection indicators.\n*   **Urinalysis & Culture**: Screen for localized urinary tract infection source.\n*   **Inflammatory Markers (CRP/ESR)**: Benchmark acute phase reactants.`;
+            medAdjustments = `*   **Antipyretics**: Regular Paracetamol (Acetaminophen) 500mg-1000mg every 6 hours as needed (do not exceed 4g/day).\n*   **Antibiotic Regimen**: Defer until specific culture results are established unless sepsis markers present.\n*   **Hydration Protocol**: Maintain aggressive oral rehydration.`;
+            alertWarning = `⚠️ **Alert Triggered**: Active pyrexia (${temp}°C) flagged in clinical chart.`;
+          } else if (hr >= 100) {
+            patternSummary = `Patient exhibits tachycardic resting pulse of ${hr} bpm. BP remains stable.`;
+            followUpTests = `*   **ECG & Holter Monitor**: Check for paroxysmal atrial fibrillation or supraventricular tachycardia.\n*   **Thyroid Panel (TSH, Free T4)**: Assess for subclinical hyperthyroidism.`;
+            medAdjustments = `*   **Beta-Blocker Evaluation**: Review beta-blocker introduction (e.g., Metoprolol Succinate 25mg daily) if persistent resting tachycardia is confirmed.\n*   **Stimulant Review**: Screen for excess caffeine, sympathomimetics, or bronchodilator use.`;
+          }
+        }
+
+        const simulatedOutput = `### [AI CLINICAL INSIGHTS - SIMULATION MODE]
+*Patient: **${patientName || 'Sarah Johnson'}** (ID: ${patientId || 'P-1001'})*
+
+${alertWarning ? alertWarning + '\n\n' : ''}#### 1. Pattern & Physiological Assessment
+${patternSummary}
+
+#### 2. Suggested Diagnostic Follow-Up Tests
+${followUpTests}
+
+#### 3. Recommended Medication & Lifestyle Adjustments
+${medAdjustments}
+
+***
+
+**DISCLAIMER**: This clinical summary is an AI-generated reference tool compiled for licensed practitioners. It does NOT constitute medical validation or replace direct patient evaluation. Please attach your \`GEMINI_API_KEY\` in Settings to enable real-time clinical diagnostics.`;
+
+        sendJson(res, 200, {
+          text: simulatedOutput,
+          modelUsed: resolvedModel,
+          simulated: true
+        });
+        return;
+      }
+
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+        });
+
+        const vitalsString = (vitalsList || []).map((v: any) => 
+          `- Date: ${v.recordedAt}, BP: ${v.systolicBp}/${v.diastolicBp}, HR: ${v.heartRate} bpm, Temp: ${v.temperature}°C, SpO2: ${v.oxygenSaturation}%`
+        ).join('\n');
+
+        const systemInstruction = `You are a clinical artificial intelligence advisor. Your job is to analyze historical patient vital signs and provide expert suggestions on potential diagnostic follow-up tests, medical investigations, and potential medication adjustments.\n\nAlways use markdown styling with logical headers. Keep advice clinical, analytical, and professional. Always append the mandatory disclaimer at the very end: "DISCLAIMER: This is an AI-generated clinical aid for licensed professionals. It does not replace independent clinical judgment or direct patient examination."`;
+
+        const prompt = `Analyze these vital sign historical patterns for patient **${patientName}** (ID: ${patientId}):\n\n${vitalsString || 'No historical vital signs logged.'}\n\nPlease output:\n1. A summary of physiological trends (BP, Heart Rate, SpO2, Temperature).\n2. Targeted follow-up diagnostic tests (e.g., ECG, labs, cultures) with clinical justifications.\n3. Potential medication adjustments or therapeutic reviews (with precautions).`;
+
+        const response = await ai.models.generateContent({
+          model: resolvedModel,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: { systemInstruction, temperature: 0.3 }
+        });
+
+        sendJson(res, 200, {
+          text: response.text || 'Failed to generate clinical analysis.',
+          modelUsed: resolvedModel,
+          simulated: false
+        });
+      } catch (error: any) {
+        console.error('Insights Error:', error);
+        sendJson(res, 500, {
+          error: error.message || 'Failed to call Gemini API'
+        });
+      }
+    });
+    return true;
+  }
+
+  // Generate temporary patient summary share link
+  if (pathname === '/api/shared/patient-summary/generate' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      const { patientId, patientName } = body;
+      if (!patientId) {
+        sendJson(res, 400, { error: 'patientId is required' });
+        return;
+      }
+
+      const token = `share-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours expiry
+
+      sharedLinks.set(token, {
+        patientId,
+        patientName: patientName || 'Patient',
+        expiresAt
+      });
+
+      sendJson(res, 200, {
+        token,
+        expiresAt,
+        url: `/shared/patient-summary/${token}`
+      });
+    });
+    return true;
+  }
+
+  // Retrieve temporary shared patient summary
+  if (pathname === '/api/shared/patient-summary' && req.method === 'GET') {
+    const token = params.get('token') || '';
+    if (!token || !sharedLinks.has(token)) {
+      sendJson(res, 403, { error: 'Invalid or expired temporary secure link' });
+      return true;
+    }
+
+    const linkInfo = sharedLinks.get(token)!;
+    const expiresDate = new Date(linkInfo.expiresAt);
+    if (expiresDate.getTime() < Date.now()) {
+      sharedLinks.delete(token);
+      sendJson(res, 403, { error: 'Secure temporary link has expired' });
+      return true;
+    }
+
+    // Load upcoming appointments for this patient
+    const patientAppointments = appointments.filter(
+      (a) => a.patient_id === linkInfo.patientId || a.patient_name.toLowerCase().includes(linkInfo.patientName.toLowerCase())
+    );
+
+    sendJson(res, 200, {
+      patientId: linkInfo.patientId,
+      patientName: linkInfo.patientName,
+      expiresAt: linkInfo.expiresAt,
+      appointments: patientAppointments,
+    });
     return true;
   }
 

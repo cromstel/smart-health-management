@@ -19,6 +19,6 @@ export const sendSms = async (to: string, body: string) => {
     console.log('SMS sent successfully');
   } catch (error) {
     console.error('Error sending SMS:', error);
-    throw new Error('Failed to send SMS');
+    throw new Error('Failed to send SMS', { cause: error });
   }
 };

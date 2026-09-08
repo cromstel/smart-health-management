@@ -28,10 +28,12 @@ import {
   ClipboardList,
   BarChart3,
   ClipboardCheck,
+  Sparkles,
 } from 'lucide-react';
 
 const menuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+  { title: 'Clinical AI', icon: Sparkles, path: '/ai-assistant' },
   { title: 'Patients', icon: Users, path: '/patients' },
   { title: 'Appointments', icon: Calendar, path: '/appointments' },
   { title: 'Hospitals', icon: Hospital, path: '/hospitals' },
@@ -56,6 +58,7 @@ export function AppSidebar() {
 
   const moduleForPath = (path: string) => {
     if (path.startsWith('/dashboard')) return 'dashboard';
+    if (path.startsWith('/ai-assistant')) return 'dashboard';
     if (path.startsWith('/patients')) return 'patients';
     if (path.startsWith('/appointments')) return 'appointments';
     if (path.startsWith('/hospitals')) return 'hospital';

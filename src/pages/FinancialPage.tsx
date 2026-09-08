@@ -23,9 +23,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, DollarSign, TrendingUp, TrendingDown, FileText, Download, RefreshCw, AlertCircle } from 'lucide-react';
+import { Plus, DollarSign, TrendingUp, TrendingDown, FileText, Download, RefreshCw, AlertCircle, Printer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { exportToCSV } from '@/utils/csv';
 
 interface Account {
   id: string;
@@ -96,6 +98,7 @@ const mockTransactions: Transaction[] = [
 
 export default function FinancialPage() {
   const { hasPermission } = useAuth();
+  const [activeTab, setActiveTab] = useState('coa');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
@@ -284,8 +287,84 @@ export default function FinancialPage() {
   const totalExpenses = accounts.filter(a => a.type === 'Expense' && a.level === 0).reduce((sum, a) => sum + a.balance, 0);
   const netProfit = totalIncome - totalExpenses;
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExport = () => {
+    const dateStr = new Date().toISOString().split('T')[0];
+    if (activeTab === 'coa') {
+      if (!accounts.length) {
+        toast.error('No accounts to export');
+        return;
+      }
+      exportToCSV(`chart_of_accounts_${dateStr}`, accounts.map(a => ({
+        Code: a.code,
+        'Account Name': a.name,
+        Type: a.type,
+        'Level': a.level,
+        'Balance (GHS)': a.balance,
+      })));
+      toast.success('Chart of Accounts exported to CSV');
+    } else if (activeTab === 'transactions') {
+      if (!transactions.length) {
+        toast.error('No transactions to export');
+        return;
+      }
+      exportToCSV(`transactions_${dateStr}`, transactions.map(t => ({
+        ID: t.id,
+        Date: t.date,
+        Description: t.description,
+        Account: t.account,
+        'Debit (GHS)': t.debit,
+        'Credit (GHS)': t.credit,
+        'Balance (GHS)': t.balance,
+        Reference: t.reference,
+      })));
+      toast.success('Transactions exported to CSV');
+    } else if (activeTab === 'balance') {
+      const balanceData = [
+        ...accounts.filter(a => a.type === 'Asset').map(a => ({ Category: 'Asset', Name: a.name, 'Balance (GHS)': a.balance })),
+        { Category: 'Asset Total', Name: 'Total Assets', 'Balance (GHS)': totalAssets },
+        ...accounts.filter(a => a.type === 'Liability').map(a => ({ Category: 'Liability', Name: a.name, 'Balance (GHS)': a.balance })),
+        { Category: 'Liability Total', Name: 'Total Liabilities', 'Balance (GHS)': totalLiabilities },
+      ];
+      exportToCSV(`balance_sheet_${dateStr}`, balanceData);
+      toast.success('Balance Sheet exported to CSV');
+    } else if (activeTab === 'income') {
+      const incomeData = [
+        ...accounts.filter(a => a.type === 'Income').map(a => ({ Category: 'Income', Name: a.name, 'Amount (GHS)': a.balance })),
+        { Category: 'Income Total', Name: 'Total Revenue', 'Amount (GHS)': totalIncome },
+        ...accounts.filter(a => a.type === 'Expense').map(a => ({ Category: 'Expense', Name: a.name, 'Amount (GHS)': a.balance })),
+        { Category: 'Expense Total', Name: 'Total Expenses', 'Amount (GHS)': totalExpenses },
+        { Category: 'Net Result', Name: 'Net Profit', 'Amount (GHS)': netProfit },
+      ];
+      exportToCSV(`income_statement_${dateStr}`, incomeData);
+      toast.success('Income Statement exported to CSV');
+    }
+  };
+
+  const activeTabName =
+    activeTab === 'coa'
+      ? 'Chart of Accounts'
+      : activeTab === 'transactions'
+      ? 'Transaction History'
+      : activeTab === 'balance'
+      ? 'Balance Sheet'
+      : 'Income Statement';
+
   return (
     <div className="space-y-6">
+      {/* Print-only Header */}
+      <div className="hidden print:block mb-6 border-b border-gray-400 pb-4">
+        <h1 className="text-2xl font-bold text-black">Smart Health Manager — Financial Report</h1>
+        <p className="text-sm text-gray-700 font-medium mt-1">{activeTabName}</p>
+        <div className="flex justify-between text-xs text-gray-600 mt-2">
+          <span>Generated: {new Date().toLocaleString()}</span>
+          <span>Net Profit: GHS {netProfit.toLocaleString()}</span>
+        </div>
+      </div>
+
       {loadingAccounts || loadingTransactions ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -332,15 +411,19 @@ export default function FinancialPage() {
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4 print:hidden">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Financial Management</h1>
               <p className="text-muted-foreground">Chart of Accounts and financial reporting</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="gap-2" onClick={handlePrint} title="Print current financial view">
+                <Printer className="h-4 w-4" />
+                Print
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={handleExport} title="Export current financial data to CSV">
                 <Download className="h-4 w-4" />
-                Export Reports
+                Export CSV
               </Button>
               <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
                 <DialogTrigger asChild>
@@ -466,8 +549,8 @@ export default function FinancialPage() {
             </Card>
           </div>
 
-          <Tabs defaultValue="coa" className="space-y-4">
-            <TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="print:hidden">
               <TabsTrigger value="coa">Chart of Accounts</TabsTrigger>
               <TabsTrigger value="transactions">Transactions</TabsTrigger>
               <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
@@ -699,10 +782,16 @@ export default function FinancialPage() {
                       </CardTitle>
                       <CardDescription>As of {new Date().toLocaleDateString()}</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Download className="h-4 w-4" />
-                      Export PDF
-                    </Button>
+                    <div className="flex items-center gap-2 print:hidden">
+                      <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint} title="Print Balance Sheet">
+                        <Printer className="h-4 w-4" />
+                        Print
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-2" onClick={handleExport} title="Export to CSV">
+                        <Download className="h-4 w-4" />
+                        Export CSV
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -791,10 +880,16 @@ export default function FinancialPage() {
                       </CardTitle>
                       <CardDescription>For the period ending {new Date().toLocaleDateString()}</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Download className="h-4 w-4" />
-                      Export PDF
-                    </Button>
+                    <div className="flex items-center gap-2 print:hidden">
+                      <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint} title="Print Income Statement">
+                        <Printer className="h-4 w-4" />
+                        Print
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-2" onClick={handleExport} title="Export to CSV">
+                        <Download className="h-4 w-4" />
+                        Export CSV
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

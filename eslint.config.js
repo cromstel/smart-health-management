@@ -18,6 +18,7 @@ export default [
       'src/docs/node_modules/**',
       'src/docs/**/*.js',
       'dist/**',
+      'dev-dist/**',
     ]
   },
   js.configs.recommended,

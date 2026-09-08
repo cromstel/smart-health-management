@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import AppointmentsPage from '@/pages/AppointmentsPage'
 import { AuditProvider } from '@/contexts/AuditContext'
 
@@ -45,8 +46,15 @@ describe('AppointmentsPage hospital-aware gating', () => {
   })
 
   it('renders header when authorized', async () => {
-    render(<AuditProvider><AppointmentsPage /></AuditProvider>)
-    expect(await screen.findByText('Appointments')).toBeInTheDocument()
+    render(
+      <MemoryRouter>
+        <AuditProvider>
+          <AppointmentsPage />
+        </AuditProvider>
+      </MemoryRouter>
+    )
+    const elements = await screen.findAllByText('Appointments')
+    expect(elements.length).toBeGreaterThan(0)
   })
 
   // Authorization edge cases are covered in middleware and AuthContext tests
