@@ -2,11 +2,11 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { GoogleGenAI } from '@google/genai';
 
 // Initial data seeded from seed.sql and demo records
-const users = [
-  { id: '1', role_id: 1, email: 'superadmin@smarthealth.com', name: 'Super Admin', role: 'super_admin', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'], hospital_id: 'HOSP-001', status: 'active' },
-  { id: '2', role_id: 2, email: 'admin@smarthealth.com', name: 'Admin User', role: 'admin', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'], hospital_id: 'HOSP-001', status: 'active' },
-  { id: '3', role_id: 3, email: 'doctor@smarthealth.com', name: 'Dr. John Smith', role: 'doctor', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit', 'medical_history:view', 'medical_history:add', 'medical_history:edit'], hospital_id: 'HOSP-001', status: 'active' },
-  { id: '4', role_id: 4, email: 'patient@smarthealth.com', name: 'John Doe', role: 'patient', permissions: ['appointments:view', 'appointments:add', 'medical_history:view'], hospital_id: 'HOSP-001', status: 'active' },
+const users: Array<{ id: string; role_id: number; email: string; password?: string; name: string; role: string; permissions: string[]; hospital_id?: string; status?: string }> = [
+  { id: '1', role_id: 1, email: 'superadmin@smarthealth.com', password: 'April--2024!!!!', name: 'Super Admin', role: 'super_admin', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'], hospital_id: 'HOSP-001', status: 'active' },
+  { id: '2', role_id: 2, email: 'admin@smarthealth.com', password: 'Pass@135709', name: 'Admin User', role: 'admin', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'], hospital_id: 'HOSP-001', status: 'active' },
+  { id: '3', role_id: 3, email: 'doctor@smarthealth.com', password: 'Demo@135790', name: 'Dr. John Smith', role: 'doctor', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit', 'medical_history:view', 'medical_history:add', 'medical_history:edit'], hospital_id: 'HOSP-001', status: 'active' },
+  { id: '4', role_id: 4, email: 'patient@smarthealth.com', password: 'P@ssword135', name: 'John Doe', role: 'patient', permissions: ['appointments:view', 'appointments:add', 'medical_history:view'], hospital_id: 'HOSP-001', status: 'active' },
 ];
 
 // In-memory store for secure temporary view-only patient summary links
@@ -185,7 +185,14 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   if (pathname === '/api/auth/login' && req.method === 'POST') {
     readJsonBody(req).then((body) => {
       const email = body.email || '';
+      const password = body.password || '';
       const matched = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+
+      if (matched && matched.password && matched.password !== password) {
+        sendJson(res, 401, { error: 'Invalid password. Please check your credentials.' });
+        return;
+      }
+
       const user = matched || {
         id: '2',
         name: email.split('@')[0] || 'Admin User',
@@ -215,6 +222,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         id: String(users.length + 1),
         role_id: 2,
         email: body.email || 'user@example.com',
+        password: body.password || 'Default123!',
         name: body.name || 'New User',
         role: 'admin',
         permissions: ['all:view', 'all:add', 'all:edit'],

@@ -46,6 +46,17 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
 
+  // Dashboard Refresh Interval State
+  const [dashboardRefreshInterval, setDashboardRefreshInterval] = useState<string>(() => {
+    return localStorage.getItem('dashboard_refresh_interval') || '30';
+  });
+
+  const handleRefreshIntervalChange = (val: string) => {
+    setDashboardRefreshInterval(val);
+    localStorage.setItem('dashboard_refresh_interval', val);
+    toast.success(`Dashboard auto-refresh interval set to ${val === '0' ? 'Disabled' : `${val} seconds`}`);
+  };
+
   // MFA / 2FA States
   const [mfaEnabled, setMfaEnabled] = useState<boolean>(() => localStorage.getItem('mfa_enabled') !== 'false');
   const [mfaMethod, setMfaMethod] = useState<'totp' | 'sms' | 'passkey'>(() => (localStorage.getItem('mfa_method') as any) || 'totp');
@@ -298,6 +309,27 @@ export default function SettingsPage() {
                     <SelectItem value="eur">EUR (Euro)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dashboardRefresh">Dashboard Auto-Refresh Interval</Label>
+                <Select
+                  value={dashboardRefreshInterval}
+                  onValueChange={handleRefreshIntervalChange}
+                >
+                  <SelectTrigger id="dashboardRefresh">
+                    <SelectValue placeholder="Select interval" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Disabled (Manual Refresh)</SelectItem>
+                    <SelectItem value="10">Every 10 seconds</SelectItem>
+                    <SelectItem value="30">Every 30 seconds</SelectItem>
+                    <SelectItem value="60">Every 1 minute</SelectItem>
+                    <SelectItem value="300">Every 5 minutes</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose how often the Dashboard data automatically re-fetches from the API in the background.
+                </p>
               </div>
               <Separator />
               <div className="flex items-center justify-between">

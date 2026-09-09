@@ -39,6 +39,8 @@ import AppointmentDensityHeatMap from '@/components/dashboard/AppointmentDensity
 import StaffCapacityWidget from '@/components/dashboard/StaffCapacityWidget';
 import { WaitTimeMonitorWidget } from '@/components/dashboard/WaitTimeMonitorWidget';
 import { D3PatientVitalsTrendChart } from '@/components/dashboard/D3PatientVitalsTrendChart';
+import { AuditLogOperationsChart } from '@/components/dashboard/AuditLogOperationsChart';
+import { Patient7DayVitalsTrendWidget } from '@/components/dashboard/Patient7DayVitalsTrendWidget';
 import { EmergencyModeModule } from '@/components/emergency/EmergencyModeModule';
 import { ShiftHandoverModal } from '@/components/handover/ShiftHandoverModal';
 import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
@@ -67,6 +69,8 @@ interface DashboardModule {
 
 const DEFAULT_MODULES: DashboardModule[] = [
   { id: 'd3VitalsTrend', title: 'D3.js Patient Health Vitals Trend Analytics', gridClass: 'col-span-2', visible: true },
+  { id: 'vitals7Day', title: '7-Day Patient Heart Rate & Blood Pressure Trends', gridClass: 'col-span-2', visible: true },
+  { id: 'auditChart', title: 'Critical System Operations & Audit Log Frequency', gridClass: 'col-span-2', visible: true },
   { id: 'waitTime', title: 'Real-Time Department Wait Time Monitor', gridClass: 'col-span-2', visible: true },
   { id: 'appointments', title: 'Upcoming Appointments & Alerts', gridClass: 'col-span-2', visible: true },
   { id: 'vitals', title: 'Critical Patient Vitals Alerts', gridClass: 'col-span-2', visible: true },
@@ -226,6 +230,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
+    const intervalSetting = localStorage.getItem('dashboard_refresh_interval');
+    const intervalSeconds = intervalSetting ? parseInt(intervalSetting, 10) : 30;
+    if (intervalSeconds > 0) {
+      const timer = setInterval(() => {
+        loadDashboardData();
+      }, intervalSeconds * 1000);
+      return () => clearInterval(timer);
+    }
   }, []);
 
   const loadDashboardData = async () => {
@@ -449,6 +461,12 @@ export default function DashboardPage() {
           switch (module.id) {
             case 'd3VitalsTrend':
               component = <D3PatientVitalsTrendChart />;
+              break;
+            case 'vitals7Day':
+              component = <Patient7DayVitalsTrendWidget />;
+              break;
+            case 'auditChart':
+              component = <AuditLogOperationsChart />;
               break;
             case 'waitTime':
               component = <WaitTimeMonitorWidget />;
