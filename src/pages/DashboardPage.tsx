@@ -77,6 +77,45 @@ const DEFAULT_MODULES: DashboardModule[] = [
   { id: 'recent', title: 'Recent Activity Feed', gridClass: 'col-span-2', visible: true }
 ];
 
+function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
+  const [displayValue, setDisplayValue] = useState<number>(0);
+
+  useEffect(() => {
+    if (!value || value <= 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    let startTime: number | null = null;
+    const duration = 1200; // 1.2s count animation
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      // Smooth cubic ease-out
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.floor(easeProgress * value));
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(value);
+      }
+    };
+
+    const animFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrame);
+  }, [value]);
+
+  return (
+    <span>
+      {prefix}
+      {displayValue.toLocaleString()}
+      {suffix}
+    </span>
+  );
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -255,10 +294,10 @@ export default function DashboardPage() {
   };
 
   const statsCards = stats ? [
-    { title: 'Total Patients', value: stats.totalPatients.toLocaleString(), change: '+12%', icon: Users, color: 'text-blue-500' },
-    { title: 'Appointments Today', value: stats.todayAppointments.toString(), change: '+5%', icon: Calendar, color: 'text-green-500' },
-    { title: 'Active Hospitals', value: stats.activeHospitals.toString(), change: '+2', icon: Hospital, color: 'text-purple-500' },
-    { title: 'Monthly Revenue', value: `GHS ${stats.monthlyRevenue.toLocaleString()}`, change: '+18%', icon: DollarSign, color: 'text-yellow-500' },
+    { title: 'Total Patients', rawValue: stats.totalPatients, prefix: '', suffix: '', change: '+12%', icon: Users, color: 'text-blue-500' },
+    { title: 'Appointments Today', rawValue: stats.todayAppointments, prefix: '', suffix: '', change: '+5%', icon: Calendar, color: 'text-green-500' },
+    { title: 'Active Hospitals', rawValue: stats.activeHospitals, prefix: '', suffix: '', change: '+2', icon: Hospital, color: 'text-purple-500' },
+    { title: 'Monthly Revenue', rawValue: stats.monthlyRevenue, prefix: 'GHS ', suffix: '', change: '+18%', icon: DollarSign, color: 'text-yellow-500' },
   ] : [];
 
   if (loading) {
@@ -387,7 +426,9 @@ export default function DashboardPage() {
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+              <div className="text-2xl font-bold text-foreground">
+                <AnimatedCounter value={stat.rawValue} prefix={stat.prefix} suffix={stat.suffix} />
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                 <TrendingUp className="h-3 w-3 text-green-500" />
                 {stat.change} from last month

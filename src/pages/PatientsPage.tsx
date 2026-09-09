@@ -26,7 +26,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, PhoneCall } from 'lucide-react';
+import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, PhoneCall, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
@@ -814,16 +814,31 @@ export default function PatientsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Patient Records</CardTitle>
-              <div className="flex gap-2">
-                <div className="relative">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex items-center">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search patients..."
-                    className="pl-9 w-64"
+                    placeholder="Search by patient name or ID..."
+                    className="pl-9 pr-8 w-64 md:w-80"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                      title="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
+                {searchTerm && (
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    {filteredPatients.length} of {patients.length} found
+                  </Badge>
+                )}
                 <Button variant="outline" size="icon" title="Filter list">
                   <Filter className="h-4 w-4" />
                 </Button>

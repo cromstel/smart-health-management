@@ -40,6 +40,7 @@ interface NotificationContextType {
   dismissNotification: (id: string) => void;
   addNotification: (item: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => void;
   refreshNotifications: () => Promise<void>;
+  alertStaffForUpcomingAppointments: () => Promise<number>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -240,6 +241,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               });
             }
           });
+
+          // Process upcoming confirmed/scheduled appointments to alert staff
+          const upcomingAppts = appts.filter(
+            (a) => a.status === 'Confirmed' || a.status === 'confirmed' || a.status === 'Scheduled' || a.status === 'scheduled'
+          );
+          upcomingAppts.forEach((a) => {
+            const notifId = `notif-upcoming-${a.id || a.appointment_id}`;
+            const existing = updated.find((n) => n.id === notifId);
+            if (!existing) {
+              const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
+              const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
+              const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || 'Scheduled Time'}`;
+              
+              updated.unshift({
+                id: notifId,
+                type: 'upcoming_appointment',
+                priority: 'high',
+                title: `Upcoming Appointment Alert: ${pName}`,
+                message: `${pName} has a scheduled ${a.type || 'Clinical Consultation'} with ${dName} at ${a.department_name || a.hospital_name || 'Room 302'} (${apptTimeStr}).`,
+                timestamp: 'Upcoming Alert',
+                createdAt: Date.now(),
+                read: false,
+                appointmentId: a.id || a.appointment_id,
+                patientName: pName,
+                doctorName: dName,
+                appointmentTime: apptTimeStr,
+                status: 'confirmed',
+                actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
+              });
+            }
+          });
         }
 
         // Process prescription refill notifications (nearing refill time <= 5 days remaining)
@@ -382,6 +414,48 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     [saveNotifications]
   );
 
+  const alertStaffForUpcomingAppointments = useCallback(async (): Promise<number> => {
+    try {
+      const appts = (await api.getAppointments()) as any[];
+      if (!Array.isArray(appts) || appts.length === 0) {
+        toast.info('No upcoming appointments found to alert staff.');
+        return 0;
+      }
+
+      const upcoming = appts.filter(
+        (a) => a.status === 'Confirmed' || a.status === 'confirmed' || a.status === 'Scheduled' || a.status === 'scheduled' || a.status === 'Pending' || a.status === 'pending'
+      );
+
+      let alertedCount = 0;
+      upcoming.forEach((a) => {
+        const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
+        const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
+        const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || 'Scheduled Time'}`;
+        
+        addNotification({
+          type: 'upcoming_appointment',
+          priority: 'high',
+          title: `Staff Alert: Upcoming ${a.type || 'Appointment'}`,
+          message: `${pName} has an upcoming appointment with ${dName} (${apptTimeStr}). Staff notified!`,
+          timestamp: 'Staff Alert',
+          appointmentId: a.id || a.appointment_id,
+          patientName: pName,
+          doctorName: dName,
+          appointmentTime: apptTimeStr,
+          status: 'confirmed',
+          actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
+        });
+        alertedCount++;
+      });
+
+      toast.success(`Dispatched notifications for ${alertedCount} upcoming appointments to medical staff!`);
+      return alertedCount;
+    } catch {
+      toast.error('Failed to trigger staff appointment alerts');
+      return 0;
+    }
+  }, [addNotification]);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
   const pendingCount = notifications.filter(
     (n) => n.type === 'pending_confirmation' && n.status === 'pending'
@@ -399,6 +473,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         dismissNotification,
         addNotification,
         refreshNotifications,
+        alertStaffForUpcomingAppointments,
       }}
     >
       {children}

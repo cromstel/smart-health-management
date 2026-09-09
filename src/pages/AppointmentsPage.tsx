@@ -18,7 +18,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Clock, User, MapPin, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Clock, User, MapPin, Edit, Trash2, Search, Bell } from 'lucide-react';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { generateIcsFile, downloadIcsFile } from '@/utils/appointments';
@@ -338,20 +339,32 @@ export default function AppointmentsPage() {
     setIsDeleteDialogOpen(true);
   };
 
+  const { alertStaffForUpcomingAppointments } = useNotifications();
+
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Appointments</h1>
           <p className="text-muted-foreground">Schedule and manage patient appointments</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" disabled={!hasPermission('appointments:add') || !canActOnHospital(user?.hospital_id)}>
-              <Plus className="h-4 w-4" />
-              New Appointment
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => alertStaffForUpcomingAppointments()}
+            title="Send real-time alerts to medical staff about upcoming appointments"
+          >
+            <Bell className="h-4 w-4 text-amber-500" />
+            <span>Notify Staff of Upcoming</span>
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" disabled={!hasPermission('appointments:add') || !canActOnHospital(user?.hospital_id)}>
+                <Plus className="h-4 w-4" />
+                New Appointment
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Schedule Appointment</DialogTitle>
@@ -421,6 +434,7 @@ export default function AppointmentsPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
 
         {/* Edit Appointment Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Printer, Download, Clock } from 'lucide-react';
+import { Printer, Download, Clock, FileText } from 'lucide-react';
 import { exportToCSV } from '@/utils/csv';
 
 type ReportType = 'stock_levels' | 'expiry_dates' | 'low_stock';
@@ -55,6 +55,115 @@ export default function InventoryReportsPage() {
       return;
     }
     window.print();
+  };
+
+  const handleExportPDF = () => {
+    if (!rows.length) {
+      toast.error('No inventory data available to export as PDF.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to export the PDF report.');
+      return;
+    }
+
+    const reportTitleMap: Record<ReportType, string> = {
+      stock_levels: 'Current Medicine Stock Levels Report',
+      expiry_dates: 'Medicine Expiry Dates & Expiration Audit',
+      low_stock: 'Low Stock & Pharmacy Reorder Alert Report'
+    };
+
+    const reportTitle = reportTitleMap[reportType] || 'Pharmacy Inventory Report';
+    const headers = Object.keys(rows[0]);
+    const formattedHeaders = headers.map(h => h.replace(/_/g, ' ').toUpperCase());
+
+    const tableHeadersHtml = formattedHeaders.map(h => `<th style="border: 1px solid #cbd5e1; padding: 10px 12px; background-color: #f1f5f9; text-align: left; font-size: 11px; font-weight: 700; color: #334155;">${h}</th>`).join('');
+
+    const tableRowsHtml = rows.map((row, idx) => {
+      const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+      const cells = headers.map(h => `<td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 11px; color: #1e293b;">${row[h] !== null && row[h] !== undefined ? String(row[h]) : 'N/A'}</td>`).join('');
+      return `<tr style="background-color: ${bg};">${cells}</tr>`;
+    }).join('');
+
+    const totalStock = rows.reduce((acc, r) => acc + (Number(r.stock_level || r.stock || 0) || 0), 0);
+
+    const docHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Smart Health Manager — ${reportTitle}</title>
+          <style>
+            @page { size: A4 portrait; margin: 12mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 20px; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; }
+            .logo { font-size: 20px; font-weight: 800; color: #0284c7; letter-spacing: -0.5px; }
+            .sub-logo { font-size: 12px; color: #64748b; margin-top: 2px; }
+            .meta { text-align: right; font-size: 11px; color: #475569; }
+            .title { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #0f172a; }
+            .stats { display: flex; gap: 16px; margin-bottom: 20px; background-color: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; }
+            .stat-box { flex: 1; }
+            .stat-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; }
+            .stat-val { font-size: 15px; font-weight: 700; color: #0284c7; margin-top: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .footer { margin-top: 30px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">Smart Health Manager</div>
+              <div class="sub-logo">Pharmacy & Medical Inventory System</div>
+            </div>
+            <div class="meta">
+              <div><strong>Generated Date:</strong> ${new Date().toLocaleString()}</div>
+              <div><strong>Document Reference:</strong> PDF-RPT-${Date.now().toString().slice(-6)}</div>
+            </div>
+          </div>
+
+          <div class="title">${reportTitle}</div>
+
+          <div class="stats">
+            <div class="stat-box">
+              <div class="stat-label">Category Filter</div>
+              <div class="stat-val" style="font-size: 13px; color: #334155;">${reportType.replace(/_/g, ' ').toUpperCase()}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Item Entries</div>
+              <div class="stat-val">${rows.length} Items</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Cumulative Stock Count</div>
+              <div class="stat-val">${totalStock > 0 ? totalStock.toLocaleString() : 'N/A'}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>${tableHeadersHtml}</tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            CONFIDENTIAL — Smart Health Management System • Internal Clinical & Pharmacy Report
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(docHtml);
+    printWindow.document.close();
+    toast.success('Generated PDF printable report successfully');
   };
 
   const scheduleReport = () => {
@@ -124,6 +233,10 @@ export default function InventoryReportsPage() {
           <Button variant="outline" className="h-9" onClick={scheduleReport}>
             <Clock className="h-4 w-4 mr-1" />
             Schedule
+          </Button>
+          <Button variant="outline" className="h-9 gap-1" onClick={handleExportPDF} title="Export report to PDF">
+            <FileText className="h-4 w-4 text-red-500" />
+            <span>Export PDF</span>
           </Button>
           <Button variant="outline" className="h-9 gap-1" onClick={handlePrint} title="Print printer-friendly report">
             <Printer className="h-4 w-4" />

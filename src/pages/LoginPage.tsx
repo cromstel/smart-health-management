@@ -126,7 +126,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(data.email, data.password);
-      navigate('/dashboard');
+      const isMfaEnabled = localStorage.getItem('mfa_enabled') !== 'false';
+      if (isMfaEnabled) {
+        navigate('/two-factor');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
       setServerError(errMsg);
