@@ -41,6 +41,7 @@ import { WaitTimeMonitorWidget } from '@/components/dashboard/WaitTimeMonitorWid
 import { D3PatientVitalsTrendChart } from '@/components/dashboard/D3PatientVitalsTrendChart';
 import { AuditLogOperationsChart } from '@/components/dashboard/AuditLogOperationsChart';
 import { Patient7DayVitalsTrendWidget } from '@/components/dashboard/Patient7DayVitalsTrendWidget';
+import { ApiHealthWidget } from '@/components/dashboard/ApiHealthWidget';
 import { EmergencyModeModule } from '@/components/emergency/EmergencyModeModule';
 import { ShiftHandoverModal } from '@/components/handover/ShiftHandoverModal';
 import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
@@ -68,6 +69,7 @@ interface DashboardModule {
 }
 
 const DEFAULT_MODULES: DashboardModule[] = [
+  { id: 'apiHealth', title: 'Smart Health API Telemetry & Health Monitor', gridClass: 'col-span-2', visible: true },
   { id: 'd3VitalsTrend', title: 'D3.js Patient Health Vitals Trend Analytics', gridClass: 'col-span-2', visible: true },
   { id: 'vitals7Day', title: '7-Day Patient Heart Rate & Blood Pressure Trends', gridClass: 'col-span-2', visible: true },
   { id: 'auditChart', title: 'Critical System Operations & Audit Log Frequency', gridClass: 'col-span-2', visible: true },
@@ -459,6 +461,9 @@ export default function DashboardPage() {
           let component = null;
 
           switch (module.id) {
+            case 'apiHealth':
+              component = <ApiHealthWidget />;
+              break;
             case 'd3VitalsTrend':
               component = <D3PatientVitalsTrendChart />;
               break;

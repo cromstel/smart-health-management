@@ -19,7 +19,7 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
 };
 
 export const validateCsrfToken = (req: Request, res: Response, next: NextFunction): void => {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/api/analytics/event') {
     return next();
   }
 

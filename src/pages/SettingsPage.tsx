@@ -46,6 +46,11 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
 
+  // Preferred Export Format for Inventory Reports
+  const [preferredInventoryExport, setPreferredInventoryExport] = useState<string>(() => {
+    return localStorage.getItem('preferred_inventory_export') || 'PDF';
+  });
+
   // Dashboard Refresh Interval State
   const [dashboardRefreshInterval, setDashboardRefreshInterval] = useState<string>(() => {
     return localStorage.getItem('dashboard_refresh_interval') || '30';
@@ -214,6 +219,7 @@ export default function SettingsPage() {
   const handleSaveSettings = async () => {
     try {
       await api.updateSettings(settings);
+      localStorage.setItem('preferred_inventory_export', preferredInventoryExport);
       alert('Settings saved successfully!');
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -329,6 +335,28 @@ export default function SettingsPage() {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Choose how often the Dashboard data automatically re-fetches from the API in the background.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preferredInventoryExport">Preferred Inventory Export Format</Label>
+                <Select
+                  value={preferredInventoryExport}
+                  onValueChange={(val) => {
+                    setPreferredInventoryExport(val);
+                    localStorage.setItem('preferred_inventory_export', val);
+                    toast.success(`Preferred export format set to ${val}`);
+                  }}
+                >
+                  <SelectTrigger id="preferredInventoryExport">
+                    <SelectValue placeholder="Select export format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PDF">PDF Document</SelectItem>
+                    <SelectItem value="CSV">CSV Spreadsheet</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Your preferred file type for exporting medical inventory reports.
                 </p>
               </div>
               <Separator />

@@ -237,4 +237,38 @@
     padding: 1px 4px !important;
     font-size: 9pt !important;
   }
+
+  /* Extended print-specific standard header for report pages */
+  .print-only-header {
+    display: block !important;
+    width: 100% !important;
+    border-bottom: 2px solid #000000 !important;
+    margin-bottom: 25px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .print-only-header-title {
+    font-size: 20pt !important;
+    font-weight: bold !important;
+    font-family: 'Times New Roman', serif !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .print-only-header-meta {
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    font-size: 10pt !important;
+    color: #000000 !important;
+    margin-top: 6px !important;
+    font-family: 'Times New Roman', serif !important;
+  }
+}
+
+/* Hide standard print headers on screens */
+.print-only-header {
+  display: none;
 }

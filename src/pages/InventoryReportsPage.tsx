@@ -8,6 +8,14 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Printer, Download, Clock, FileText } from 'lucide-react';
 import { exportToCSV } from '@/utils/csv';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ReportType = 'stock_levels' | 'expiry_dates' | 'low_stock';
 
@@ -17,6 +25,27 @@ export default function InventoryReportsPage() {
   const [loading, setLoading] = useState(false);
   const [scheduleTime, setScheduleTime] = useState(localStorage.getItem('inventoryReportSchedule') || '');
   const [batchView, setBatchView] = useState<{ medicine: any; batches: any[] } | null>(null);
+  
+  // Custom states for Print and Export preferences
+  const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
+  const [preferredFormat, setPreferredFormat] = useState<string>('PDF');
+  const [systemName, setSystemName] = useState('Smart Health Hospital');
+
+  // Load configuration and settings
+  useEffect(() => {
+    const saved = localStorage.getItem('preferred_inventory_export');
+    if (saved) {
+      setPreferredFormat(saved);
+    }
+    
+    api.getSettings()
+      .then((data: any) => {
+        if (data && data.systemName) {
+          setSystemName(data.systemName);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const loadReport = useCallback(async () => {
     try {
@@ -54,7 +83,14 @@ export default function InventoryReportsPage() {
       toast.error('No data available to print');
       return;
     }
-    window.print();
+    setIsPrintConfirmOpen(true);
+  };
+
+  const triggerBrowserPrint = () => {
+    setIsPrintConfirmOpen(false);
+    setTimeout(() => {
+      window.print();
+    }, 200);
   };
 
   const handleExportPDF = () => {
@@ -205,13 +241,13 @@ export default function InventoryReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Print-only Official Header */}
-      <div className="hidden print:block mb-6 border-b border-gray-400 pb-4">
-        <h1 className="text-2xl font-bold text-black">Smart Health Manager — Inventory Report</h1>
-        <p className="text-sm text-gray-700 font-medium mt-1">{reportTitle}</p>
-        <div className="flex justify-between text-xs text-gray-600 mt-2">
-          <span>Generated: {new Date().toLocaleString()}</span>
-          <span>Total Records: {rows.length}</span>
+      {/* Print-only Standard Header with Hospital Name & Date */}
+      <div className="print-only-header">
+        <h1 className="print-only-header-title">{systemName}</h1>
+        <div className="print-only-header-meta">
+          <span><strong>Report:</strong> {reportTitle}</span>
+          <span><strong>Date:</strong> {new Date().toLocaleString()}</span>
+          <span><strong>Records:</strong> {rows.length} Items</span>
         </div>
       </div>
 
@@ -234,17 +270,37 @@ export default function InventoryReportsPage() {
             <Clock className="h-4 w-4 mr-1" />
             Schedule
           </Button>
-          <Button variant="outline" className="h-9 gap-1" onClick={handleExportPDF} title="Export report to PDF">
+          <Button 
+            variant={preferredFormat === 'PDF' ? 'default' : 'outline'} 
+            className="h-9 gap-1" 
+            onClick={handleExportPDF} 
+            title="Export report to PDF"
+          >
             <FileText className="h-4 w-4 text-red-500" />
             <span>Export PDF</span>
+            {preferredFormat === 'PDF' && (
+              <span className="ml-1 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
+                Pref
+              </span>
+            )}
           </Button>
           <Button variant="outline" className="h-9 gap-1" onClick={handlePrint} title="Print printer-friendly report">
-            <Printer className="h-4 w-4" />
+            <Printer className="h-4 w-4 text-sky-500" />
             <span>Print</span>
           </Button>
-          <Button className="h-9 gap-1" onClick={exportCSV} title="Export report to CSV">
-            <Download className="h-4 w-4" />
+          <Button 
+            variant={preferredFormat === 'CSV' ? 'default' : 'outline'} 
+            className="h-9 gap-1" 
+            onClick={exportCSV} 
+            title="Export report to CSV"
+          >
+            <Download className="h-4 w-4 text-emerald-500" />
             <span>Export CSV</span>
+            {preferredFormat === 'CSV' && (
+              <span className="ml-1 text-[10px] bg-emerald-500 text-white rounded-full px-1.5 py-0.5 font-bold">
+                Pref
+              </span>
+            )}
           </Button>
         </div>
       </div>
@@ -342,6 +398,26 @@ export default function InventoryReportsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Print Confirmation Dialog */}
+      <Dialog open={isPrintConfirmOpen} onOpenChange={setIsPrintConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Print Report</DialogTitle>
+            <DialogDescription>
+              Is the {reportTitle} fully generated and ready to be printed? This will open the system browser print dialog.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setIsPrintConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={triggerBrowserPrint} className="bg-sky-600 hover:bg-sky-700 text-white">
+              Yes, Print Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -26,11 +26,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, PhoneCall, X, Mic } from 'lucide-react';
+import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, X, Mic, BarChart2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
 import PatientVitalsModule from '@/components/vitals/PatientVitalsModule';
+import { PatientVitalsTrendsDashboard } from '@/components/patients/PatientVitalsTrendsDashboard';
 import { PostDischargeFollowupModule } from '@/components/patients/PostDischargeFollowupModule';
 import { ClinicalNotesVoiceModal } from '@/components/patients/ClinicalNotesVoiceModal';
 import { vitalsService } from '@/services/vitalsService';
@@ -54,8 +55,8 @@ interface Patient {
 export default function PatientsPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'directory' | 'vitals' | 'followup'>(
-    searchParams.get('tab') === 'vitals' ? 'vitals' : searchParams.get('tab') === 'followup' ? 'followup' : 'directory'
+  const [activeTab, setActiveTab] = useState<'directory' | 'vitals' | 'trends' | 'followup'>(
+    searchParams.get('tab') === 'vitals' ? 'vitals' : searchParams.get('tab') === 'trends' ? 'trends' : searchParams.get('tab') === 'followup' ? 'followup' : 'directory'
   );
   const [selectedPatientForVitals, setSelectedPatientForVitals] = useState<string | undefined>(
     searchParams.get('patientId') || undefined
@@ -69,6 +70,8 @@ export default function PatientsPage() {
     const urlTab = searchParams.get('tab');
     if (urlTab === 'vitals' && activeTab !== 'vitals') {
       setActiveTab('vitals');
+    } else if (urlTab === 'trends' && activeTab !== 'trends') {
+      setActiveTab('trends');
     } else if (urlTab === 'followup' && activeTab !== 'followup') {
       setActiveTab('followup');
     }
@@ -423,17 +426,17 @@ export default function PatientsPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveTab('followup');
-                setSearchParams({ tab: 'followup' });
+                setActiveTab('trends');
+                setSearchParams({ tab: 'trends' });
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                activeTab === 'followup'
-                  ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-sm'
+                activeTab === 'trends'
+                  ? 'bg-card text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <PhoneCall className="h-3.5 w-3.5 text-emerald-500" />
-              <span>Post-Discharge Outreach</span>
+              <BarChart2 className="h-3.5 w-3.5 text-blue-500" />
+              <span>Vitals Trends</span>
             </button>
           </div>
 
@@ -813,6 +816,10 @@ export default function PatientsPage() {
             patients={patients}
             initialPatientId={selectedPatientForVitals}
           />
+        </ErrorBoundary>
+      ) : activeTab === 'trends' ? (
+        <ErrorBoundary fallbackTitle="Error loading Patient Vitals Trends Dashboard">
+          <PatientVitalsTrendsDashboard />
         </ErrorBoundary>
       ) : activeTab === 'followup' ? (
         <ErrorBoundary fallbackTitle="Error loading Post-Discharge Followup Module">
