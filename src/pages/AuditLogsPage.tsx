@@ -11,9 +11,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, FileText, Download, Mail, ShieldCheck } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Search, FileText, Download, Mail, ShieldCheck, FileJson, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { exportAuditLogs } from '@/utils/auditExport';
 
 interface AuditLog {
   userId: string;
@@ -126,10 +135,30 @@ export default function AuditLogsPage() {
           <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
           <p className="text-muted-foreground">Track all system activities and changes</p>
         </div>
-        <Button variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
-          Export Logs
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export Logs
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Export Audit Records</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => exportAuditLogs(logs, 'json', 'All Logs')}>
+              <FileJson className="mr-2 h-4 w-4 text-accent" />
+              <span>Export JSON (Compliance Seal)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAuditLogs(filteredLogs, 'csv', 'Filtered Logs')}>
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+              <span>Export CSV (Filtered - {filteredLogs.length})</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAuditLogs(logs, 'csv', 'All Logs')}>
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-500" />
+              <span>Export CSV (All - {logs.length})</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

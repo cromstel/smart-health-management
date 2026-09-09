@@ -22,6 +22,7 @@ import { Plus, Clock, User, MapPin, Edit, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { generateIcsFile, downloadIcsFile } from '@/utils/appointments';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Appointment {
   id: string;
@@ -532,6 +533,7 @@ export default function AppointmentsPage() {
         </Dialog>
       </div>
 
+      <ErrorBoundary fallbackTitle="Error loading Appointments">
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
           <CardHeader>
@@ -664,6 +666,7 @@ export default function AppointmentsPage() {
           </CardContent>
         </Card>
       </div>
+      </ErrorBoundary>
     </div>
   );
 }

@@ -59,6 +59,7 @@ import {
   Thermometer,
   Gauge,
   Plus,
+  Mic,
   Calendar,
   Download,
   Trash2,
@@ -767,6 +768,16 @@ export function PatientVitalsModule({
               >
                 <Video className="h-3.5 w-3.5 text-sky-600" />
                 <span>Video Consult</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 text-xs gap-1.5 border-accent text-accent hover:bg-accent/10 font-semibold"
+                onClick={() => setLogDialogOpen(true)}
+              >
+                <Mic className="h-4 w-4 text-accent animate-pulse" />
+                <span>Dictate Vitals</span>
               </Button>
 
               <Button

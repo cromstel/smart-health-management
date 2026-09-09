@@ -26,14 +26,18 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer } from 'lucide-react';
+import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, PhoneCall } from 'lucide-react';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
 import PatientVitalsModule from '@/components/vitals/PatientVitalsModule';
+import { PostDischargeFollowupModule } from '@/components/patients/PostDischargeFollowupModule';
 import { vitalsService } from '@/services/vitalsService';
 import { evaluateTriagePriority } from '@/utils/triage';
 import type { VitalsRecord } from '@/types/vitals';
+import { useFormAutoSave } from '@/hooks/useFormAutoSave';
+import { AutoSaveDraftBanner } from '@/components/common/AutoSaveDraftBanner';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Patient {
   id: string;
@@ -49,8 +53,8 @@ interface Patient {
 export default function PatientsPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'directory' | 'vitals'>(
-    searchParams.get('tab') === 'vitals' ? 'vitals' : 'directory'
+  const [activeTab, setActiveTab] = useState<'directory' | 'vitals' | 'followup'>(
+    searchParams.get('tab') === 'vitals' ? 'vitals' : searchParams.get('tab') === 'followup' ? 'followup' : 'directory'
   );
   const [selectedPatientForVitals, setSelectedPatientForVitals] = useState<string | undefined>(
     searchParams.get('patientId') || undefined
@@ -64,6 +68,8 @@ export default function PatientsPage() {
     const urlTab = searchParams.get('tab');
     if (urlTab === 'vitals' && activeTab !== 'vitals') {
       setActiveTab('vitals');
+    } else if (urlTab === 'followup' && activeTab !== 'followup') {
+      setActiveTab('followup');
     }
     const urlPatient = searchParams.get('patientId');
     if (urlPatient && urlPatient !== selectedPatientForVitals) {
@@ -107,7 +113,7 @@ export default function PatientsPage() {
       setQrCodeUrl('');
     }
   }, [viewingPatient]);
-  const [newPatient, setNewPatient] = useState({
+  const initialNewPatient = {
     firstName: '',
     lastName: '',
     age: '',
@@ -115,7 +121,23 @@ export default function PatientsPage() {
     phone: '',
     email: '',
     hospitalId: '',
+  };
+  const [newPatient, setNewPatient] = useState(initialNewPatient);
+
+  const {
+    hasRestoredDraft: hasPatientDraft,
+    draftSavedAt: patientDraftSavedAt,
+    isAutoSaving: isPatientAutoSaving,
+    clearDraft: clearPatientDraft,
+    discardDraft: discardPatientDraft,
+  } = useFormAutoSave('add_patient_modal', newPatient, isDialogOpen, (restored) => {
+    if (restored) setNewPatient(restored);
   });
+
+  const handleDiscardPatientDraft = () => {
+    discardPatientDraft();
+    setNewPatient(initialNewPatient);
+  };
   const [isAddingPatient, setIsAddingPatient] = useState(false);
   const [addPatientError, setAddPatientError] = useState<string | null>(null);
   const [isUpdatingPatient, setIsUpdatingPatient] = useState(false);
@@ -150,6 +172,7 @@ export default function PatientsPage() {
         address: 'N/A', // Or add an address field to the form
       });
       logAction('create', 'patient', { recordId: newPatient.email });
+      clearPatientDraft();
       await loadPatients();
       setIsDialogOpen(false);
       setNewPatient({
@@ -387,6 +410,21 @@ export default function PatientsPage() {
               <Heart className="h-3.5 w-3.5" />
               <span>Vitals & Charts</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('followup');
+                setSearchParams({ tab: 'followup' });
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                activeTab === 'followup'
+                  ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <PhoneCall className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Post-Discharge Outreach</span>
+            </button>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -403,6 +441,12 @@ export default function PatientsPage() {
                 Enter patient information to create a new record
               </DialogDescription>
             </DialogHeader>
+            <AutoSaveDraftBanner
+              hasRestoredDraft={hasPatientDraft}
+              draftSavedAt={patientDraftSavedAt}
+              isAutoSaving={isPatientAutoSaving}
+              onDiscard={handleDiscardPatientDraft}
+            />
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -717,12 +761,16 @@ export default function PatientsPage() {
                       onClick={() => {
                         const win = window.open();
                         if (win) {
+                          const escapeHtml = (str: string) =>
+                            str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m));
+                          const safeName = escapeHtml(viewingPatient.name || '');
+                          const safeId = escapeHtml(viewingPatient.id || '');
                           win.document.write(`
                             <html>
-                              <head><title>Print QR Code - ${viewingPatient.name}</title></head>
+                              <head><title>Print QR Code - ${safeName}</title></head>
                               <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;margin:0;">
-                                <h2 style="margin-bottom:5px;">${viewingPatient.name}</h2>
-                                <p style="font-size:14px;color:#666;margin:0 0 20px 0;">Patient ID: ${viewingPatient.id}</p>
+                                <h2 style="margin-bottom:5px;">${safeName}</h2>
+                                <p style="font-size:14px;color:#666;margin:0 0 20px 0;">Patient ID: ${safeId}</p>
                                 <img src="${qrCodeUrl}" style="width:250px;height:250px;border:1px solid #ccc;padding:10px;border-radius:10px;" />
                                 <p style="font-size:12px;color:#999;margin-top:20px;">Scan to open digital medical record</p>
                                 <script>window.onload = function() { window.print(); window.close(); }</script>
@@ -750,12 +798,19 @@ export default function PatientsPage() {
       </div>
 
       {activeTab === 'vitals' ? (
-        <PatientVitalsModule
-          patients={patients}
-          initialPatientId={selectedPatientForVitals}
-        />
+        <ErrorBoundary fallbackTitle="Error loading Patient Vitals Module">
+          <PatientVitalsModule
+            patients={patients}
+            initialPatientId={selectedPatientForVitals}
+          />
+        </ErrorBoundary>
+      ) : activeTab === 'followup' ? (
+        <ErrorBoundary fallbackTitle="Error loading Post-Discharge Followup Module">
+          <PostDischargeFollowupModule />
+        </ErrorBoundary>
       ) : (
-        <Card>
+        <ErrorBoundary fallbackTitle="Error loading Patient Records">
+          <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Patient Records</CardTitle>
@@ -903,6 +958,7 @@ export default function PatientsPage() {
           )}
         </CardContent>
       </Card>
+      </ErrorBoundary>
       )}
     </div>
   );

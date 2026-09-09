@@ -28,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (perm: string) => {
     if (!user) return false;
+    if (user.permissions.includes('all:all') || user.permissions.includes(perm)) return true;
+    if (!perm.includes(':')) return user.permissions.includes(perm);
     const [module, action] = perm.split(':');
     return user.permissions.includes(`all:${action}`) || user.permissions.includes(`${module}:${action}`);
   };
@@ -84,7 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let es: EventSource | null = null;
     try {
       if (typeof window !== 'undefined' && 'EventSource' in window) {
-        const streamUrl = `${API_ORIGIN}/api/roles/stream`;
+        const token = localStorage.getItem('token');
+        const streamUrl = `${API_ORIGIN}/api/roles/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
         es = new EventSource(streamUrl);
         es.onmessage = async (e) => {
           try {

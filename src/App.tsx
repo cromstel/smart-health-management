@@ -35,6 +35,7 @@ import SuperAdminOperations from './pages/SuperAdminOperations';
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminRoute } from './components/SuperAdminRoute';
 import SharedPatientSummaryPage from './pages/SharedPatientSummaryPage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 import { ShortcutManager } from './components/ShortcutManager';
 
@@ -114,7 +115,9 @@ function App() {
           <AuditProvider>
             <NotificationProvider>
               <ShortcutManager />
-              <AppRoutes />
+              <ErrorBoundary>
+                <AppRoutes />
+              </ErrorBoundary>
             </NotificationProvider>
           </AuditProvider>
         </AuthProvider>

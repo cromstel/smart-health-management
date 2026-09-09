@@ -26,9 +26,11 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, Building2, Mail, Phone, Calendar, Edit, Trash2, Download } from 'lucide-react';
+import { Plus, Search, Building2, Mail, Phone, Calendar, Edit, Trash2, Download, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
+import { ShiftSchedulerModule } from '@/components/staff/ShiftSchedulerModule';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Staff {
   id: string;
@@ -549,9 +551,18 @@ export default function StaffPage() {
               <TabsTrigger value="doctors">Doctors</TabsTrigger>
               <TabsTrigger value="nurses">Nurses</TabsTrigger>
               <TabsTrigger value="other">Other</TabsTrigger>
+              <TabsTrigger value="scheduler" className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400 font-bold">
+                <Sparkles className="h-3.5 w-3.5 text-sky-500" /> Shift Scheduler (Auto-Balance)
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="space-y-4">
+            {activeTab === 'scheduler' ? (
+              <ErrorBoundary fallbackTitle="Error loading Shift Scheduler Module">
+                <ShiftSchedulerModule />
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary fallbackTitle="Error loading Staff Directory">
+                <TabsContent value={activeTab} className="space-y-4">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between flex-wrap gap-4">
@@ -676,6 +687,8 @@ export default function StaffPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+            </ErrorBoundary>
+            )}
           </Tabs>
         </>
       )}

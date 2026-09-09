@@ -22,9 +22,12 @@ import {
   Settings2,
   Save,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Siren,
+  FileText
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { api } from '@/services/api';
@@ -34,6 +37,11 @@ import UpcomingAppointmentsAlertWidget from '@/components/dashboard/UpcomingAppo
 import CriticalVitalsAlertWidget from '@/components/dashboard/CriticalVitalsAlertWidget';
 import AppointmentDensityHeatMap from '@/components/dashboard/AppointmentDensityHeatMap';
 import StaffCapacityWidget from '@/components/dashboard/StaffCapacityWidget';
+import { WaitTimeMonitorWidget } from '@/components/dashboard/WaitTimeMonitorWidget';
+import { EmergencyModeModule } from '@/components/emergency/EmergencyModeModule';
+import { ShiftHandoverModal } from '@/components/handover/ShiftHandoverModal';
+import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 const chartConfig = {
   patients: { label: 'Patients', color: '#00BFFF' },
@@ -57,6 +65,7 @@ interface DashboardModule {
 }
 
 const DEFAULT_MODULES: DashboardModule[] = [
+  { id: 'waitTime', title: 'Real-Time Department Wait Time Monitor', gridClass: 'col-span-2', visible: true },
   { id: 'appointments', title: 'Upcoming Appointments & Alerts', gridClass: 'col-span-2', visible: true },
   { id: 'vitals', title: 'Critical Patient Vitals Alerts', gridClass: 'col-span-2', visible: true },
   { id: 'staffCapacity', title: 'Staff Capacity & Load Balancer', gridClass: 'col-span-2', visible: true },
@@ -95,6 +104,18 @@ export default function DashboardPage() {
   });
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  // Emergency Mode & Handover state
+  const [isEmergencyMode, setIsEmergencyMode] = useState<boolean>(() => {
+    return localStorage.getItem('emergency_mode_active') === 'true';
+  });
+  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
+  const [isLogVitalsOpen, setIsLogVitalsOpen] = useState(false);
+
+  const toggleEmergencyMode = (checked: boolean) => {
+    setIsEmergencyMode(checked);
+    localStorage.setItem('emergency_mode_active', String(checked));
+  };
 
   // Manual layout reordering and resizing methods
   const handleMove = (id: string, direction: 'up' | 'down') => {
@@ -267,12 +288,45 @@ export default function DashboardPage() {
   }
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-muted/20 border border-border/60 p-4 rounded-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-muted/20 border border-border/60 p-4 rounded-xl">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            {isEmergencyMode && (
+              <Badge className="bg-rose-600 text-white font-bold animate-pulse gap-1">
+                <Siren className="h-3.5 w-3.5" /> Emergency Mode
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm">Welcome back! Here's what's happening today.</p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Emergency Mode Toggle Control */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+            isEmergencyMode 
+              ? 'bg-rose-600/10 border-rose-500 text-rose-600 dark:text-rose-400 font-bold animate-pulse' 
+              : 'bg-card border-border text-muted-foreground'
+          }`}>
+            <Siren className={`h-4 w-4 ${isEmergencyMode ? 'text-rose-600 animate-spin' : 'text-muted-foreground'}`} />
+            <span className="text-xs font-semibold">Emergency Mode</span>
+            <Switch
+              checked={isEmergencyMode}
+              onCheckedChange={toggleEmergencyMode}
+            />
+          </div>
+
+          {/* Shift Handover Report Action */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs font-semibold h-9 gap-1.5 border-accent text-accent hover:bg-accent/10"
+            onClick={() => setIsHandoverModalOpen(true)}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            <span>Shift Handover</span>
+          </Button>
+
           {isCustomizing ? (
             <>
               <Button
@@ -316,6 +370,13 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {isEmergencyMode && (
+        <EmergencyModeModule
+          onOpenLogVitals={() => setIsLogVitalsOpen(true)}
+          onOpenHandover={() => setIsHandoverModalOpen(true)}
+        />
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
           <Card key={stat.title}>
@@ -343,6 +404,9 @@ export default function DashboardPage() {
           let component = null;
 
           switch (module.id) {
+            case 'waitTime':
+              component = <WaitTimeMonitorWidget />;
+              break;
             case 'appointments':
               component = <UpcomingAppointmentsAlertWidget />;
               break;
@@ -625,11 +689,30 @@ export default function DashboardPage() {
                   </Button>
                 </div>
               )}
-              {component}
+              <ErrorBoundary fallbackTitle={`Error loading module: ${module.title}`}>
+                {component}
+              </ErrorBoundary>
             </div>
           );
         })}
       </div>
+
+      <ShiftHandoverModal
+        open={isHandoverModalOpen}
+        onOpenChange={setIsHandoverModalOpen}
+      />
+
+      <LogVitalsDialog
+        open={isLogVitalsOpen}
+        onOpenChange={setIsLogVitalsOpen}
+        patientId="P-1002"
+        patientName="Sarah Connor"
+        patientsList={[
+          { id: 'P-1002', name: 'Sarah Connor' },
+          { id: 'P-1005', name: 'Kwame Mensah' },
+          { id: 'P-1009', name: 'Amina Yeboah' },
+        ]}
+      />
     </div>
   );
 }

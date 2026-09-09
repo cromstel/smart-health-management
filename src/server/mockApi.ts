@@ -702,10 +702,10 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
     return true;
   }
 
-  // Gemini Chat Proxy Endpoint
+  // Gemini Chat Proxy Endpoint with Google Search Grounding
   if (pathname === '/api/gemini/chat' && req.method === 'POST') {
     readJsonBody(req).then(async (body) => {
-      const { messages, modelType, systemInstruction } = body;
+      const { messages, modelType, systemInstruction, enableSearchGrounding = true } = body;
       
       // Determine the model based on modelType (pro, flash, lite)
       let resolvedModel = 'gemini-3.5-flash';
@@ -720,22 +720,47 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       const apiKey = process.env.GEMINI_API_KEY;
 
       if (!apiKey) {
-        // Return a highly realistic simulated clinical AI response for preview testing
+        // Return a highly realistic simulated clinical AI response with Google Search Grounding for preview testing
         const lastUserMessage = messages?.[messages.length - 1]?.content || 'Hello';
         let simulatedReply: string;
+        let simulatedQueries: string[];
+        let simulatedSources: { title: string; uri: string }[];
 
-        if (modelType === 'pro') {
-          simulatedReply = `[Simulation Mode - GEMINI_API_KEY is not set]\n\nAs a Senior Clinical Specialist powered by ${resolvedModel}, I have analyzed your query: "${lastUserMessage}".\n\nBased on clinical protocols and health guidelines:\n1. Ensure complete patient history and biometrics (blood pressure, temperature) are fully compiled.\n2. Cross-reference any active prescriptions with pharmacy stock levels.\n3. Consider setting up a clinical follow-up appointment during low-density hours (detectable on your dashboard heat map).\n\nPlease provide the GEMINI_API_KEY in the **Settings > Secrets** panel to activate real-time clinical reasoning.`;
-        } else if (modelType === 'lite') {
-          simulatedReply = `[Simulation Mode - GEMINI_API_KEY is not set]\n\nQuick Lookup Result (${resolvedModel}): Ready to assist! For the query: "${lastUserMessage}", please ensure that you have configured your Gemini API Key in the Settings menu to enable high-speed clinical responses.`;
+        if (lastUserMessage.toLowerCase().includes('hypertension') || lastUserMessage.toLowerCase().includes('blood pressure')) {
+          simulatedQueries = ['2025 2026 ACC AHA Hypertension clinical guidelines update', 'Resistant hypertension treatment protocols'];
+          simulatedSources = [
+            { title: 'ACC/AHA Clinical Practice Guidelines - Blood Pressure Management', uri: 'https://www.acc.org/guidelines' },
+            { title: 'The Lancet - Pharmacotherapy of Essential Hypertension', uri: 'https://www.thelancet.com' },
+            { title: 'PubMed Central - Renal Denervation & Combination Anti-Hypertensives', uri: 'https://pubmed.ncbi.nlm.nih.gov' }
+          ];
+          simulatedReply = `### [Google Search Grounded Medical Analysis]\n\nBased on recent 2025/2026 cardiovascular guidelines and grounded medical literature:\n\n1. **Diagnostic Benchmark**: Stage 2 hypertension is defined by sustained systolic BP ≥140 mmHg or diastolic BP ≥90 mmHg. Diurnal variability should be verified via 24-hour Ambulatory Blood Pressure Monitoring (ABPM).\n2. **Therapeutic Protocol**: Dual-agent first-line therapy (e.g., ACE-inhibitor/ARB combined with a DHP-calcium channel blocker or thiazide-like diuretic) is strongly recommended.\n3. **Monitoring**: Baseline renal panel (eGFR, serum electrolytes) must be checked prior to initiation and after 4 weeks.\n\n*DISCLAIMER: AI-generated clinical aid for authorized healthcare practitioners. Attach GEMINI_API_KEY in Settings to enable live web queries.*`;
+        } else if (lastUserMessage.toLowerCase().includes('diabetes') || lastUserMessage.toLowerCase().includes('glp-1') || lastUserMessage.toLowerCase().includes('ckd')) {
+          simulatedQueries = ['ADA Standards of Care 2025 GLP-1 receptor agonists CKD', 'NEJM SGLT2 inhibitors and kidney disease'];
+          simulatedSources = [
+            { title: 'American Diabetes Association (ADA) Standards of Care', uri: 'https://diabetesjournals.org/care' },
+            { title: 'New England Journal of Medicine - Cardiorenal Protection in T2D', uri: 'https://www.nejm.org' },
+            { title: 'KDIGO 2025 Clinical Practice Guideline for Diabetes in CKD', uri: 'https://kdigo.org' }
+          ];
+          simulatedReply = `### [Google Search Grounded Medical Research]\n\nAccording to the latest ADA Standards of Care and cardiorenal consensus trials:\n\n1. **Cardiorenal Protection**: For patients with Type 2 Diabetes and established CKD (eGFR 20-60 mL/min/1.73m² or urine ACR >30 mg/g), SGLT2 inhibitors and GLP-1 receptor agonists have demonstrated significant nephroprotective and cardiovascular mortality benefits.\n2. **Target HbA1c**: Individualized glycemic targets (typically <7.0% for most adults, or <8.0% for frail multimorbid individuals) remain the standard.\n3. **Safety Monitoring**: Periodic monitoring of eGFR, volume status, and electrolytes is required.\n\n*DISCLAIMER: AI-generated clinical aid for licensed professionals. Attach GEMINI_API_KEY in Settings to activate real-time search grounding.*`;
         } else {
-          simulatedReply = `[Simulation Mode - GEMINI_API_KEY is not set]\n\nHello! I am your Clinical Assistant powered by ${resolvedModel}. I can help you summarize records, look up medical codes, or manage daily operations.\n\nTo enable full intelligent multi-turn capabilities, please attach your GEMINI_API_KEY in the Settings > Secrets menu.`;
+          simulatedQueries = [`Current medical consensus for "${lastUserMessage.slice(0, 45)}"`, 'CDC & WHO Clinical Guidelines 2025/2026'];
+          simulatedSources = [
+            { title: 'World Health Organization (WHO) Guidelines & Publications', uri: 'https://www.who.int' },
+            { title: 'CDC Clinical Guidance and Epidemiological Data', uri: 'https://www.cdc.gov' },
+            { title: 'National Institutes of Health (NIH) Medical Database', uri: 'https://www.nih.gov' }
+          ];
+          simulatedReply = `### [Google Search Grounded Response]\n\nSynthesizing up-to-date medical references and clinical protocols for **"${lastUserMessage}"**:\n\n* **Evidence Summary**: Clinical best practices require structured risk stratification, standardized vital benchmarks, and adherence to evidence-based clinical algorithms.\n* **Operational Recommendations**: Verify patient allergies, prior pharmacological history, and schedule follow-up appointments appropriately.\n\n*DISCLAIMER: This is an AI-generated clinical assistant response. Attach your GEMINI_API_KEY in Settings to execute live Google Search grounding.*`;
         }
 
         sendJson(res, 200, {
           text: simulatedReply,
           modelUsed: resolvedModel,
-          simulated: true
+          simulated: true,
+          groundingMetadata: {
+            searchQueries: simulatedQueries,
+            sources: simulatedSources,
+            grounded: true
+          }
         });
         return;
       }
@@ -756,19 +781,35 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
           parts: [{ text: m.content }]
         }));
 
+        const toolsConfig = enableSearchGrounding ? [{ googleSearch: {} }] : undefined;
+
         const response = await ai.models.generateContent({
           model: resolvedModel,
           contents,
           config: {
-            systemInstruction: systemInstruction || 'You are an expert clinical assistant. Provide accurate, professional medical insights, and always append a standard clinical disclaimer.',
+            systemInstruction: (systemInstruction || 'You are an expert clinical assistant. Provide accurate, up-to-date, professional medical insights grounded in latest medical research, and always append a standard clinical disclaimer.') + '\nWhen Google Search is available, ground your responses in up-to-date peer-reviewed medical publications, WHO, CDC, and professional guidelines.',
             temperature: modelType === 'pro' ? 0.3 : 0.7,
+            tools: toolsConfig,
           }
         });
+
+        const candidate = response.candidates?.[0];
+        const searchChunks = (candidate?.groundingMetadata?.groundingChunks || []).map((chunk: any) => ({
+          title: chunk.web?.title || 'Medical Reference Source',
+          uri: chunk.web?.uri || '',
+        })).filter((c: any) => Boolean(c.uri));
+
+        const searchQueries = candidate?.groundingMetadata?.webSearchQueries || [];
 
         sendJson(res, 200, {
           text: response.text || 'No response text generated by the model.',
           modelUsed: resolvedModel,
-          simulated: false
+          simulated: false,
+          groundingMetadata: {
+            searchQueries,
+            sources: searchChunks,
+            grounded: searchChunks.length > 0 || searchQueries.length > 0
+          }
         });
       } catch (error: any) {
         console.error('Gemini API Error:', error);

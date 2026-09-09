@@ -12,8 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, AlertCircle, Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { exportAuditLogs } from '@/utils/auditExport';
 
 interface AuditLog {
   id: string;
@@ -109,9 +118,67 @@ export default function SuperAdminAuditLogs() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Audit Logs</h1>
-        <p className="text-gray-400 mt-1">View all system activity and user actions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Audit Logs</h1>
+          <p className="text-gray-400 mt-1">View all system activity and user actions</p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2 border-gray-700 text-white hover:bg-gray-800">
+              <Download className="h-4 w-4" />
+              Export Logs
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-[#001F3F] border-gray-800 text-white">
+            <DropdownMenuLabel className="text-gray-300">Export Audit Records</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-gray-800" />
+            <DropdownMenuItem
+              className="hover:bg-gray-800 focus:bg-gray-800"
+              onClick={() =>
+                exportAuditLogs(
+                  logs.map((l) => ({
+                    userId: l.user_id,
+                    userName: l.user_name,
+                    userEmail: l.user_email,
+                    action: l.action,
+                    module: l.module,
+                    details: l.details,
+                    ipAddress: l.ip_address,
+                    timestamp: l.created_at,
+                  })),
+                  'json',
+                  'SuperAdmin Logs'
+                )
+              }
+            >
+              <FileJson className="mr-2 h-4 w-4 text-accent" />
+              <span>Export JSON (Compliance Seal)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="hover:bg-gray-800 focus:bg-gray-800"
+              onClick={() =>
+                exportAuditLogs(
+                  filteredLogs.map((l) => ({
+                    userId: l.user_id,
+                    userName: l.user_name,
+                    userEmail: l.user_email,
+                    action: l.action,
+                    module: l.module,
+                    details: l.details,
+                    ipAddress: l.ip_address,
+                    timestamp: l.created_at,
+                  })),
+                  'csv',
+                  'Filtered Logs'
+                )
+              }
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+              <span>Export CSV (Filtered - {filteredLogs.length})</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {error && (

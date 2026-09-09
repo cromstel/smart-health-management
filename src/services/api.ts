@@ -3,7 +3,12 @@ import type { User } from "@/contexts/AuthContext";
 
 interface SystemHealthResponse { status: string; }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+let configuredUrl = import.meta.env.VITE_API_URL || '/api';
+if (import.meta.env.DEV && configuredUrl.includes('localhost:5600')) {
+  // Use Vite's local mock API middleware if the default 5600 is injected but not running
+  configuredUrl = '/api';
+}
+const API_BASE_URL = configuredUrl;
 export const API_ORIGIN = API_BASE_URL.startsWith('http') ? API_BASE_URL.replace(/\/api$/, '') : '';
 
 class ApiService {

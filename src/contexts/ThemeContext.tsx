@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light';
+export type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
   theme: Theme;
@@ -34,12 +34,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     const root = document.documentElement;
+    const body = document.body;
+
     if (theme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
+      root.style.colorScheme = 'dark';
+      body.classList.add('dark');
+      body.classList.remove('light');
     } else {
       root.classList.remove('dark');
       root.classList.add('light');
+      root.style.colorScheme = 'light';
+      body.classList.remove('dark');
+      body.classList.add('light');
     }
   }, [theme]);
 
@@ -60,7 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setTheme,
       }}
     >
-      <div className={theme === 'dark' ? 'dark min-h-screen' : 'light min-h-screen'}>
+      <div className={theme === 'dark' ? 'dark min-h-screen bg-background text-foreground' : 'light min-h-screen bg-background text-foreground'}>
         {children}
       </div>
     </ThemeContext.Provider>

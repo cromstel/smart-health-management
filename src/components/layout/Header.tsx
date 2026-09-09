@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { NotificationDropdown } from './NotificationDropdown';
 import { PWAInstallButton } from '@/components/PWAInstallButton';
+import { OfflineStatusBadge } from './OfflineStatusBadge';
+import { VoiceNavigationButton } from '@/components/voice/VoiceNavigationButton';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -34,6 +36,12 @@ export function Header() {
         <GlobalSearch />
       </div>
       <div className="flex-1" />
+
+      {/* Visual Offline Status Badge (PWA Service Worker State) */}
+      <OfflineStatusBadge />
+
+      {/* Global Voice Command Navigation */}
+      <VoiceNavigationButton />
 
       {/* PWA In-App Install Prompt */}
       <PWAInstallButton />

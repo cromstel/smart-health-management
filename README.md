@@ -1,10 +1,26 @@
 # Smart Health Management System (SHMS)
 
-**Smart Health Management System (SHMS)** is a comprehensive web-based healthcare management platform for managing patient records, appointments, hospital operations, and financial accounting, developed and maintained by **Cromstel IT Group**.  
-This project delivers robust, scalable, and maintainable solutions for enterprise environments. All versions are fully supported with security updates.
+**Smart Health Management System (SHMS)** is an enterprise-grade, web-based healthcare management platform for managing patient records, appointments, clinical AI diagnostics with Google Search Grounding, pharmacy inventory, hospital operations, and financial accounting, developed and maintained by **Cromstel IT Group**.
 
+> 📚 **Complete Master Documentation Available**: For detailed onboarding, architecture breakdown, role personas, API guides, and step-by-step instructions for new team members, refer to **[DOCUMENTATION.md](DOCUMENTATION.md)**.
 
-## 🪶 Model Guide
+---
+
+## 📖 Master Documentation Guide
+
+If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md)** which covers:
+- **[System Architecture & Tech Stack](DOCUMENTATION.md#3-system-architecture--technology-stack)**
+- **[Key Modules & Features](DOCUMENTATION.md#4-key-modules--operational-features)**
+- **[Clinical AI Workspace with Google Search Grounding](DOCUMENTATION.md#43-clinical-ai--grounded-research-workspace)**
+- **[Quick-Start Demo Credentials](DOCUMENTATION.md#5-quick-start-demo-credentials)**
+- **[Step-by-Step User Workflows](DOCUMENTATION.md#6-user-workflows--operational-how-to)**
+- **[Developer Setup & Installation](DOCUMENTATION.md#7-developer-setup--environment-guide)**
+- **[Project Directory Map](DOCUMENTATION.md#8-folder--file-directory-structure)**
+- **[HIPAA Compliance & Security](DOCUMENTATION.md#9-security-privacy--hipaa-compliance)**
+
+---
+
+## 🪶 Highlights & Features
 
 - Enterprise-grade reliability
 - Clean architecture

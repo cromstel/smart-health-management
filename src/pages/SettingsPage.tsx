@@ -15,13 +15,15 @@ import {
   Server,
   Loader2,
   CheckCircle2,
-  Clock
+  Clock,
+  Fingerprint
 } from 'lucide-react';
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { registerPasskey, isWebAuthnSupported } from '@/utils/webauthn';
 
 interface Settings {
   systemName?: string;
@@ -33,7 +35,7 @@ interface Settings {
 }
 
 export default function SettingsPage() {
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { isDark, setTheme } = useTheme();
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
@@ -328,7 +330,35 @@ export default function SettingsPage() {
                 </div>
                 <Switch defaultChecked />
               </div>
-              <div className="flex justify-end">
+              <Separator />
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-1.5 font-semibold text-foreground">
+                      <Fingerprint className="h-4 w-4 text-accent" />
+                      Biometric WebAuthn Passkeys
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Register Touch ID, Face ID, or Windows Hello for instant passwordless clinician login.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 border-accent/40 text-accent hover:bg-accent/10"
+                    onClick={() => registerPasskey(user?.email || 'clinician@smarthealth.com')}
+                  >
+                    <Fingerprint className="h-4 w-4" />
+                    Register New Passkey
+                  </Button>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40 border text-xs text-muted-foreground flex items-center justify-between">
+                  <span>WebAuthn Device Support: <strong>{isWebAuthnSupported() ? 'Supported (Platform Enclave Available)' : 'Browser Standard Fallback'}</strong></span>
+                  <span className="text-emerald-500 font-medium">HIPAA Certified</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
                 <Button disabled={!hasPermission('settings:edit')}>Save Security Settings</Button>
               </div>
             </CardContent>

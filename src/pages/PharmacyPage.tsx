@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Barcode, Plus, Pill, AlertTriangle, TrendingDown, Search, List, Clock } from 'lucide-react';
+import { Package, Barcode, Plus, Pill, AlertTriangle, TrendingDown, Search, List, Clock, Sparkles } from 'lucide-react';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAudit } from '@/contexts/AuditContext';
 import { MedicationComplianceTracker } from '@/components/pharmacy/MedicationComplianceTracker';
+import { InventoryForecastingModule } from '@/components/pharmacy/InventoryForecastingModule';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Medicine {
   id: string;
@@ -44,7 +46,7 @@ interface Medicine {
 export default function PharmacyPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
   const { logAction } = useAudit();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'compliance'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'forecasting' | 'compliance'>('inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [medicines, setMedicines] = useState<Medicine[]>([]);
 
@@ -256,6 +258,16 @@ export default function PharmacyPage() {
             Inventory Ledger
           </button>
           <button
+            onClick={() => setActiveTab('forecasting')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
+              activeTab === 'forecasting'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> AI Forecasting
+          </button>
+          <button
             onClick={() => setActiveTab('compliance')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
               activeTab === 'compliance'
@@ -268,7 +280,11 @@ export default function PharmacyPage() {
         </div>
       </div>
 
-      {activeTab === 'inventory' ? (
+      {activeTab === 'forecasting' ? (
+        <ErrorBoundary fallbackTitle="Error loading Inventory Forecasting">
+          <InventoryForecastingModule />
+        </ErrorBoundary>
+      ) : activeTab === 'inventory' ? (
         <>
         <div className="flex gap-2 justify-end">
           <Button variant="outline" className="gap-2" disabled={creatingReorders} onClick={handleAutoReorder}>
@@ -543,7 +559,9 @@ export default function PharmacyPage() {
       </Card>
         </>
       ) : (
-        <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+        <ErrorBoundary fallbackTitle="Error loading Medication Compliance Tracker">
+          <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+        </ErrorBoundary>
       )}
 	  </>
 	  )}

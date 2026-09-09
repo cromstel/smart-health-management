@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -22,72 +25,91 @@ import {
   Stethoscope,
 } from 'lucide-react';
 
+const registerSchema = z
+  .object({
+    name: z.string().min(2, 'Full name must be at least 2 characters'),
+    email: z
+      .string()
+      .min(1, 'Email address is required')
+      .email('Please enter a valid work email address'),
+    role: z.string().min(1, 'Please select a role'),
+    hospital: z.string().min(1, 'Please select a hospital facility'),
+    department: z.string().min(1, 'Please select a department'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Must contain at least one number'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    agreedToTerms: z.boolean().refine((val) => val === true, {
+      message: 'You must accept the HIPAA Compliance and Security Policies',
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
 export default function RegisterPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('Doctor');
-  const [hospital, setHospital] = useState('General Hospital');
-  const [department, setDepartment] = useState('Cardiology');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      role: 'Doctor',
+      hospital: 'General Hospital',
+      department: 'Cardiology',
+      password: '',
+      confirmPassword: '',
+      agreedToTerms: false,
+    },
+  });
+
+  const passwordValue = watch('password') || '';
+
   // Password strength calculation
   const strength = useMemo(() => {
-    const length = password.length >= 8;
-    const upper = /[A-Z]/.test(password);
-    const lower = /[a-z]/.test(password);
-    const number = /[0-9]/.test(password);
-    const special = /[^A-Za-z0-9]/.test(password);
+    const length = passwordValue.length >= 8;
+    const upper = /[A-Z]/.test(passwordValue);
+    const lower = /[a-z]/.test(passwordValue);
+    const number = /[0-9]/.test(passwordValue);
+    const special = /[^A-Za-z0-9]/.test(passwordValue);
     const score = [length, upper, lower, number, special].filter(Boolean).length;
     return { length, upper, lower, number, special, score };
-  }, [password]);
+  }, [passwordValue]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!name.trim() || !email.trim() || !password) {
-      setError('Please fill in all required fields.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    if (strength.score < 3) {
-      setError('Please choose a stronger password matching at least 3 security criteria.');
-      return;
-    }
-
-    if (!agreedToTerms) {
-      setError('You must accept the HIPAA Compliance and Hospital Security Policies.');
-      return;
-    }
-
+  const onSubmit = async (data: RegisterFormValues) => {
+    setServerError('');
     setLoading(true);
     try {
       await api.register({
-        name,
-        email,
-        password,
-        roleId: role.toLowerCase(),
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        roleId: data.role.toLowerCase(),
       });
       setSuccess(true);
 
       // Automatically sign in after 1.5s
       setTimeout(async () => {
         try {
-          await login(email, password);
+          await login(data.email, data.password);
           navigate('/dashboard');
         } catch {
           navigate('/login');
@@ -95,7 +117,7 @@ export default function RegisterPage() {
       }, 1500);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Registration failed. Please try again.';
-      setError(errMsg);
+      setServerError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -130,10 +152,10 @@ export default function RegisterPage() {
           </CardHeader>
 
           <CardContent className="pt-6">
-            {error && (
+            {serverError && (
               <div className="mb-5 p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
                 <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">{error}</span>
+                <span className="font-medium">{serverError}</span>
               </div>
             )}
 
@@ -155,7 +177,7 @@ export default function RegisterPage() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
                 {/* Name & Email */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -167,11 +189,17 @@ export default function RegisterPage() {
                       id="name"
                       type="text"
                       placeholder="e.g. Dr. Kwame Mensah"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="h-10 text-sm bg-background border-border"
+                      {...register('name')}
+                      className={`h-10 text-sm bg-background border-border ${
+                        errors.name ? 'border-destructive focus-visible:ring-destructive' : ''
+                      }`}
                     />
+                    {errors.name && (
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.name.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -183,11 +211,17 @@ export default function RegisterPage() {
                       id="email"
                       type="email"
                       placeholder="k.mensah@smarthealth.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-10 text-sm bg-background border-border"
+                      {...register('email')}
+                      className={`h-10 text-sm bg-background border-border ${
+                        errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
+                      }`}
                     />
+                    {errors.email && (
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.email.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -200,8 +234,7 @@ export default function RegisterPage() {
                     </Label>
                     <select
                       id="role"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
+                      {...register('role')}
                       className="h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                     >
                       <option value="Doctor">Doctor / Physician</option>
@@ -210,6 +243,12 @@ export default function RegisterPage() {
                       <option value="Administrator">Hospital Administrator</option>
                       <option value="Patient">Patient (Self-Service)</option>
                     </select>
+                    {errors.role && (
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.role.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -219,14 +258,19 @@ export default function RegisterPage() {
                     </Label>
                     <select
                       id="hospital"
-                      value={hospital}
-                      onChange={(e) => setHospital(e.target.value)}
+                      {...register('hospital')}
                       className="h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                     >
                       <option value="General Hospital">General Hospital (HOSP-001)</option>
                       <option value="Ridge Regional Hospital">Ridge Regional Hospital (HOSP-002)</option>
                       <option value="Central Children's Hospital">Central Children's Hospital (HOSP-003)</option>
                     </select>
+                    {errors.hospital && (
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.hospital.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -237,8 +281,7 @@ export default function RegisterPage() {
                   </Label>
                   <select
                     id="department"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
+                    {...register('department')}
                     className="h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                   >
                     <option value="Cardiology">Cardiology & Cardiovascular Care</option>
@@ -249,6 +292,12 @@ export default function RegisterPage() {
                     <option value="Radiology">Radiology & Diagnostic Imaging</option>
                     <option value="Administration">Hospital Operations & Finance</option>
                   </select>
+                  {errors.department && (
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.department.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Password & Confirm Password */}
@@ -263,10 +312,10 @@ export default function RegisterPage() {
                         id="password"
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-10 pr-10 text-sm bg-background border-border"
+                        {...register('password')}
+                        className={`h-10 pr-10 text-sm bg-background border-border ${
+                          errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
+                        }`}
                       />
                       <button
                         type="button"
@@ -276,6 +325,12 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {errors.password && (
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.password.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -288,10 +343,10 @@ export default function RegisterPage() {
                         id="confirmPassword"
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        className="h-10 pr-10 text-sm bg-background border-border"
+                        {...register('confirmPassword')}
+                        className={`h-10 pr-10 text-sm bg-background border-border ${
+                          errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''
+                        }`}
                       />
                       <button
                         type="button"
@@ -301,11 +356,17 @@ export default function RegisterPage() {
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.confirmPassword.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Password Strength Checklist */}
-                {password.length > 0 && (
+                {passwordValue.length > 0 && (
                   <div className="p-3 rounded-lg bg-muted/40 border border-border text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Password Complexity:</span>
@@ -335,18 +396,25 @@ export default function RegisterPage() {
                 )}
 
                 {/* Terms and compliance */}
-                <div className="flex items-start gap-2 pt-1">
-                  <input
-                    id="terms"
-                    type="checkbox"
-                    checked={agreedToTerms}
-                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-border text-accent focus:ring-accent"
-                  />
-                  <Label htmlFor="terms" className="text-xs text-muted-foreground leading-normal cursor-pointer">
-                    I acknowledge that I am an authorized healthcare professional and agree to uphold all{' '}
-                    <span className="text-accent underline font-medium">HIPAA Privacy Protections</span>, patient confidentiality protocols, and institutional security guidelines.
-                  </Label>
+                <div className="space-y-1">
+                  <div className="flex items-start gap-2 pt-1">
+                    <input
+                      id="terms"
+                      type="checkbox"
+                      {...register('agreedToTerms')}
+                      className="mt-1 h-4 w-4 rounded border-border text-accent focus:ring-accent cursor-pointer"
+                    />
+                    <Label htmlFor="terms" className="text-xs text-muted-foreground leading-normal cursor-pointer">
+                      I acknowledge that I am an authorized healthcare professional and agree to uphold all{' '}
+                      <span className="text-accent underline font-medium">HIPAA Privacy Protections</span>, patient confidentiality protocols, and institutional security guidelines.
+                    </Label>
+                  </div>
+                  {errors.agreedToTerms && (
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1 pl-6">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.agreedToTerms.message}
+                    </p>
+                  )}
                 </div>
 
                 <Button

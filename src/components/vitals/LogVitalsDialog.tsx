@@ -24,6 +24,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { toast } from 'sonner';
 import { VoiceDictationButton } from '@/components/VoiceDictationButton';
+import { parseVitalsFromSpeech } from '@/utils/vitalsVoiceParser';
+import { Sparkles, Mic, CheckCircle2 } from 'lucide-react';
+import { useFormAutoSave } from '@/hooks/useFormAutoSave';
+import { AutoSaveDraftBanner } from '@/components/common/AutoSaveDraftBanner';
 import {
   Activity,
   Heart,
@@ -66,6 +70,73 @@ export function LogVitalsDialog({
     new Date().toISOString().slice(0, 16)
   );
   const [loading, setLoading] = useState(false);
+  const [lastDetectedFields, setLastDetectedFields] = useState<string[]>([]);
+
+  const handleDictationTranscript = (transcriptText: string) => {
+    setNotes(transcriptText);
+    const parsed = parseVitalsFromSpeech(transcriptText);
+
+    if (parsed.systolic) setSystolic(parsed.systolic);
+    if (parsed.diastolic) setDiastolic(parsed.diastolic);
+    if (parsed.heartRate) setHeartRate(parsed.heartRate);
+    if (parsed.temperature) setTemperature(parsed.temperature);
+    if (parsed.tempUnit) setTempUnit(parsed.tempUnit);
+    if (parsed.respiratoryRate) setRespiratoryRate(parsed.respiratoryRate);
+    if (parsed.oxygenSaturation) setOxygenSaturation(parsed.oxygenSaturation);
+
+    if (parsed.detectedFields.length > 0) {
+      setLastDetectedFields(parsed.detectedFields);
+      toast.success(`Voice Dictation Auto-Filled ${parsed.detectedFields.length} Vitals Fields!`, {
+        description: `Detected & filled: ${parsed.detectedFields.join(', ')}`,
+      });
+    }
+  };
+
+  // Auto-save hook for form state persistence
+  const currentFormData = {
+    systolic,
+    diastolic,
+    heartRate,
+    temperature,
+    tempUnit,
+    respiratoryRate,
+    oxygenSaturation,
+    notes,
+  };
+
+  const {
+    hasRestoredDraft,
+    draftSavedAt,
+    isAutoSaving,
+    clearDraft,
+    discardDraft,
+  } = useFormAutoSave(
+    `log_vitals_${selectedPatientId}`,
+    currentFormData,
+    open,
+    (restored) => {
+      if (restored.systolic) setSystolic(restored.systolic);
+      if (restored.diastolic) setDiastolic(restored.diastolic);
+      if (restored.heartRate) setHeartRate(restored.heartRate);
+      if (restored.temperature) setTemperature(restored.temperature);
+      if (restored.tempUnit) setTempUnit(restored.tempUnit);
+      if (restored.respiratoryRate) setRespiratoryRate(restored.respiratoryRate);
+      if (restored.oxygenSaturation) setOxygenSaturation(restored.oxygenSaturation);
+      if (restored.notes !== undefined) setNotes(restored.notes);
+    }
+  );
+
+  const handleDiscard = () => {
+    discardDraft();
+    setSystolic('120');
+    setDiastolic('80');
+    setHeartRate('72');
+    setTemperature('36.8');
+    setTempUnit('C');
+    setRespiratoryRate('16');
+    setOxygenSaturation('98');
+    setNotes('');
+  };
 
   // Sync selected patient name
   const currentPatientName =
@@ -100,6 +171,9 @@ export function LogVitalsDialog({
         oxygenSaturation: oxygenSaturation ? parseFloat(oxygenSaturation) : undefined,
         notes: notes.trim(),
       });
+
+      // Clear local auto-save draft after successful submit
+      clearDraft();
 
       // If high or critical, trigger a clinic alert notification
       if (newRecord.status === 'high' || newRecord.status === 'critical') {
@@ -142,6 +216,76 @@ export function LogVitalsDialog({
             </div>
           </div>
         </DialogHeader>
+
+        <AutoSaveDraftBanner
+          hasRestoredDraft={hasRestoredDraft}
+          draftSavedAt={draftSavedAt}
+          isAutoSaving={isAutoSaving}
+          onDiscard={handleDiscard}
+        />
+
+        {/* Voice Dictation Auto-Fill Section */}
+        <div className="p-3.5 rounded-xl bg-accent/10 border border-accent/20 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-accent text-accent-foreground">
+                <Mic className="h-4 w-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  Voice Dictation & Auto-Fill EMR
+                  <Badge variant="outline" className="text-[10px] h-4 border-accent text-accent">AI Voice Parser</Badge>
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Dictate encounter notes or vitals phrases to auto-populate fields
+                </p>
+              </div>
+            </div>
+            <VoiceDictationButton onTranscript={handleDictationTranscript} />
+          </div>
+
+          {lastDetectedFields.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                Auto-Filled <strong>{lastDetectedFields.length}</strong> fields from speech: {lastDetectedFields.join(', ')}
+              </span>
+            </div>
+          )}
+
+          {/* Preset Clinical Voice Samples */}
+          <div className="pt-1">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+              Sample Voice Dictation Phrases (Click to simulate speech):
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  handleDictationTranscript(
+                    'Blood pressure is 135 over 85, heart rate 78 bpm, temperature 37.2 degrees C, respiratory rate 16, oxygen saturation 98 percent. Patient complains of moderate tightness.'
+                  )
+                }
+                className="text-[11px] px-2 py-1 rounded-md bg-background hover:bg-muted border border-border text-foreground transition-all flex items-center gap-1"
+              >
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                "BP 135/85, HR 78, Temp 37.2°C, RR 16, SpO2 98%"
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleDictationTranscript(
+                    'Blood pressure 165 over 102, pulse 110 bpm, temp 38.8 C, resp rate 24, spo2 94 percent. Patient presents with acute fever and dyspnea.'
+                  )
+                }
+                className="text-[11px] px-2 py-1 rounded-md bg-background hover:bg-muted border border-border text-rose-600 dark:text-rose-400 transition-all flex items-center gap-1"
+              >
+                <Sparkles className="h-3 w-3 text-rose-500" />
+                "Critical: BP 165/102, Pulse 110, Temp 38.8°C"
+              </button>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {/* Patient Selection & Date */}
