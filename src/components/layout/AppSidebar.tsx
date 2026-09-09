@@ -33,6 +33,7 @@ import {
 
 const menuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+  { title: 'Staff Command', icon: Activity, path: '/staff-dashboard' },
   { title: 'Clinical AI', icon: Sparkles, path: '/ai-assistant' },
   { title: 'Patients', icon: Users, path: '/patients' },
   { title: 'Appointments', icon: Calendar, path: '/appointments' },
@@ -58,6 +59,7 @@ export function AppSidebar() {
 
   const moduleForPath = (path: string) => {
     if (path.startsWith('/dashboard')) return 'dashboard';
+    if (path.startsWith('/staff-dashboard')) return 'staff';
     if (path.startsWith('/ai-assistant')) return 'dashboard';
     if (path.startsWith('/patients')) return 'patients';
     if (path.startsWith('/appointments')) return 'appointments';
@@ -76,8 +78,8 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+    <Sidebar collapsible="icon" className="transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+      <SidebarHeader className="border-b border-sidebar-border p-4 transition-all duration-300">
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-sidebar-primary" />
           <span className="text-lg font-bold text-sidebar-foreground">Health Manager</span>

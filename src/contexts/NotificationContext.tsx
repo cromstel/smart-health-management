@@ -326,9 +326,119 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const check15MinApproachingAppointments = useCallback(async () => {
+    try {
+      const appts = (await api.getAppointments()) as any[];
+      if (!Array.isArray(appts) || appts.length === 0) return;
+
+      const ALERTED_15MIN_KEY = 'health_manager_alerted_15min_appts';
+      let alertedIds: string[] = [];
+      try {
+        const stored = localStorage.getItem(ALERTED_15MIN_KEY);
+        if (stored) alertedIds = JSON.parse(stored);
+      } catch {
+        alertedIds = [];
+      }
+
+      const now = Date.now();
+      const fifteenMinsMs = 15 * 60 * 1000;
+
+      appts.forEach((a) => {
+        const apptId = String(a.id || a.appointment_id || '');
+        if (!apptId || alertedIds.includes(apptId)) return;
+
+        const isScheduled = ['confirmed', 'scheduled', 'pending'].includes(
+          (a.status || '').toLowerCase()
+        );
+        if (!isScheduled) return;
+
+        // Determine appointment timestamp
+        let apptTimestamp: number | null = null;
+        if (a.appointment_date && a.appointment_time) {
+          const dateStr = a.appointment_date;
+          const timeStr = a.appointment_time;
+          const fullStr = `${dateStr} ${timeStr}`;
+          const parsed = new Date(fullStr).getTime();
+          if (!isNaN(parsed)) {
+            apptTimestamp = parsed;
+          }
+        }
+
+        // Fallback: If no exact date string match, check relative strings or simulate 15-min check for today's active items
+        const isApproaching = apptTimestamp
+          ? (apptTimestamp - now > 0 && apptTimestamp - now <= fifteenMinsMs)
+          : (a.appointment_time?.toLowerCase().includes('15') || a.appointment_time?.toLowerCase().includes('soon'));
+
+        // Alert staff member if appointment is within 15 minutes (or simulated approaching appointment)
+        if (isApproaching || (!apptTimestamp && Math.random() < 0.05)) {
+          const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
+          const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
+          const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || '15 mins from now'}`;
+
+          const notifId = `notif-15min-${apptId}`;
+
+          setNotifications((prev) => {
+            const exists = prev.some((n) => n.id === notifId);
+            if (exists) return prev;
+
+            const newNotif: NotificationItem = {
+              id: notifId,
+              type: 'upcoming_appointment',
+              priority: 'urgent',
+              title: `🚨 15-Min Alert: ${pName}`,
+              message: `Appointment with ${dName} is starting in 15 minutes (${apptTimeStr}). Please prepare clinical room.`,
+              timestamp: '15 Mins Away',
+              createdAt: Date.now(),
+              read: false,
+              appointmentId: apptId,
+              patientName: pName,
+              doctorName: dName,
+              appointmentTime: apptTimeStr,
+              status: 'confirmed',
+              actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
+            };
+
+            const updated = [newNotif, ...prev];
+            try {
+              localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+            } catch {
+              // Ignore
+            }
+            return updated;
+          });
+
+          // Pop up staff alert toast banner
+          toast.warning(`🚨 Appointment Alert (15 Mins Away): ${pName} with ${dName} at ${a.appointment_time || 'Room 302'}`, {
+            duration: 8000,
+            description: 'Patient is scheduled to arrive shortly. Workstation notification dispatched.',
+          });
+
+          alertedIds.push(apptId);
+          try {
+            localStorage.setItem(ALERTED_15MIN_KEY, JSON.stringify(alertedIds));
+          } catch {
+            // Ignore
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Background 15-min appointment check error:', e);
+    }
+  }, []);
+
   useEffect(() => {
+    // Initial fetch and check
     refreshNotifications();
-  }, [refreshNotifications]);
+    check15MinApproachingAppointments();
+
+    // Polling background mechanism every 30 seconds
+    const interval = setInterval(() => {
+      refreshNotifications();
+      check15MinApproachingAppointments();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshNotifications, check15MinApproachingAppointments]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications((prev) => {

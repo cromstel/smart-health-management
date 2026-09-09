@@ -26,12 +26,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, PhoneCall, X } from 'lucide-react';
+import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, PhoneCall, X, Mic } from 'lucide-react';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
 import PatientVitalsModule from '@/components/vitals/PatientVitalsModule';
 import { PostDischargeFollowupModule } from '@/components/patients/PostDischargeFollowupModule';
+import { ClinicalNotesVoiceModal } from '@/components/patients/ClinicalNotesVoiceModal';
 import { vitalsService } from '@/services/vitalsService';
 import { evaluateTriagePriority } from '@/utils/triage';
 import type { VitalsRecord } from '@/types/vitals';
@@ -93,6 +94,8 @@ export default function PatientsPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [isVoiceNotesOpen, setIsVoiceNotesOpen] = useState<boolean>(false);
+  const [selectedPatientForNotes, setSelectedPatientForNotes] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (viewingPatient) {
@@ -364,10 +367,17 @@ export default function PatientsPage() {
     }
   };
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPatients = patients.filter(patient => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      (patient.name && patient.name.toLowerCase().includes(term)) ||
+      (patient.id && patient.id.toLowerCase().includes(term)) ||
+      (patient.phone && patient.phone.toLowerCase().includes(term)) ||
+      (patient.email && patient.email.toLowerCase().includes(term)) ||
+      (patient.hospital && patient.hospital.toLowerCase().includes(term))
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -818,8 +828,8 @@ export default function PatientsPage() {
                 <div className="relative flex items-center">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search by patient name or ID..."
-                    className="pl-9 pr-8 w-64 md:w-80"
+                    placeholder="Search real-time by name, ID, phone, or email..."
+                    className="pl-9 pr-8 w-72 md:w-96"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -839,6 +849,18 @@ export default function PatientsPage() {
                     {filteredPatients.length} of {patients.length} found
                   </Badge>
                 )}
+                <Button
+                  variant="outline"
+                  className="gap-2 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                  onClick={() => {
+                    setSelectedPatientForNotes(undefined);
+                    setIsVoiceNotesOpen(true);
+                  }}
+                  title="Open Voice-to-Text Clinical Dictation"
+                >
+                  <Mic className="h-4 w-4 text-blue-500 animate-pulse" />
+                  <span className="hidden sm:inline">Voice Notes</span>
+                </Button>
                 <Button variant="outline" size="icon" title="Filter list">
                   <Filter className="h-4 w-4" />
                 </Button>
@@ -940,6 +962,16 @@ export default function PatientsPage() {
                               <Heart className="mr-2 h-4 w-4 text-rose-500" />
                               Track Vitals
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedPatientForNotes(patient.id);
+                                setIsVoiceNotesOpen(true);
+                              }}
+                              className="text-blue-600 focus:text-blue-600 font-medium"
+                            >
+                              <Mic className="mr-2 h-4 w-4 text-blue-500" />
+                              Dictate Voice Notes
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleViewPatient(patient)}>
                               View Details
                             </DropdownMenuItem>
@@ -975,6 +1007,13 @@ export default function PatientsPage() {
       </Card>
       </ErrorBoundary>
       )}
+
+      <ClinicalNotesVoiceModal
+        open={isVoiceNotesOpen}
+        onOpenChange={setIsVoiceNotesOpen}
+        patientId={selectedPatientForNotes}
+        patientsList={patients.map((p) => ({ id: p.id, name: p.name }))}
+      />
     </div>
   );
 }

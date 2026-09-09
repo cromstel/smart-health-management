@@ -65,6 +65,18 @@ export function Header() {
       {/* Notification Bell Dropdown */}
       <NotificationDropdown />
 
+      {/* Standalone Logout Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleLogout}
+        className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 font-medium"
+        title="Sign out of system workstation"
+      >
+        <LogOut className="h-4 w-4" />
+        <span className="hidden md:inline">Logout</span>
+      </Button>
+
       {/* User Profile Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Clock, User, MapPin, Edit, Trash2, Search, Bell } from 'lucide-react';
+import { Plus, Clock, User, MapPin, Edit, Trash2, Search, Bell, Filter, X, Calendar as CalendarIcon } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -115,8 +115,32 @@ export default function AppointmentsPage() {
   const { hasPermission, canActOnHospital, user } = useAuth();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [dateFilter, setDateFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [doctorFilter, setDoctorFilter] = useState<string>('all');
   const [appointments, setAppointments] = useState<DisplayAppointment[]>([]);
+
+  const handleCalendarSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    if (selectedDate) {
+      // Format as YYYY-MM-DD in local time
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      setDateFilter(`${year}-${month}-${day}`);
+    } else {
+      setDateFilter('');
+    }
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setDateFilter('');
+    setStatusFilter('all');
+    setDoctorFilter('all');
+    setDate(undefined);
+  };
 
   useEffect(() => {
     const urlSearch = searchParams.get('search');
@@ -548,138 +572,266 @@ export default function AppointmentsPage() {
       </div>
 
       <ErrorBoundary fallbackTitle="Error loading Appointments">
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <CardTitle>Appointments</CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Filter appointments..."
-                  className="pl-9 w-60 h-8 text-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {(!hasPermission('appointments:view') || !canActOnHospital(user?.hospital_id)) ? (
-              <div className="text-center py-12">
-                <p className="text-destructive">Unauthorized to view appointments for this hospital.</p>
-              </div>
-            ) : loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Loading appointments...</p>
-              </div>
-            ) : appointments.filter(a =>
-                a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                a.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                a.type.toLowerCase().includes(searchTerm.toLowerCase())
-              ).length === 0 ? (
- 			   <div className="text-center py-12">
-                 <p className="text-muted-foreground">No appointments found matching your criteria.</p>
-               </div>
- 
- 			  ) : (
-              <div className="space-y-4">
-              {appointments
-                .filter(a =>
-                  a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  a.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  a.type.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground">{appointment.patientName}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {appointment.type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {appointment.time}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {appointment.department}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      with {appointment.doctorName}
-                    </p>
-                  </div>
+      {(() => {
+        const filteredAppointments = appointments.filter((a) => {
+          if (statusFilter !== 'all' && a.status.toLowerCase() !== statusFilter.toLowerCase()) {
+            return false;
+          }
+          if (doctorFilter !== 'all' && a.doctorId !== doctorFilter && a.doctorName.toLowerCase() !== doctorFilter.toLowerCase()) {
+            return false;
+          }
+          if (dateFilter && a.date !== dateFilter) {
+            return false;
+          }
+          if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase();
+            const matches =
+              a.patientName.toLowerCase().includes(term) ||
+              a.doctorName.toLowerCase().includes(term) ||
+              a.department.toLowerCase().includes(term) ||
+              a.type.toLowerCase().includes(term) ||
+              a.appointmentId.toLowerCase().includes(term) ||
+              (a.notes && a.notes.toLowerCase().includes(term));
+            if (!matches) return false;
+          }
+          return true;
+        });
+
+        const hasActiveFilters = Boolean(searchTerm || dateFilter || statusFilter !== 'all' || doctorFilter !== 'all');
+
+        return (
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card className="md:col-span-2">
+              <CardHeader className="space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        appointment.status === 'Scheduled'
-                          ? 'default'
-                          : appointment.status === 'Completed'
-                          ? 'secondary'
-                          : 'destructive'
-                      }
-                    >
-                      {appointment.status}
+                    <CardTitle>Appointments</CardTitle>
+                    <Badge variant="secondary" className="font-mono text-xs">
+                      {filteredAppointments.length} / {appointments.length}
                     </Badge>
-                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(appointment)} disabled={!hasPermission('appointments:edit')}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(appointment)} disabled={!hasPermission('appointments:delete')}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-     <Button variant="ghost" size="sm" onClick={() => {
-      const icsContent = generateIcsFile(appointment);
-      downloadIcsFile(appointment.patientName, icsContent);
-     }}>
-       Export to Calendar
-     </Button>
+                  </div>
+                  <div className="relative flex-1 max-w-xs min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search patient, dept, notes..."
+                      className="pl-9 pr-8 h-9 text-xs"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-            )}
-          </CardContent>
-        </Card>
-  
-  
-        <Card>
-          <CardHeader>
-            <CardTitle>Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border border-border"
-            />
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total Appointments</span>
-                <span className="font-medium text-foreground">48</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Completed</span>
-                <span className="font-medium text-green-500">32</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Pending</span>
-                <span className="font-medium text-accent">16</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+
+                {/* Filter Controls Bar: Date, Status, Doctor */}
+                <div className="p-3 rounded-lg bg-muted/40 border border-border flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <Filter className="h-3.5 w-3.5 text-primary" />
+                    <span>Filter By:</span>
+                  </div>
+
+                  {/* Date Filter */}
+                  <div className="flex items-center gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={dateFilter}
+                      onChange={(e) => {
+                        setDateFilter(e.target.value);
+                        if (e.target.value) {
+                          const [y, m, d] = e.target.value.split('-').map(Number);
+                          setDate(new Date(y, m - 1, d));
+                        } else {
+                          setDate(undefined);
+                        }
+                      }}
+                      className="h-8 text-xs w-36 bg-background border-border"
+                      title="Filter by exact appointment date"
+                    />
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="w-36">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="h-8 text-xs bg-background border-border">
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Doctor Filter */}
+                  <div className="w-44">
+                    <Select value={doctorFilter} onValueChange={setDoctorFilter}>
+                      <SelectTrigger className="h-8 text-xs bg-background border-border">
+                        <SelectValue placeholder="All Doctors" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Doctors</SelectItem>
+                        {doctors.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Clear Filters Button */}
+                  {hasActiveFilters && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetFilters}
+                      className="h-8 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" /> Clear Filters
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(!hasPermission('appointments:view') || !canActOnHospital(user?.hospital_id)) ? (
+                  <div className="text-center py-12">
+                    <p className="text-destructive">Unauthorized to view appointments for this hospital.</p>
+                  </div>
+                ) : loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading appointments...</p>
+                  </div>
+                ) : filteredAppointments.length === 0 ? (
+                  <div className="text-center py-12 space-y-3">
+                    <p className="text-muted-foreground">No appointments found matching your active filter criteria.</p>
+                    {hasActiveFilters && (
+                      <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                        Reset Filters
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredAppointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors flex-wrap gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-foreground">{appointment.patientName}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {appointment.type}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                            <span className="flex items-center gap-1 font-mono">
+                              <CalendarIcon className="h-3 w-3" />
+                              {appointment.date}
+                            </span>
+                            <span className="flex items-center gap-1 font-mono">
+                              <Clock className="h-3 w-3" />
+                              {appointment.time}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {appointment.department}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            with <span className="font-medium text-foreground">{appointment.doctorName}</span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              appointment.status === 'Scheduled'
+                                ? 'default'
+                                : appointment.status === 'Completed'
+                                ? 'secondary'
+                                : 'destructive'
+                            }
+                          >
+                            {appointment.status}
+                          </Badge>
+                          <Button variant="ghost" size="sm" onClick={() => openEditDialog(appointment)} disabled={!hasPermission('appointments:edit')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(appointment)} disabled={!hasPermission('appointments:delete')}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            const icsContent = generateIcsFile(appointment);
+                            downloadIcsFile(appointment.patientName, icsContent);
+                          }}>
+                            Export to Calendar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Calendar</CardTitle>
+                  {dateFilter && (
+                    <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                      Filtered: {dateFilter}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={handleCalendarSelect}
+                  className="rounded-md border border-border"
+                />
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total Appointments</span>
+                    <span className="font-medium text-foreground">{appointments.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Completed</span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      {appointments.filter((a) => a.status === 'Completed').length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Scheduled</span>
+                    <span className="font-medium text-primary">
+                      {appointments.filter((a) => a.status === 'Scheduled').length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Cancelled</span>
+                    <span className="font-medium text-destructive">
+                      {appointments.filter((a) => a.status === 'Cancelled').length}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
       </ErrorBoundary>
     </div>
   );

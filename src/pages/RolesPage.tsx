@@ -40,45 +40,6 @@ interface Role {
   };
 }
 
-const mockRoles: Role[] = [
-  {
-    id: 'R001',
-    name: 'Admin',
-    description: 'Full system access with all permissions',
-    userCount: 3,
-    permissions: {
-      patients: { view: true, add: true, edit: true, delete: true },
-      appointments: { view: true, add: true, edit: true, delete: true },
-      staff: { view: true, add: true, edit: true, delete: true },
-      financial: { view: true, add: true, edit: true, delete: true },
-    },
-  },
-  {
-    id: 'R002',
-    name: 'Doctor',
-    description: 'Access to patient records and appointments',
-    userCount: 15,
-    permissions: {
-      patients: { view: true, add: true, edit: true, delete: false },
-      appointments: { view: true, add: true, edit: true, delete: false },
-      staff: { view: true, add: false, edit: false, delete: false },
-      financial: { view: false, add: false, edit: false, delete: false },
-    },
-  },
-  {
-    id: 'R003',
-    name: 'Nurse',
-    description: 'Limited access to patient care',
-    userCount: 25,
-    permissions: {
-      patients: { view: true, add: false, edit: true, delete: false },
-      appointments: { view: true, add: true, edit: false, delete: false },
-      staff: { view: false, add: false, edit: false, delete: false },
-      financial: { view: false, add: false, edit: false, delete: false },
-    },
-  },
-];
-
 export default function RolesPage() {
   const { hasPermission } = useAuth();
   const { logAction } = useAudit();
@@ -99,23 +60,49 @@ export default function RolesPage() {
     try {
       setLoading(true);
       const data = await api.getRoles() as any[];
-      const transformedData = data.map((role: any) => ({
-        id: role.id,
-        name: role.name,
-        description: role.description,
-        userCount: 0, // Mock data for now
-        permissions: {
-          patients: { view: true, add: true, edit: true, delete: true },
-          appointments: { view: true, add: true, edit: true, delete: true },
-          staff: { view: true, add: true, edit: true, delete: true },
-          financial: { view: true, add: true, edit: true, delete: true },
-        },
-      }));
-      setRoles(transformedData);
+      if (Array.isArray(data)) {
+        const transformedData = data.map((role: any) => {
+          const perms = role.permissions || {};
+          return {
+            id: role.id,
+            name: role.name,
+            description: role.description || `Permissions for ${role.name} role`,
+            userCount: role.userCount || role.user_count || 0,
+            permissions: {
+              patients: {
+                view: perms.patients?.view ?? true,
+                add: perms.patients?.add ?? (role.name !== 'Nurse'),
+                edit: perms.patients?.edit ?? true,
+                delete: perms.patients?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+              },
+              appointments: {
+                view: perms.appointments?.view ?? true,
+                add: perms.appointments?.add ?? true,
+                edit: perms.appointments?.edit ?? true,
+                delete: perms.appointments?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+              },
+              staff: {
+                view: perms.staff?.view ?? (role.name !== 'Nurse'),
+                add: perms.staff?.add ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+                edit: perms.staff?.edit ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+                delete: perms.staff?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+              },
+              financial: {
+                view: perms.financial?.view ?? (role.name === 'Admin' || role.name === 'Super Admin' || role.name === 'Accountant'),
+                add: perms.financial?.add ?? (role.name === 'Admin' || role.name === 'Super Admin' || role.name === 'Accountant'),
+                edit: perms.financial?.edit ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+                delete: perms.financial?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
+              },
+            },
+          };
+        });
+        setRoles(transformedData);
+      } else {
+        setRoles([]);
+      }
     } catch (error: any) {
-      console.error('Failed to load roles:', error);
-      alert(`Failed to load roles: ${error.message}`);
-      setRoles(mockRoles);
+      console.error('Failed to load roles from API:', error);
+      setRoles([]);
     } finally {
       setLoading(false);
     }

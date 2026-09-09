@@ -38,6 +38,7 @@ import CriticalVitalsAlertWidget from '@/components/dashboard/CriticalVitalsAler
 import AppointmentDensityHeatMap from '@/components/dashboard/AppointmentDensityHeatMap';
 import StaffCapacityWidget from '@/components/dashboard/StaffCapacityWidget';
 import { WaitTimeMonitorWidget } from '@/components/dashboard/WaitTimeMonitorWidget';
+import { D3PatientVitalsTrendChart } from '@/components/dashboard/D3PatientVitalsTrendChart';
 import { EmergencyModeModule } from '@/components/emergency/EmergencyModeModule';
 import { ShiftHandoverModal } from '@/components/handover/ShiftHandoverModal';
 import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
@@ -65,6 +66,7 @@ interface DashboardModule {
 }
 
 const DEFAULT_MODULES: DashboardModule[] = [
+  { id: 'd3VitalsTrend', title: 'D3.js Patient Health Vitals Trend Analytics', gridClass: 'col-span-2', visible: true },
   { id: 'waitTime', title: 'Real-Time Department Wait Time Monitor', gridClass: 'col-span-2', visible: true },
   { id: 'appointments', title: 'Upcoming Appointments & Alerts', gridClass: 'col-span-2', visible: true },
   { id: 'vitals', title: 'Critical Patient Vitals Alerts', gridClass: 'col-span-2', visible: true },
@@ -445,6 +447,9 @@ export default function DashboardPage() {
           let component = null;
 
           switch (module.id) {
+            case 'd3VitalsTrend':
+              component = <D3PatientVitalsTrendChart />;
+              break;
             case 'waitTime':
               component = <WaitTimeMonitorWidget />;
               break;

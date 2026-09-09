@@ -8,6 +8,8 @@ import { authenticatePasskey } from '@/utils/webauthn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import {
   Activity,
   Lock,
@@ -15,14 +17,16 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Stethoscope,
-  Building2,
   Shield,
   ShieldCheck,
-  HeartHandshake,
   Fingerprint,
   Loader2,
+  ArrowLeft,
+  Smartphone,
+  CheckCircle2,
+  KeyRound,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z
@@ -37,46 +41,14 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const DEMO_ACCOUNTS = [
-  {
-    role: 'Doctor',
-    name: 'Dr. John Smith',
-    email: 'doctor@smarthealth.com',
-    password: 'password123',
-    badge: 'Cardiology',
-    icon: Stethoscope,
-  },
-  {
-    role: 'Admin',
-    name: 'Admin User',
-    email: 'admin@smarthealth.com',
-    password: 'password123',
-    badge: 'Operations',
-    icon: Building2,
-  },
-  {
-    role: 'Super Admin',
-    name: 'Super Admin',
-    email: 'superadmin@smarthealth.com',
-    password: 'password123',
-    badge: 'Root Access',
-    icon: Shield,
-  },
-  {
-    role: 'Patient',
-    name: 'John Doe',
-    email: 'patient@smarthealth.com',
-    password: 'password123',
-    badge: 'Self-Service',
-    icon: HeartHandshake,
-  },
-];
-
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
-  const { login } = useAuth();
+  const [totpCode, setTotpCode] = useState('');
+  const [totpLoading, setTotpLoading] = useState(false);
+
+  const { login, mfaPending, mfaPendingUser, verifyMfaTotp, cancelMfa } = useAuth();
   const navigate = useNavigate();
 
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
@@ -84,7 +56,6 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
@@ -103,13 +74,15 @@ export default function LoginPage() {
     setServerError('');
 
     try {
-      const targetEmail = (currentEmail || '').trim() || DEMO_ACCOUNTS[0].email;
+      const targetEmail = (currentEmail || '').trim();
+      if (!targetEmail) {
+        setServerError('Please enter your work email address to use biometric sign in.');
+        setIsBiometricLoading(false);
+        return;
+      }
       const passkeyOk = await authenticatePasskey(targetEmail);
       if (passkeyOk) {
-        // Authenticate as the target clinician (default Dr. John Smith if none typed)
-        const matchedAccount = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === targetEmail.toLowerCase()) || DEMO_ACCOUNTS[0];
-        await login(matchedAccount.email, matchedAccount.password);
-        navigate('/dashboard');
+        toast.info('Biometric identity confirmed. Please enter your password to complete login.');
       } else {
         setServerError('WebAuthn biometric authentication was not completed.');
       }
@@ -125,11 +98,8 @@ export default function LoginPage() {
     setServerError('');
     setLoading(true);
     try {
-      await login(data.email, data.password);
-      const isMfaEnabled = localStorage.getItem('mfa_enabled') !== 'false';
-      if (isMfaEnabled) {
-        navigate('/two-factor');
-      } else {
+      const res = await login(data.email, data.password);
+      if (!res.requiresMfa) {
         navigate('/dashboard');
       }
     } catch (err: unknown) {
@@ -140,10 +110,24 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickFill = (demoEmail: string, demoPass: string) => {
-    setValue('email', demoEmail, { shouldValidate: true });
-    setValue('password', demoPass, { shouldValidate: true });
+  const handleVerifyTotpSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setServerError('');
+    if (totpCode.trim().length !== 6) {
+      setServerError('Please enter the complete 6-digit TOTP security token.');
+      return;
+    }
+    setTotpLoading(true);
+    try {
+      await verifyMfaTotp(totpCode);
+      toast.success('Authenticator MFA token verified successfully!');
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Invalid TOTP code. Please check your authenticator app.';
+      setServerError(errMsg);
+    } finally {
+      setTotpLoading(false);
+    }
   };
 
   return (
@@ -160,9 +144,13 @@ export default function LoginPage() {
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
             </div>
             
-            <h2 className="text-3xl font-bold tracking-tight text-foreground mb-2">Welcome back</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground mb-2">
+              {mfaPending ? 'Two-Factor Verification' : 'Welcome back'}
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Sign in to your clinical workstation
+              {mfaPending
+                ? 'Enter the 6-digit code from your authenticator app (TOTP standard)'
+                : 'Sign in to your clinical workstation'}
             </p>
           </div>
 
@@ -174,7 +162,108 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+            {mfaPending ? (
+              <div className="space-y-6 animate-in fade-in-50 duration-300">
+                <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Credentials</span>
+                    <Badge variant="outline" className="border-primary text-primary text-[10px] font-semibold flex items-center gap-1">
+                      <KeyRound className="h-3 w-3" />
+                      MFA ENFORCED
+                    </Badge>
+                  </div>
+                  <div className="font-semibold text-foreground text-base">
+                    {mfaPendingUser?.name || 'Staff Clinician'}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {mfaPendingUser?.email || currentEmail}
+                  </div>
+                </div>
+
+                <form onSubmit={handleVerifyTotpSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-primary" />
+                      Authenticator Security Code (TOTP)
+                    </Label>
+                    <div className="flex justify-center py-2">
+                      <InputOTP
+                        maxLength={6}
+                        value={totpCode}
+                        onChange={(val) => {
+                          setTotpCode(val);
+                          setServerError('');
+                        }}
+                        autoFocus
+                      >
+                        <InputOTPGroup className="gap-2">
+                          <InputOTPSlot index={0} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                          <InputOTPSlot index={1} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                          <InputOTPSlot index={2} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                          <InputOTPSlot index={3} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                          <InputOTPSlot index={4} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                          <InputOTPSlot index={5} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Open Google Authenticator, Authy, or 1Password to view your 6-digit token.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Button
+                      type="submit"
+                      className="w-full h-11 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                      disabled={totpLoading || totpCode.length !== 6}
+                    >
+                      {totpLoading ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Verifying Authenticator Code...
+                        </span>
+                      ) : (
+                        'Verify Code & Access Workstation'
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setTotpCode('123456');
+                        setServerError('');
+                      }}
+                      className="w-full text-xs h-9 border-dashed border-primary/40 text-primary hover:bg-primary/5"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                      Quick Test: Fill Demo TOTP Token (123456)
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={cancelMfa}
+                      className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      Back to Email & Password Sign In
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="p-3 rounded-lg bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
+                  <div className="font-semibold text-foreground flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    Standard Authenticator Configured
+                  </div>
+                  <p>
+                    Key format: RFC 6238 TOTP (30s interval, HMAC-SHA1). Standard seed: <code className="font-mono bg-background px-1 py-0.5 rounded border border-border text-foreground">JBSWY3DPEHPK3PXP</code>.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-sm font-semibold text-foreground">
                   Email address
@@ -286,42 +375,7 @@ export default function LoginPage() {
                 </Button>
               </div>
             </form>
-
-            <div className="mt-8 pt-6 border-t border-border">
-              <p className="text-sm font-medium text-muted-foreground mb-4">Quick demo accounts</p>
-              <div className="grid grid-cols-2 gap-3">
-                {DEMO_ACCOUNTS.map((acc) => {
-                  const Icon = acc.icon;
-                  const isSelected = currentEmail === acc.email;
-                  return (
-                    <button
-                      key={acc.role}
-                      type="button"
-                      onClick={() => handleQuickFill(acc.email, acc.password)}
-                      className={`p-3 rounded-xl border text-left transition-all duration-200 ${
-                        isSelected
-                          ? 'bg-primary/10 border-primary ring-1 ring-primary'
-                          : 'bg-card border-border hover:border-primary/50 hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                            {acc.role}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate font-medium">
-                            {acc.badge}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            )}
 
             <p className="text-center text-sm text-muted-foreground mt-8">
               New staff member?{' '}

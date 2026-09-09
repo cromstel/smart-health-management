@@ -15,6 +15,7 @@ import PatientsPage from './pages/PatientsPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import HospitalsPage from './pages/HospitalsPage';
 import StaffPage from './pages/StaffPage';
+import CompanyStaffDashboardPage from './pages/CompanyStaffDashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import PharmacyPage from './pages/PharmacyPage';
 import PurchaseOrdersPage from './pages/PurchaseOrdersPage';
@@ -92,6 +93,7 @@ function AppRoutes() {
         <Route path="appointments" element={<AppointmentsPage />} />
         <Route path="hospitals" element={<HospitalsPage />} />
         <Route path="staff" element={<StaffPage />} />
+        <Route path="staff-dashboard" element={<CompanyStaffDashboardPage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="pharmacy" element={<PharmacyPage />} />
         <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
