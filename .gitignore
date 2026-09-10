@@ -53,8 +53,12 @@ todo/
 .vscode/*
 .cursor/*
 .opencode/*
-.trae/*
-ai/*
+!.opencode/agent/
+!.opencode/skills/
+!.opencode/command/
+.trae/
+ai/
+e2e/
 !.vscode/extensions.json
 .idea
 .DS_Store
