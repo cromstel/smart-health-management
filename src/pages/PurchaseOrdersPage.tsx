@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 export default function PurchaseOrdersPage() {
   const { hasPermission } = useAuth();
@@ -21,11 +23,7 @@ export default function PurchaseOrdersPage() {
   const [newOrder, setNewOrder] = useState({ supplier_id: '', order_date: '', expected_delivery_date: '' });
   const [items, setItems] = useState<{ medicine_id: string; quantity: number; unit_price: number }[]>([]);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
       setLoading(true);
       const [os, ss, ms] = await Promise.all([api.getPurchaseOrders(), api.getSuppliers(), api.getMedicines()]);
@@ -33,11 +31,15 @@ export default function PurchaseOrdersPage() {
       setSuppliers(ss as any[]);
       setMedicines(ms as any[]);
     } catch (_e) {
-      toast.error('Failed to load purchase orders'); /* Error ignored as per design */
+      toast.error('Failed to load purchase orders');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   const addItem = () => {
     setItems((prev) => [...prev, { medicine_id: '', quantity: 1, unit_price: 0 }]);
@@ -116,7 +118,7 @@ export default function PurchaseOrdersPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Supplier</Label>
-                  <select className="border rounded p-2" value={newOrder.supplier_id} onChange={(e) => setNewOrder({ ...newOrder, supplier_id: e.target.value })}>
+                  <select className="border rounded p-2 bg-background" value={newOrder.supplier_id} onChange={(e) => setNewOrder({ ...newOrder, supplier_id: e.target.value })}>
                     <option value="">Select supplier</option>
                     {suppliers.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -140,7 +142,7 @@ export default function PurchaseOrdersPage() {
                 <div className="space-y-2">
                   {items.map((it, idx) => (
                     <div key={idx} className="grid grid-cols-4 gap-2">
-                      <select className="border rounded p-2" value={it.medicine_id} onChange={(e) => updateItem(idx, { medicine_id: e.target.value })}>
+                      <select className="border rounded p-2 bg-background" value={it.medicine_id} onChange={(e) => updateItem(idx, { medicine_id: e.target.value })}>
                         <option value="">Select medicine</option>
                         {medicines.map((m: any) => (
                           <option key={m.id} value={m.id}>{m.medicine_name || m.name}</option>
@@ -162,49 +164,62 @@ export default function PurchaseOrdersPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">Loading orders...</p></div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">No orders found.</p></div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Order Date</TableHead>
-                  <TableHead>Expected Delivery</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((o) => (
-                  <TableRow key={o.id}>
-                    <TableCell>{o.order_id || o.id}</TableCell>
-                    <TableCell>{suppliers.find((s) => s.id === o.supplier_id)?.name || o.supplier_id}</TableCell>
-                    <TableCell>{o.order_date?.slice(0, 10)}</TableCell>
-                    <TableCell>{o.expected_delivery_date?.slice(0, 10)}</TableCell>
-                    <TableCell>{o.status}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Ordered')}>Approve</Button>
-                        <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Completed')}>Complete</Button>
-                        <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Cancelled')}>Cancel</Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <ErrorBoundary fallbackTitle="Error loading Purchase Orders">
+        <Card>
+          <CardHeader>
+            <CardTitle>Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3 py-2" role="status" aria-label="Loading orders">
+                <span className="sr-only">Loading orders...</span>
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16 ml-auto" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-12"><p className="text-muted-foreground">No orders found.</p></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Supplier</TableHead>
+                      <TableHead>Order Date</TableHead>
+                      <TableHead>Expected Delivery</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((o) => (
+                      <TableRow key={o.id}>
+                        <TableCell>{o.order_id || o.id}</TableCell>
+                        <TableCell>{suppliers.find((s) => s.id === o.supplier_id)?.name || o.supplier_id}</TableCell>
+                        <TableCell>{o.order_date?.slice(0, 10)}</TableCell>
+                        <TableCell>{o.expected_delivery_date?.slice(0, 10)}</TableCell>
+                        <TableCell>{o.status}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Ordered')}>Approve</Button>
+                            <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Completed')}>Complete</Button>
+                            <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Cancelled')}>Cancel</Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </ErrorBoundary>
     </div>
   );
 }

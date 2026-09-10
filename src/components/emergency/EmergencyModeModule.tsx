@@ -144,7 +144,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
   return (
     <div className="space-y-6 animate-fade-in">
       {/* High-Pressure Emergency Banner Header */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-rose-950 via-rose-900 to-red-950 border-2 border-rose-600 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border-2 border-rose-600 text-primary-foreground shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-rose-600/30 border border-rose-500 animate-pulse text-rose-300">
             <Siren className="h-8 w-8 text-rose-400" />

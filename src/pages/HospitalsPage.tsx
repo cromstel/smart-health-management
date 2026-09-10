@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import {
 import { Plus, Building2, Users, Bed, Phone, Mail, MapPin, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Hospital {
   id: string;
@@ -104,11 +106,7 @@ export default function HospitalsPage() {
     status: '',
   });
 
-  useEffect(() => {
-    loadHospitals();
-  }, []);
-
-  const loadHospitals = async () => {
+  const loadHospitals = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getHospitals() as any[];
@@ -131,11 +129,15 @@ export default function HospitalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadHospitals();
+  }, [loadHospitals]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    setNewHospital(prev => ({ ...prev, [id]: value }));
+    setNewHospital((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleAddHospital = async () => {
@@ -219,14 +221,25 @@ export default function HospitalsPage() {
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    setEditHospitalData(prev => ({ ...prev, [id]: value }));
+    setEditHospitalData((prev) => ({ ...prev, [id]: value }));
   };
 
   return (
     <div className="space-y-6">
       {loading && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading data...</p>
+        <div className="space-y-4" role="status" aria-label="Loading hospitals">
+          <span className="sr-only">Loading data...</span>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
         </div>
       )}
       {!loading && (
@@ -239,7 +252,7 @@ export default function HospitalsPage() {
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2" disabled={!hasPermission('hospital:add')}>
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4" aria-hidden="true" />
                   Add Hospital
                 </Button>
               </DialogTrigger>
@@ -337,7 +350,7 @@ export default function HospitalsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select onValueChange={(value) => setEditHospitalData(prev => ({ ...prev, status: value }))} value={editHospitalData.status}>
+                    <Select onValueChange={(value) => setEditHospitalData((prev) => ({ ...prev, status: value }))} value={editHospitalData.status}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
@@ -382,7 +395,7 @@ export default function HospitalsPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-accent" />
+                      <Building2 className="h-5 w-5 text-accent" aria-hidden="true" />
                       <CardTitle className="text-lg">{hospital.name}</CardTitle>
                     </div>
                     <Badge variant={hospital.status === 'Active' ? 'default' : 'secondary'}>
@@ -390,18 +403,18 @@ export default function HospitalsPage() {
                     </Badge>
                   </div>
                   <CardDescription className="flex items-center gap-1 text-xs">
-                    <MapPin className="h-3 w-3" />
+                    <MapPin className="h-3 w-3" aria-hidden="true" />
                     {hospital.address}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <Phone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       <span className="text-foreground">{hospital.phone}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       <span className="text-foreground">{hospital.email}</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border">
@@ -422,10 +435,12 @@ export default function HospitalsPage() {
                 </CardContent>
                 <div className="flex justify-end p-4 pt-0 gap-2">
                   <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(hospital); }} disabled={!hasPermission('hospital:edit')}>
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only">Edit hospital</span>
                   </Button>
                   <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openDeleteDialog(hospital); }} disabled={!hasPermission('hospital:delete')}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
+                    <span className="sr-only">Delete hospital</span>
                   </Button>
                 </div>
               </Card>
@@ -433,68 +448,72 @@ export default function HospitalsPage() {
           </div>
 
           {selectedHospital && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-accent" />
-                      {selectedHospital.name} - Departments
-                    </CardTitle>
-                    <CardDescription>Manage hospital departments and services</CardDescription>
+            <ErrorBoundary fallbackTitle="Error loading Hospital Departments">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-accent" aria-hidden="true" />
+                        {selectedHospital.name} - Departments
+                      </CardTitle>
+                      <CardDescription>Manage hospital departments and services</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => openEditDialog(selectedHospital)} disabled={!hasPermission('hospital:edit')}>
+                      <Edit className="h-4 w-4" aria-hidden="true" />
+                      Edit Hospital
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => openEditDialog(selectedHospital)} disabled={!hasPermission('hospital:edit')}>
-                    <Edit className="h-4 w-4" />
-                    Edit Hospital
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Head of Department</TableHead>
-                      <TableHead>Staff</TableHead>
-                      <TableHead>Beds</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[
-                      { name: 'Cardiology', hod: 'Dr. Michael Chen', staff: 15, beds: 30, status: 'Active' },
-                      { name: 'Orthopedics', hod: 'Dr. Emily Davis', staff: 12, beds: 25, status: 'Active' },
-                      { name: 'Pediatrics', hod: 'Dr. Robert Lee', staff: 18, beds: 35, status: 'Active' },
-                      { name: 'Emergency', hod: 'Dr. Sarah Johnson', staff: 20, beds: 40, status: 'Active' },
-                    ].map((dept, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{dept.name}</TableCell>
-                        <TableCell>{dept.hod}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3 text-muted-foreground" />
-                            {dept.staff}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Bed className="h-3 w-3 text-muted-foreground" />
-                            {dept.beds}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="default">{dept.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">Manage</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Department</TableHead>
+                          <TableHead>Head of Department</TableHead>
+                          <TableHead>Staff</TableHead>
+                          <TableHead>Beds</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[
+                          { name: 'Cardiology', hod: 'Dr. Michael Chen', staff: 15, beds: 30, status: 'Active' },
+                          { name: 'Orthopedics', hod: 'Dr. Emily Davis', staff: 12, beds: 25, status: 'Active' },
+                          { name: 'Pediatrics', hod: 'Dr. Robert Lee', staff: 18, beds: 35, status: 'Active' },
+                          { name: 'Emergency', hod: 'Dr. Sarah Johnson', staff: 20, beds: 40, status: 'Active' },
+                        ].map((dept, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{dept.name}</TableCell>
+                            <TableCell>{dept.hod}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                {dept.staff}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Bed className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                {dept.beds}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default">{dept.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="sm">Manage</Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </ErrorBoundary>
           )}
         </>
       )}

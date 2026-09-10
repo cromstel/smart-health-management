@@ -45,7 +45,7 @@ export default function TwoFactorPage() {
     try {
       // Simulate cryptographic WebAuthn secure biometric bypass check
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       setCode('123456');
       setLoading(true);
       await api.verifyTwoFactor('123456');
@@ -102,7 +102,7 @@ export default function TwoFactorPage() {
         {/* Brand Header */}
         <div className="flex flex-col items-center justify-center text-center">
           <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-2">
-            <Activity className="h-6 w-6 text-accent" />
+            <Activity className="h-6 w-6 text-accent" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-bold text-foreground">Smart Health Manager</h1>
           <p className="text-xs text-muted-foreground">Multi-Factor Identity Verification</p>
@@ -112,7 +112,7 @@ export default function TwoFactorPage() {
           <CardHeader className="space-y-3 text-center pb-4 border-b border-border">
             <div className="flex justify-center">
               <div className="h-14 w-14 rounded-2xl bg-accent/15 border border-accent/30 text-accent flex items-center justify-center shadow-inner">
-                <ShieldCheck className="h-7 w-7" />
+                <ShieldCheck className="h-7 w-7" aria-hidden="true" />
               </div>
             </div>
             <div>
@@ -141,8 +141,10 @@ export default function TwoFactorPage() {
                     ? 'bg-accent text-accent-foreground shadow-sm'
                     : 'bg-muted/40 text-muted-foreground hover:text-foreground'
                 }`}
+                role="tab"
+                aria-selected={method === 'totp'}
               >
-                <Lock className="h-3 w-3" />
+                <Lock className="h-3 w-3" aria-hidden="true" />
                 <span>Authenticator</span>
               </button>
               <button
@@ -153,8 +155,10 @@ export default function TwoFactorPage() {
                     ? 'bg-accent text-accent-foreground shadow-sm'
                     : 'bg-muted/40 text-muted-foreground hover:text-foreground'
                 }`}
+                role="tab"
+                aria-selected={method === 'sms'}
               >
-                <Smartphone className="h-3 w-3" />
+                <Smartphone className="h-3 w-3" aria-hidden="true" />
                 <span>SMS Code</span>
               </button>
               <button
@@ -165,8 +169,10 @@ export default function TwoFactorPage() {
                     ? 'bg-accent text-accent-foreground shadow-sm'
                     : 'bg-muted/40 text-muted-foreground hover:text-foreground'
                 }`}
+                role="tab"
+                aria-selected={method === 'backup'}
               >
-                <Key className="h-3 w-3" />
+                <Key className="h-3 w-3" aria-hidden="true" />
                 <span>Backup Key</span>
               </button>
             </div>
@@ -174,15 +180,15 @@ export default function TwoFactorPage() {
 
           <CardContent className="pt-6 space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className="font-medium">{error}</span>
               </div>
             )}
 
             {success ? (
               <div className="py-4 text-center space-y-2 text-emerald-500">
-                <CheckCircle2 className="h-10 w-10 mx-auto" />
+                <CheckCircle2 className="h-10 w-10 mx-auto" aria-hidden="true" />
                 <p className="text-sm font-semibold">Security Token Verified!</p>
                 <p className="text-xs text-muted-foreground">Initializing workstation session...</p>
               </div>
@@ -200,14 +206,15 @@ export default function TwoFactorPage() {
                       }
                     }}
                     autoFocus
+                    aria-label="Enter 6-digit authentication code"
                   >
                     <InputOTPGroup className="gap-1.5 sm:gap-2">
-                      <InputOTPSlot index={0} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                      <InputOTPSlot index={1} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                      <InputOTPSlot index={2} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                      <InputOTPSlot index={3} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                      <InputOTPSlot index={4} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                      <InputOTPSlot index={5} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                      <InputOTPSlot index={0} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 1" />
+                      <InputOTPSlot index={1} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 2" />
+                      <InputOTPSlot index={2} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 3" />
+                      <InputOTPSlot index={3} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 4" />
+                      <InputOTPSlot index={4} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 5" />
+                      <InputOTPSlot index={5} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 6" />
                     </InputOTPGroup>
                   </InputOTP>
                   <span className="text-[11px] text-muted-foreground">
@@ -232,9 +239,9 @@ export default function TwoFactorPage() {
                     disabled={loading || isBiometricLoading}
                   >
                     {isBiometricLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : (
-                      <Fingerprint className="h-5 w-5" />
+                      <Fingerprint className="h-5 w-5" aria-hidden="true" />
                     )}
                     <span>Verify with FaceID / TouchID</span>
                   </Button>
@@ -251,7 +258,7 @@ export default function TwoFactorPage() {
                 onClick={handleQuickFill}
                 className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground"
               >
-                <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                 <span>Quick Test: Autofill Demo Code (123456)</span>
               </Button>
 
@@ -264,7 +271,7 @@ export default function TwoFactorPage() {
                   disabled={cooldown > 0}
                   className="w-full text-xs text-muted-foreground hover:text-foreground gap-1.5"
                 >
-                  <RotateCw className="h-3.5 w-3.5" />
+                  <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{cooldown > 0 ? `Resend SMS in ${cooldown}s` : 'Resend SMS code'}</span>
                 </Button>
               )}
@@ -273,7 +280,7 @@ export default function TwoFactorPage() {
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
             <Link to="/login" className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-medium transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Cancel & Return to Login</span>
             </Link>
           </CardFooter>

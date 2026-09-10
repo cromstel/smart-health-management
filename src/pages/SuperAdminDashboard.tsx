@@ -96,8 +96,8 @@ export default function SuperAdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">System Dashboard</h1>
-          <p className="text-gray-400 mt-1">Monitor and manage your health management system</p>
+          <h1 className="text-3xl font-bold text-foreground">System Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Monitor and manage your health management system</p>
         </div>
         <div className="flex items-center gap-2">
           <div className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -113,59 +113,59 @@ export default function SuperAdminDashboard() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">Total Users</CardTitle>
-            <Users className="w-4 h-4 text-[#00BFFF]" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+            <Users className="w-4 h-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats?.totalUsers || 0}</div>
+            <div className="text-2xl font-bold text-foreground">{stats?.totalUsers || 0}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">Total Hospitals</CardTitle>
-            <Building2 className="w-4 h-4 text-[#00BFFF]" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Hospitals</CardTitle>
+            <Building2 className="w-4 h-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats?.totalHospitals || 0}</div>
+            <div className="text-2xl font-bold text-foreground">{stats?.totalHospitals || 0}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">Total Patients</CardTitle>
-            <UserPlus className="w-4 h-4 text-[#00BFFF]" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Patients</CardTitle>
+            <UserPlus className="w-4 h-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats?.totalPatients || 0}</div>
+            <div className="text-2xl font-bold text-foreground">{stats?.totalPatients || 0}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">Appointments</CardTitle>
-            <Calendar className="w-4 h-4 text-[#00BFFF]" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Appointments</CardTitle>
+            <Calendar className="w-4 h-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats?.totalAppointments || 0}</div>
+            <div className="text-2xl font-bold text-foreground">{stats?.totalAppointments || 0}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-[#001F3F]/50 border-gray-800">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-white">Quick Actions</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle className="text-foreground">Quick Actions</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Perform common administrative tasks
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Button
             onClick={handleBackup}
-            className="justify-start gap-2 bg-[#00BFFF]/10 hover:bg-[#00BFFF]/20 text-[#00BFFF] border border-[#00BFFF]/20"
+            className="justify-start gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20"
             variant="outline"
           >
             <Download className="w-4 h-4" />
@@ -174,7 +174,7 @@ export default function SuperAdminDashboard() {
           
           <Button
             onClick={() => navigate('/super-admin/operations')}
-            className="justify-start gap-2 bg-[#00BFFF]/10 hover:bg-[#00BFFF]/20 text-[#00BFFF] border border-[#00BFFF]/20"
+            className="justify-start gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20"
             variant="outline"
           >
             <Upload className="w-4 h-4" />
@@ -183,7 +183,7 @@ export default function SuperAdminDashboard() {
           
           <Button
             onClick={() => navigate('/super-admin/users')}
-            className="justify-start gap-2 bg-[#00BFFF]/10 hover:bg-[#00BFFF]/20 text-[#00BFFF] border border-[#00BFFF]/20"
+            className="justify-start gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20"
             variant="outline"
           >
             <Users className="w-4 h-4" />
@@ -192,7 +192,7 @@ export default function SuperAdminDashboard() {
           
           <Button
             onClick={() => navigate('/super-admin/audit-logs')}
-            className="justify-start gap-2 bg-[#00BFFF]/10 hover:bg-[#00BFFF]/20 text-[#00BFFF] border border-[#00BFFF]/20"
+            className="justify-start gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20"
             variant="outline"
           >
             <FileText className="w-4 h-4" />
@@ -201,7 +201,7 @@ export default function SuperAdminDashboard() {
           
           <Button
             onClick={() => navigate('/super-admin/settings')}
-            className="justify-start gap-2 bg-[#00BFFF]/10 hover:bg-[#00BFFF]/20 text-[#00BFFF] border border-[#00BFFF]/20"
+            className="justify-start gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20"
             variant="outline"
           >
             <Settings className="w-4 h-4" />
@@ -210,7 +210,7 @@ export default function SuperAdminDashboard() {
           
           <Button
             onClick={() => navigate('/super-admin/hospitals')}
-            className="justify-start gap-2 bg-[#00BFFF]/10 hover:bg-[#00BFFF]/20 text-[#00BFFF] border border-[#00BFFF]/20"
+            className="justify-start gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20"
             variant="outline"
           >
             <Building2 className="w-4 h-4" />
@@ -220,31 +220,31 @@ export default function SuperAdminDashboard() {
       </Card>
 
       {/* System Information */}
-      <Card className="bg-[#001F3F]/50 border-gray-800">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-white">System Information</CardTitle>
+          <CardTitle className="text-foreground">System Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-gray-800">
-            <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex items-center justify-between py-2 border-b border-border">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Database className="w-4 h-4" />
               <span>Database Size</span>
             </div>
-            <span className="text-white font-medium">{stats?.databaseSize || 0} MB</span>
+            <span className="text-foreground font-medium">{stats?.databaseSize || 0} MB</span>
           </div>
-          <div className="flex items-center justify-between py-2 border-b border-gray-800">
-            <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex items-center justify-between py-2 border-b border-border">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Activity className="w-4 h-4" />
               <span>System Status</span>
             </div>
             <span className="text-green-500 font-medium">{systemStatus?.status}</span>
           </div>
           <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-2 text-gray-400">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="w-4 h-4" />
               <span>Last Updated</span>
             </div>
-            <span className="text-white font-medium">
+            <span className="text-foreground font-medium">
               {systemStatus?.timestamp ? new Date(systemStatus.timestamp).toLocaleString() : 'N/A'}
             </span>
           </div>

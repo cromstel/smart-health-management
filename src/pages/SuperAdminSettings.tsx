@@ -150,8 +150,8 @@ export default function SuperAdminSettings() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">System Settings</h1>
-        <p className="text-gray-400 mt-1">Configure system-wide settings and preferences</p>
+        <h1 className="text-3xl font-bold text-foreground">System Settings</h1>
+        <p className="text-muted-foreground mt-1">Configure system-wide settings and preferences</p>
       </div>
 
       {error && (
@@ -163,17 +163,17 @@ export default function SuperAdminSettings() {
 
       <div className="space-y-6">
         {Object.entries(groupedSettings).map(([category, categorySettings]) => (
-          <Card key={category} className="bg-[#001F3F]/50 border-gray-800">
+          <Card key={category} className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-white capitalize">{category} Settings</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardTitle className="text-foreground capitalize">{category} Settings</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Manage {category} configuration
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {categorySettings.map((setting) => (
                 <div key={setting.id} className="space-y-2">
-                  <Label htmlFor={setting.id} className="text-gray-300 capitalize">
+                  <Label htmlFor={setting.id} className="text-muted-foreground capitalize">
                     {setting.setting_key.replace(/_/g, ' ')}
                   </Label>
                   <div className="flex gap-2">
@@ -185,10 +185,10 @@ export default function SuperAdminSettings() {
                           handleSave(setting.id, e.target.value);
                         }
                       }}
-                      className="bg-[#001F3F]/50 border-gray-700 text-white"
+                      className="bg-background border-border"
                     />
                     {saving === setting.id && (
-                      <Button disabled className="bg-[#00BFFF]/10 text-[#00BFFF]">
+                      <Button disabled className="bg-accent/10 text-accent">
                         Saving...
                       </Button>
                     )}
@@ -206,20 +206,20 @@ export default function SuperAdminSettings() {
         ))}
 
         {/* System Operations */}
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-white">System Operations</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardTitle className="text-foreground">System Operations</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Perform critical system operations like backup, restore, and health checks.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-gray-300">Trigger System Backup</Label>
+              <Label className="text-muted-foreground">Trigger System Backup</Label>
               <Button
                 onClick={handleTriggerBackup}
                 disabled={backupLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 {backupLoading ? 'Backing up...' : <><HardDriveUpload className="w-4 h-4 mr-2" /> Trigger Backup</>}
               </Button>
@@ -227,20 +227,20 @@ export default function SuperAdminSettings() {
             {backupSuccess && <p className="text-green-500 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Backup successful!</p>}
             {backupError && <p className="text-red-500 text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {backupError}</p>}
 
-            <Card className="bg-[#001F3F]/50 border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-white">Restore from Backup</CardTitle>
+                <CardTitle className="text-foreground">Restore from Backup</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Label htmlFor="backup-select" className="text-gray-300">Select a backup to restore</Label>
+                  <Label htmlFor="backup-select" className="text-muted-foreground">Select a backup to restore</Label>
                   <select
                     id="backup-select"
                     aria-label="Select a backup to restore"
                     title="Select a backup to restore"
                     value={selectedBackup || ''}
                     onChange={(e) => setSelectedBackup(e.target.value)}
-                    className="w-full p-2 rounded-md bg-[#001F3F]/50 border-gray-700 text-white"
+                    className="w-full p-2 rounded-md bg-background border-border text-foreground"
                   >
                     <option value="" disabled>Select a backup</option>
                     {backups.map((backup) => (
@@ -250,7 +250,7 @@ export default function SuperAdminSettings() {
                     ))}
                   </select>
                 </div>
-                <Button onClick={handleTriggerRestore} disabled={restoreLoading || !selectedBackup} className="mt-4 w-full bg-[#00BFFF] hover:bg-[#00AADD] text-white">
+                <Button onClick={handleTriggerRestore} disabled={restoreLoading || !selectedBackup} className="mt-4 w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                   {restoreLoading ? 'Restoring...' : <><HardDriveDownload className="w-4 h-4 mr-2" /> Restore Selected Backup</>}
                 </Button>
                 {restoreSuccess && <p className="mt-2 text-sm text-green-500 flex items-center"><CheckCircle className="w-4 h-4 mr-2" />Restore successful!</p>}
@@ -261,11 +261,11 @@ export default function SuperAdminSettings() {
             {restoreError && <p className="text-red-500 text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {restoreError}</p>}
 
             <div className="flex items-center justify-between">
-              <Label className="text-gray-300">Check System Health</Label>
+              <Label className="text-muted-foreground">Check System Health</Label>
               <Button
                 onClick={handleGetSystemHealth}
                 disabled={healthLoading}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 {healthLoading ? 'Checking...' : <><HeartPulse className="w-4 h-4 mr-2" /> Check Health</>}
               </Button>

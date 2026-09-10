@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import AppointmentsPage from '@/pages/AppointmentsPage'
 import { AuditProvider } from '@/contexts/AuditContext'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 vi.mock('@/services/api', () => {
   return {
@@ -49,7 +50,9 @@ describe('AppointmentsPage hospital-aware gating', () => {
     render(
       <MemoryRouter>
         <AuditProvider>
-          <AppointmentsPage />
+          <NotificationProvider>
+            <AppointmentsPage />
+          </NotificationProvider>
         </AuditProvider>
       </MemoryRouter>
     )

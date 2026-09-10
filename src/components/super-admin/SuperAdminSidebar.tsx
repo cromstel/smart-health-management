@@ -1,6 +1,17 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
   Users,
@@ -9,7 +20,7 @@ import {
   Settings,
   Wrench,
   LogOut,
-  Shield
+  Shield,
 } from 'lucide-react';
 
 const navItems = [
@@ -24,62 +35,72 @@ const navItems = [
 export function SuperAdminSidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/super-admin/login');
   };
 
+  const isActive = (to: string) =>
+    location.pathname === to || location.pathname.startsWith(`${to}/`);
+
   return (
-    <aside className="w-64 bg-[#001F3F] border-r border-gray-800 flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-800">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#00BFFF]/10 flex items-center justify-center">
-            <Shield className="w-6 h-6 text-[#00BFFF]" />
+          <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+            <Shield className="h-6 w-6 text-accent" aria-hidden="true" />
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-white">Super Admin</h1>
-            <p className="text-xs text-gray-400">System Portal</p>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-sidebar-foreground leading-tight">Super Admin</h1>
+            <p className="text-xs text-sidebar-foreground/60">System Portal</p>
           </div>
         </div>
-      </div>
+      </SidebarHeader>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-[#00BFFF]/10 text-[#00BFFF]'
-                  : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
-              }`
-            }
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => {
+                const active = isActive(item.to);
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      aria-current={active ? 'page' : undefined}
+                      className="w-full"
+                    >
+                      <Link to={item.to}>
+                        <item.icon className="h-4 w-4" aria-hidden="true" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-      {/* User Profile & Logout */}
-      <div className="p-4 border-t border-gray-800">
-        <div className="mb-3 px-4 py-2 rounded-lg bg-gray-800/50">
-          <p className="text-sm font-medium text-white">{user?.name}</p>
-          <p className="text-xs text-gray-400">{user?.email}</p>
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <div className="mb-3 rounded-lg bg-sidebar-accent px-3 py-2">
+          <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
+          <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
         </div>
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="w-full justify-start gap-2 border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800"
+          size="sm"
+          className="w-full justify-start gap-2 border-sidebar-border text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="h-4 w-4" aria-hidden="true" />
           Logout
         </Button>
-      </div>
-    </aside>
+      </SidebarFooter>
+    </Sidebar>
   );
 }

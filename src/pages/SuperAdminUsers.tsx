@@ -125,8 +125,8 @@ export default function SuperAdminUsers() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">User Management</h1>
-        <p className="text-gray-400 mt-1">Manage all system users and their access</p>
+        <h1 className="text-3xl font-bold text-foreground">User Management</h1>
+        <p className="text-muted-foreground mt-1">Manage all system users and their access</p>
       </div>
 
       {error && (
@@ -136,10 +136,10 @@ export default function SuperAdminUsers() {
         </div>
       )}
 
-      <Card className="bg-[#001F3F]/50 border-gray-800">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-white">All Users ({filteredUsers.length})</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle className="text-foreground">All Users ({filteredUsers.length})</CardTitle>
+          <CardDescription className="text-muted-foreground">
             View and manage user accounts
           </CardDescription>
         </CardHeader>
@@ -147,16 +147,16 @@ export default function SuperAdminUsers() {
           {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-[#001F3F]/50 border-gray-700 text-white"
+                className="pl-10 bg-background border-border"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-[#001F3F]/50 border-gray-700 text-white">
+              <SelectTrigger className="w-full md:w-48 bg-background border-border">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -167,7 +167,7 @@ export default function SuperAdminUsers() {
               </SelectContent>
             </Select>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-[#001F3F]/50 border-gray-700 text-white">
+              <SelectTrigger className="w-full md:w-48 bg-background border-border">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
@@ -182,37 +182,37 @@ export default function SuperAdminUsers() {
           </div>
 
           {/* Table */}
-          <div className="border border-gray-800 rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="border-gray-800 hover:bg-gray-800/50">
-                  <TableHead className="text-gray-400">Name</TableHead>
-                  <TableHead className="text-gray-400">Email</TableHead>
-                  <TableHead className="text-gray-400">Role</TableHead>
-                  <TableHead className="text-gray-400">Status</TableHead>
-                  <TableHead className="text-gray-400">Last Login</TableHead>
-                  <TableHead className="text-gray-400">Actions</TableHead>
+                <TableRow className="border-border hover:bg-muted">
+                  <TableHead className="text-muted-foreground">Name</TableHead>
+                  <TableHead className="text-muted-foreground">Email</TableHead>
+                  <TableHead className="text-muted-foreground">Role</TableHead>
+                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-muted-foreground">Last Login</TableHead>
+                  <TableHead className="text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-400 py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No users found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="border-gray-800 hover:bg-gray-800/50">
-                      <TableCell className="text-white font-medium">{user.name}</TableCell>
-                      <TableCell className="text-gray-400">{user.email}</TableCell>
+                    <TableRow key={user.id} className="border-border hover:bg-muted">
+                      <TableCell className="text-foreground font-medium">{user.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="border-[#00BFFF]/20 text-[#00BFFF]">
+                        <Badge variant="outline" className="border-accent/20 text-accent">
                           {user.role_name}
                         </Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell className="text-gray-400">
+                      <TableCell className="text-muted-foreground">
                         {user.last_login
                           ? new Date(user.last_login).toLocaleDateString()
                           : 'Never'}
@@ -235,7 +235,7 @@ export default function SuperAdminUsers() {
                                         }
                                         handleStatusChange(user.id, 'inactive');
                                       }}
-                                      className="border-gray-700 text-gray-400 hover:text-white"
+                                      className="border-border text-muted-foreground hover:text-foreground"
                                     >
                                       <UserX className="w-4 h-4" />
                                     </Button>
@@ -265,7 +265,7 @@ export default function SuperAdminUsers() {
                                         }
                                         handleStatusChange(user.id, 'active');
                                       }}
-                                      className="border-gray-700 text-gray-400 hover:text-white"
+                                      className="border-border text-muted-foreground hover:text-foreground"
                                     >
                                       <UserCheck className="w-4 h-4" />
                                     </Button>
@@ -295,7 +295,7 @@ export default function SuperAdminUsers() {
                                         }
                                         handleStatusChange(user.id, 'locked');
                                       }}
-                                      className="border-gray-700 text-gray-400 hover:text-white"
+                                      className="border-border text-muted-foreground hover:text-foreground"
                                     >
                                       <Lock className="w-4 h-4" />
                                     </Button>
@@ -325,7 +325,7 @@ export default function SuperAdminUsers() {
                                         }
                                         handleStatusChange(user.id, 'active');
                                       }}
-                                      className="border-gray-700 text-gray-400 hover:text-white"
+                                      className="border-border text-muted-foreground hover:text-foreground"
                                     >
                                       <Unlock className="w-4 h-4" />
                                     </Button>

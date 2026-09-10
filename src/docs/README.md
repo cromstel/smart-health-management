@@ -81,7 +81,7 @@ src/
 │     ├─ architecture.md
 │     ├─ api-reference.md
 │     ├─ deployment-guide.md
-│     ├─ troubleshooting.md
+│     ├─ TROUBLESHOOTING.md
 │     └─ faq.md
 ├── App.tsx              # Main app component
 ├── main.tsx             # Entry point

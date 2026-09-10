@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Unreleased] - 2026-09-10 (Production Hardening)
+
+### Added
+- **Backend module completion** — implemented all previously missing API surface so `cd server && npm run build` passes with zero TypeScript errors: `middleware/errorHandler.ts`, `middleware/notFoundHandler.ts`, `services/stripe.service.ts` (`createStripeCustomer`, `createStripeCharge`), `services/reportFormatters/xlsx.ts` (`buildXlsx`), `events/permissions.ts` (in-process pub/sub `broadcast`), `controllers/appointment.controller.ts` (CRUD + doctor availability + `.ics` export via ical-generator), `controllers/batch.controller.ts` (batch CRUD + `recallBatch` with audit, email/SMS notifications, inventory adjustment), and routes for `hospitals`, `documents`, `pharmacy` (incl. `GET /reports` CSV/XLSX export), `settings`, `batches`, `prescriptions`, `patient-load-predictions`.
+- **financial controller exports** — `exportPdf` (reportFormatters/pdf) and `exportExcel` (buildXlsx) for report export parity with the frontend.
+- **AI agent tooling** — `.opencode/agents` (build, frontend, backend, review, docs, dependencies, security), `.opencode/skills` (frontend-refactor, backend-api, security-review, testing, documentation, production-readiness), `.opencode/commands` (`/verify`, `/test`, `/build`, `/docs`, `/deploy`), `opencode.json`, and canonical `AGENTS.md`.
+
+### Changed
+- **Dependency upgrade to latest stable (root + server)**: React 19.3.0, Vite 8, Tailwind v4, recharts **3.10.1** (typing fixes in `chart.tsx`, `StaffCapacityWidget.tsx`), zod 4.6.1, Express **5.2.1** (param typing fixes, route reorder in `appointment.routes.ts`), helmet 8, express-rate-limit 8, multer **2.3.0** (clears advisory), bcryptjs 3, stripe 22, twilio 6, nodemailer 10, pdfkit 0.20, TypeScript **7.0.2** server-side (`moduleResolution: bundler`), uuid 14, vitest 5, plus removed unused self-dependency and legacy `@types/stripe` override.
+- **Frontend UI/UX refactor**: Super Admin layout rebuilt on shadcn `Sidebar` (collapsible rail + mobile drawer), skeleton loading states across 10 pages, token-based theming (navy/sea-blue) replacing hard-coded slate/zinc/sky classes, XSS-safe HTML entity escaping in Patients QR print preview, `motion` wrapper removed from LoginPage (fixes unhandled animation rejections under happy-dom).
+
+### Security
+- **`.env.local` removed from git tracking** — the file previously contained real production secrets (Twilio, SMTP, Gemini, Google Drive OAuth, ENCRYPTION_KEY/IV, SESSION_SECRET, JWT_SECRET, DB password). Policy added to `.gitignore` (`.env*`). **All exposed secrets MUST be rotated** — see `ai/scratchpad.md`.
+- Fixed reflected-XSS gap in `PatientsPage` QR print preview (entity escaping).
+
+### Infrastructure
+- Resolved `src/docs/` case-collision (`troubleshooting.md` stub removed; canonical `TROUBLESHOOTING.md` kept).
+- Untracked generated artifacts (`*.tsbuildinfo`, `lint_output.txt`, `.vitest-full-output.txt`, `playwright-report/`, `test-results/`) and added `.gitignore` rules.
+
+---
+
+## [Unreleased] - 2026-09-10 (Frontend Hardening)
+
+### Fixed
+- Repaired 5 files with broken JSX that failed the production build (`tsc -b`): `AuditLogsPage.tsx` (missing `)}` closing the logs ternary + unused `useCallback` import), `PatientsPage.tsx` (unterminated `'''` value in QR escape map → proper HTML entity map `&amp;`/`&lt;`/`&gt;`/`&quot;`/`&#39;`, extra `</div>` closing the root early, missing final function `}`, missing `FileText` lucide import), `PrescriptionFulfillmentPage.tsx`, `StaffPage.tsx`, `RolesPage.tsx` (malformed self-closing/JSX close tags).
+- Removed `motion` animation wrapper from `LoginPage.tsx`, eliminating 2 unhandled `AbortError: The animation was canceled` rejections under happy-dom in `src/tests/auth.test.tsx`.
+- Removed unused `ErrorBoundary` import in `CompanyStaffDashboardPage.tsx`.
+
+### Changed
+- Rebuilt `SuperAdminSidebar.tsx` + `SuperAdminLayout.tsx` on the shadcn `Sidebar` primitive: icon-collapsible rail, automatic mobile Sheet drawer via `SidebarProvider`, sticky `SidebarTrigger` header bar, token-based styling, page-view analytics.
+- Replaced plain-text loading placeholders with `Skeleton` loading states (with `sr-only` status text preserved where tests reference it) in `DocumentsPage`, `PharmacyPage`, `PurchaseOrdersPage`, `InventoryReportsPage`, `RolesPage`, `StaffPage`, `HospitalsPage`, `SettingsPage`, `AppointmentsPage`, `PatientsPage`.
+- Refactored hard-coded `slate-*`/`zinc-*`/`sky-*` palette classes to design tokens (navy `primary`, sea-blue `accent`, `muted`, `border`, `card`) in `AuditLogsPage`, `PharmacyPage`, `InventoryReportsPage`, `StaffPage`, `PatientsPage`, `AiAssistantPage`, and the `LoginPage` dark showcase panel (now navy).
+
+### Security
+- HTML entity escaping in `PatientsPage` QR print preview now maps `'`, `"`, `&`, `<`, `>` to their entities (previously an identity no-op), closing the reflected XSS gap in the `window.open` print document.
+
+---
+
 ## [1.3.0] - 2026-09-08
 
 ### Added

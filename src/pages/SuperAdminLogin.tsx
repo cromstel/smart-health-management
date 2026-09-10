@@ -62,15 +62,15 @@ const SuperAdminLogin = React.memo(() => {
         {/* Brand Header */}
         <div className="flex flex-col items-center justify-center text-center">
           <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-2">
-            <Activity className="h-6 w-6 text-accent" />
+            <Activity className="h-6 w-6 text-accent" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-bold text-foreground">Smart Health Manager</h1>
           <p className="text-xs text-muted-foreground">Super Administrator Infrastructure Portal</p>
         </div>
 
         {/* Security Warning Banner */}
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-500 flex items-center gap-2.5 text-xs">
-          <Shield className="h-4 w-4 flex-shrink-0" />
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-500 flex items-center gap-2.5 text-xs" role="alert">
+          <Shield className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           <span className="font-medium">Restricted Terminal: Privileged Infrastructure & Multi-Tenant Root</span>
         </div>
 
@@ -78,7 +78,7 @@ const SuperAdminLogin = React.memo(() => {
           <CardHeader className="space-y-3 text-center pb-4 border-b border-border">
             <div className="flex justify-center">
               <div className="h-16 w-16 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shadow-inner">
-                <KeyRound className="h-8 w-8 text-accent" />
+                <KeyRound className="h-8 w-8 text-accent" aria-hidden="true" />
               </div>
             </div>
             <div>
@@ -96,8 +96,8 @@ const SuperAdminLogin = React.memo(() => {
 
           <CardContent className="pt-6 space-y-4">
             {error && (
-              <div className="p-3 rounded-md bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div className="p-3 rounded-md bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className="font-medium">{error}</span>
               </div>
             )}
@@ -105,7 +105,7 @@ const SuperAdminLogin = React.memo(() => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="admin-email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   Super Admin Email
                 </Label>
                 <Input
@@ -122,7 +122,7 @@ const SuperAdminLogin = React.memo(() => {
 
               <div className="space-y-1.5">
                 <Label htmlFor="admin-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   Master Password
                 </Label>
                 <div className="relative">
@@ -142,7 +142,7 @@ const SuperAdminLogin = React.memo(() => {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
               </div>
@@ -165,14 +165,14 @@ const SuperAdminLogin = React.memo(() => {
                 onClick={handleQuickFill}
                 className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground"
               >
-                <Server className="h-3.5 w-3.5 text-accent" />
+                <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                 <span>Autofill Super Admin Demo Credentials</span>
               </Button>
             </div>
 
             {/* Audit Advisory */}
             <div className="p-3 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground flex items-start gap-2">
-              <FileCheck className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <FileCheck className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>All authentication transactions and root-level commands are cryptographically signed and stored in immutable audit logs.</span>
             </div>
           </CardContent>
@@ -182,7 +182,7 @@ const SuperAdminLogin = React.memo(() => {
               to="/login"
               className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-medium transition-colors"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Return to Standard Staff Login</span>
             </Link>
           </CardFooter>

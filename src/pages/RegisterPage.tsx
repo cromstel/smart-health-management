@@ -83,7 +83,6 @@ export default function RegisterPage() {
 
   const passwordValue = watch('password') || '';
 
-  // Password strength calculation
   const strength = useMemo(() => {
     const length = passwordValue.length >= 8;
     const upper = /[A-Z]/.test(passwordValue);
@@ -106,7 +105,6 @@ export default function RegisterPage() {
       });
       setSuccess(true);
 
-      // Automatically sign in after 1.5s
       setTimeout(async () => {
         try {
           await login(data.email, data.password);
@@ -129,7 +127,7 @@ export default function RegisterPage() {
         {/* Top Branding */}
         <div className="flex flex-col items-center justify-center text-center mb-6">
           <div className="h-14 w-14 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-3">
-            <Activity className="h-8 w-8 text-accent" />
+            <Activity className="h-8 w-8 text-accent" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health Manager</h1>
           <p className="text-sm text-muted-foreground mt-1">Clinical & Administrative Staff Onboarding</p>
@@ -145,7 +143,7 @@ export default function RegisterPage() {
                 </CardDescription>
               </div>
               <Badge variant="outline" className="text-xs border-accent/40 text-accent font-medium flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 HIPAA Verified
               </Badge>
             </div>
@@ -153,8 +151,8 @@ export default function RegisterPage() {
 
           <CardContent className="pt-6">
             {serverError && (
-              <div className="mb-5 p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <div className="mb-5 p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className="font-medium">{serverError}</span>
               </div>
             )}
@@ -162,7 +160,7 @@ export default function RegisterPage() {
             {success ? (
               <div className="py-8 text-center space-y-4">
                 <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="h-9 w-9" />
+                  <CheckCircle2 className="h-9 w-9" aria-hidden="true" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-lg font-semibold text-foreground">Registration Successful!</h3>
@@ -172,7 +170,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="pt-2">
                   <Button onClick={() => navigate('/login')} className="gap-2 bg-accent text-accent-foreground">
-                    Proceed to Login <ArrowRight className="h-4 w-4" />
+                    Proceed to Login <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>
@@ -182,7 +180,7 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="name" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <User className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Full Name
                     </Label>
                     <Input
@@ -193,10 +191,12 @@ export default function RegisterPage() {
                       className={`h-10 text-sm bg-background border-border ${
                         errors.name ? 'border-destructive focus-visible:ring-destructive' : ''
                       }`}
+                      aria-invalid={errors.name ? 'true' : 'false'}
+                      aria-describedby={errors.name ? 'name-error' : undefined}
                     />
                     {errors.name && (
-                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1" id="name-error" role="alert">
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {errors.name.message}
                       </p>
                     )}
@@ -204,7 +204,7 @@ export default function RegisterPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Work Email
                     </Label>
                     <Input
@@ -215,10 +215,12 @@ export default function RegisterPage() {
                       className={`h-10 text-sm bg-background border-border ${
                         errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
                       }`}
+                      aria-invalid={errors.email ? 'true' : 'false'}
+                      aria-describedby={errors.email ? 'email-error' : undefined}
                     />
                     {errors.email && (
-                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1" id="email-error" role="alert">
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {errors.email.message}
                       </p>
                     )}
@@ -229,13 +231,15 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="role" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Clinical / System Role
                     </Label>
                     <select
                       id="role"
                       {...register('role')}
                       className="h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                      aria-invalid={errors.role ? 'true' : 'false'}
+                      aria-describedby={errors.role ? 'role-error' : undefined}
                     >
                       <option value="Doctor">Doctor / Physician</option>
                       <option value="Nurse">Registered Nurse</option>
@@ -244,8 +248,8 @@ export default function RegisterPage() {
                       <option value="Patient">Patient (Self-Service)</option>
                     </select>
                     {errors.role && (
-                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1" id="role-error" role="alert">
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {errors.role.message}
                       </p>
                     )}
@@ -253,21 +257,23 @@ export default function RegisterPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="hospital" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Hospital Facility
                     </Label>
                     <select
                       id="hospital"
                       {...register('hospital')}
                       className="h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                      aria-invalid={errors.hospital ? 'true' : 'false'}
+                      aria-describedby={errors.hospital ? 'hospital-error' : undefined}
                     >
                       <option value="General Hospital">General Hospital (HOSP-001)</option>
                       <option value="Ridge Regional Hospital">Ridge Regional Hospital (HOSP-002)</option>
                       <option value="Central Children's Hospital">Central Children's Hospital (HOSP-003)</option>
                     </select>
                     {errors.hospital && (
-                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1" id="hospital-error" role="alert">
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {errors.hospital.message}
                       </p>
                     )}
@@ -283,6 +289,8 @@ export default function RegisterPage() {
                     id="department"
                     {...register('department')}
                     className="h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                    aria-invalid={errors.department ? 'true' : 'false'}
+                    aria-describedby={errors.department ? 'department-error' : undefined}
                   >
                     <option value="Cardiology">Cardiology & Cardiovascular Care</option>
                     <option value="Emergency">Emergency & Acute Trauma</option>
@@ -293,8 +301,8 @@ export default function RegisterPage() {
                     <option value="Administration">Hospital Operations & Finance</option>
                   </select>
                   {errors.department && (
-                    <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1" id="department-error" role="alert">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.department.message}
                     </p>
                   )}
@@ -304,7 +312,7 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Create Password
                     </Label>
                     <div className="relative">
@@ -316,18 +324,21 @@ export default function RegisterPage() {
                         className={`h-10 pr-10 text-sm bg-background border-border ${
                           errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
                         }`}
+                        aria-invalid={errors.password ? 'true' : 'false'}
+                        aria-describedby={errors.password ? 'password-error' : undefined}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1" id="password-error" role="alert">
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {errors.password.message}
                       </p>
                     )}
@@ -335,7 +346,7 @@ export default function RegisterPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="confirmPassword" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Confirm Password
                     </Label>
                     <div className="relative">
@@ -347,18 +358,21 @@ export default function RegisterPage() {
                         className={`h-10 pr-10 text-sm bg-background border-border ${
                           errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''
                         }`}
+                        aria-invalid={errors.confirmPassword ? 'true' : 'false'}
+                        aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                       </button>
                     </div>
                     {errors.confirmPassword && (
-                      <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
+                      <p className="text-xs text-destructive font-medium flex items-center gap-1" id="confirmPassword-error" role="alert">
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {errors.confirmPassword.message}
                       </p>
                     )}
@@ -376,19 +390,19 @@ export default function RegisterPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
                       <div className={`flex items-center gap-1 ${strength.length ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                         <span>8+ Characters</span>
                       </div>
                       <div className={`flex items-center gap-1 ${strength.upper && strength.lower ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                         <span>Upper & Lower</span>
                       </div>
                       <div className={`flex items-center gap-1 ${strength.number ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                         <span>Numbers (0-9)</span>
                       </div>
                       <div className={`flex items-center gap-1 ${strength.special ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                         <span>Special Symbol</span>
                       </div>
                     </div>
@@ -410,8 +424,8 @@ export default function RegisterPage() {
                     </Label>
                   </div>
                   {errors.agreedToTerms && (
-                    <p className="text-xs text-destructive font-medium flex items-center gap-1 pl-6">
-                      <AlertCircle className="h-3 w-3" />
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1 pl-6" id="terms-error" role="alert">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.agreedToTerms.message}
                     </p>
                   )}

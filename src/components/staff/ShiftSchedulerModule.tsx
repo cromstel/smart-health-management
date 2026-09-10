@@ -174,14 +174,14 @@ export function ShiftSchedulerModule() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Banner */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border border-sky-500/30 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border border-sky-500/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300">
             <Sparkles className="h-7 w-7 text-sky-400 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold tracking-tight text-white">
+              <h2 className="text-xl font-bold tracking-tight text-primary-foreground">
                 Algorithmic Shift Scheduler & Workload Balancer
               </h2>
               <Badge className="bg-sky-600 text-white font-mono text-[10px]">AUTO-OPTIMIZER V2.4</Badge>

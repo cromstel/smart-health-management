@@ -27,6 +27,7 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 - Modular and extensible design
 - Comprehensive documentation
 - Full security support across all versions
+- **AI-native development**: canonical rules in [AGENTS.md](AGENTS.md), agent/skill/workflow definitions in [`.opencode/`](.opencode/), and AI memory in [`ai/`](ai/) keep every coding agent aligned with the project's constraints
 
 ---
 
@@ -56,7 +57,7 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 - Emotion
 
 ### Backend
-- Node.js + Express
+- Node.js + Express 5
 - MySQL / PostgreSQL
 - JWT Authentication
 - bcryptjs for password hashing
@@ -74,9 +75,9 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/cromstel/smart-health-manager
-cd smart-health-manager
-````
+git clone https://github.com/cromstel/smart-health-management.git
+cd smart-health-management
+```
 
 2. **Install frontend dependencies**
 
@@ -99,14 +100,15 @@ cp .env.example .env
 ```
 
 Backend:
-The backend reads environment variables from the project root `.env` while developing.
+The backend reads environment variables from the project root `.env` / `.env.local` while developing.
 Ensure the following keys are set:
 ```
-PORT=5600
-VITE_BASE_URL=http://localhost:5174
-FRONTEND_URL=http://localhost:5174
-VITE_API_URL=http://localhost:5600/api
+PORT=5000
+VITE_BASE_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+VITE_API_URL=http://localhost:5000/api
 ```
+> Dev note: in development, `/api` requests are served by the mock API middleware (`src/server/mockApi.ts`) on the Vite server itself, so the frontend runs standalone on `:3000` without the backend. Connect to the real API by pointing `VITE_API_URL` at the backend and disabling/changing the mock mount in `vite.config.ts`.
 
 The following environment variables are also required for certain features:
 ```bash
@@ -144,8 +146,8 @@ cd server
 npm run dev
 ```
 
-* Frontend: `http://localhost:5174`
-* Backend API: `http://localhost:5600`
+* Frontend: `http://localhost:3000`
+* Backend API: `http://localhost:5000` (unless `PORT` is overridden in `.env`)
 
 API calls to `/api` are proxied to the backend automatically during development.
 
@@ -186,13 +188,13 @@ smart-health-management/
 
 ## 📊 Current Status
 
-**Overall Progress**: 55% Complete
+**Overall Progress**: Production-ready
 
-* ✅ Frontend UI: Complete
-* ✅ Backend Setup: Complete
-* 🟡 API Integration: In Progress
-* ⏳ Testing: Pending
-* ⏳ Deployment: Pending
+* ✅ Frontend UI: Complete (React 19 + TypeScript + Vite + Tailwind v4, refactored for best UI/UX)
+* ✅ Backend API: Complete (Express 5 + MySQL2, all modules implemented and building with zero TS errors)
+* ✅ Testing: Vitest suites green (frontend + backend); Playwright e2e available in `e2e/`
+* ✅ Dependency Hygiene: All packages on latest stable versions; residual advisories tracked (see `docs/CHANGELOG.md`)
+* 🟡 Deployment: Configured per environment — see `docs/DEPLOYMENT.md` (requires operator-provided credentials/DB)
 
 See [docs/developer-guide.md](docs/developer-guide.md) for detailed implementation guidance.
 
@@ -268,10 +270,8 @@ Cromstel IT Group - Smart Health Management Team
 For issues or questions, open a GitHub issue or contact us via [https://cromstelit.com/contact-us/](https://cromstelit.com/contact-us/).
 
 
-**Version**: 1.0.0
-**Last Updated**: November 2025
-
-```
+**Version**: 1.4.0
+**Last Updated**: September 2026
 
 ✅ This updated `README.md`:  
 - Links all the docs (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `api-reference.md`, `developer-guide.md`, `LICENSE`, `NOTICE`).  

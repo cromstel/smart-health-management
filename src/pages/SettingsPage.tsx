@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -230,8 +231,19 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
 	{loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading settings...</p>
+          <div className="space-y-4" role="status" aria-label="Loading settings">
+            <span className="sr-only">Loading settings...</span>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-56" />
+                <Skeleton className="h-4 w-72" />
+              </div>
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-56 w-full" />
+              <Skeleton className="h-56 w-full" />
+            </div>
           </div>
         ) : (
 		<>
@@ -472,7 +484,7 @@ export default function SettingsPage() {
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                        <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 border rounded-lg text-center">
+                        <div className="flex flex-col items-center justify-center p-4 bg-muted/40 border-border border rounded-lg text-center">
                           <div className="w-36 h-36 bg-white p-2 border rounded-md shadow-inner flex items-center justify-center mb-2">
                             <svg viewBox="0 0 100 100" className="w-full h-full">
                               <rect width="100" height="100" fill="#ffffff" />

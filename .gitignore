@@ -19,7 +19,22 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-#*.local
+
+# Environment files — NEVER commit real secrets (.env.local was previously tracked and has been removed from the index)
+.env
+.env.*
+!.env.example
+!server/.env.example
+*.local
+
+# Build artifacts & generated output
+dev-dist
+playwright-report/
+test-results/
+*.tsbuildinfo
+lint_output.txt
+.vitest-full-output.txt
+coverage/
 
 # Editor directories and files
 .vscode/*

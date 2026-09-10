@@ -36,7 +36,7 @@ export function AppLayout() {
         </div>
         <div className="flex flex-1 flex-col min-w-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
           <Header />
-          <main className="flex-1 p-6 transition-all duration-300 ease-in-out">
+          <main className="flex-1 p-6 transition-all duration-300 ease-in-out" id="main-content" role="main">
             <PasswordChangeModal />
             <OfflineIndicator />
             <Outlet />
@@ -45,7 +45,11 @@ export function AppLayout() {
 
         {/* SW Update Toast Prompt */}
         {needRefresh && (
-          <div className="fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-xl border border-primary/20 bg-background shadow-2xl animate-in slide-in-from-bottom-5 duration-300 flex items-start gap-4">
+          <div
+            className="fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-xl border border-primary/20 bg-background shadow-2xl animate-in slide-in-from-bottom-5 duration-300 flex items-start gap-4"
+            role="alert"
+            aria-live="polite"
+          >
             <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
               <Sparkles className="h-5 w-5" />
             </div>
@@ -59,6 +63,7 @@ export function AppLayout() {
                   size="sm"
                   className="text-xs h-8 px-3 flex items-center gap-1.5"
                   onClick={() => updateServiceWorker(true)}
+                  aria-label="Reload workstation to apply updates"
                 >
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: '3s' }} />
                   Reload Workstation
@@ -68,6 +73,7 @@ export function AppLayout() {
                   variant="ghost"
                   className="text-xs h-8 px-2 text-muted-foreground hover:text-foreground"
                   onClick={() => setNeedRefresh(false)}
+                  aria-label="Dismiss update notification"
                 >
                   <X className="h-3.5 w-3.5 mr-1" />
                   Dismiss

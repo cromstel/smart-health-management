@@ -83,7 +83,7 @@ app.get('/', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/analytics/event', (req, res) => {
+app.post('/api/analytics/event', (_req, res) => {
   res.json({ status: 'success', synced: true });
 });
 

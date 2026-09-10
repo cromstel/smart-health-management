@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '@/services/api';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAudit } from '@/contexts/AuditContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, X, Mic, BarChart2 } from 'lucide-react';
+import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, X, Mic, BarChart2, FileText } from 'lucide-react';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
@@ -63,8 +64,8 @@ export default function PatientsPage() {
   );
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [vitalsMap, setVitalsMap] = useState<{[patientId: string]: VitalsRecord[]}>({});
-  const [appointmentsCountMap, setAppointmentsCountMap] = useState<{[patientId: string]: number}>({});
+  const [vitalsMap, setVitalsMap] = useState<Record<string, VitalsRecord[]>>({});
+  const [appointmentsCountMap, setAppointmentsCountMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const urlTab = searchParams.get('tab');
@@ -87,6 +88,7 @@ export default function PatientsPage() {
       setSearchTerm(urlSearch);
     }
   }, [searchParams, searchTerm]);
+
   const [loading, setLoading] = useState(true);
   const { logAction } = useAudit();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -97,7 +99,7 @@ export default function PatientsPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [viewingPatient, setViewingPatient] = useState<Patient | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [isVoiceNotesOpen, setIsVoiceNotesOpen] = useState<boolean>(false);
+  const [isVoiceNotesOpen, setIsVoiceNotesOpen] = useState(false);
   const [selectedPatientForNotes, setSelectedPatientForNotes] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -119,6 +121,7 @@ export default function PatientsPage() {
       setQrCodeUrl('');
     }
   }, [viewingPatient]);
+
   const initialNewPatient = {
     firstName: '',
     lastName: '',
@@ -144,6 +147,7 @@ export default function PatientsPage() {
     discardPatientDraft();
     setNewPatient(initialNewPatient);
   };
+
   const [isAddingPatient, setIsAddingPatient] = useState(false);
   const [addPatientError, setAddPatientError] = useState<string | null>(null);
   const [isUpdatingPatient, setIsUpdatingPatient] = useState(false);
@@ -175,7 +179,7 @@ export default function PatientsPage() {
         phone: newPatient.phone,
         email: newPatient.email,
         hospital_id: newPatient.hospitalId,
-        address: 'N/A', // Or add an address field to the form
+        address: 'N/A',
       });
       logAction('create', 'patient', { recordId: newPatient.email });
       clearPatientDraft();
@@ -206,9 +210,8 @@ export default function PatientsPage() {
         return;
       }
       const data = await api.getPatients({ hospital: user?.hospital_id }) as any[];
-      
-      // Transform backend data to match frontend interface
-      const transformedData = data.map(p => ({
+
+      const transformedData = data.map((p) => ({
         id: p.patient_id,
         name: `${p.first_name} ${p.last_name}`,
         age: p.age,
@@ -218,14 +221,13 @@ export default function PatientsPage() {
         status: p.status === 'active' ? 'Active' as const : 'Inactive' as const,
         hospital: p.hospital_id || 'N/A',
       }));
-      
+
       setPatients(transformedData);
 
-      // Load all vitals and map them
       try {
         const allVitals = await vitalsService.getAllVitals();
-        const vMap: {[patientId: string]: VitalsRecord[]} = {};
-        allVitals.forEach(v => {
+        const vMap: Record<string, VitalsRecord[]> = {};
+        allVitals.forEach((v) => {
           const pid = v.patientId.toLowerCase();
           if (!vMap[pid]) vMap[pid] = [];
           vMap[pid].push(v);
@@ -235,12 +237,11 @@ export default function PatientsPage() {
         console.warn('Failed to load all vitals for triage mapping', err);
       }
 
-      // Load all appointments and count them
       try {
         const appts = await api.getAppointments() as any[];
-        const aCountMap: {[patientId: string]: number} = {};
+        const aCountMap: Record<string, number> = {};
         if (Array.isArray(appts)) {
-          appts.forEach(a => {
+          appts.forEach((a) => {
             const pid = (a.patient_id || a.patientId || '').toLowerCase();
             if (pid) {
               aCountMap[pid] = (aCountMap[pid] || 0) + 1;
@@ -291,8 +292,6 @@ export default function PatientsPage() {
 
   const handleDeletePatient = (patientId: string, hospital: string) => {
     setPatientToDelete(patientId);
-    // Store hospital for the permission check
-    // This is a bit of a workaround, ideally the patient object would be passed
     (window as any).patientToDeleteHospital = hospital;
     setIsDeleteDialogOpen(true);
   };
@@ -370,7 +369,7 @@ export default function PatientsPage() {
     }
   };
 
-  const filteredPatients = patients.filter(patient => {
+  const filteredPatients = patients.filter((patient) => {
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return (
@@ -392,9 +391,11 @@ export default function PatientsPage() {
 
         <div className="flex items-center gap-2">
           {/* Tab Selection Buttons */}
-          <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border">
+          <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border" role="tablist" aria-label="Patient management tabs">
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'directory'}
               onClick={() => {
                 setActiveTab('directory');
                 setSearchParams({});
@@ -405,11 +406,13 @@ export default function PatientsPage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Users className="h-3.5 w-3.5" />
+              <Users className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Directory</span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'vitals'}
               onClick={() => {
                 setActiveTab('vitals');
                 setSearchParams({ tab: 'vitals' });
@@ -420,11 +423,13 @@ export default function PatientsPage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Heart className="h-3.5 w-3.5" />
+              <Heart className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Vitals & Charts</span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'trends'}
               onClick={() => {
                 setActiveTab('trends');
                 setSearchParams({ tab: 'trends' });
@@ -435,155 +440,67 @@ export default function PatientsPage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <BarChart2 className="h-3.5 w-3.5 text-blue-500" />
+              <BarChart2 className="h-3.5 w-3.5 text-blue-500" aria-hidden="true" />
               <span>Vitals Trends</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'followup'}
+              onClick={() => {
+                setActiveTab('followup');
+                setSearchParams({ tab: 'followup' });
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                activeTab === 'followup'
+                  ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+              <span>Follow-up</span>
             </button>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" size="sm" disabled={!hasPermission('patients:add') || !newPatient.hospitalId}>
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
                 <span>Add Patient</span>
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Register New Patient</DialogTitle>
-              <DialogDescription>
-                Enter patient information to create a new record
-              </DialogDescription>
-            </DialogHeader>
-            <AutoSaveDraftBanner
-              hasRestoredDraft={hasPatientDraft}
-              draftSavedAt={patientDraftSavedAt}
-              isAutoSaving={isPatientAutoSaving}
-              onDiscard={handleDiscardPatientDraft}
-            />
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="John" value={newPatient.firstName} onChange={handleInputChange} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Doe" value={newPatient.lastName} onChange={handleInputChange} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input id="age" type="number" placeholder="30" value={newPatient.age} onChange={handleInputChange} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(value) => handleSelectChange('gender', value)} value={newPatient.gender}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" placeholder="+233 24 123 4567" value={newPatient.phone} onChange={handleInputChange} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="patient@email.com" value={newPatient.email} onChange={handleInputChange} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hospitalId">Hospital</Label>
-                <Select onValueChange={(value) => handleSelectChange('hospitalId', value)} value={newPatient.hospitalId} disabled={loadingHospitals}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingHospitals ? 'Loading hospitals...' : 'Select hospital'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hospitalsError && <SelectItem value="error" disabled>{hospitalsError}</SelectItem>}
-                    {hospitals.map((hospital) => (
-                      <SelectItem key={hospital.hospital_id} value={hospital.hospital_id}>
-                        {hospital.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddPatient} disabled={isAddingPatient || !hasPermission('patients:add') || !canActOnHospital(newPatient.hospitalId)}>
-                {isAddingPatient ? 'Registering...' : 'Register Patient'}
-              </Button>
-            </div>
-            {addPatientError && <p className="text-destructive text-sm mt-2">Error: {addPatientError}</p>}
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Patient Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Patient</DialogTitle>
-              <DialogDescription>
-                Update patient information
-              </DialogDescription>
-            </DialogHeader>
-            {editingPatient && (
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Register New Patient</DialogTitle>
+                <DialogDescription>
+                  Enter patient information to create a new record
+                </DialogDescription>
+              </DialogHeader>
+              <AutoSaveDraftBanner
+                hasRestoredDraft={hasPatientDraft}
+                draftSavedAt={patientDraftSavedAt}
+                isAutoSaving={isPatientAutoSaving}
+                onDiscard={handleDiscardPatientDraft}
+              />
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="editFirstName">First Name</Label>
-                    <Input
-                      id="editFirstName"
-                      value={editingPatient.name.split(' ')[0]}
-                      onChange={(e) =>
-                        setEditingPatient({
-                          ...editingPatient,
-                          name: `${e.target.value} ${editingPatient.name.split(' ').slice(1).join(' ')}`,
-                        })
-                      }
-                    />
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input id="firstName" placeholder="John" value={newPatient.firstName} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="editLastName">Last Name</Label>
-                    <Input
-                      id="editLastName"
-                      value={editingPatient.name.split(' ').slice(1).join(' ')}
-                      onChange={(e) =>
-                        setEditingPatient({
-                          ...editingPatient,
-                          name: `${editingPatient.name.split(' ')[0]} ${e.target.value}`,
-                        })
-                      }
-                    />
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" placeholder="Doe" value={newPatient.lastName} onChange={handleInputChange} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="editAge">Age</Label>
-                    <Input
-                      id="editAge"
-                      type="number"
-                      value={editingPatient.age}
-                      onChange={(e) =>
-                        setEditingPatient({ ...editingPatient, age: parseInt(e.target.value, 10) || 0 })
-                      }
-                    />
+                    <Label htmlFor="age">Age</Label>
+                    <Input id="age" type="number" placeholder="30" value={newPatient.age} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="editGender">Gender</Label>
-                    <Select
-                      value={editingPatient.gender}
-                      onValueChange={(value) =>
-                        setEditingPatient({ ...editingPatient, gender: value })
-                      }
-                    >
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select onValueChange={(value) => handleSelectChange('gender', value)} value={newPatient.gender}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
@@ -596,35 +513,16 @@ export default function PatientsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editPhone">Phone Number</Label>
-                  <Input
-                    id="editPhone"
-                    value={editingPatient.phone}
-                    onChange={(e) =>
-                      setEditingPatient({ ...editingPatient, phone: e.target.value })
-                    }
-                  />
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" placeholder="+233 24 123 4567" value={newPatient.phone} onChange={handleInputChange} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editEmail">Email</Label>
-                  <Input
-                    id="editEmail"
-                    type="email"
-                    value={editingPatient.email}
-                    onChange={(e) =>
-                      setEditingPatient({ ...editingPatient, email: e.target.value })
-                    }
-                  />
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="patient@email.com" value={newPatient.email} onChange={handleInputChange} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editHospital">Hospital</Label>
-                  <Select
-                    value={editingPatient.hospital}
-                    onValueChange={(value) =>
-                      setEditingPatient({ ...editingPatient, hospital: value })
-                    }
-                    disabled={loadingHospitals}
-                  >
+                  <Label htmlFor="hospitalId">Hospital</Label>
+                  <Select onValueChange={(value) => handleSelectChange('hospitalId', value)} value={newPatient.hospitalId} disabled={loadingHospitals}>
                     <SelectTrigger>
                       <SelectValue placeholder={loadingHospitals ? 'Loading hospitals...' : 'Select hospital'} />
                     </SelectTrigger>
@@ -638,202 +536,326 @@ export default function PatientsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editStatus">Status</Label>
-                  <Select
-                    value={editingPatient.status}
-                    onValueChange={(value: 'Active' | 'Inactive') =>
-                      setEditingPatient({ ...editingPatient, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleUpdatePatient} disabled={isUpdatingPatient || !hasPermission('patients:edit') || !canActOnHospital(editingPatient?.hospital)}>
-                {isUpdatingPatient ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-            {updatePatientError && <p className="text-destructive text-sm mt-2">Error: {updatePatientError}</p>}
-          </DialogContent>
-        </Dialog>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAddPatient} disabled={isAddingPatient || !hasPermission('patients:add') || !canActOnHospital(newPatient.hospitalId)}>
+                  {isAddingPatient ? 'Registering...' : 'Register Patient'}
+                </Button>
+              </div>
+              {addPatientError && <p className="text-destructive text-sm mt-2" role="alert">Error: {addPatientError}</p>}
+            </DialogContent>
+          </Dialog>
 
-        {/* Delete Patient Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Are you absolutely sure?</DialogTitle>
-              <DialogDescription>
-                This action cannot be undone. This will permanently delete the patient record
-                and remove their data from our servers.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeletingPatient || !hasPermission('patients:delete') || !canActOnHospital((window as any).patientToDeleteHospital)}>
-                {isDeletingPatient ? 'Deleting...' : 'Delete'}
-              </Button>
-            </div>
-            {deletePatientError && <p className="text-destructive text-sm mt-2">Error: {deletePatientError}</p>}
-          </DialogContent>
-        </Dialog>
+          {/* Edit Patient Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Patient</DialogTitle>
+                <DialogDescription>
+                  Update patient information
+                </DialogDescription>
+              </DialogHeader>
+              {editingPatient && (
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editFirstName">First Name</Label>
+                      <Input
+                        id="editFirstName"
+                        value={editingPatient.name.split(' ')[0]}
+                        onChange={(e) =>
+                          setEditingPatient({
+                            ...editingPatient,
+                            name: `${e.target.value} ${editingPatient.name.split(' ').slice(1).join(' ')}`,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editLastName">Last Name</Label>
+                      <Input
+                        id="editLastName"
+                        value={editingPatient.name.split(' ').slice(1).join(' ')}
+                        onChange={(e) =>
+                          setEditingPatient({
+                            ...editingPatient,
+                            name: `${editingPatient.name.split(' ')[0]} ${e.target.value}`,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editAge">Age</Label>
+                      <Input
+                        id="editAge"
+                        type="number"
+                        value={editingPatient.age}
+                        onChange={(e) =>
+                          setEditingPatient({ ...editingPatient, age: parseInt(e.target.value, 10) || 0 })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editGender">Gender</Label>
+                      <Select
+                        value={editingPatient.gender}
+                        onValueChange={(value) =>
+                          setEditingPatient({ ...editingPatient, gender: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editPhone">Phone Number</Label>
+                    <Input
+                      id="editPhone"
+                      value={editingPatient.phone}
+                      onChange={(e) =>
+                        setEditingPatient({ ...editingPatient, phone: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editEmail">Email</Label>
+                    <Input
+                      id="editEmail"
+                      type="email"
+                      value={editingPatient.email}
+                      onChange={(e) =>
+                        setEditingPatient({ ...editingPatient, email: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editHospital">Hospital</Label>
+                    <Select
+                      value={editingPatient.hospital}
+                      onValueChange={(value) =>
+                        setEditingPatient({ ...editingPatient, hospital: value })
+                      }
+                      disabled={loadingHospitals}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingHospitals ? 'Loading hospitals...' : 'Select hospital'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hospitalsError && <SelectItem value="error" disabled>{hospitalsError}</SelectItem>}
+                        {hospitals.map((hospital) => (
+                          <SelectItem key={hospital.hospital_id} value={hospital.hospital_id}>
+                            {hospital.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editStatus">Status</Label>
+                    <Select
+                      value={editingPatient.status}
+                      onValueChange={(value: 'Active' | 'Inactive') =>
+                        setEditingPatient({ ...editingPatient, status: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdatePatient} disabled={isUpdatingPatient || !hasPermission('patients:edit') || !canActOnHospital(editingPatient?.hospital)}>
+                  {isUpdatingPatient ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+              {updatePatientError && <p className="text-destructive text-sm mt-2" role="alert">Error: {updatePatientError}</p>}
+            </DialogContent>
+          </Dialog>
 
-        {/* View Patient Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Patient Details</DialogTitle>
-            </DialogHeader>
-            {viewingPatient && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
-                <div className="md:col-span-2 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Name</Label>
-                      <p className="font-semibold text-foreground text-sm">{viewingPatient.name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Age</Label>
-                      <p className="font-semibold text-foreground text-sm">{viewingPatient.age}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Gender</Label>
-                      <p className="font-semibold text-foreground text-sm">{viewingPatient.gender}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Phone</Label>
-                      <p className="font-semibold text-foreground text-sm">{viewingPatient.phone}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Email</Label>
-                    <p className="font-semibold text-foreground text-sm">{viewingPatient.email}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Status</Label>
+          {/* Delete Patient Dialog */}
+          <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Are you absolutely sure?</DialogTitle>
+                <DialogDescription>
+                  This action cannot be undone. This will permanently delete the patient record
+                  and remove their data from our servers.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeletingPatient || !hasPermission('patients:delete') || !canActOnHospital((window as any).patientToDeleteHospital)}>
+                  {isDeletingPatient ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
+              {deletePatientError && <p className="text-destructive text-sm mt-2" role="alert">Error: {deletePatientError}</p>}
+            </DialogContent>
+          </Dialog>
+
+          {/* View Patient Dialog */}
+          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Patient Details</DialogTitle>
+              </DialogHeader>
+              {viewingPatient && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Badge className={`mt-1 ${viewingPatient.status === 'Active' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-slate-500 hover:bg-slate-600 text-white'}`} variant="default">
-                          {viewingPatient.status}
-                        </Badge>
+                        <Label className="text-muted-foreground text-xs">Name</Label>
+                        <p className="font-semibold text-foreground text-sm">{viewingPatient.name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Age</Label>
+                        <p className="font-semibold text-foreground text-sm">{viewingPatient.age}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Gender</Label>
+                        <p className="font-semibold text-foreground text-sm">{viewingPatient.gender}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Phone</Label>
+                        <p className="font-semibold text-foreground text-sm">{viewingPatient.phone}</p>
                       </div>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground text-xs">Hospital</Label>
-                      <p className="font-semibold text-foreground text-sm">{viewingPatient.hospital}</p>
+                      <Label className="text-muted-foreground text-xs">Email</Label>
+                      <p className="font-semibold text-foreground text-sm">{viewingPatient.email}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Status</Label>
+                        <div>
+                          <Badge className={`mt-1 ${viewingPatient.status === 'Active' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'}`} variant="default">
+                            {viewingPatient.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Hospital</Label>
+                        <p className="font-semibold text-foreground text-sm">{viewingPatient.hospital}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* QR Code Section */}
-                <div className="flex flex-col items-center justify-center p-4 border rounded-xl bg-slate-50/50 dark:bg-slate-900/50 text-center">
-                  <Label className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Patient File QR Code</Label>
-                  {qrCodeUrl ? (
-                    <div className="bg-white p-1.5 rounded-lg border shadow-sm">
-                      <img src={qrCodeUrl} alt="Patient QR Code" className="w-36 h-36 object-contain" />
+                  {/* QR Code Section */}
+                  <div className="flex flex-col items-center justify-center p-4 border rounded-xl bg-muted/50 text-center">
+                    <Label className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Patient File QR Code</Label>
+                    {qrCodeUrl ? (
+                      <div className="bg-white p-1.5 rounded-lg border shadow-sm">
+                        <img src={qrCodeUrl} alt="Patient QR Code" className="w-36 h-36 object-contain" />
+                      </div>
+                    ) : (
+                      <div className="w-36 h-36 flex items-center justify-center border border-dashed rounded-lg text-xs text-muted-foreground">
+                        Generating QR...
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-2 max-w-[160px]">
+                      Scan with tablet or mobile to instantly pull up this patient's digital file.
+                    </p>
+                    <div className="flex gap-1.5 mt-3 w-full max-w-[180px]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs py-1 px-2 h-8 gap-1 border-border"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = qrCodeUrl;
+                          link.download = `patient-${viewingPatient.id}-qr.png`;
+                          link.click();
+                        }}
+                        disabled={!qrCodeUrl}
+                      >
+                        <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Save</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs py-1 px-2 h-8 gap-1 border-border"
+                        onClick={() => {
+                          const win = window.open();
+                          if (win) {
+                            const escapeHtml = (str: string) =>
+                              str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m));
+                            const safeName = escapeHtml(viewingPatient.name || '');
+                            const safeId = escapeHtml(viewingPatient.id || '');
+                            win.document.write(`
+                              <html>
+                                <head><title>Print QR Code - ${safeName}</title></head>
+                                <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;margin:0;">
+                                  <h2 style="margin-bottom:5px;">${safeName}</h2>
+                                  <p style="font-size:14px;color:#666;margin:0 0 20px 0;">Patient ID: ${safeId}</p>
+                                  <img src="${qrCodeUrl}" style="width:250px;height:250px;border:1px solid #ccc;padding:10px;border-radius:10px;" />
+                                  <p style="font-size:12px;color:#999;margin-top:20px;">Scan to open digital medical record</p>
+                                  <script>window.onload = function() { window.print(); window.close(); }</script>
+                                </body>
+                              </html>
+                            `);
+                            win.document.close();
+                          }
+                        }}
+                        disabled={!qrCodeUrl}
+                      >
+                        <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Print</span>
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="w-36 h-36 flex items-center justify-center border border-dashed rounded-lg text-xs text-muted-foreground">
-                      Generating QR...
-                    </div>
-                  )}
-                  <p className="text-[10px] text-muted-foreground mt-2 max-w-[160px]">
-                    Scan with tablet or mobile to instantly pull up this patient's digital file.
-                  </p>
-                  <div className="flex gap-1.5 mt-3 w-full max-w-[180px]">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 text-xs py-1 px-2 h-8 gap-1 border-border"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = qrCodeUrl;
-                        link.download = `patient-${viewingPatient.id}-qr.png`;
-                        link.click();
-                      }}
-                      disabled={!qrCodeUrl}
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Save</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 text-xs py-1 px-2 h-8 gap-1 border-border"
-                      onClick={() => {
-                        const win = window.open();
-                        if (win) {
-                          const escapeHtml = (str: string) =>
-                            str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m));
-                          const safeName = escapeHtml(viewingPatient.name || '');
-                          const safeId = escapeHtml(viewingPatient.id || '');
-                          win.document.write(`
-                            <html>
-                              <head><title>Print QR Code - ${safeName}</title></head>
-                              <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;margin:0;">
-                                <h2 style="margin-bottom:5px;">${safeName}</h2>
-                                <p style="font-size:14px;color:#666;margin:0 0 20px 0;">Patient ID: ${safeId}</p>
-                                <img src="${qrCodeUrl}" style="width:250px;height:250px;border:1px solid #ccc;padding:10px;border-radius:10px;" />
-                                <p style="font-size:12px;color:#999;margin-top:20px;">Scan to open digital medical record</p>
-                                <script>window.onload = function() { window.print(); window.close(); }</script>
-                              </body>
-                            </html>
-                          `);
-                          win.document.close();
-                        }
-                      }}
-                      disabled={!qrCodeUrl}
-                    >
-                      <Printer className="h-3.5 w-3.5" />
-                      <span>Print</span>
-                    </Button>
                   </div>
                 </div>
+              )}
+              <div className="flex justify-end">
+                <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
               </div>
-            )}
-            <div className="flex justify-end">
-              <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {activeTab === 'vitals' ? (
-        <ErrorBoundary fallbackTitle="Error loading Patient Vitals Module">
-          <PatientVitalsModule
-            patients={patients}
-            initialPatientId={selectedPatientForVitals}
-          />
-        </ErrorBoundary>
-      ) : activeTab === 'trends' ? (
-        <ErrorBoundary fallbackTitle="Error loading Patient Vitals Trends Dashboard">
-          <PatientVitalsTrendsDashboard />
-        </ErrorBoundary>
-      ) : activeTab === 'followup' ? (
-        <ErrorBoundary fallbackTitle="Error loading Post-Discharge Followup Module">
-          <PostDischargeFollowupModule />
-        </ErrorBoundary>
-      ) : (
-        <ErrorBoundary fallbackTitle="Error loading Patient Records">
-          <Card>
+    {activeTab === 'vitals' ? (
+      <ErrorBoundary fallbackTitle="Error loading Patient Vitals Module">
+        <PatientVitalsModule
+          patients={patients}
+          initialPatientId={selectedPatientForVitals}
+        />
+      </ErrorBoundary>
+    ) : activeTab === 'trends' ? (
+      <ErrorBoundary fallbackTitle="Error loading Patient Vitals Trends Dashboard">
+        <PatientVitalsTrendsDashboard />
+      </ErrorBoundary>
+    ) : activeTab === 'followup' ? (
+      <ErrorBoundary fallbackTitle="Error loading Post-Discharge Followup Module">
+        <PostDischargeFollowupModule />
+      </ErrorBoundary>
+    ) : (
+      <ErrorBoundary fallbackTitle="Error loading Patient Records">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Patient Records</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex items-center">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                   <Input
                     placeholder="Search real-time by name, ID, phone, or email..."
                     className="pl-9 pr-8 w-72 md:w-96"
@@ -846,8 +868,9 @@ export default function PatientsPage() {
                       onClick={() => setSearchTerm('')}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
                       title="Clear search"
+                      aria-label="Clear search"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -865,11 +888,11 @@ export default function PatientsPage() {
                   }}
                   title="Open Voice-to-Text Clinical Dictation"
                 >
-                  <Mic className="h-4 w-4 text-blue-500 animate-pulse" />
+                  <Mic className="h-4 w-4 text-blue-500 animate-pulse" aria-hidden="true" />
                   <span className="hidden sm:inline">Voice Notes</span>
                 </Button>
-                <Button variant="outline" size="icon" title="Filter list">
-                  <Filter className="h-4 w-4" />
+                <Button variant="outline" size="icon" title="Filter list" aria-label="Filter list">
+                  <Filter className="h-4 w-4" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="outline"
@@ -877,7 +900,7 @@ export default function PatientsPage() {
                   onClick={handleExportCSV}
                   title="Export patient records to CSV"
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Export CSV</span>
                 </Button>
               </div>
@@ -889,138 +912,137 @@ export default function PatientsPage() {
                 <p className="text-destructive">Unauthorized to view patients for this hospital.</p>
               </div>
             ) : loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Loading patients...</p>
+              <div className="space-y-3 py-2" role="status" aria-label="Loading patients">
+                <span className="sr-only">Loading patients...</span>
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
             ) : patients.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No patients found.</p>
               </div>
             ) : (
-              <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Patient ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Hospital</TableHead>
-                  <TableHead>Triage Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="h-24 text-center">
-                      Loading...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredPatients.length > 0 ? (
-                  filteredPatients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">{patient.id}</TableCell>
-                      <TableCell>{patient.name}</TableCell>
-                      <TableCell>{patient.age}</TableCell>
-                      <TableCell>{patient.gender}</TableCell>
-                      <TableCell>{patient.phone}</TableCell>
-                      <TableCell>{patient.hospital}</TableCell>
-                      {(() => {
-                        const patientVitals = vitalsMap[patient.id.toLowerCase()] || [];
-                        const apptsCount = appointmentsCountMap[patient.id.toLowerCase()] || 0;
-                        const evalResult = evaluateTriagePriority(patientVitals, '', apptsCount);
-                        return (
-                          <TableCell>
-                            <span 
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${evalResult.levelColor} cursor-help`}
-                              title={`Triage factors:\n• ${evalResult.factors.join('\n• ')}`}
-                            >
-                              <span className={`h-1.5 w-1.5 rounded-full ${evalResult.badgeColor}`} />
-                              <span>{evalResult.classification} ({evalResult.score})</span>
-                            </span>
-                          </TableCell>
-                        );
-                      })()}
-                      <TableCell>
-                        <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'}>
-                          {patient.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedPatientForVitals(patient.id);
-                                setActiveTab('vitals');
-                                setSearchParams({ tab: 'vitals', patientId: patient.id });
-                              }}
-                              className="text-rose-600 focus:text-rose-600 font-medium"
-                            >
-                              <Heart className="mr-2 h-4 w-4 text-rose-500" />
-                              Track Vitals
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedPatientForNotes(patient.id);
-                                setIsVoiceNotesOpen(true);
-                              }}
-                              className="text-blue-600 focus:text-blue-600 font-medium"
-                            >
-                              <Mic className="mr-2 h-4 w-4 text-blue-500" />
-                              Dictate Voice Notes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleViewPatient(patient)}>
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEditPatient(patient)}
-                              disabled={!hasPermission('patients:edit')}
-                            >
-                              Edit Record
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeletePatient(patient.id, patient.hospital)}
-                              disabled={!hasPermission('patients:delete')}
-                              className="text-destructive"
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Patient ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead>Gender</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Hospital</TableHead>
+                      <TableHead>Triage Priority</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      No patients found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPatients.length > 0 ? (
+                      filteredPatients.map((patient) => (
+                        <TableRow key={patient.id}>
+                          <TableCell className="font-medium">{patient.id}</TableCell>
+                          <TableCell>{patient.name}</TableCell>
+                          <TableCell>{patient.age}</TableCell>
+                          <TableCell>{patient.gender}</TableCell>
+                          <TableCell>{patient.phone}</TableCell>
+                          <TableCell>{patient.hospital}</TableCell>
+                          {(() => {
+                            const patientVitals = vitalsMap[patient.id.toLowerCase()] || [];
+                            const apptsCount = appointmentsCountMap[patient.id.toLowerCase()] || 0;
+                            const evalResult = evaluateTriagePriority(patientVitals, '', apptsCount);
+                            return (
+                              <TableCell>
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${evalResult.levelColor} cursor-help`}
+                                  title={`Triage factors:\n• ${evalResult.factors.join('\n• ')}`}
+                                >
+                                  <span className={`h-1.5 w-1.5 rounded-full ${evalResult.badgeColor}`} aria-hidden="true" />
+                                  <span>{evalResult.classification} ({evalResult.score})</span>
+                                </span>
+                              </TableCell>
+                            );
+                          })()}
+                          <TableCell>
+                            <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'}>
+                              {patient.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Open actions menu">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedPatientForVitals(patient.id);
+                                    setActiveTab('vitals');
+                                    setSearchParams({ tab: 'vitals', patientId: patient.id });
+                                  }}
+                                  className="text-rose-600 focus:text-rose-600 font-medium"
+                                >
+                                  <Heart className="mr-2 h-4 w-4 text-rose-500" aria-hidden="true" />
+                                  Track Vitals
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedPatientForNotes(patient.id);
+                                    setIsVoiceNotesOpen(true);
+                                  }}
+                                  className="text-blue-600 focus:text-blue-600 font-medium"
+                                >
+                                  <Mic className="mr-2 h-4 w-4 text-blue-500" aria-hidden="true" />
+                                  Dictate Voice Notes
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleViewPatient(patient)}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleEditPatient(patient)}
+                                  disabled={!hasPermission('patients:edit')}
+                                >
+                                  Edit Record
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeletePatient(patient.id, patient.hospital)}
+                                  disabled={!hasPermission('patients:delete')}
+                                  className="text-destructive"
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={9} className="h-24 text-center">
+                          No patients found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </ErrorBoundary>
-      )}
+    )}
 
-      <ClinicalNotesVoiceModal
-        open={isVoiceNotesOpen}
-        onOpenChange={setIsVoiceNotesOpen}
-        patientId={selectedPatientForNotes}
-        patientsList={patients.map((p) => ({ id: p.id, name: p.name }))}
-      />
-    </div>
-  );
+    <ClinicalNotesVoiceModal
+      open={isVoiceNotesOpen}
+      onOpenChange={setIsVoiceNotesOpen}
+      patientId={selectedPatientForNotes}
+      patientsList={patients.map((p) => ({ id: p.id, name: p.name }))}
+    />
+  </div>
+);
 }

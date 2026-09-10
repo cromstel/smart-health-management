@@ -205,14 +205,14 @@ export function PostDischargeFollowupModule() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Banner */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 border border-emerald-500/30 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border border-emerald-500/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
             <PhoneCall className="h-7 w-7 text-emerald-400 animate-bounce" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold tracking-tight text-white">
+              <h2 className="text-xl font-bold tracking-tight text-primary-foreground">
                 Automated Post-Discharge Outreach & Task Center
               </h2>
               <Badge className="bg-emerald-600 text-white font-mono text-[10px]">READMISSION PREVENTION</Badge>

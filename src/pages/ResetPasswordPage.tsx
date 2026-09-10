@@ -34,7 +34,6 @@ export default function ResetPasswordPage() {
   const rawToken = searchParams.get('token');
   const [token, setToken] = useState(rawToken || '');
 
-  // Password complexity calculation
   const strength = useMemo(() => {
     const length = password.length >= 8;
     const upper = /[A-Z]/.test(password);
@@ -51,7 +50,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md border border-border bg-card">
           <CardHeader className="text-center space-y-2">
             <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
-              <AlertCircle className="h-6 w-6" />
+              <AlertCircle className="h-6 w-6" aria-hidden="true" />
             </div>
             <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
@@ -108,7 +107,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md border border-border bg-card shadow-md">
           <CardHeader className="text-center space-y-2 pb-4 border-b border-border">
             <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto">
-              <KeyRound className="h-7 w-7" />
+              <KeyRound className="h-7 w-7" aria-hidden="true" />
             </div>
             <CardTitle className="text-xl font-bold text-foreground">Reset Authorization Required</CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
@@ -143,7 +142,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md border border-border bg-card shadow-md text-center">
           <CardHeader className="space-y-3 pb-4">
             <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="h-9 w-9" />
+              <CheckCircle2 className="h-9 w-9" aria-hidden="true" />
             </div>
             <CardTitle className="text-2xl font-bold text-foreground">Password Updated!</CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
@@ -152,7 +151,7 @@ export default function ResetPasswordPage() {
           </CardHeader>
           <CardContent className="pt-2">
             <Button onClick={() => navigate('/login')} className="w-full gap-2 bg-accent text-accent-foreground">
-              Sign In Now <ArrowRight className="h-4 w-4" />
+              Sign In Now <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </CardContent>
         </Card>
@@ -166,7 +165,7 @@ export default function ResetPasswordPage() {
         {/* Brand Header */}
         <div className="flex flex-col items-center justify-center text-center">
           <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-2">
-            <Activity className="h-6 w-6 text-accent" />
+            <Activity className="h-6 w-6 text-accent" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-bold text-foreground">Smart Health Manager</h1>
           <p className="text-xs text-muted-foreground">Set New Workstation Credentials</p>
@@ -177,7 +176,7 @@ export default function ResetPasswordPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-bold text-foreground">Reset Password</CardTitle>
               <Badge variant="outline" className="text-xs border-accent/40 text-accent font-medium flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 Token Verified
               </Badge>
             </div>
@@ -188,8 +187,8 @@ export default function ResetPasswordPage() {
 
           <CardContent className="pt-6 space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className="font-medium">{error}</span>
               </div>
             )}
@@ -197,7 +196,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="new-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   New Password
                 </Label>
                 <div className="relative">
@@ -215,15 +214,16 @@ export default function ResetPasswordPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     title={showPassword ? 'Hide' : 'Show'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="confirm-new-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   Confirm New Password
                 </Label>
                 <div className="relative">
@@ -241,8 +241,9 @@ export default function ResetPasswordPage() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     title={showConfirmPassword ? 'Hide' : 'Show'}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
               </div>
@@ -258,19 +259,19 @@ export default function ResetPasswordPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-1.5 pt-1">
                     <div className={`flex items-center gap-1 ${strength.length ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                       <span>8+ Characters</span>
                     </div>
                     <div className={`flex items-center gap-1 ${strength.upper && strength.lower ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                       <span>Upper & Lowercase</span>
                     </div>
                     <div className={`flex items-center gap-1 ${strength.number ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                       <span>Numbers (0-9)</span>
                     </div>
                     <div className={`flex items-center gap-1 ${strength.special ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                       <span>Special Symbols</span>
                     </div>
                   </div>

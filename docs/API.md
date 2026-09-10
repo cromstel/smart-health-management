@@ -144,7 +144,53 @@ Creates a temporary 15-minute encrypted URL for external consultation.
 
 ---
 
-## 6. Standard Error Responses
+## 6. Production-Hardening Endpoint Map (Express 5)
+
+All routes below mount `authenticate` + `enforcePasswordChange` from `server/src/middleware/auth.ts`; module routes additionally enforce RBAC via `requirePermission(module, action)` where the module matches the URL segment (`view`/`add`/`edit`/`delete`).
+
+### 6.1 Appointments (`/api/appointments`)
+| Method | Path | Handler | Notes |
+|---|---|---|---|
+| GET | `/` | `getAppointments` | list (optional date/doctor filters) |
+| GET | `/availability` | `getDoctorAvailability` | **declared before `/:id` since Express 5 matches in order** |
+| GET | `/:id/ics` | `getAppointmentIcs` | `.ics` calendar export (`text/calendar`) |
+| GET | `/:id` | `getAppointmentById` | |
+| POST | `/` | `createAppointment` | body: `patientId`, `appointmentDate`, `appointmentTime`, optional `recurrenceRule`, `sendReminder` → inserts `appointment_reminders` |
+| PUT | `/:id` | `updateAppointment` | partial update |
+| DELETE | `/:id` | `deleteAppointment` | |
+
+### 6.2 Hospitals (`/api/hospitals`)
+- CRUD for hospitals + `/departments` sub-routes via `hospital.controller.ts`.
+
+### 6.3 Documents (`/api/documents`)
+- Upload (`POST /` with `multer` memory storage, size capped by `MAX_FILE_SIZE` env, default 10 MB), CRUD, `GET /:id/download`, `GET /:id/preview`, storage usage, OneDrive OAuth init/callback (`ONEDRIVE_CLIENT_ID`, `ONEDRIVE_REDIRECT_URI` required).
+
+### 6.4 Pharmacy (`/api/pharmacy`)
+- Items CRUD (`GET /?lowStock=true&expired=true`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`).
+- `GET /reports` → `generatePharmacyReport` with `?reportType=<stock_levels|low_stock|expiry_dates>&format=<csv|xlsx|pdf>` — CSV and XLSX return file bytes; PDF returns `501 { error: 'PDF reporting is not implemented' }`.
+
+### 6.5 Settings (`/api/settings`)
+- System settings GET/PUT (feature flags, security, storage, notifications via `settings.controller.ts`).
+
+### 6.6 Batches (`/api/batches`)
+- Medicine batch CRUD from `medicine_batches`.
+- `POST /:id/recall` → `recallBatch`: audits, sends email (`utils/mail.ts`) and SMS (`utils/sms.ts`) when configured, and adjusts inventory on `partial_quantity`.
+
+### 6.7 Prescriptions (`/api/prescriptions`)
+- Prescription CRUD + fulfillment endpoints via `prescription.controller.ts` (deducts inventory on fulfill, logs audit).
+
+### 6.8 Patient Load Predictions (`/api/patient-load-predictions`)
+- Predictions + forecast refresh backed by `services/patientLoadPrediction.service.ts`.
+
+### 6.9 Financial exports (`/api/financial`)
+- `exportPdf` / `exportExcel` report exports on the financial router (query: `reportType` ∈ `balance_sheet` | `income_statement` | `cash_flow`, `startDate`, `endDate`). Stripe operations (`POST /customers`, `POST /charges`) delegate to `services/stripe.service.ts` and return a clear error when `STRIPE_SECRET_KEY` is unset.
+
+### 6.10 Roles & permissions events (`/api/roles`)
+- Role CRUD publishes events via `events/permissions.ts` (`broadcast`); the module also exposes `onPermissionEvent`-style subscription for real-time permission cache invalidation.
+
+---
+
+## 7. Standard Error Responses
 
 ```json
 {

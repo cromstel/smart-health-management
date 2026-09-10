@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
         <Card className="w-full max-w-md border border-border bg-card">
           <CardHeader className="text-center space-y-2">
             <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
-              <AlertCircle className="h-6 w-6" />
+              <AlertCircle className="h-6 w-6" aria-hidden="true" />
             </div>
             <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
         {/* Brand Header */}
         <div className="flex flex-col items-center justify-center text-center">
           <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-2">
-            <Activity className="h-6 w-6 text-accent" />
+            <Activity className="h-6 w-6 text-accent" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-bold text-foreground">Smart Health Manager</h1>
           <p className="text-xs text-muted-foreground">Self-Service Credential Recovery</p>
@@ -111,7 +111,7 @@ export default function ForgotPasswordPage() {
               <CardHeader className="space-y-3 text-center pb-4 border-b border-border">
                 <div className="flex justify-center">
                   <div className="h-14 w-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-inner">
-                    <Mail className="h-7 w-7" />
+                    <Mail className="h-7 w-7" aria-hidden="true" />
                   </div>
                 </div>
                 <div>
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
               <CardContent className="pt-6 space-y-4">
                 <div className="p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground space-y-2">
                   <div className="flex items-center gap-2 text-foreground font-medium">
-                    <ShieldCheck className="h-4 w-4 text-accent" />
+                    <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
                     <span>Security Verification Details</span>
                   </div>
                   <p>
@@ -144,7 +144,7 @@ export default function ForgotPasswordPage() {
                     onClick={handleResend}
                     disabled={cooldown > 0 || loading}
                   >
-                    <RotateCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    <RotateCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
                     {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend Recovery Email'}
                   </Button>
 
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
                     className="w-full text-xs gap-2 font-medium"
                     onClick={() => navigate('/reset-password?token=demo-token-hospital-2026')}
                   >
-                    <ExternalLink className="h-3.5 w-3.5 text-accent" />
+                    <ExternalLink className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                     <span>Test Reset Flow (Use Mock Token)</span>
                   </Button>
                 </div>
@@ -170,7 +170,7 @@ export default function ForgotPasswordPage() {
                   Use different email
                 </button>
                 <Link to="/login" className="text-accent hover:underline font-medium flex items-center gap-1">
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Sign In
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Sign In
                 </Link>
               </CardFooter>
             </>
@@ -190,8 +190,8 @@ export default function ForgotPasswordPage() {
 
               <CardContent className="pt-6 space-y-4">
                 {error && (
-                  <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     <span className="font-medium">{error}</span>
                   </div>
                 )}
@@ -199,7 +199,7 @@ export default function ForgotPasswordPage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="reset-email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Registered Work Email
                     </Label>
                     <Input
@@ -223,7 +223,7 @@ export default function ForgotPasswordPage() {
                 </form>
 
                 <div className="p-3 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground flex items-start gap-2">
-                  <KeyRound className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <KeyRound className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <span>
                     To maintain strict HIPAA data governance, reset authorizations are time-locked and recorded in the hospital audit trail.
                   </span>
@@ -232,7 +232,7 @@ export default function ForgotPasswordPage() {
 
               <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
                 <Link to="/login" className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-medium transition-colors">
-                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Return to Sign In</span>
                 </Link>
               </CardFooter>

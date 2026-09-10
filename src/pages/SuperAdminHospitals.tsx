@@ -56,8 +56,8 @@ export default function SuperAdminHospitals() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Hospital Overview</h1>
-        <p className="text-gray-400 mt-1">View all registered hospitals in the system</p>
+        <h1 className="text-3xl font-bold text-foreground">Hospital Overview</h1>
+        <p className="text-muted-foreground mt-1">View all registered hospitals in the system</p>
       </div>
 
       {error && (
@@ -69,16 +69,16 @@ export default function SuperAdminHospitals() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {hospitals.map((hospital) => (
-          <Card key={hospital.id} className="bg-[#001F3F]/50 border-gray-800">
+          <Card key={hospital.id} className="bg-card border-border">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-[#00BFFF]/10 flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-[#00BFFF]" />
+                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <CardTitle className="text-white">{hospital.name}</CardTitle>
-                    <CardDescription className="text-gray-400">
+                    <CardTitle className="text-foreground">{hospital.name}</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       ID: {hospital.hospital_id}
                     </CardDescription>
                   </div>
@@ -92,32 +92,32 @@ export default function SuperAdminHospitals() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2 text-sm">
-                <p className="text-gray-400">{hospital.address}</p>
-                <p className="text-gray-400">{hospital.phone}</p>
-                <p className="text-gray-400">{hospital.email}</p>
+                <p className="text-muted-foreground">{hospital.address}</p>
+                <p className="text-muted-foreground">{hospital.phone}</p>
+                <p className="text-muted-foreground">{hospital.email}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-800">
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <Briefcase className="w-4 h-4 text-[#00BFFF]" />
+                    <Briefcase className="w-4 h-4 text-accent" />
                   </div>
-                  <p className="text-2xl font-bold text-white">{hospital.departments}</p>
-                  <p className="text-xs text-gray-400">Departments</p>
+                  <p className="text-2xl font-bold text-foreground">{hospital.departments}</p>
+                  <p className="text-xs text-muted-foreground">Departments</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <Users className="w-4 h-4 text-[#00BFFF]" />
+                    <Users className="w-4 h-4 text-accent" />
                   </div>
-                  <p className="text-2xl font-bold text-white">{hospital.staff_count}</p>
-                  <p className="text-xs text-gray-400">Staff</p>
+                  <p className="text-2xl font-bold text-foreground">{hospital.staff_count}</p>
+                  <p className="text-xs text-muted-foreground">Staff</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <Bed className="w-4 h-4 text-[#00BFFF]" />
+                    <Bed className="w-4 h-4 text-accent" />
                   </div>
-                  <p className="text-2xl font-bold text-white">{hospital.beds}</p>
-                  <p className="text-xs text-gray-400">Beds</p>
+                  <p className="text-2xl font-bold text-foreground">{hospital.beds}</p>
+                  <p className="text-xs text-muted-foreground">Beds</p>
                 </div>
               </div>
             </CardContent>
@@ -126,10 +126,10 @@ export default function SuperAdminHospitals() {
       </div>
 
       {hospitals.length === 0 && !loading && (
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardContent className="py-12 text-center">
-            <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No hospitals found in the system</p>
+            <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No hospitals found in the system</p>
           </CardContent>
         </Card>
       )}

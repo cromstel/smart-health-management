@@ -679,7 +679,7 @@ export default function StaffCapacityWidget() {
                                 <YAxis domain={[0, Math.max(clinician.maxCapacity + 2, 12)]} tick={{ fontSize: 10 }} stroke="#888888" />
                                 <Tooltip 
                                   contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff', fontSize: '11px', borderRadius: '6px' }}
-                                  formatter={(val: number) => [`${val} patients`, 'Daily Load']}
+                                  formatter={(val) => [`${val} patients`, 'Daily Load']}
                                 />
                                 <ReferenceLine y={clinician.maxCapacity} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'Capacity Limit', fill: '#ef4444', fontSize: 9, position: 'top' }} />
                                 <Line 

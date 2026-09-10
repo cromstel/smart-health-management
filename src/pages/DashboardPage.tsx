@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  Calendar, 
-  Hospital, 
-  DollarSign, 
-  TrendingUp, 
-  Activity, 
-  Heart, 
-  ArrowRight, 
+import {
+  Users,
+  Calendar,
+  Hospital,
+  DollarSign,
+  TrendingUp,
+  Activity,
+  Heart,
+  ArrowRight,
   ShieldCheck,
   GripVertical,
   MoveUp,
@@ -24,7 +24,7 @@ import {
   RotateCcw,
   Sparkles,
   Siren,
-  FileText
+  FileText,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -48,8 +48,8 @@ import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 const chartConfig = {
-  patients: { label: 'Patients', color: '#00BFFF' },
-  appointments: { label: 'Appointments', color: '#00BFFF' },
+  patients: { label: 'Patients', color: 'var(--chart-1)' },
+  appointments: { label: 'Appointments', color: 'var(--chart-2)' },
 };
 
 interface PatientLoadPrediction {
@@ -64,7 +64,7 @@ interface PatientLoadPredictionsResponse {
 interface DashboardModule {
   id: string;
   title: string;
-  gridClass: string; // col-span-1 or col-span-2
+  gridClass: string;
   visible: boolean;
 }
 
@@ -82,7 +82,7 @@ const DEFAULT_MODULES: DashboardModule[] = [
   { id: 'heatmap', title: 'Clinic Activity Heat Map', gridClass: 'col-span-2', visible: true },
   { id: 'analytics', title: 'Patient Load Predictions & National Health Alerts', gridClass: 'col-span-2', visible: true },
   { id: 'growth', title: 'Patient Growth & Weekly Appointments Visualizers', gridClass: 'col-span-2', visible: true },
-  { id: 'recent', title: 'Recent Activity Feed', gridClass: 'col-span-2', visible: true }
+  { id: 'recent', title: 'Recent Activity Feed', gridClass: 'col-span-2', visible: true },
 ];
 
 function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
@@ -95,12 +95,11 @@ function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; p
     }
 
     let startTime: number | null = null;
-    const duration = 1200; // 1.2s count animation
+    const duration = 1200;
 
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / duration, 1);
-      // Smooth cubic ease-out
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       setDisplayValue(Math.floor(easeProgress * value));
 
@@ -134,14 +133,13 @@ export default function DashboardPage() {
   const [patientLoadPredictions, setPatientLoadPredictions] = useState<any[]>([]);
   const [ghanaHealthData, setGhanaHealthData] = useState<any[]>([]);
 
-  // Layout customization state
   const [modules, setModules] = useState<DashboardModule[]>(() => {
     const saved = localStorage.getItem('dashboard_layout');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         const parsedIds = parsed.map((m: any) => m.id);
-        const missing = DEFAULT_MODULES.filter(m => !parsedIds.includes(m.id));
+        const missing = DEFAULT_MODULES.filter((m) => !parsedIds.includes(m.id));
         return [...parsed, ...missing];
       } catch {
         return DEFAULT_MODULES;
@@ -152,74 +150,78 @@ export default function DashboardPage() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  // Emergency Mode & Handover state
   const [isEmergencyMode, setIsEmergencyMode] = useState<boolean>(() => {
     return localStorage.getItem('emergency_mode_active') === 'true';
   });
   const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
   const [isLogVitalsOpen, setIsLogVitalsOpen] = useState(false);
 
-  const toggleEmergencyMode = (checked: boolean) => {
+  const toggleEmergencyMode = useCallback((checked: boolean) => {
     setIsEmergencyMode(checked);
     localStorage.setItem('emergency_mode_active', String(checked));
-  };
+  }, []);
 
-  // Manual layout reordering and resizing methods
-  const handleMove = (id: string, direction: 'up' | 'down') => {
-    const index = modules.findIndex(m => m.id === id);
-    if (index === -1) return;
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= modules.length) return;
+  const handleMove = useCallback((id: string, direction: 'up' | 'down') => {
+    setModules((prev) => {
+      const index = prev.findIndex((m) => m.id === id);
+      if (index === -1) return prev;
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
 
-    const newModules = [...modules];
-    const temp = newModules[index];
-    newModules[index] = newModules[targetIndex];
-    newModules[targetIndex] = temp;
-    setModules(newModules);
-  };
+      const newModules = [...prev];
+      const temp = newModules[index];
+      newModules[index] = newModules[targetIndex];
+      newModules[targetIndex] = temp;
+      return newModules;
+    });
+  }, []);
 
-  const handleResize = (id: string) => {
-    setModules(prev => prev.map(m => {
-      if (m.id === id) {
-        return {
-          ...m,
-          gridClass: m.gridClass === 'col-span-2' ? 'col-span-1' : 'col-span-2'
-        };
-      }
-      return m;
-    }));
-  };
+  const handleResize = useCallback((id: string) => {
+    setModules((prev) =>
+      prev.map((m) => {
+        if (m.id === id) {
+          return {
+            ...m,
+            gridClass: m.gridClass === 'col-span-2' ? 'col-span-1' : 'col-span-2',
+          };
+        }
+        return m;
+      })
+    );
+  }, []);
 
-  const handleToggleVisibility = (id: string) => {
-    setModules(prev => prev.map(m => {
-      if (m.id === id) {
-        return { ...m, visible: !m.visible };
-      }
-      return m;
-    }));
-  };
+  const handleToggleVisibility = useCallback((id: string) => {
+    setModules((prev) =>
+      prev.map((m) => {
+        if (m.id === id) {
+          return { ...m, visible: !m.visible };
+        }
+        return m;
+      })
+    );
+  }, []);
 
-  const handleSaveLayout = () => {
+  const handleSaveLayout = useCallback(() => {
     localStorage.setItem('dashboard_layout', JSON.stringify(modules));
     setIsCustomizing(false);
-  };
+  }, [modules]);
 
-  const handleResetLayout = () => {
+  const handleResetLayout = useCallback(() => {
     setModules(DEFAULT_MODULES);
     localStorage.removeItem('dashboard_layout');
     setIsCustomizing(false);
-  };
+  }, []);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     if (!draggedId || draggedId === targetId) return;
-    const draggedIndex = modules.findIndex(m => m.id === draggedId);
-    const targetIndex = modules.findIndex(m => m.id === targetId);
+    const draggedIndex = modules.findIndex((m) => m.id === draggedId);
+    const targetIndex = modules.findIndex((m) => m.id === targetId);
     if (draggedIndex === -1 || targetIndex === -1) return;
 
     const newModules = [...modules];
@@ -228,21 +230,9 @@ export default function DashboardPage() {
 
     setModules(newModules);
     setDraggedId(null);
-  };
+  }, [modules, draggedId]);
 
-  useEffect(() => {
-    loadDashboardData();
-    const intervalSetting = localStorage.getItem('dashboard_refresh_interval');
-    const intervalSeconds = intervalSetting ? parseInt(intervalSetting, 10) : 30;
-    if (intervalSeconds > 0) {
-      const timer = setInterval(() => {
-        loadDashboardData();
-      }, intervalSeconds * 1000);
-      return () => clearInterval(timer);
-    }
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getDashboardStats() as any;
@@ -251,17 +241,13 @@ export default function DashboardPage() {
       setWeeklyAppointments(data.weeklyAppointments || []);
       setRecentActivities(data.recentActivities || []);
 
-      // Fetch patient load predictions
       const predictions = await api.getPatientLoadPredictions() as PatientLoadPredictionsResponse;
       setPatientLoadPredictions(predictions.predictions || []);
 
-      // Fetch Ghana Health Service data
       const ghanaData = await api.getGhanaHealthData();
       setGhanaHealthData(ghanaData || []);
-
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      // Use fallback data
       const predictions: PatientLoadPredictionsResponse = {
         predictions: [
           { day: 'Monday', predictedLoad: 40 },
@@ -277,7 +263,7 @@ export default function DashboardPage() {
         totalPatients: 2543,
         todayAppointments: 48,
         activeHospitals: 12,
-        monthlyRevenue: 45231
+        monthlyRevenue: 45231,
       });
       setPatientGrowth([
         { month: 'Jan', patients: 400 },
@@ -307,14 +293,29 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const statsCards = stats ? [
-    { title: 'Total Patients', rawValue: stats.totalPatients, prefix: '', suffix: '', change: '+12%', icon: Users, color: 'text-blue-500' },
-    { title: 'Appointments Today', rawValue: stats.todayAppointments, prefix: '', suffix: '', change: '+5%', icon: Calendar, color: 'text-green-500' },
-    { title: 'Active Hospitals', rawValue: stats.activeHospitals, prefix: '', suffix: '', change: '+2', icon: Hospital, color: 'text-purple-500' },
-    { title: 'Monthly Revenue', rawValue: stats.monthlyRevenue, prefix: 'GHS ', suffix: '', change: '+18%', icon: DollarSign, color: 'text-yellow-500' },
-  ] : [];
+  useEffect(() => {
+    loadDashboardData();
+    const intervalSetting = localStorage.getItem('dashboard_refresh_interval');
+    const intervalSeconds = intervalSetting ? parseInt(intervalSetting, 10) : 30;
+    if (intervalSeconds > 0) {
+      const timer = setInterval(() => {
+        loadDashboardData();
+      }, intervalSeconds * 1000);
+      return () => clearInterval(timer);
+    }
+  }, [loadDashboardData]);
+
+  const statsCards = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { title: 'Total Patients', rawValue: stats.totalPatients, prefix: '', suffix: '', change: '+12%', icon: Users, color: 'text-blue-500' },
+      { title: 'Appointments Today', rawValue: stats.todayAppointments, prefix: '', suffix: '', change: '+5%', icon: Calendar, color: 'text-green-500' },
+      { title: 'Active Hospitals', rawValue: stats.activeHospitals, prefix: '', suffix: '', change: '+2', icon: Hospital, color: 'text-purple-500' },
+      { title: 'Monthly Revenue', rawValue: stats.monthlyRevenue, prefix: 'GHS ', suffix: '', change: '+18%', icon: DollarSign, color: 'text-yellow-500' },
+    ];
+  }, [stats]);
 
   if (loading) {
     return (
@@ -341,6 +342,7 @@ export default function DashboardPage() {
       </div>
     );
   }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-muted/20 border border-border/60 p-4 rounded-xl">
@@ -349,7 +351,7 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             {isEmergencyMode && (
               <Badge className="bg-rose-600 text-white font-bold animate-pulse gap-1">
-                <Siren className="h-3.5 w-3.5" /> Emergency Mode
+                <Siren className="h-3.5 w-3.5" aria-hidden="true" /> Emergency Mode
               </Badge>
             )}
           </div>
@@ -359,15 +361,16 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* Emergency Mode Toggle Control */}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-            isEmergencyMode 
-              ? 'bg-rose-600/10 border-rose-500 text-rose-600 dark:text-rose-400 font-bold animate-pulse' 
+            isEmergencyMode
+              ? 'bg-rose-600/10 border-rose-500 text-rose-600 dark:text-rose-400 font-bold animate-pulse'
               : 'bg-card border-border text-muted-foreground'
           }`}>
-            <Siren className={`h-4 w-4 ${isEmergencyMode ? 'text-rose-600 animate-spin' : 'text-muted-foreground'}`} />
+            <Siren className={`h-4 w-4 ${isEmergencyMode ? 'text-rose-600 animate-spin' : 'text-muted-foreground'}`} aria-hidden="true" />
             <span className="text-xs font-semibold">Emergency Mode</span>
             <Switch
               checked={isEmergencyMode}
               onCheckedChange={toggleEmergencyMode}
+              aria-label="Toggle emergency mode"
             />
           </div>
 
@@ -378,7 +381,7 @@ export default function DashboardPage() {
             className="text-xs font-semibold h-9 gap-1.5 border-accent text-accent hover:bg-accent/10"
             onClick={() => setIsHandoverModalOpen(true)}
           >
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Shift Handover</span>
           </Button>
 
@@ -390,7 +393,7 @@ export default function DashboardPage() {
                 className="text-xs font-semibold h-9 gap-1.5 border-dashed border-red-500/50 text-red-600 hover:bg-red-50"
                 onClick={handleResetLayout}
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Reset Layout</span>
               </Button>
               <Button
@@ -398,7 +401,7 @@ export default function DashboardPage() {
                 className="text-xs font-semibold h-9 gap-1.5"
                 onClick={handleSaveLayout}
               >
-                <Save className="h-3.5 w-3.5" />
+                <Save className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Save Workspace</span>
               </Button>
             </>
@@ -409,7 +412,7 @@ export default function DashboardPage() {
               className="text-xs font-semibold h-9 gap-1.5"
               onClick={() => setIsCustomizing(true)}
             >
-              <Settings2 className="h-3.5 w-3.5" />
+              <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Customize Workspace</span>
             </Button>
           )}
@@ -417,8 +420,8 @@ export default function DashboardPage() {
       </div>
 
       {isCustomizing && (
-        <div className="p-3 bg-accent/10 border border-accent/30 text-accent-foreground text-xs rounded-xl flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-accent shrink-0" />
+        <div className="p-3 bg-accent/10 border border-accent/30 text-accent-foreground text-xs rounded-xl flex items-center gap-2" role="status" aria-live="polite">
+          <Sparkles className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
           <span>
             <strong>Workspace Customization Mode:</strong> Drag modules by their handle to reorder, or use action controls to hide/show and resize (Half-width vs Full-width) key dashboard modules.
           </span>
@@ -439,14 +442,14 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <stat.icon className={`h-5 w-5 ${stat.color}`} aria-hidden="true" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
                 <AnimatedCounter value={stat.rawValue} prefix={stat.prefix} suffix={stat.suffix} />
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                <TrendingUp className="h-3 w-3 text-green-500" />
+                <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
                 {stat.change} from last month
               </p>
             </CardContent>
@@ -491,7 +494,7 @@ export default function DashboardPage() {
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
-                        <Heart className="h-5 w-5" />
+                        <Heart className="h-5 w-5" aria-hidden="true" />
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-foreground">
@@ -508,7 +511,7 @@ export default function DashboardPage() {
                       onClick={() => navigate('/patients?tab=vitals')}
                     >
                       <span>Open Patient Vitals</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                     </Button>
                   </CardContent>
                 </Card>
@@ -523,7 +526,7 @@ export default function DashboardPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        <Sparkles className="h-5 w-5 text-amber-500" aria-hidden="true" />
                         Clinical AI Insights Hub
                       </CardTitle>
                       <Badge className="bg-amber-50 text-amber-700 border-amber-200">ACTIVE COGNITION</Badge>
@@ -575,7 +578,7 @@ export default function DashboardPage() {
                   <Card className="border border-border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-accent" />
+                        <Activity className="h-5 w-5 text-accent" aria-hidden="true" />
                         Patient Load Predictions
                       </CardTitle>
                     </CardHeader>
@@ -584,11 +587,11 @@ export default function DashboardPage() {
                         <ChartContainer config={chartConfig} className="h-[200px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={patientLoadPredictions} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" opacity={0.5} />
-                              <XAxis dataKey="day" stroke="#8892b0" fontSize={12} tickLine={false} axisLine={false} />
-                              <YAxis stroke="#8892b0" fontSize={12} tickLine={false} axisLine={false} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                               <ChartTooltip content={<ChartTooltipContent />} />
-                              <Bar dataKey="predictedLoad" fill="#00BFFF" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey="predictedLoad" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
                         </ChartContainer>
@@ -602,7 +605,7 @@ export default function DashboardPage() {
                   <Card className="border border-border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Hospital className="h-5 w-5 text-accent" />
+                        <Hospital className="h-5 w-5 text-accent" aria-hidden="true" />
                         Ghana Health Service Alerts
                       </CardTitle>
                     </CardHeader>
@@ -621,7 +624,7 @@ export default function DashboardPage() {
                         </ul>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-[200px] text-center p-4 bg-muted/20 rounded-md border border-dashed border-border">
-                          <ShieldCheck className="h-8 w-8 text-emerald-500 mb-2 opacity-80" />
+                          <ShieldCheck className="h-8 w-8 text-emerald-500 mb-2 opacity-80" aria-hidden="true" />
                           <span className="text-sm font-medium text-foreground">No Active Health Advisories</span>
                           <span className="text-xs text-muted-foreground mt-1">National health parameters are currently stable.</span>
                         </div>
@@ -637,7 +640,7 @@ export default function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-accent" />
+                        <Activity className="h-5 w-5 text-accent" aria-hidden="true" />
                         Patient Growth
                       </CardTitle>
                     </CardHeader>
@@ -645,16 +648,16 @@ export default function DashboardPage() {
                       <ChartContainer config={chartConfig} className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={patientGrowth}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
-                            <XAxis dataKey="month" stroke="#8892b0" />
-                            <YAxis stroke="#8892b0" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+                            <YAxis stroke="var(--muted-foreground)" />
                             <ChartTooltip content={<ChartTooltipContent />} />
                             <Line
                               type="monotone"
                               dataKey="patients"
-                              stroke="#00BFFF"
+                              stroke="var(--chart-1)"
                               strokeWidth={2}
-                              dot={{ fill: '#00BFFF' }}
+                              dot={{ fill: 'var(--chart-1)' }}
                             />
                           </LineChart>
                         </ResponsiveContainer>
@@ -665,7 +668,7 @@ export default function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-accent" />
+                        <Calendar className="h-5 w-5 text-accent" aria-hidden="true" />
                         Weekly Appointments
                       </CardTitle>
                     </CardHeader>
@@ -673,11 +676,11 @@ export default function DashboardPage() {
                       <ChartContainer config={chartConfig} className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={weeklyAppointments}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
-                            <XAxis dataKey="day" stroke="#8892b0" />
-                            <YAxis stroke="#8892b0" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="day" stroke="var(--muted-foreground)" />
+                            <YAxis stroke="var(--muted-foreground)" />
                             <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="appointments" fill="#00BFFF" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="appointments" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </ChartContainer>
@@ -709,7 +712,7 @@ export default function DashboardPage() {
               {isCustomizing && (
                 <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-background border border-border px-2 py-1 rounded-lg shadow-md">
                   <div className="flex items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground mr-1">
-                    <GripVertical className="h-4 w-4" />
+                    <GripVertical className="h-4 w-4" aria-hidden="true" />
                     <span className="text-[10px] font-bold uppercase tracking-wide">Drag</span>
                   </div>
                   <Button
@@ -718,8 +721,9 @@ export default function DashboardPage() {
                     className="h-6 w-6"
                     onClick={() => handleMove(module.id, 'up')}
                     title="Move Up"
+                    aria-label="Move module up"
                   >
-                    <MoveUp className="h-3.5 w-3.5" />
+                    <MoveUp className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                   <Button
                     size="icon"
@@ -727,8 +731,9 @@ export default function DashboardPage() {
                     className="h-6 w-6"
                     onClick={() => handleMove(module.id, 'down')}
                     title="Move Down"
+                    aria-label="Move module down"
                   >
-                    <MoveDown className="h-3.5 w-3.5" />
+                    <MoveDown className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                   <Button
                     size="icon"
@@ -736,11 +741,12 @@ export default function DashboardPage() {
                     className="h-6 w-6"
                     onClick={() => handleResize(module.id)}
                     title={module.gridClass === 'col-span-2' ? 'Make Half Width' : 'Make Full Width'}
+                    aria-label={module.gridClass === 'col-span-2' ? 'Make module half width' : 'Make module full width'}
                   >
                     {module.gridClass === 'col-span-2' ? (
-                      <Minimize2 className="h-3.5 w-3.5" />
+                      <Minimize2 className="h-3.5 w-3.5" aria-hidden="true" />
                     ) : (
-                      <Maximize2 className="h-3.5 w-3.5" />
+                      <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
                   </Button>
                   <Button
@@ -749,11 +755,12 @@ export default function DashboardPage() {
                     className="h-6 w-6"
                     onClick={() => handleToggleVisibility(module.id)}
                     title={module.visible ? 'Hide Module' : 'Show Module'}
+                    aria-label={module.visible ? 'Hide module' : 'Show module'}
                   >
                     {module.visible ? (
-                      <Eye className="h-3.5 w-3.5 text-accent" />
+                      <Eye className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                     ) : (
-                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                     )}
                   </Button>
                 </div>

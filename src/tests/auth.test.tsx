@@ -82,7 +82,8 @@ describe('Authentication Integration Tests', () => {
   });
 
   it('should successfully log in and redirect to dashboard', async () => {
-    mockApi.login.mockResolvedValue({ user: { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'admin', permissions: [], hospital_id: 'h1' }, token: 'test_token' });
+    localStorageMock.setItem('mfa_enabled', 'false');
+    mockApi.login.mockResolvedValue({ user: { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'front_desk', permissions: [], hospital_id: 'h1' }, token: 'test_token' });
 
     render(
       <MemoryRouter initialEntries={['/login']}>
@@ -92,7 +93,7 @@ describe('Authentication Integration Tests', () => {
       </MemoryRouter>
     );
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email address');
     const passwordInput = screen.getByLabelText('Password');
     const loginButton = screen.getByRole('button', { name: 'Sign In' });
 
@@ -119,7 +120,7 @@ describe('Authentication Integration Tests', () => {
       </MemoryRouter>
     );
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email address');
     const passwordInput = screen.getByLabelText('Password');
     const loginButton = screen.getByRole('button', { name: 'Sign In' });
 
@@ -131,7 +132,7 @@ describe('Authentication Integration Tests', () => {
 
     await waitFor(() => {
       expect(localStorageMock.getItem('token')).toBeNull();
-      expect(screen.getByLabelText('Email')).toBeInTheDocument();
+      expect(screen.getByLabelText('Email address')).toBeInTheDocument();
       expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument();
     });
   });
@@ -166,7 +167,7 @@ describe('Authentication Integration Tests', () => {
     await waitFor(() => {
       expect(localStorageMock.getItem('token')).toBeNull();
       expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('Email')).toBeInTheDocument();
+      expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     });
   });
 });

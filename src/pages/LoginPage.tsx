@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { motion } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Schemas for forms
 const loginSchema = z.object({
   email: z
     .string()
@@ -61,11 +59,9 @@ export default function LoginPage() {
   const { login, mfaPending, mfaPendingUser, verifyMfaTotp, cancelMfa } = useAuth();
   const navigate = useNavigate();
 
-  // Load saved email if exists
   const savedEmail = localStorage.getItem('remember_email') || '';
   const initialRemember = !!savedEmail;
 
-  // React Hook Form for login
   const {
     register,
     handleSubmit,
@@ -81,7 +77,6 @@ export default function LoginPage() {
     },
   });
 
-  // React Hook Form for forgot password
   const {
     register: registerForgot,
     handleSubmit: handleSubmitForgot,
@@ -95,7 +90,6 @@ export default function LoginPage() {
     },
   });
 
-  // Ensure remembered email is set if it changes (or loads late)
   useEffect(() => {
     if (savedEmail) {
       setValue('email', savedEmail);
@@ -165,41 +159,40 @@ export default function LoginPage() {
     <div className="min-h-screen flex w-full bg-background" id="login-page">
       {/* Left Side: Sign-In / Forgot Password Form */}
       <div className="flex-1 flex flex-col justify-center items-center lg:items-stretch px-4 xs:px-6 sm:px-8 lg:px-12 lg:flex-none lg:w-[480px] xl:w-[560px] 2xl:w-[640px] z-10 bg-background relative shadow-2xl">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[340px] xs:max-w-sm sm:max-w-md mx-auto my-auto lg:my-0"
-        >
-          
+        <div className="w-full max-w-[340px] xs:max-w-sm sm:max-w-md mx-auto my-auto lg:my-0">
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-                <Activity className="h-5 w-5 text-primary-foreground" />
+                <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
             </div>
-            
+
             <h2 className="text-3xl font-bold tracking-tight text-foreground mb-2">
-              {mfaPending 
-                ? 'Two-Factor Verification' 
-                : formMode === 'forgot' 
-                  ? 'Reset Password' 
-                  : 'Welcome back'}
+              {mfaPending
+                ? 'Two-Factor Verification'
+                : formMode === 'forgot'
+                ? 'Reset Password'
+                : 'Welcome back'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {mfaPending
                 ? 'Enter the 6-digit code from your authenticator app (TOTP standard)'
                 : formMode === 'forgot'
-                  ? 'Provide your work email address to receive password reset instructions'
-                  : 'Sign in to your clinical workstation'}
+                ? 'Provide your work email address to receive password reset instructions'
+                : 'Sign in to your clinical workstation'}
             </p>
           </div>
 
           <div className="space-y-6">
             {serverError && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3 text-destructive text-sm" id="server-error-container">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <div
+                className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3 text-destructive text-sm"
+                id="server-error-container"
+                role="alert"
+                aria-live="assertive"
+              >
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className="font-medium" id="server-error-text">{serverError}</span>
               </div>
             )}
@@ -210,7 +203,7 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Credentials</span>
                     <Badge variant="outline" className="border-primary text-primary text-[10px] font-semibold flex items-center gap-1">
-                      <KeyRound className="h-3 w-3" />
+                      <KeyRound className="h-3 w-3" aria-hidden="true" />
                       MFA ENFORCED
                     </Badge>
                   </div>
@@ -225,7 +218,7 @@ export default function LoginPage() {
                 <form onSubmit={handleVerifyTotpSubmit} className="space-y-6" id="mfa-form">
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Smartphone className="h-4 w-4 text-primary" />
+                      <Smartphone className="h-4 w-4 text-primary" aria-hidden="true" />
                       Authenticator Security Code (TOTP)
                     </Label>
                     <div className="flex justify-center py-2">
@@ -238,14 +231,15 @@ export default function LoginPage() {
                         }}
                         autoFocus
                         id="totp-otp-input"
+                        aria-label="Enter 6-digit TOTP code"
                       >
                         <InputOTPGroup className="gap-2">
-                          <InputOTPSlot index={0} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                          <InputOTPSlot index={1} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                          <InputOTPSlot index={2} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                          <InputOTPSlot index={3} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                          <InputOTPSlot index={4} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
-                          <InputOTPSlot index={5} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" />
+                          <InputOTPSlot index={0} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 1" />
+                          <InputOTPSlot index={1} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 2" />
+                          <InputOTPSlot index={2} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 3" />
+                          <InputOTPSlot index={3} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 4" />
+                          <InputOTPSlot index={4} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 5" />
+                          <InputOTPSlot index={5} className="h-12 w-11 text-lg font-mono rounded-md border-border bg-background" aria-label="Digit 6" />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
@@ -263,7 +257,7 @@ export default function LoginPage() {
                     >
                       {totpLoading ? (
                         <span className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                           Verifying Authenticator Code...
                         </span>
                       ) : (
@@ -281,7 +275,7 @@ export default function LoginPage() {
                       }}
                       className="w-full text-xs h-9 border-dashed border-primary/40 text-primary hover:bg-primary/5"
                     >
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
                       Quick Test: Fill Demo TOTP Token (123456)
                     </Button>
 
@@ -292,7 +286,7 @@ export default function LoginPage() {
                       onClick={cancelMfa}
                       className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5"
                     >
-                      <ArrowLeft className="h-3.5 w-3.5" />
+                      <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                       Back to Email & Password Sign In
                     </Button>
                   </div>
@@ -300,11 +294,12 @@ export default function LoginPage() {
 
                 <div className="p-3 rounded-lg bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
                   <div className="font-semibold text-foreground flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
                     Standard Authenticator Configured
                   </div>
                   <p>
-                    Key format: RFC 6238 TOTP (30s interval, HMAC-SHA1). Standard seed: <code className="font-mono bg-background px-1 py-0.5 rounded border border-border text-foreground">JBSWY3DPEHPK3PXP</code>.
+                    Key format: RFC 6238 TOTP (30s interval, HMAC-SHA1). Standard seed:{' '}
+                    <code className="font-mono bg-background px-1 py-0.5 rounded border border-border text-foreground">JBSWY3DPEHPK3PXP</code>
                   </p>
                 </div>
               </div>
@@ -316,7 +311,7 @@ export default function LoginPage() {
                   </Label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     </div>
                     <Input
                       id="forgot-email"
@@ -327,11 +322,13 @@ export default function LoginPage() {
                       className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-primary focus-visible:border-primary ${
                         errorsForgot.email ? 'border-destructive focus-visible:ring-destructive' : ''
                       }`}
+                      aria-invalid={errorsForgot.email ? 'true' : 'false'}
+                      aria-describedby={errorsForgot.email ? 'forgot-email-error' : undefined}
                     />
                   </div>
                   {errorsForgot.email && (
-                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-1" id="forgot-email-error">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-1" id="forgot-email-error" role="alert">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span>{errorsForgot.email.message}</span>
                     </p>
                   )}
@@ -346,12 +343,12 @@ export default function LoginPage() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                         Sending Reset Link...
                       </>
                     ) : (
                       <>
-                        <Send className="h-4 w-4" />
+                        <Send className="h-4 w-4" aria-hidden="true" />
                         Send Password Reset Link
                       </>
                     )}
@@ -366,7 +363,7 @@ export default function LoginPage() {
                     }}
                     className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5"
                   >
-                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                     Back to Workstation Sign In
                   </Button>
                 </div>
@@ -379,7 +376,7 @@ export default function LoginPage() {
                   </Label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     </div>
                     <Input
                       id="email"
@@ -390,11 +387,13 @@ export default function LoginPage() {
                       className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-primary focus-visible:border-primary ${
                         errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
                       }`}
+                      aria-invalid={errors.email ? 'true' : 'false'}
+                      aria-describedby={errors.email ? 'email-error' : undefined}
                     />
                   </div>
                   {errors.email && (
-                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-1" id="email-error">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-1" id="email-error" role="alert">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span>{errors.email.message}</span>
                     </p>
                   )}
@@ -418,7 +417,7 @@ export default function LoginPage() {
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     </div>
                     <Input
                       id="password"
@@ -429,19 +428,22 @@ export default function LoginPage() {
                       className={`pl-10 pr-10 h-11 bg-muted/40 border-border focus-visible:ring-primary focus-visible:border-primary ${
                         errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
                       }`}
+                      aria-invalid={errors.password ? 'true' : 'false'}
+                      aria-describedby={errors.password ? 'password-error' : undefined}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       id="toggle-password-visibility"
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-1" id="password-error">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-1" id="password-error" role="alert">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span>{errors.password.message}</span>
                     </p>
                   )}
@@ -472,7 +474,7 @@ export default function LoginPage() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
                       Signing in...
                     </>
                   ) : (
@@ -489,53 +491,51 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Right Side: Informational Panel */}
-      <div className="hidden lg:flex flex-1 flex-col justify-between bg-zinc-950 px-12 py-16 text-white overflow-hidden relative">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNEwzNiA1OE0yNCAzNEwyNCA1OE0xMiAzNEwxMiA1OE00OCAzNEw0OCA1OE0wIDYwTDYwIDYwTTAgNDhMNjAgNDhNMCAzNkw2MCAzNk0wIDYwTDYwIDYwTTAgNDhMNjAgNDhNMCAzNkw2MCAzNk0wIDI0TDYwIDI0TTAgMTJMNjAgMTJNMCAwTDYwIDAiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9nPjwvc3ZnPg==')] opacity-20 pointer-events-none"></div>
-        
+      <div className="hidden lg:flex flex-1 flex-col justify-between bg-primary px-12 py-16 text-primary-foreground overflow-hidden relative">
         <div className="relative z-10 max-w-2xl mt-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-semibold mb-8 border border-emerald-500/30">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
             System Operational
           </div>
           <h2 className="text-4xl xl:text-5xl font-bold tracking-tight mb-6 leading-[1.15]">
             Secure, intelligent healthcare management.
           </h2>
-          <p className="text-lg text-zinc-400 leading-relaxed max-w-xl">
+          <p className="text-lg text-primary-foreground/70 leading-relaxed max-w-xl">
             A comprehensive clinical platform combining electronic health records, pharmacy workflows, and automated scheduling into one unified system.
           </p>
         </div>
 
         <div className="relative z-10 max-w-2xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-12 border-t border-zinc-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-12 border-t border-primary-foreground/15">
             <div className="flex gap-4">
-              <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="h-5 w-5 text-zinc-300" />
+              <div className="h-10 w-10 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="h-5 w-5 text-primary-foreground/80" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-semibold text-zinc-100">Enterprise Security</h3>
-                <p className="text-sm text-zinc-400 mt-1">HIPAA compliant encryption with role-based access control.</p>
+                <h3 className="font-semibold text-primary-foreground">Enterprise Security</h3>
+                <p className="text-sm text-primary-foreground/70 mt-1">HIPAA compliant encryption with role-based access control.</p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
-                <Activity className="h-5 w-5 text-zinc-300" />
+              <div className="h-10 w-10 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 flex items-center justify-center flex-shrink-0">
+                <Activity className="h-5 w-5 text-primary-foreground/80" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-semibold text-zinc-100">Real-time Telemetry</h3>
-                <p className="text-sm text-zinc-400 mt-1">Live patient vitals monitoring and algorithmic triage.</p>
+                <h3 className="font-semibold text-primary-foreground">Real-time Telemetry</h3>
+                <p className="text-sm text-primary-foreground/70 mt-1">Live patient vitals monitoring and algorithmic triage.</p>
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 text-sm text-zinc-500 mt-16 font-medium">
+
+          <div className="flex items-center gap-2 text-sm text-primary-foreground/60 mt-16 font-medium">
             <span>&copy; 2026 Smart Health Systems</span>
             <span>&middot;</span>
-            <Link to="/super-admin/login" className="hover:text-zinc-300 transition-colors flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5" />
+            <Link to="/super-admin/login" className="hover:text-primary-foreground transition-colors flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
               Super Admin Access
             </Link>
           </div>
