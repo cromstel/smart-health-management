@@ -94,19 +94,10 @@ export default defineConfig({
             },
           },
           {
-            // Cache patient list and static assets for clinical offline usage
+            // PHI policy (operator-approved 2026-09-10): patient data is never
+            // cached by the service worker. NetworkOnly bypasses every cache.
             urlPattern: /\/api\/patients.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'patients-api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
+            handler: 'NetworkOnly',
           }
         ],
       },

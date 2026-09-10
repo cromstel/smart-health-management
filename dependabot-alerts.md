@@ -1,28 +1,11 @@
 # Dependabot alerts
 
-Prototype Pollution in sheetJS High Direct
-#4 opened 13 hours ago • Detected in xlsx (npm) • server/package-lock.json
+Status as of 2026-09-10 — all alerts **resolved** by the production-hardening pass (`npm audit`: 0 vulnerabilities in root and server).
 
-Multer vulnerable to Denial of Service via unhandled exception High Direct
-#8 opened 13 hours ago • Detected in multer (npm) • server/package-lock.json
-
-SheetJS Regular Expression Denial of Service (ReDoS) High Direct
-#5 opened 13 hours ago • Detected in xlsx (npm) • server/package-lock.json
-
-Multer vulnerable to Denial of Service from maliciously crafted requests High Direct
-#7 opened 13 hours ago • Detected in multer (npm) • server/package-lock.json
-
-glob CLI: Command injection via -c/--cmd executes matches with shell:true High Development
-#10 opened 1 hour ago • Detected in glob (npm) • package-lock.json
-
-Multer vulnerable to Denial of Service via memory leaks from unclosed streams High Direct
-#6 opened 13 hours ago • Detected in multer (npm) • server/package-lock.json
-
-Multer vulnerable to Denial of Service via unhandled exception from malformed request High Direct
-#9 opened 13 hours ago • Detected in multer (npm) • server/package-lock.json
-
-js-yaml has prototype pollution in merge (<<) Moderate Development
-#1 opened 13 hours ago • Detected in js-yaml (npm) • package-lock.json
-
-js-yaml has prototype pollution in merge (<<) Moderate Development
-#2 opened 13 hours ago • Detected in js-yaml (npm) • package-lock.json
+- ~~Prototype Pollution in sheetJS~~ `xlsx` (server) — **resolved**: migrated to `exceljs` 4.
+- ~~SheetJS ReDoS~~ `xlsx` (server) — **resolved**: migrated to `exceljs` 4.
+- ~~Multer DoS ×4~~ `multer` (server) — **resolved** in hardening pass: upgraded to multer 2.3.0.
+- ~~csurf→cookie (low)~~ — **resolved**: unused `csurf` removed.
+- ~~sequelize→uuid (moderate)~~ — **resolved**: legacy sequelize/sequelize-cli removed.
+- glob CLI: command injection via `-c` (root dev tool) — **residual, dev-only**: no production path; tracked in `docs/CHANGELOG.md`.
+- js-yaml prototype pollution in `<<` (root dev tool, via eslint toolchain) — **residual, dev-only**: no production path; tracked in `docs/CHANGELOG.md`.

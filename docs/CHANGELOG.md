@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Unreleased] - 2026-09-10 (Production Hardening — Security & Ops Follow-ups)
+
+### Security
+- **`xlsx` (SheetJS) removed → `exceljs` 4 adopted** — `server/src/services/reportFormatters/xlsx.ts` rewritten around `ExcelJS.Workbook` (async `writeBuffer`); call sites in `pharmacy.controller.ts` and `financial.controller.ts` now `await buildXlsx`. Clears the high-severity prototype-pollution/ReDoS advisories that had no npm fix.
+- **`csurf` removed** — it was unused (the CSRF middleware in `server/src/middleware/csrf.ts` is a self-contained `crypto`-based implementation). Clears the low `csurf→cookie` advisory.
+- **`sequelize` + `sequelize-cli` removed** — legacy ORM/migrations (`server/models/`, `server/migrations/`, `server/config/config.json`) deleted; schema remains declarative via `schema.sql` + `seed.sql` (`npm run db:setup` replaces `db:migrate`/`db:seed`, whose `seed.js` target never existed). Clears the uuid advisory and removes ~60 unused deprecated packages.
+- **`superAdmin.controller.ts`** — backup/restore no longer read `config.json`; DB coordinates come from env. `mysqldump`/`mysql` now receive the password via `MYSQL_PWD` (never `-p` on the command line), paths are quoted, and `restoreBackup` gained a filename validation guard (plain names only, blocks path traversal).
+- **Hardcoded DB password removed** — `server/src/config/database.ts`, `database/create-db.ts`, `database/run-sql.ts` use `DB_PASSWORD` strictly (no fallback); MySQL TLS is opt-in via `DB_SSL=true`.
+- **Fail-fast secret policy** — new `server/src/config/env.ts` `getSecret()`: production startups throw when `JWT_SECRET`/`SESSION_SECRET` are missing (`auth.controller.ts`, `middleware/auth.ts`, `index.ts`); `ENCRYPTION_KEY`/`ENCRYPTION_IV` are required in production (`encryption.ts`). Dev-only named fallbacks remain for local runs.
+- **Batch recall alerts** — `batch.controller.ts` only sends to `ADMIN_EMAIL`/`ADMIN_PHONE` when configured (phantom `admin@example.com`/`+1234567890` sends removed).
+- **`server/backups/backup_2025-11-22T23-00-00-026Z.sql` untracked + gitignored** — a real DB dump with PHI was in the repo; `backups/` is now ignored. History scrub remains an operator decision (AGENTS.md §8).
+- **PWA PHI policy set (operator-approved)** — `vite.config.ts` now uses `NetworkOnly` for `/api/patients`; patient data is never cached by the service worker.
+
+### Changed
+- **Server is dependency self-contained** — `express-session`, `cookie-parser`, `axios`, `@types/express-session`, `@types/cookie-parser` added to `server/package.json` (previously resolved via root `node_modules` hoisting). `tsconfig.json` dropped `resolveJsonModule` (no JSON imports remain).
+- **`docs/DEPLOYMENT.md` rewritten** — was a fictional Cloud Run/esbuild doc; now describes the real Vite SPA + Express/tsc topology with a VPS/Nginx/PM2 reference deployment, fail-fast env contract, TLS, and backup guidance.
+
+---
+
 ## [Unreleased] - 2026-09-10 (Production Hardening)
 
 ### Added

@@ -15,6 +15,7 @@ import session from 'express-session';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
+import { getSecret } from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import patientRoutes from './routes/patient.routes.js';
@@ -40,7 +41,7 @@ import { rateLimit } from 'express-rate-limit';
 const app = express();
 const PORT = process.env.PORT || 5000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 8443;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'supersecretkey'; // Fallback for development
+const SESSION_SECRET = getSecret('SESSION_SECRET', 'dev-session-only-secret'); // Hard-fails in production when unset
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

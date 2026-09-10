@@ -16,12 +16,13 @@ Standing constraints that every agent must honor while working in this repo. Upd
 
 ## Active context
 - Branch: `feat/production-hardening` — production hardening pass (deps, backend completion, frontend UI/UX refactor, docs, AI tooling) completed 2026-09-10; all validation gates green.
-- Dependencies pinned at latest stable: react 19.3, vite 8, recharts 3, express 5, multer 2, TS 7 (server) / TS 6.0.3 (root, typescript-eslint peer constraint).
+- Security & ops follow-ups (operator options 2–5) completed 2026-09-10: xlsx→exceljs, csurf removed, sequelize removed, DB password env-only, PHI PWA policy set to NetworkOnly, DEPLOYMENT.md rewritten. `npm audit`: **0 vulnerabilities** in root and server. **Option 1 (secret rotation) is the operator's remaining action.**
+- Dependencies pinned at latest stable: react 19.3, vite 8, recharts 3, express 5, multer 2, exceljs 4, TS 7 (server) / TS 6.0.3 (root, typescript-eslint peer constraint).
 - `src/docs/` canonical troubleshooting file is `TROUBLESHOOTING.md` (uppercase); case-collision stub removed.
 
 ## Watch list / residual risks
-- `server/src/config/database.ts` still has a hardcoded dev-only DB password fallback — replace with env-only for production. (Human decision.)
-- `vite.config.ts` PWA runtime-caches `/api/patients` (PHI) — operator decision required before production. (Human decision.)
+- **Operator action required (option 1)**: rotate ALL real secrets that were historically committed in `.env.local` (Twilio, SMTP, Gemini, Google Drive, JWT/SESSION/ENCRYPTION, DB password). Also note `server/backups/backup_2025-11-22T23-00-00-026Z.sql` (a real DB dump with PHI) was **tracked in git until 2026-09-10** — now gitignored, but history cleanup/rotation is an operator decision.
 - `vite.config.ts` sets `allowedHosts: true` and `host: 0.0.0.0` — review for production. (Human decision.)
-- `npm audit` residuals: csurf→cookie (low, archived package — plan CSRF replacement), sequelize→uuid (low), xlsx (high, **no npm fix exists** — plan migration to exceljs). Tracked in `docs/CHANGELOG.md`.
 - `financialModule.test.ts` requires a live MySQL DB (its `beforeAll` counts accounts); compiles without DB, runs only with schema+seed applied.
+- `npm audit` residuals (dev-only, no production path): root js-yaml (prototype pollution in `<<`, via eslint toolchain) and glob CLI (command injection via `-c`, dev tool). Tracked in `docs/CHANGELOG.md`.
+- Server runtime deps now declared locally (express-session, cookie-parser, axios, exceljs); no reliance on root `node_modules` hoisting.

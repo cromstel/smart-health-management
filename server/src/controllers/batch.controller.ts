@@ -101,21 +101,25 @@ export const recallBatch = async (req: AuthRequest, res: Response): Promise<Resp
         await pool.query('UPDATE medicines_inventory SET stock_level = stock_level - ? WHERE id = ?', [recallQuantity, batch.medicine_id]);
       }
 
-      try {
-        await sendEmail({
-          to: process.env.ADMIN_EMAIL || 'admin@example.com',
-          subject: `Batch Recall: ${batch.batch_number}`,
-          text: `Batch ${batch.batch_number} has been recalled. Quantity recalled: ${recallQuantity}. Remaining: ${newQuantity}.`,
-          html: `<p>Batch <strong>${batch.batch_number}</strong> has been recalled.</p><p>Quantity recalled: ${recallQuantity}. Remaining: ${newQuantity}.</p>`,
-        });
-      } catch (_e) {
-        // Email failures are non-blocking
+      if (process.env.ADMIN_EMAIL) {
+        try {
+          await sendEmail({
+            to: process.env.ADMIN_EMAIL,
+            subject: `Batch Recall: ${batch.batch_number}`,
+            text: `Batch ${batch.batch_number} has been recalled. Quantity recalled: ${recallQuantity}. Remaining: ${newQuantity}.`,
+            html: `<p>Batch <strong>${batch.batch_number}</strong> has been recalled.</p><p>Quantity recalled: ${recallQuantity}. Remaining: ${newQuantity}.</p>`,
+          });
+        } catch (_e) {
+          // Email failures are non-blocking
+        }
       }
 
-      try {
-        await sendSms(process.env.ADMIN_PHONE || '+1234567890', `Batch ${batch.batch_number} recalled. Qty: ${recallQuantity}`);
-      } catch (_e) {
-        // SMS failures are non-blocking
+      if (process.env.ADMIN_PHONE) {
+        try {
+          await sendSms(process.env.ADMIN_PHONE, `Batch ${batch.batch_number} recalled. Qty: ${recallQuantity}`);
+        } catch (_e) {
+          // SMS failures are non-blocking
+        }
       }
 
       await pool.query(
@@ -130,21 +134,25 @@ export const recallBatch = async (req: AuthRequest, res: Response): Promise<Resp
     await pool.query('UPDATE medicine_batches SET recalled = TRUE, quantity = 0 WHERE id = ?', [id]);
     await pool.query('UPDATE medicines_inventory SET stock_level = stock_level - ? WHERE id = ?', [batch.quantity, batch.medicine_id]);
 
-    try {
-      await sendEmail({
-        to: process.env.ADMIN_EMAIL || 'admin@example.com',
-        subject: `Batch Recall: ${batch.batch_number}`,
-        text: `Batch ${batch.batch_number} has been fully recalled. Quantity: ${batch.quantity}.`,
-        html: `<p>Batch <strong>${batch.batch_number}</strong> has been fully recalled.</p><p>Quantity: ${batch.quantity}.</p>`,
-      });
-    } catch (_e) {
-      // Email failures are non-blocking
+    if (process.env.ADMIN_EMAIL) {
+      try {
+        await sendEmail({
+          to: process.env.ADMIN_EMAIL,
+          subject: `Batch Recall: ${batch.batch_number}`,
+          text: `Batch ${batch.batch_number} has been fully recalled. Quantity: ${batch.quantity}.`,
+          html: `<p>Batch <strong>${batch.batch_number}</strong> has been fully recalled.</p><p>Quantity: ${batch.quantity}.</p>`,
+        });
+      } catch (_e) {
+        // Email failures are non-blocking
+      }
     }
 
-    try {
-      await sendSms(process.env.ADMIN_PHONE || '+1234567890', `Batch ${batch.batch_number} fully recalled. Qty: ${batch.quantity}`);
-    } catch (_e) {
-      // SMS failures are non-blocking
+    if (process.env.ADMIN_PHONE) {
+      try {
+        await sendSms(process.env.ADMIN_PHONE, `Batch ${batch.batch_number} fully recalled. Qty: ${batch.quantity}`);
+      } catch (_e) {
+        // SMS failures are non-blocking
+      }
     }
 
     await pool.query(

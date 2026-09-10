@@ -1,11 +1,11 @@
-#.clinerules/byterover-rules.md
-#.kilocode/rules/byterover-rules.md
-#.roo/rules/byterover-rules.md
-#.windsurf/rules/byterover-rules.md
-#.cursor/rules/byterover-rules.mdc
-#.kiro/steering/byterover-rules.md
-#.qoder/rules/byterover-rules.md
-#.augment/rules/byterover-rules.md
+.clinerules/*
+.kilocode/*
+.roo/*
+.windsurf/*
+.cursor/*
+.kiro/*
+.qoder/*
+.augment/*
 
 # Logs
 logs
@@ -16,6 +16,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Packages & Dependencies
 node_modules
 dist
 dist-ssr
@@ -34,10 +35,26 @@ test-results/
 *.tsbuildinfo
 lint_output.txt
 .vitest-full-output.txt
+*.txt
 coverage/
+
+# Database backups (may contain PHI) — never commit
+server/backups/
+backups/
+
+# Demo accounts (may contain PHI) — never commit
+demo-accounts/
+
+# Documentation & Guides (may contain PHI) — never commit
+docs/
+todo/
 
 # Editor directories and files
 .vscode/*
+.cursor/*
+.opencode/*
+.trae/*
+ai/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -45,4 +62,4 @@ coverage/
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.sw? 

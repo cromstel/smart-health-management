@@ -126,7 +126,7 @@ export const generatePharmacyReport = async (req: AuthRequest, res: Response): P
     const [rows] = await pool.query(query, params);
     const list = rows as any[]
     if (format === 'xlsx') {
-      const buf = buildXlsx(list, String(reportType))
+      const buf = await buildXlsx(list, String(reportType))
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       res.setHeader('Content-Disposition', `attachment; filename="pharmacy_${String(reportType)}.xlsx"`)
       res.send(buf)

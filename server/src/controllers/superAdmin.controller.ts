@@ -8,8 +8,16 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { AuthRequest } from '../middleware/auth.js';
 import pool from '../config/database.js';
-import config from '../../config/config.json';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+
+// DB coordinates for backup/restore tooling (env-only; no hardcoded credentials).
+const getDbConfig = (): { username: string; password: string; database: string; host: string; port: number } => ({
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'smart_health_manager',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '3306', 10)
+});
 
 // Get system status and statistics
 export const getSystemStatus = async (_req: Request, res: Response): Promise<void> => {
@@ -136,24 +144,17 @@ export const getAuditLogs = async (req: Request, res: Response): Promise<void> =
 // Trigger system backup
 export const triggerBackup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const env = process.env.NODE_ENV || 'development';
-    const dbConfig = (config as any)[env];
-
-    if (!dbConfig) {
-      res.status(500).json({ error: 'Database configuration not found for environment' });
-      return;
-    }
-
-    const { username, password, database, host, port } = dbConfig;
+    const { username, password, database, host, port } = getDbConfig();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupDir = path.join(process.cwd(), 'backups');
     await fs.mkdir(backupDir, { recursive: true });
     const backupPath = path.join(backupDir, `backup_${timestamp}.sql`);
 
-    const command = `mysqldump -h ${host} -P ${port} -u ${username} -p${password} ${database} > ${backupPath}`;
+    // Password passed via MYSQL_PWD env (never on the command line / process list).
+    const command = `mysqldump -h ${host} -P ${port} -u ${username} ${database} > "${backupPath}"`;
 
     await new Promise<void>((resolve, reject) => {
-      exec(command, (error, _stdout, stderr) => {
+      exec(command, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
         if (error) {
           console.error(`exec error: ${error}`);
           return reject(error);
@@ -206,15 +207,13 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const env = process.env.NODE_ENV || 'development';
-    const dbConfig = (config as any)[env];
-
-    if (!dbConfig) {
-      res.status(500).json({ error: 'Database configuration not found for environment' });
+    // Path-traversal guard: allow plain file names only.
+    if (!/^[a-zA-Z0-9._-]+$/.test(backupFileName)) {
+      res.status(400).json({ error: 'Invalid backup file name' });
       return;
     }
 
-    const { username, password, database, host, port } = dbConfig;
+    const { username, password, database, host, port } = getDbConfig();
     const backupPath = path.join(process.cwd(), 'backups', backupFileName);
 
     // Check if backup file exists
@@ -225,12 +224,13 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Drop existing database and then restore
-    const dropDbCommand = `mysql -h ${host} -P ${port} -u ${username} -p${password} -e "DROP DATABASE IF EXISTS ${database}; CREATE DATABASE ${database};"`;
-    const restoreCommand = `mysql -h ${host} -P ${port} -u ${username} -p${password} ${database} < ${backupPath}`;
+    // Drop existing database and then restore.
+    // Password passed via MYSQL_PWD env (never on the command line / process list).
+    const dropDbCommand = `mysql -h ${host} -P ${port} -u ${username} -e "DROP DATABASE IF EXISTS \`${database}\`; CREATE DATABASE \`${database}\`;"`;
+    const restoreCommand = `mysql -h ${host} -P ${port} -u ${username} ${database} < "${backupPath}"`;
 
     await new Promise<void>((resolve, reject) => {
-      exec(dropDbCommand, (error, _stdout, stderr) => {
+      exec(dropDbCommand, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
         if (error) {
           console.error(`exec error (dropDb): ${error}`);
           return reject(error);
@@ -243,7 +243,7 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     });
 
     await new Promise<void>((resolve, reject) => {
-      exec(restoreCommand, (error, _stdout, stderr) => {
+      exec(restoreCommand, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
         if (error) {
           console.error(`exec error (restore): ${error}`);
           return reject(error);

@@ -536,7 +536,7 @@ export const exportExcel = async (req: AuthRequest, res: Response): Promise<Resp
         return res.status(400).json({ error: 'Invalid report type' });
     }
 
-    const buf = buildXlsx(rows, reportType);
+    const buf = await buildXlsx(rows, reportType);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${reportType}.xlsx"`);
     res.send(buf);

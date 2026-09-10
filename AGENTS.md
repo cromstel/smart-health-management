@@ -65,4 +65,5 @@ The following require explicit human approval — do not self-act:
 - Rotating/regenerating any real secret (Twilio, SMTP, Gemini, Stripe, Google Drive/OAuth, JWT/SESSION/ENCRYPTION keys).
 - Production database credentials, schema changes on live data, or migrations outside `server/migrations/`.
 - TLS cert provisioning, DNS, or cloud infrastructure changes.
-- Changing PWA caching of PHI endpoints (`/api/patients`) without an operator decision.
+- Changing PWA caching of PHI endpoints (`/api/patients`) — policy set 2026-09-10 to `NetworkOnly` (no PHI in the service worker); changing it requires another operator decision.
+- Deep-rewriting git history (e.g., scrubbing the 2025-11-22 DB backup dump that was tracked before 2026-09-10).
