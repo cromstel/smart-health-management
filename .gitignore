@@ -45,20 +45,13 @@ backups/
 # Demo accounts (may contain PHI) — never commit
 demo-accounts/
 
-# Documentation & Guides (may contain PHI) — never commit
-docs/
-todo/
-
 # Editor directories and files
 .vscode/*
-.cursor/*
 .opencode/*
 !.opencode/agent/
 !.opencode/skills/
 !.opencode/command/
 .trae/
-ai/
-e2e/
 !.vscode/extensions.json
 .idea
 .DS_Store
