@@ -11,7 +11,8 @@
     "setup": "bash setup.sh",
     "dev:all": "concurrently \"npm run dev\" \"cd server && npm run dev\"",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "secrets": "node scripts/generate-secrets.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

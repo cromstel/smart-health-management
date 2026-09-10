@@ -1,17 +1,17 @@
-##  Deployment Guide – Smart Health Management System (Cloud Edition)
+## Deployment Guide (Cloud Edition)
 
 ## 1. Prerequisites
 
 Before deploying SHMS to the cloud, ensure you have:
 
-* Node.js ≥18
-* npm or yarn
-* Database service: MySQL 8.0+ or PostgreSQL
-* Cloud provider account: Google, Hostinger, AWS, Azure, GCP, DigitalOcean, or similar
-* Domain name (optional but recommended)
-* Git for version control
-* Docker (optional, recommended for containerization)
-* SSL certificate for HTTPS (via Let’s Encrypt or cloud provider)
+- Node.js ≥22
+- npm or yarn
+- Database service: MySQL 8.0+ or PostgreSQL
+- Cloud provider account: Google, Hostinger, AWS, Azure, GCP, DigitalOcean, or similar
+- Domain name (optional but recommended)
+- Git for version control
+- Docker (optional, recommended for containerization)
+- SSL certificate for HTTPS (via Let’s Encrypt or cloud provider)
 
 ---
 
@@ -46,10 +46,10 @@ SHMS can be deployed with the following cloud architecture:
   CDN / Cache (Optional)
 ```
 
-* Frontend: Vite + React deployed to static hosting (S3, Netlify, Vercel, Cloudflare Pages)
-* Backend: Node.js + Express deployed to cloud container or VM
-* Database: Managed RDS / Cloud SQL for MySQL/PostgreSQL
-* Optional: CDN for static assets
+- Frontend: Vite + React deployed to static hosting (S3, Netlify, Vercel, Cloudflare Pages)
+- Backend: Node.js + Express deployed to cloud container or VM
+- Database: Managed RDS / Cloud SQL for MySQL/PostgreSQL
+- Optional: CDN for static assets
 
 ---
 
@@ -88,10 +88,10 @@ FRONTEND_URL=https://yourdomain.com
 
 ### Cloud Database Options
 
-* AWS: RDS (MySQL/PostgreSQL)
-* GCP: Cloud SQL
-* Azure: Azure Database for MySQL/PostgreSQL
-* DigitalOcean: Managed Database
+- AWS: RDS (MySQL/PostgreSQL)
+- GCP: Cloud SQL
+- Azure: Azure Database for MySQL/PostgreSQL
+- DigitalOcean: Managed Database
 
 ### Steps
 
@@ -172,7 +172,7 @@ docker run -d -p 5600:5600 --env-file .env shms-backend
 
 If using a VM or bare server:
 
-* Nginx as reverse proxy:
+- Nginx as reverse proxy:
 
 ```nginx
 server {
@@ -195,7 +195,7 @@ server {
 }
 ```
 
-* Enable HTTPS using Let’s Encrypt:
+- Enable HTTPS using Let’s Encrypt:
 
 ```bash
 sudo certbot --nginx -d yourdomain.com
@@ -205,46 +205,46 @@ sudo certbot --nginx -d yourdomain.com
 
 ## 8. CI/CD Recommendations
 
-* Frontend: Deploy on push to main branch (Vercel/Netlify)
-* Backend: Deploy on push to main branch (GitHub Actions → Docker build → cloud deployment)
-* Include automatic database migrations if needed
-* Run tests on CI pipeline before deployment
+- Frontend: Deploy on push to main branch (Vercel/Netlify)
+- Backend: Deploy on push to main branch (GitHub Actions → Docker build → cloud deployment)
+- Include automatic database migrations if needed
+- Run tests on CI pipeline before deployment
 
 ---
 
 ## 9. Scaling Considerations
 
-* Use Load Balancers for high traffic
-* Enable Horizontal Scaling for backend containers
-* Use CDN for frontend assets
-* Use Managed database replication for high availability
+- Use Load Balancers for high traffic
+- Enable Horizontal Scaling for backend containers
+- Use CDN for frontend assets
+- Use Managed database replication for high availability
 
 ---
 
 ## 10. Monitoring & Logging
 
-* Frontend: Sentry / LogRocket
-* Backend: Winston / CloudWatch / Papertrail
-* Database: Enable cloud monitoring alerts
-* Uptime Monitoring: Pingdom or similar
+- Frontend: Sentry / LogRocket
+- Backend: Winston / CloudWatch / Papertrail
+- Database: Enable cloud monitoring alerts
+- Uptime Monitoring: Pingdom or similar
 
 ---
 
 ## 11. Backup & Security
 
-* Enable automatic database backups
-* Enable HTTPS and HSTS
-* Rotate JWT secrets periodically
-* Keep dependencies updated
+- Enable automatic database backups
+- Enable HTTPS and HSTS
+- Rotate JWT secrets periodically
+- Keep dependencies updated
 
 ---
 
 ## 12. References
 
-* [Next.js Deployment](https://nextjs.org/docs/deployment)
-* [Vite Deployment](https://vitejs.dev/guide/static-deploy.html)
-* [Docker Deployment](https://docs.docker.com/get-started/)
-* [AWS RDS Documentation](https://docs.aws.amazon.com/rds/index.html)
+- [Next.js Deployment](https://nextjs.org/docs/deployment)
+- [Vite Deployment](https://vitejs.dev/guide/static-deploy.html)
+- [Docker Deployment](https://docs.docker.com/get-started/)
+- [AWS RDS Documentation](https://docs.aws.amazon.com/rds/index.html)
 
 ✅ This guide ensures your Smart Health Management System is production-ready for cloud deployment, secure, and scalable.
 
@@ -258,7 +258,6 @@ Production-ready `docker-compose.yml` tailored for your Smart Health Management 
 version: "3.9"
 
 services:
-
   # ----------------------------
   # Backend Service
   # ----------------------------
@@ -339,9 +338,8 @@ networks:
 ### Notes for Production Deployment
 
 1. Dockerfiles:
-
-   * Backend (`server/Dockerfile`): already shared in previous deployment guide.
-   * Frontend (`Dockerfile.frontend`) example:
+   - Backend (`server/Dockerfile`): already shared in previous deployment guide.
+   - Frontend (`Dockerfile.frontend`) example:
 
 ```dockerfile
 # Dockerfile.frontend
@@ -360,22 +358,18 @@ CMD ["npm", "run", "preview"]
 > `npm run preview` serves the production build in Vite. For cloud CDN/static hosting, you could instead build and serve via Nginx.
 
 2. Environment Variables:
-
-   * Ensure `.env` files are properly set for backend and frontend.
-   * `DB_HOST=db` inside docker-compose, since service names resolve via network.
+   - Ensure `.env` files are properly set for backend and frontend.
+   - `DB_HOST=db` inside docker-compose, since service names resolve via network.
 
 3. Scaling:
-
-   * For cloud, remove `ports` mapping and let the platform manage load balancers.
-   * Use `replicas` under a deploy key if using Docker Swarm or Kubernetes.
+   - For cloud, remove `ports` mapping and let the platform manage load balancers.
+   - Use `replicas` under a deploy key if using Docker Swarm or Kubernetes.
 
 4. SSL & Reverse Proxy:
-
-   * In production, you may use Nginx/Traefik as a reverse proxy for HTTPS and domain routing.
+   - In production, you may use Nginx/Traefik as a reverse proxy for HTTPS and domain routing.
 
 5. Data Persistence:
-
-   * `db-data` volume ensures MySQL data persists across container restarts.
+   - `db-data` volume ensures MySQL data persists across container restarts.
 
 6. Running the Stack:
 
@@ -383,21 +377,22 @@ CMD ["npm", "run", "preview"]
 docker-compose up -d --build
 ```
 
-* Backend will be available at `http://localhost:5600`
-* Frontend will be available at `http://localhost:5174`
-* MySQL will be at `localhost:3306`
+- Backend will be available at `http://localhost:5600`
+- Frontend will be available at `http://localhost:5174`
+- MySQL will be at `localhost:3306`
 
 ============================================================================================================================================================================
-##  Docker Compose setup
-Production-ready variant that bundles Nginx as reverse proxy, serves the frontend build statically, and handles HTTPS automatically—perfect for real-world cloud deployment.
-=============================================================================================================================================================================
+
+## Docker Compose setup
+
+# Production-ready variant that bundles Nginx as reverse proxy, serves the frontend build statically, and handles HTTPS automatically—perfect for real-world cloud deployment.
 
 Production-ready Docker Compose setup for your Smart Health Management System, optimized for cloud deployment, with:
 
-* Backend (Node.js/Express)
-* Frontend (Vite/React) served via Nginx
-* MySQL database
-* Reverse proxy via Nginx for HTTPS (can work with Let’s Encrypt or cloud SSL)
+- Backend (Node.js/Express)
+- Frontend (Vite/React) served via Nginx
+- MySQL database
+- Reverse proxy via Nginx for HTTPS (can work with Let’s Encrypt or cloud SSL)
 
 This setup is suitable for AWS, GCP, DigitalOcean, or any Docker-compatible cloud environment.
 
@@ -405,7 +400,6 @@ This setup is suitable for AWS, GCP, DigitalOcean, or any Docker-compatible clou
 version: "3.9"
 
 services:
-
   # ----------------------------
   # Backend Service
   # ----------------------------
@@ -522,28 +516,23 @@ server {
 ### Key Features of This Setup
 
 1. Frontend Build & Serve via Nginx
-
-   * Builds React/Vite app in `frontend-build` container.
-   * Serves static assets via Nginx for performance and HTTPS readiness.
+   - Builds React/Vite app in `frontend-build` container.
+   - Serves static assets via Nginx for performance and HTTPS readiness.
 
 2. Reverse Proxy for Backend API
-
-   * All `/api/` calls are proxied to the backend service.
-   * Can be extended to handle WebSocket connections if needed.
+   - All `/api/` calls are proxied to the backend service.
+   - Can be extended to handle WebSocket connections if needed.
 
 3. Database Persistence
-
-   * MySQL data stored in `db-data` Docker volume for durability.
+   - MySQL data stored in `db-data` Docker volume for durability.
 
 4. Cloud-Ready Deployment
-
-   * Port 80/443 exposed for cloud load balancers.
-   * Works with Let’s Encrypt for automatic HTTPS or cloud-managed SSL.
+   - Port 80/443 exposed for cloud load balancers.
+   - Works with Let’s Encrypt for automatic HTTPS or cloud-managed SSL.
 
 5. Scalability
-
-   * Can scale backend containers with Docker Swarm or Kubernetes.
-   * Frontend can be cached via CDN.
+   - Can scale backend containers with Docker Swarm or Kubernetes.
+   - Frontend can be cached via CDN.
 
 ---
 
@@ -561,13 +550,12 @@ docker-compose up -d --build
 docker-compose ps
 ```
 
-* Backend: `http://<server-ip>:5600/api`
-* Frontend: `http://<server-ip>`
+- Backend: `http://<server-ip>:5600/api`
+- Frontend: `http://<server-ip>`
 
 3. Optional: Add HTTPS
-
-   * Use Let’s Encrypt (`certbot`) or cloud-managed SSL.
-   * Map `/etc/letsencrypt/live/yourdomain.com/fullchain.pem` and `/privkey.pem` into Nginx container.
+   - Use Let’s Encrypt (`certbot`) or cloud-managed SSL.
+   - Map `/etc/letsencrypt/live/yourdomain.com/fullchain.pem` and `/privkey.pem` into Nginx container.
 
 4. Access Database
 
@@ -575,10 +563,9 @@ docker-compose ps
 mysql -u shmsuser -p -h 127.0.0.1 -P 3306 shms
 ```
 
-Matching `.env` template files for frontend, backend, and database specifically optimized for this production Docker setup, so you can just drop them in and run.
-=============================================================================================================
-Production-ready set of `.env` template files for your Smart Health Management System Docker/cloud deployment. 
-==============================================================================================================
+# Matching `.env` template files for frontend, backend, and database specifically optimized for this production Docker setup, so you can just drop them in and run.
+
+# Production-ready set of `.env` template files for your Smart Health Management System Docker/cloud deployment.
 
 These are tailored to the setup we just created (frontend via Nginx, backend Node.js/Express, MySQL database).
 
@@ -620,8 +607,8 @@ EMAIL_PASS=your-email-password
 
 > Notes:
 >
-> * `DB_HOST=db` corresponds to the Docker Compose service name.
-> * Replace secrets (`JWT_SECRET`, `EMAIL_PASS`, etc.) with strong production values.
+> - `DB_HOST=db` corresponds to the Docker Compose service name.
+> - Replace secrets (`JWT_SECRET`, `EMAIL_PASS`, etc.) with strong production values.
 
 ## 2. Frontend `.env` (`.env`)
 
@@ -642,8 +629,8 @@ VITE_ENVIRONMENT=production
 
 > Notes:
 >
-> * `VITE_API_URL` points to the Nginx reverse proxy endpoint `/api`.
-> * Keep environment variables prefixed with `VITE_` for Vite to expose them to the frontend.
+> - `VITE_API_URL` points to the Nginx reverse proxy endpoint `/api`.
+> - Keep environment variables prefixed with `VITE_` for Vite to expose them to the frontend.
 
 ---
 
@@ -658,8 +645,8 @@ MYSQL_PASSWORD=shmspassword
 
 > Notes:
 >
-> * These values match what is in `docker-compose.yml`.
-> * For cloud deployments, you can override with secret management (AWS Secrets Manager, GCP Secret Manager).
+> - These values match what is in `docker-compose.yml`.
+> - For cloud deployments, you can override with secret management (AWS Secrets Manager, GCP Secret Manager).
 
 ---
 
@@ -689,11 +676,6 @@ docker exec -it shms-frontend env
 
 4. Production Notes:
 
-* Never commit `.env` files with secrets to GitHub.
-* Use secret management for cloud deployment.
-* For HTTPS, update `VITE_BASE_URL` and `FRONTEND_URL` with your domain.
-
-
-
-
-
+- Never commit `.env` files with secrets to GitHub.
+- Use secret management for cloud deployment.
+- For HTTPS, update `VITE_BASE_URL` and `FRONTEND_URL` with your domain.

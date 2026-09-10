@@ -19,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **`server/backups/backup_2025-11-22T23-00-00-026Z.sql` untracked + gitignored** — a real DB dump with PHI was in the repo; `backups/` is now ignored. History scrub remains an operator decision (AGENTS.md §8).
 - **PWA PHI policy set (operator-approved)** — `vite.config.ts` now uses `NetworkOnly` for `/api/patients`; patient data is never cached by the service worker.
 
+### Added
+- **Secret generator script** — `scripts/generate-secrets.mjs` (+ `npm run secrets`): `crypto.randomBytes`-based, zero dependencies. Default `JWT_SECRET` 64 bytes (512 bits, ≥256-bit minimum enforced); `--bytes N` custom length; `--all` also emits `SESSION_SECRET`, `ENCRYPTION_KEY` (exactly 32 bytes) and `ENCRYPTION_IV` (exactly 16 bytes).
+
 ### Changed
 - **Server is dependency self-contained** — `express-session`, `cookie-parser`, `axios`, `@types/express-session`, `@types/cookie-parser` added to `server/package.json` (previously resolved via root `node_modules` hoisting). `tsconfig.json` dropped `resolveJsonModule` (no JSON imports remain).
 - **`docs/DEPLOYMENT.md` rewritten** — was a fictional Cloud Run/esbuild doc; now describes the real Vite SPA + Express/tsc topology with a VPS/Nginx/PM2 reference deployment, fail-fast env contract, TLS, and backup guidance.

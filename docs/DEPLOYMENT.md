@@ -66,7 +66,7 @@ The server **fails fast at startup** in `production` when any of these are missi
 1. `git clone` + `npm ci` (root) + `cd server && npm ci`.
 2. Build: root `npm run build`; `cd server && npm run build`.
 3. Provision DB: `mysql < server/src/database/schema.sql`, then `seed.sql` (or `npm run db:setup` with dev MySQL creds in env).
-4. Configure `server/.env` (or PM2 env) per §3. Generate secrets with `openssl rand -hex 32` / `-hex 16`.
+4. Configure `server/.env` (or PM2 env) per §3. Generate secrets with `npm run secrets --all` (JWT_SECRET/SESSION_SECRET at 64 bytes, ENCRYPTION_KEY/IV at the exact aes-256-cbc sizes) or `openssl rand -hex 32` / `openssl rand -hex 16`.
 5. Serve `dist/` + proxy `/api` per §2.2; start API via PM2.
 6. Health check: `curl https://health.example.com/api/health` → `{"status":"ok",...}`.
 7. Enable backups: default cron `0 3 * * *` (env `BACKUP_CRON`); back up `backups/` offsite.

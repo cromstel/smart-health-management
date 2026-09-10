@@ -12,7 +12,7 @@
 - ✅ **Option 3 (PHI caching)**: `vite.config.ts` `/api/patients` → `NetworkOnly` (operator-approved); AGENTS.md + memory updated.
 - ✅ **Option 2 (DB, no hardcoded password)**: `Password#123` fallback removed from `database.ts`/`create-db.ts`/`run-sql.ts`; MySQL TLS opt-in via `DB_SSL=true`; `getSecret()` fail-fast in production for JWT/SESSION/ENCRYPTION; backup/restore uses env config + `MYSQL_PWD` + path-traversal guard; batch alerts only when `ADMIN_EMAIL`/`ADMIN_PHONE` set; `express-session`/`cookie-parser`/`axios` moved into server package (no more root hoisting); legacy `server/backups/*.sql` untracked + gitignored.
 - Validation: root type-check/lint/test/build + server lint/build/test all green; audits clean.
-- NEXT: **Operator action = Option 1** — rotate all secrets that were committed in `.env.local` (Twilio, SMTP, Gemini, Google Drive, ENCRYPTION_KEY/IV, SESSION_SECRET, JWT_SECRET, DB password), then update `.env.local`. Optional: DB history scrub for `backups/backup_2025-11-22…sql`.
+- ✅ **Option 1 (secrets, operator)**: rotated — Twilio, SMTP, Gemini, Google Drive OAuth, ENCRYPTION_KEY/IV, SESSION_SECRET (user, 2026-09-10). **Remaining: `JWT_SECRET` + `DB_PASSWORD`** — generate with `npm run secrets` (`scripts/generate-secrets.mjs`, added this pass; 64-byte default, ≥32-byte enforced, `--all` emits full set). Optional: history scrub for the 2025-11-22 DB dump.
 
 ## Resolved operator questions (options 2–5 handled; option 1 remains operator-owned)
 1. **Rotate secrets**: `.env.local` was committed in repo history — **operator rotates** (user performs option 1 manually).

@@ -1,10 +1,10 @@
-# Deployment Guide
+# Deployment Guide (localhost)
 
 This guide provides instructions for deploying the Smart Health Manager application in different environments.
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or later)
+- [Node.js](https://nodejs.org/) (v24 or later)
 - [npm](https://www.npmjs.com/)
 - [Git](https://git-scm.com/)
 - A running instance of [PostgreSQL](https://www.postgresql.org/)
@@ -45,6 +45,7 @@ This setup is ideal for a local network or testing environment.
     By default, the server runs on port 5600.
 3.  **Configure Apache Virtual Host**:
     Create a new virtual host configuration file in your Apache configuration directory (e.g., `/etc/apache2/sites-available/smart-health.conf`):
+
     ```apache
     <VirtualHost *:80>
         ServerName your-local-domain.com
@@ -59,6 +60,7 @@ This setup is ideal for a local network or testing environment.
         ProxyPassReverse /api http://localhost:5600/api
     </VirtualHost>
     ```
+
 4.  **Enable the necessary Apache modules** (`proxy`, `proxy_http`) and the new site, then restart Apache.
 
 ## Cloud Deployment (General Guide)
@@ -67,15 +69,15 @@ This guide provides a general overview of deploying to a cloud platform like AWS
 
 1.  **Provision a Server**: Set up a virtual server (e.g., an AWS EC2 instance) with Node.js and PostgreSQL installed.
 2.  **Deploy the Backend**:
-    -   Clone the repository to your server.
-    -   Install dependencies and build the backend code.
-    -   Configure environment variables for production (database credentials, JWT secret, etc.).
-    -   Use a process manager like [PM2](https://pm2.keymetrics.io/) to run the Node.js server continuously.
+    - Clone the repository to your server.
+    - Install dependencies and build the backend code.
+    - Configure environment variables for production (database credentials, JWT secret, etc.).
+    - Use a process manager like [PM2](https://pm2.keymetrics.io/) to run the Node.js server continuously.
 3.  **Deploy the Frontend**:
-    -   Build the frontend application.
-    -   Serve the static files from the `dist` directory using a web server like Nginx or a static hosting service like AWS S3.
+    - Build the frontend application.
+    - Serve the static files from the `dist` directory using a web server like Nginx or a static hosting service like AWS S3.
 4.  **Configure a Reverse Proxy (Nginx)**:
     Set up Nginx to serve the frontend and proxy API requests to the backend, similar to the Apache setup.
 5.  **Set up a Domain and SSL**:
-    -   Point your domain to the server's IP address.
-    -   Install an SSL certificate (e.g., using Let's Encrypt) to enable HTTPS.
+    - Point your domain to the server's IP address.
+    - Install an SSL certificate (e.g., using Let's Encrypt) to enable HTTPS.
