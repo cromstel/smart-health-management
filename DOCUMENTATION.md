@@ -208,8 +208,8 @@ For instant testing and evaluation without manual registration, use the pre-conf
 ## 7. Developer Setup & Environment Guide
 
 ### Prerequisites
-- **Node.js**: v20.19.0 or higher (v22 LTS recommended — required by Vite 8)
-- **npm**: v10.0.0 or higher
+- **Node.js**: v22.0 or higher (v24 LTS recommended — required by Vite 8)
+- **npm**: v11.0.0 or higher
 - **Git**
 - **MySQL**: 8.0+ (backend data store; see `server/src/database/schema.sql`)
 
