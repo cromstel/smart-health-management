@@ -44,6 +44,7 @@ backups/
 
 # Demo accounts (may contain PHI) — never commit
 demo-accounts/
+demo-accounts/Demo Accounts - SMART HEALTH MANAGEMENT.md
 
 # Playwright E2E specs — local dev only, not required in production
 e2e/
