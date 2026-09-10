@@ -102,8 +102,14 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
-        type: 'module'
+        // Dev-mode SW generation disabled: dev-dist holds no precacheable
+        // assets (Vite serves them from memory), so generateSW's globs match
+        // zero files and workbox-build logs a spurious glob warning on every
+        // dev server start. The production build still generates the real SW
+        // (`npm run build` + `npm run preview`), including the NetworkOnly
+        // PHI policy for /api/patients. virtual:pwa-register keeps resolving
+        // in dev; registerSW() becomes a harmless no-op.
+        enabled: false
       }
     })
   ],

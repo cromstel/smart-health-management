@@ -25,6 +25,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - **Server is dependency self-contained** — `express-session`, `cookie-parser`, `axios`, `@types/express-session`, `@types/cookie-parser` added to `server/package.json` (previously resolved via root `node_modules` hoisting). `tsconfig.json` dropped `resolveJsonModule` (no JSON imports remain).
 - **`docs/DEPLOYMENT.md` rewritten** — was a fictional Cloud Run/esbuild doc; now describes the real Vite SPA + Express/tsc topology with a VPS/Nginx/PM2 reference deployment, fail-fast env contract, TLS, and backup guidance.
+- **EOL policy normalized** — `.gitattributes` now enforces LF for all text in the repo (only `.bat`/`.ps1` stay CRLF), eliminating the recurring "LF will be replaced by CRLF" warnings caused by system-level `core.autocrlf`; repo-local `core.autocrlf=false` recorded. All tracked files re-normalized in place (byte-identical index).
+- **Install scripts pinned declaratively** — npm 11 `allowScripts` added to root `package.json` (`unrs-resolver`, `@google/genai`, `@parcel/watcher`, `core-js`, `protobufjs`) and `server/package.json` (`esbuild`) — reviewed, legitimate postinstall scripts; removes the `npm warn allow-scripts` noise on every install.
+- **`.gitignore` pruned** — removed over-broad `docs/`, `todo/`, `ai/*` rules (their content is versioned by policy, so `git add` no longer emits ignored-path hints); removed a duplicated `.cursor/*` entry.
+- **Dev-mode service worker disabled** — `vite.config.ts` `devOptions.enabled: false`: dev-dist holds no precacheable assets (Vite serves everything from memory), so `generateSW` globbed zero files and workbox-build logged "One of the glob patterns doesn't match any files" on every `npm run dev` start. The production SW is unaffected — `npm run build` still emits it (including the `/api/patients` NetworkOnly PHI policy); `virtual:pwa-register` still resolves in dev (`registerSW()` no-ops).
+
+### Removed
+- **`e2e/` untracked** — Playwright specs are dev-only assets, not required in production: removed from git tracking and gitignored. Kept locally and still runnable via `npx playwright test`.
 
 ---
 

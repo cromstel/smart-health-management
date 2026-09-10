@@ -45,6 +45,9 @@ backups/
 # Demo accounts (may contain PHI) — never commit
 demo-accounts/
 
+# Playwright E2E specs — local dev only, not required in production
+e2e/
+
 # Editor directories and files
 .vscode/*
 .opencode/*
