@@ -21,7 +21,7 @@ Standing constraints that every agent must honor while working in this repo. Upd
 - `src/docs/` canonical troubleshooting file is `TROUBLESHOOTING.md` (uppercase); case-collision stub removed.
 
 ## Watch list / residual risks
-- **Operator rotation status (option 1, 2026-09-10)**: rotated — Twilio, SMTP, Gemini, Google Drive OAuth, ENCRYPTION_KEY/IV, SESSION_SECRET. **REMAINING: `JWT_SECRET` and `DB_PASSWORD`** — generate JWT with `npm run secrets` (`scripts/generate-secrets.mjs`). `server/backups/backup_2025-11-22T23-00-00-026Z.sql` (real DB dump with PHI) was tracked until 2026-09-10 — now gitignored; history scrub is optional/operator decision.
+- **Operator rotation (option 1, 2026-09-10)**: **COMPLETE** — the operator rotated every secret that was historically committed in `.env.local` (Twilio, SMTP, Gemini, Google Drive OAuth, ENCRYPTION_KEY/IV, SESSION_SECRET, JWT_SECRET, DB_PASSWORD). `server/backups/backup_2025-11-22T23-00-00-026Z.sql` (real DB dump with PHI) was tracked until 2026-09-10 — now gitignored; history scrub remains optional/operator decision.
 - `vite.config.ts` sets `allowedHosts: true` and `host: 0.0.0.0` — review for production. (Human decision.)
 - `financialModule.test.ts` requires a live MySQL DB (its `beforeAll` counts accounts); compiles without DB, runs only with schema+seed applied.
 - `npm audit` residuals (dev-only, no production path): root js-yaml (prototype pollution in `<<`, via eslint toolchain) and glob CLI (command injection via `-c`, dev tool). Tracked in `docs/CHANGELOG.md`.
