@@ -20,8 +20,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, UserCheck, UserX, Lock, Unlock, AlertCircle } from 'lucide-react';
+import { Search, UserCheck, UserX, Lock, Unlock, AlertCircle, KeyRound, Copy, Loader2, ShieldAlert } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
 
@@ -37,7 +45,7 @@ interface User {
 }
 
 export default function SuperAdminUsers() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user: currentUser } = useAuth();
   const { logAction } = useAudit();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -46,6 +54,9 @@ export default function SuperAdminUsers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [resetTarget, setResetTarget] = useState<User | null>(null);
+  const [resetResult, setResetResult] = useState<{ temporaryPassword: string; twoFactorDisabled: boolean } | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -90,7 +101,29 @@ export default function SuperAdminUsers() {
     filterUsers();
   }, [filterUsers]);
 
-  
+  const openResetDialog = (user: User) => {
+    setResetTarget(user);
+    setResetResult(null);
+  };
+
+  const handleResetPassword = async (clearTwoFactor: boolean) => {
+    if (!resetTarget) return;
+    try {
+      setResetting(true);
+      const result = await api.resetUserPassword(resetTarget.id, clearTwoFactor) as { temporaryPassword: string; twoFactorDisabled: boolean };
+      setResetResult({ temporaryPassword: result.temporaryPassword, twoFactorDisabled: result.twoFactorDisabled });
+    } catch (err: any) {
+      alert('Failed to reset password: ' + err.message);
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const closeResetDialog = () => {
+    setResetTarget(null);
+    setResetResult(null);
+    setResetting(false);
+  };
 
   const handleStatusChange = async (userId: string, newStatus: 'active' | 'inactive' | 'locked') => {
     try {
@@ -339,6 +372,38 @@ export default function SuperAdminUsers() {
                               </Tooltip>
                             </TooltipProvider>
                           )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={!hasPermission('superadmin:edit') || user.email === currentUser?.email}
+                                    onClick={() => {
+                                      if (!hasPermission('superadmin:edit')) {
+                                        logAction('permission_block', 'superadmin', { recordId: user.id, oldValue: 'reset_password' });
+                                        return;
+                                      }
+                                      if (user.email === currentUser?.email) return;
+                                      openResetDialog(user);
+                                    }}
+                                    className="border-border text-muted-foreground hover:text-foreground"
+                                    aria-label={`Reset password for ${user.name}`}
+                                  >
+                                    <KeyRound className="w-4 h-4" />
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {user.email === currentUser?.email
+                                  ? 'Use the profile change-password flow for your own account'
+                                  : !hasPermission('superadmin:edit')
+                                    ? 'Requires permission: superadmin:edit'
+                                    : 'Reset password'}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -349,6 +414,78 @@ export default function SuperAdminUsers() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={resetTarget !== null} onOpenChange={(open) => { if (!open && !resetting) closeResetDialog(); }}>
+        <DialogContent className="bg-card border-border">
+          {resetResult ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Temporary password generated</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  This is the only time the temporary password can be viewed. Share it with the user securely, out-of-band.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted border border-border">
+                  <code className="flex-1 font-mono text-foreground break-all">{resetResult.temporaryPassword}</code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-border"
+                    onClick={() => navigator.clipboard.writeText(resetResult.temporaryPassword)}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                {resetResult.twoFactorDisabled && (
+                  <p className="text-sm text-accent">Two-factor authentication was cleared for this account.</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  The user will be required to change the password at next login and should re-enroll 2FA afterwards.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button onClick={closeResetDialog}>Done</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Reset password</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Recover the account for {resetTarget?.name} ({resetTarget?.email}).
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <ShieldAlert className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-500">
+                  The account will be unlocked and a temporary password generated. The user must change it on first login.
+                </p>
+              </div>
+              <DialogFooter className="gap-2 sm:justify-between">
+                <Button variant="outline" className="border-border" disabled={resetting} onClick={closeResetDialog}>
+                  Cancel
+                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-border"
+                    disabled={resetting}
+                    onClick={() => handleResetPassword(false)}
+                  >
+                    {resetting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Reset password
+                  </Button>
+                  <Button disabled={resetting} onClick={() => handleResetPassword(true)}>
+                    {resetting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Reset &amp; disable 2FA
+                  </Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

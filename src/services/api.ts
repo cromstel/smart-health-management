@@ -802,7 +802,16 @@ class ApiService {
     });
     return this.handleResponse(response);
   }
-  
+
+  async resetUserPassword(id: string, clearTwoFactor = false) {
+    const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/reset-password`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ clear_two_factor: clearTwoFactor }),
+    });
+    return this.handleResponse(response);
+  }
+
 }
 
 export const api = new ApiService();

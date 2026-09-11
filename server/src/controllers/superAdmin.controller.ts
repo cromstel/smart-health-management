@@ -6,6 +6,9 @@ const { exec } = child_process;
 
 import fs from 'fs/promises';
 import path from 'path';
+import bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
+import { validationResult } from 'express-validator';
 import type { AuthRequest } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
@@ -18,6 +21,35 @@ const getDbConfig = (): { username: string; password: string; database: string; 
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306', 10)
 });
+
+// Aliases charsets that avoid visually ambiguous glyphs (no 0/O/1/I/l).
+const TEMP_PW_ALPHABETS = {
+  upper: 'ABCDEFGHJKLMNPQRSTUVWXYZ',
+  lower: 'abcdefghijkmnopqrstuvwxyz',
+  digit: '23456789',
+  special: '!@#$%^&*-_=+?'
+};
+const pickChar = (set: string): string => set[randomInt(set.length)];
+
+// Cryptographically random temporary password that always satisfies the
+// complexity policy (>= 8 chars, upper+lower+number+special).
+export const generateTemporaryPassword = (length = 16): string => {
+  const len = Math.max(length, 8);
+  const required = [
+    pickChar(TEMP_PW_ALPHABETS.upper),
+    pickChar(TEMP_PW_ALPHABETS.lower),
+    pickChar(TEMP_PW_ALPHABETS.digit),
+    pickChar(TEMP_PW_ALPHABETS.special)
+  ];
+  const all = Object.values(TEMP_PW_ALPHABETS).join('');
+  while (required.length < len) required.push(pickChar(all));
+  // Fisher–Yates shuffle using crypto randomInt (not Math.random).
+  for (let i = required.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [required[i], required[j]] = [required[j], required[i]];
+  }
+  return required.join('');
+};
 
 // Get system status and statistics
 export const getSystemStatus = async (_req: Request, res: Response): Promise<void> => {
@@ -459,5 +491,95 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
   } catch (_error) {
     console.error('Error updating user status:', _error);
     res.status(500).json({ error: 'Failed to update user status' });
+  }
+};
+
+// Operator/super-admin password reset — the safety net for accounts locked out
+// by a lost authenticator with all recovery codes burned.
+export const resetUserPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ error: errors.array()[0]?.msg ?? 'Invalid request' });
+      return;
+    }
+
+    const { userId } = req.params;
+    const clearTwoFactor = req.body.clear_two_factor === true;
+
+    if (!req.user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Prevent an operator from resetting their own account through this path:
+    // self-service must keep going through the (stricter) change-password flow.
+    if (userId === req.user.id) {
+      res.status(400).json({
+        error: 'You cannot reset your own password via admin reset. Use the profile change-password flow instead.'
+      });
+      return;
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      const [rows] = await connection.query<RowDataPacket[]>(
+        'SELECT id, email FROM users WHERE id = ?',
+        [userId]
+      );
+      if (rows.length === 0) {
+        connection.release();
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+      const targetEmail = String(rows[0].email ?? userId);
+
+      // Temporary password is returned to the operator exactly once and is
+      // NEVER written to audit_logs.
+      const tempPassword = generateTemporaryPassword();
+      const hashed = await bcrypt.hash(tempPassword, 12);
+
+      await connection.beginTransaction();
+      await connection.query(
+        `UPDATE users
+         SET password = ?, password_must_change = TRUE, password_changed_at = NULL,
+             login_attempts = 0, status = 'active', locked_until = NULL
+         WHERE id = ?`,
+        [hashed, userId]
+      );
+      if (clearTwoFactor) {
+        // Resolving a lost-authenticator lockout: drop TOTP + recovery codes
+        // so the user can log in again with just the temp password.
+        await connection.query(
+          'UPDATE users SET totp_secret = NULL, recovery_codes = NULL WHERE id = ?',
+          [userId]
+        );
+      }
+      await connection.query(
+        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
+         VALUES (UUID(), ?, 'reset_password', 'users', ?, ?)`,
+        [
+          req.user.id,
+          `Admin reset password for ${targetEmail} (${userId})${clearTwoFactor ? '; 2FA cleared' : ''}`,
+          req.ip
+        ]
+      );
+      await connection.commit();
+      connection.release();
+
+      res.status(200).json({
+        message: 'Password reset successfully',
+        temporaryPassword: tempPassword,
+        mustChange: true,
+        twoFactorDisabled: clearTwoFactor
+      });
+    } catch (err) {
+      await connection.rollback();
+      connection.release();
+      throw err;
+    }
+  } catch (_error) {
+    console.error('Error resetting user password:', _error);
+    res.status(500).json({ error: 'Failed to reset user password' });
   }
 };

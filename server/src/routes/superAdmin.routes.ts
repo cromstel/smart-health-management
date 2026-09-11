@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { param, body } from 'express-validator';
 import { authenticate, authorize, requirePermission, enforcePasswordChange } from '../middleware/auth.js';
 import * as superAdminController from '../controllers/superAdmin.controller.js';
 
@@ -17,6 +18,13 @@ router.get('/system-status', requirePermission('superAdmin', 'view'), superAdmin
 // User management
 router.get('/users', requirePermission('superAdmin', 'view'), superAdminController.getAllUsers);
 router.patch('/users/:userId/status', requirePermission('superAdmin', 'edit'), superAdminController.updateUserStatus);
+router.post(
+  '/users/:userId/reset-password',
+  requirePermission('superAdmin', 'edit'),
+  param('userId').isUUID().withMessage('Invalid user id'),
+  body('clear_two_factor').optional().isBoolean().withMessage('clear_two_factor must be a boolean'),
+  superAdminController.resetUserPassword
+);
 
 // Hospital management
 router.get('/hospitals', requirePermission('superAdmin', 'view'), superAdminController.getAllHospitals);

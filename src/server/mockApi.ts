@@ -1116,6 +1116,20 @@ ${medAdjustments}
     return true;
   }
 
+  if (pathname.match(/^\/api\/super-admin\/users\/([^/]+)\/reset-password$/)) {
+    if (req.method === 'POST') {
+      readJsonBody(req).then((body) => {
+        sendJson(res, 200, {
+          message: 'Password reset successfully',
+          temporaryPassword: 'TempPass@' + Math.random().toString(36).slice(2, 10),
+          mustChange: true,
+          twoFactorDisabled: body.clear_two_factor === true,
+        });
+      });
+      return true;
+    }
+  }
+
   if (pathname === '/api/demo-requests' && req.method === 'POST') {
     readJsonBody(req).then((body) => {
       if (body.website) {
