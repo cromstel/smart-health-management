@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_changed_at DATETIME NULL,
   password_postpone_count INT DEFAULT 0,
   totp_secret VARCHAR(64) NULL,
+  hospital_id BIGINT UNSIGNED NULL,
+  department_id BIGINT UNSIGNED NULL,
   onedrive_access_token TEXT NULL,
   onedrive_refresh_token TEXT NULL,
   googledrive_access_token TEXT NULL,
@@ -83,6 +85,12 @@ CREATE TABLE IF NOT EXISTS departments (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE
 );
+
+-- users affiliation: hospitals/departments are created after users above, so
+-- the FK constraints are wired in a follow-up ALTER for fresh installs.
+ALTER TABLE users
+  ADD CONSTRAINT fk_users_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL,
+  ADD CONSTRAINT fk_users_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;
 
 -- 6. Staff table
 CREATE TABLE IF NOT EXISTS staff (

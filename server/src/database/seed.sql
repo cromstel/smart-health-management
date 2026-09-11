@@ -40,11 +40,11 @@ INSERT INTO roles (id, name, description) VALUES
 (4, 'patient', 'Patient with access to their own data');
 
 -- 2. Seed Users
-INSERT INTO users (id, role_id, email, password, name, totp_secret) VALUES
-(1, 1, 'superadmin@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Super Admin', 'GEZDGNBVGY3TQOJQ'), -- password is 'password'; totp_secret is base32 of JBSWY3DPEHPK3PXP (demo seed)
-(2, 2, 'admin@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Admin User', 'GEZDGNBVGY3TQOJQ'), -- password is 'password'
-(3, 3, 'doctor@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ'), -- password is 'password'
-(4, 4, 'patient@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'John Doe', 'GEZDGNBVGY3TQOJQ'); -- password is 'password'
+INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
+(1, 1, 'superadmin@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Super Admin', 'GEZDGNBVGY3TQOJQ', 1, NULL), -- password is 'password'; totp_secret is base32 of JBSWY3DPEHPK3PXP (demo seed)
+(2, 2, 'admin@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Admin User', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password is 'password'
+(3, 3, 'doctor@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password is 'password'
+(4, 4, 'patient@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL); -- password is 'password'
 
 -- 3. Seed Permissions for Roles
 -- Super Admin permissions (role_id = 1)

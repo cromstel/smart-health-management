@@ -14,9 +14,12 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
   try {
     const { email, password } = req.body;
 
-    // Get user from database
+    // Get user from database (with affiliation hospital code for hospital scoping)
     const [users] = await pool.query(
-      'SELECT * FROM users WHERE email = ?',
+      `SELECT u.*, h.hospital_id AS hospital_code
+       FROM users u
+       LEFT JOIN hospitals h ON u.hospital_id = h.id
+       WHERE u.email = ?`,
       [email]
     );
 
@@ -72,7 +75,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
     // verify-2fa endpoint; the full JWT is issued after the code checks out.
     if (user.totp_secret) {
       const tempToken = jwt.sign(
-        { id: user.id, email: user.email, role, mfa_pending: true },
+        { id: user.id, email: user.email, role, hospital_id: user.hospital_code || undefined, mfa_pending: true },
         JWT_SECRET,
         { expiresIn: '5m' } as jwt.SignOptions
       );
@@ -85,6 +88,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
           name: user.name,
           email: user.email,
           role,
+          hospital_id: user.hospital_code || undefined,
           totp_enabled: true,
           password_must_change: !!user.password_must_change
         }
@@ -93,7 +97,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role },
+      { id: user.id, email: user.email, role, hospital_id: user.hospital_code || undefined },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -121,6 +125,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
         name: user.name,
         email: user.email,
         role,
+        hospital_id: user.hospital_code || undefined,
         permissions,
         totp_enabled: !!user.totp_secret,
         password_must_change: mustChange
@@ -134,7 +139,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
 
 export const register = async (req: Request, res: Response): Promise<Response | void> => {
   try {
-    const { email, password, name, roleId } = req.body;
+    const { email, password, name, roleId, hospital, department } = req.body;
 
     // Check if user already exists
     const [existing] = await pool.query(
@@ -146,14 +151,32 @@ export const register = async (req: Request, res: Response): Promise<Response | 
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    // Resolve the hospital/department names from the registration form into
+    // their numeric IDs. Registration is self-service, so unknown names fail
+    // gracefully to NULL instead of blocking the account.
+    const [hospitalRows] = await pool.query(
+      'SELECT id FROM hospitals WHERE name = ? LIMIT 1',
+      [hospital ?? null]
+    );
+    const hospitalId = (hospitalRows as any[])[0]?.id ?? null;
+
+    let departmentId: number | null = null;
+    if (department) {
+      const [deptRows] = await pool.query(
+        'SELECT id FROM departments WHERE name = ? AND (hospital_id = ? OR ? IS NULL) LIMIT 1',
+        [department, hospitalId, hospitalId]
+      );
+      departmentId = (deptRows as any[])[0]?.id ?? null;
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
     const userId = uuidv4();
     await pool.query(
-      'INSERT INTO users (id, email, password, name, role_id, password_must_change) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, email, hashedPassword, name, roleId || null, true]
+      'INSERT INTO users (id, email, password, name, role_id, hospital_id, department_id, password_must_change) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, email, hashedPassword, name, roleId || null, hospitalId, departmentId, true]
     );
 
     res.status(201).json({ message: 'User registered successfully', userId });
@@ -342,7 +365,10 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
     }
 
     const [users] = await pool.query(
-      'SELECT * FROM users WHERE id = ?',
+      `SELECT u.*, h.hospital_id AS hospital_code
+       FROM users u
+       LEFT JOIN hospitals h ON u.hospital_id = h.id
+       WHERE u.id = ?`,
       [req.user.id]
     );
     const user = (users as any[])[0];
@@ -365,7 +391,7 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
     const role = (roles as any[])[0]?.name || 'User';
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role },
+      { id: user.id, email: user.email, role, hospital_id: user.hospital_code || undefined },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -390,6 +416,7 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
         name: user.name,
         email: user.email,
         role,
+        hospital_id: user.hospital_code || undefined,
         permissions,
         totp_enabled: true,
         password_must_change: !!user.password_must_change
@@ -423,7 +450,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response |
     }
 
     const [users] = await pool.query(
-      'SELECT u.id, u.email, u.name, u.role_id, u.password_must_change, u.totp_secret, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
+      'SELECT u.id, u.email, u.name, u.role_id, u.password_must_change, u.totp_secret, u.hospital_id, r.name as role_name, h.hospital_id AS hospital_code FROM users u LEFT JOIN roles r ON u.role_id = r.id LEFT JOIN hospitals h ON u.hospital_id = h.id WHERE u.id = ?',
       [req.user.id]
     );
     const user = (users as any[])[0];
@@ -450,6 +477,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response |
         name: user.name,
         email: user.email,
         role: user.role_name || 'User',
+        hospital_id: user.hospital_code || undefined,
         permissions,
         totp_enabled: !!user.totp_secret,
         password_must_change: !!user.password_must_change
