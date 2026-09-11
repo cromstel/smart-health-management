@@ -208,6 +208,13 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getMfaEvents() {
+    const response = await fetch(`${API_BASE_URL}/auth/mfa-events`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
   // Patient endpoints
   async getPatients(params?: { search?: string; status?: string; hospital?: string }) {
     const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';

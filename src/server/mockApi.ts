@@ -223,6 +223,17 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
     return true;
   }
 
+  if (pathname === '/api/auth/mfa-events') {
+    sendJson(res, 200, {
+      events: mockTotpEnabled
+        ? [
+            { id: 'evt-1', action: 'mfa_totp_changed', details: { enabled: true, recovery_codes: 10 }, ip: '127.0.0.1', createdAt: new Date().toISOString() },
+          ]
+        : [],
+    });
+    return true;
+  }
+
   if (pathname === '/api/auth/register' && req.method === 'POST') {
     readJsonBody(req).then((body) => {
       const newUser = {

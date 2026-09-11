@@ -163,5 +163,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 router.get('/me', authenticate, authController.getMe);
+router.get('/mfa-events', authenticate, authController.getMfaEvents);
 
 export default router;

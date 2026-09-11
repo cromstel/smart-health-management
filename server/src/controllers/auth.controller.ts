@@ -590,6 +590,48 @@ const logMfaEvent = async (req: AuthRequest, action: string, payload: Record<str
 };
 
 /**
+ * Per-user MFA lifecycle audit trail (self-service, read-only). Returns only
+ * the caller's own 2FA events — enrollment/rotation, disable, and
+ * recovery-code use — newest first. `new_value` is returned both raw and
+ * parsed so the frontend can render friendly labels.
+ */
+export const getMfaEvents = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const [rows] = await pool.query(
+      `SELECT id, action, new_value, ip_address, created_at
+       FROM audit_logs
+       WHERE user_id = ? AND module = 'auth'
+         AND action IN ('mfa_totp_changed', 'mfa_totp_disabled', 'mfa_recovery_used')
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [req.user.id]
+    );
+    const events = (rows as any[]).map((row) => {
+      let details: unknown;
+      try {
+        details = row.new_value ? JSON.parse(row.new_value) : null;
+      } catch {
+        details = null;
+      }
+      return {
+        id: row.id,
+        action: row.action,
+        details,
+        ip: row.ip_address,
+        createdAt: row.created_at
+      };
+    });
+    res.json({ events });
+  } catch (error) {
+    console.error('Fetch MFA events error:', error);
+    res.status(500).json({ error: 'Failed to fetch MFA events' });
+  }
+};
+
+/**
  * Generate a fresh TOTP secret for authenticator pairing. Stateless — the
  * secret is returned but NOT persisted; /totp/confirm proves possession of
  * the new key first. Works both for first-time enrollment and rotation.

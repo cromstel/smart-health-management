@@ -18,6 +18,8 @@ import {
   Clock,
   Fingerprint,
   ShieldCheck,
+  ShieldOff,
+  KeyRound,
   Key,
   QrCode,
   Copy,
@@ -80,6 +82,29 @@ export default function SettingsPage() {
   // the current session in state; on reload the count comes from `me`.
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const recoveryCodesCount = recoveryCodes.length > 0 ? recoveryCodes.length : (user?.recovery_codes_count ?? 0);
+  const [mfaEvents, setMfaEvents] = useState<Array<{ id: string; action: string; details: unknown; ip: string | null; createdAt: string }>>([]);
+  const [mfaEventsLoading, setMfaEventsLoading] = useState(false);
+
+  const loadMfaEvents = useCallback(async () => {
+    try {
+      setMfaEventsLoading(true);
+      const data = await api.getMfaEvents() as { events: typeof mfaEvents };
+      setMfaEvents(data.events ?? []);
+    } catch {
+      // Non-critical — swallow silently
+    } finally {
+      setMfaEventsLoading(false);
+    }
+  }, []);
+
+  const mfaActionLabel = (action: string): string => {
+    switch (action) {
+      case 'mfa_totp_changed': return 'Two-factor enabled / key rotated';
+      case 'mfa_totp_disabled': return 'Two-factor disabled';
+      case 'mfa_recovery_used': return 'Recovery code used';
+      default: return action;
+    }
+  };
 
   // Keep the toggle in sync with the authenticated user's server-side 2FA state.
   useEffect(() => {
@@ -89,6 +114,11 @@ export default function SettingsPage() {
       setTotpDisableMode(false);
     }
   }, [user?.totp_enabled]);
+
+  // Load the per-user MFA audit trail (server-side 2FA events only).
+  useEffect(() => {
+    void loadMfaEvents();
+  }, [loadMfaEvents]);
 
   const handleEnableTotp = async () => {
     setTotpBusy(true);
@@ -123,6 +153,7 @@ export default function SettingsPage() {
       toast.success('Two-factor authentication enabled! Your account is now protected.');
       toast.info('Save your recovery codes somewhere secure — they are only shown once.');
       await refreshUser();
+      void loadMfaEvents();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Verification failed. Check the code and try again.');
     } finally {
@@ -144,6 +175,7 @@ export default function SettingsPage() {
       setTotpDisableCode('');
       toast.success('Two-factor authentication disabled.');
       await refreshUser();
+      void loadMfaEvents();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not disable two-factor.');
     } finally {
@@ -774,6 +806,46 @@ export default function SettingsPage() {
                   )}
                 </div>
               )}
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-accent" />
+                  <Label className="cursor-default">Security Activity</Label>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Your two-factor authentication history, straight from the server audit trail.
+                </p>
+                <div className="rounded-lg border border-border bg-muted/30">
+                  {mfaEventsLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : mfaEvents.length === 0 ? (
+                    <p className="p-4 text-center text-xs text-muted-foreground">No two-factor events recorded yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {mfaEvents.map((ev) => (
+                        <li key={ev.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {ev.action === 'mfa_totp_changed' ? (
+                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                            ) : ev.action === 'mfa_totp_disabled' ? (
+                              <ShieldOff className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                            ) : (
+                              <KeyRound className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+                            )}
+                            <span className="text-sm text-foreground">{mfaActionLabel(ev.action)}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-xs text-muted-foreground">{new Date(ev.createdAt).toLocaleString()}</p>
+                            {ev.ip ? <p className="text-[11px] text-muted-foreground/70">{ev.ip}</p> : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
 
               <Separator />
 
