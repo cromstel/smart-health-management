@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_must_change BOOLEAN DEFAULT FALSE,
   password_changed_at DATETIME NULL,
   password_postpone_count INT DEFAULT 0,
+  totp_secret VARCHAR(64) NULL,
   onedrive_access_token TEXT NULL,
   onedrive_refresh_token TEXT NULL,
   googledrive_access_token TEXT NULL,

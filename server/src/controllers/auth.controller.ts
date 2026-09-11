@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
+import { verifyToken, currentToken } from '../utils/totp.js';
 
 const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret'); // Hard-fails in production when unset
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -65,6 +66,29 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
       [user.role_id]
     );
     const role = (roles as any[])[0]?.name || 'User';
+
+    // Two-factor authentication check — when the user has a TOTP secret, do NOT
+    // issue a full token yet. Only a short-lived temp token that gates the
+    // verify-2fa endpoint; the full JWT is issued after the code checks out.
+    if (user.totp_secret) {
+      const tempToken = jwt.sign(
+        { id: user.id, email: user.email, role, mfa_pending: true },
+        JWT_SECRET,
+        { expiresIn: '5m' } as jwt.SignOptions
+      );
+
+      return res.json({
+        requiresMfa: true,
+        tempToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role,
+          password_must_change: !!user.password_must_change
+        }
+      });
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -303,20 +327,89 @@ export const postponePasswordChange = async (req: AuthRequest, res: Response): P
   }
 };
 
-export const verifyTwoFactor = async (req: Request, res: Response): Promise<Response | void> => {
+export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    const { code } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
-    // In production, verify TOTP code using speakeasy or similar
-    // For demo, accept any 6-digit code
-    if (code.length !== 6) {
+    const { code } = req.body as { code: string };
+
+    if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
       return res.status(400).json({ error: 'Invalid code' });
     }
 
-    res.json({ message: 'Two-factor authentication successful', verified: true });
-  } catch {
-    console.error('2FA verification error');
+    const [users] = await pool.query(
+      'SELECT * FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    const user = (users as any[])[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.totp_secret) {
+      return res.status(400).json({ error: 'Two-factor authentication is not enabled for this account' });
+    }
+
+    // Constant-time TOTP verification (±1 × 30 s step for clock skew)
+    if (!verifyToken(user.totp_secret, code)) {
+      return res.status(401).json({ error: 'Invalid or expired authentication code' });
+    }
+
+    // Code verified — issue the full JWT plus role and permissions
+    const [roles] = await pool.query('SELECT name FROM roles WHERE id = ?', [user.role_id]);
+    const role = (roles as any[])[0]?.name || 'User';
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    );
+
+    const [perms] = await pool.query(
+      'SELECT module, can_view, can_add, can_edit, can_delete FROM permissions WHERE role_id = ?',
+      [user.role_id]
+    );
+    const permissions = (perms as any[]).flatMap((p) => {
+      const list: string[] = [];
+      if (p.can_view) list.push(`${p.module}:view`);
+      if (p.can_add) list.push(`${p.module}:add`);
+      if (p.can_edit) list.push(`${p.module}:edit`);
+      if (p.can_delete) list.push(`${p.module}:delete`);
+      return list;
+    });
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role,
+        permissions,
+        password_must_change: !!user.password_must_change
+      }
+    });
+  } catch (error) {
+    console.error('2FA verification error:', error);
     res.status(500).json({ error: 'Failed to verify code' });
+  }
+};
+
+/**
+ * DEV-ONLY helper used by the demo auto-fill buttons on the login and 2FA
+ * pages. Returns the *currently valid* TOTP code for the seeded demo user so
+ * the demo stays one-click without weakening the real verification path.
+ * The route guard lives in auth.routes.ts (never mounted in production).
+ */
+export const devCurrentTotp = async (_req: Request, res: Response): Promise<Response | void> => {
+  try {
+    res.json({ code: currentToken('GEZDGNBVGY3TQOJQ') });
+  } catch (error) {
+    console.error('dev-totp-current error:', error);
+    res.status(500).json({ error: 'Failed to compute demo code' });
   }
 };
 

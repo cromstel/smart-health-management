@@ -16,6 +16,15 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Brute-force protection for TOTP code guessing (6-digit space is small)
+const twoFactorLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Limit each IP to 10 TOTP attempts per windowMs
+  message: 'Too many verification attempts from this IP, please try again after 5 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/login',
   loginLimiter, // Apply brute-force protection
@@ -85,12 +94,20 @@ router.post(
 
 router.post(
   '/verify-2fa',
+  authenticate,
+  twoFactorLimiter, // Apply brute-force protection
   [
     body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
     validate
   ],
   authController.verifyTwoFactor
 );
+
+// DEV-ONLY: current demo TOTP code for the auto-fill buttons. Never exposed
+// in production.
+if (process.env.NODE_ENV !== 'production') {
+  router.get('/dev-totp-current', authController.devCurrentTotp);
+}
 
 router.get('/me', authenticate, authController.getMe);
 
