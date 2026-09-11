@@ -6,12 +6,11 @@ import * as z from 'zod';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
-import { AuthLayout } from '@/components/auth';
+import { AuthLayout, OtpHero } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import {
   Activity,
   Lock,
@@ -36,7 +35,7 @@ const loginSchema = z.object({
     .email('Please enter a valid work email address'),
   password: z
     .string()
-    .min(6, 'Password must be at least 6 characters'),
+    .min(8, 'Password must be at least 8 characters'),
   rememberMe: z.boolean(),
 });
 
@@ -238,10 +237,10 @@ export default function LoginPage() {
               id="mfa-verification-container"
             >
               {/* MFA User Info Card */}
-              <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+              <div className="p-4 rounded-xl border border-accent/20 bg-accent/5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Credentials</span>
-                  <Badge variant="outline" className="border-primary text-primary text-[10px] font-semibold flex items-center gap-1">
+                  <Badge variant="outline" className="border-accent text-accent text-[10px] font-semibold flex items-center gap-1">
                     <KeyRound className="h-3 w-3" aria-hidden="true" />
                     MFA ENFORCED
                   </Badge>
@@ -257,32 +256,19 @@ export default function LoginPage() {
               <form onSubmit={handleVerifyTotpSubmit} className="space-y-6" id="mfa-form">
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Smartphone className="h-4 w-4 text-primary" aria-hidden="true" />
+                    <Smartphone className="h-4 w-4 text-accent" aria-hidden="true" />
                     Authenticator Security Code (TOTP)
                   </Label>
                   <div className="flex justify-center py-2">
-                    <InputOTP
-                      maxLength={6}
+                    <OtpHero
+                      id="totp-otp-input"
                       value={totpCode}
                       onChange={(val) => {
                         setTotpCode(val);
                         setServerError('');
                       }}
-                      autoFocus
-                      id="totp-otp-input"
-                      aria-label="Enter 6-digit TOTP code"
-                    >
-                      <InputOTPGroup className="gap-2">
-                        {[0, 1, 2, 3, 4, 5].map((i) => (
-                          <InputOTPSlot
-                            key={i}
-                            index={i}
-                            className="h-12 w-11 text-lg font-mono rounded-lg border-border bg-background transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                            aria-label={`Digit ${i + 1}`}
-                          />
-                        ))}
-                      </InputOTPGroup>
-                    </InputOTP>
+                      ariaLabel="Enter 6-digit TOTP code"
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
                     Open Google Authenticator, Authy, or 1Password to view your 6-digit token.
@@ -293,7 +279,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     id="mfa-submit-btn"
-                    className="w-full h-11 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+                    className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                     disabled={totpLoading || totpCode.length !== 6}
                   >
                     {totpLoading ? (
@@ -306,19 +292,21 @@ export default function LoginPage() {
                     )}
                   </Button>
 
-                  <Button
-                    type="button"
-                    id="fill-demo-totp-btn"
-                    variant="outline"
-                    onClick={() => {
-                      setTotpCode('123456');
-                      setServerError('');
-                    }}
-                    className="w-full text-xs h-9 border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-colors"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                    Quick Test: Fill Demo TOTP Token (123456)
-                  </Button>
+                  {import.meta.env.DEV && (
+                    <Button
+                      type="button"
+                      id="fill-demo-totp-btn"
+                      variant="outline"
+                      onClick={() => {
+                        setTotpCode('123456');
+                        setServerError('');
+                      }}
+                      className="w-full text-xs h-9 border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                      Quick Test: Fill Demo TOTP Token (123456)
+                    </Button>
+                  )}
 
                   <Button
                     type="button"
@@ -333,16 +321,18 @@ export default function LoginPage() {
                 </div>
               </form>
 
-              <div className="p-3 rounded-lg bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
-                <div className="font-semibold text-foreground flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                  Standard Authenticator Configured
+              {import.meta.env.DEV && (
+                <div className="p-3 rounded-lg bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
+                  <div className="font-semibold text-foreground flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                    Standard Authenticator Configured
+                  </div>
+                  <p>
+                    Key format: RFC 6238 TOTP (30s interval, HMAC-SHA1). Standard seed:{' '}
+                    <code className="font-mono bg-background px-1 py-0.5 rounded border border-border text-foreground">JBSWY3DPEHPK3PXP</code>
+                  </p>
                 </div>
-                <p>
-                  Key format: RFC 6238 TOTP (30s interval, HMAC-SHA1). Standard seed:{' '}
-                  <code className="font-mono bg-background px-1 py-0.5 rounded border border-border text-foreground">JBSWY3DPEHPK3PXP</code>
-                </p>
-              </div>
+              )}
             </motion.div>
           ) : formMode === 'forgot' ? (
             <motion.form
@@ -370,7 +360,7 @@ export default function LoginPage() {
                     placeholder="name@smarthealth.com"
                     autoComplete="email"
                     {...registerForgot('email')}
-                    className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-primary focus-visible:border-primary transition-all duration-200 ${
+                    className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
                       errorsForgot.email ? 'border-destructive focus-visible:ring-destructive' : ''
                     }`}
                     aria-invalid={errorsForgot.email ? 'true' : 'false'}
@@ -389,7 +379,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   id="forgot-submit-btn"
-                  className="w-full h-11 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+                  className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                   disabled={loading}
                 >
                   {loading ? (
@@ -443,9 +433,9 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     placeholder="name@smarthealth.com"
-                    autoComplete="username"
+                    autoComplete="email"
                     {...register('email')}
-                    className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-primary focus-visible:border-primary transition-all duration-200 ${
+                    className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
                       errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
                     }`}
                     aria-invalid={errors.email ? 'true' : 'false'}
@@ -471,7 +461,7 @@ export default function LoginPage() {
                       setFormMode('forgot');
                       setServerError('');
                     }}
-                    className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="text-sm font-medium text-accent hover:text-accent/80 transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -486,7 +476,7 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     autoComplete="current-password"
                     {...register('password')}
-                    className={`pl-10 pr-10 h-11 bg-muted/40 border-border focus-visible:ring-primary focus-visible:border-primary transition-all duration-200 ${
+                    className={`pl-10 pr-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
                       errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
                     }`}
                     aria-invalid={errors.password ? 'true' : 'false'}
@@ -510,27 +500,22 @@ export default function LoginPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    {...register('rememberMe')}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary bg-background cursor-pointer transition-colors"
-                  />
-                  <Label htmlFor="remember" className="text-sm font-medium text-foreground cursor-pointer">
-                    Remember me
-                  </Label>
-                </div>
-                <Link to="/two-factor" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Use 2FA
-                </Link>
+              <div className="flex items-center gap-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  {...register('rememberMe')}
+                  className="h-4 w-4 rounded border-border text-accent focus:ring-accent bg-background cursor-pointer transition-colors"
+                />
+                <Label htmlFor="remember" className="text-sm font-medium text-foreground cursor-pointer">
+                  Remember me
+                </Label>
               </div>
 
               <Button
                 type="submit"
                 id="login-submit-btn"
-                className="w-full h-11 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center transition-all duration-200 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+                className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                 disabled={loading}
               >
                 {loading ? (
@@ -554,7 +539,7 @@ export default function LoginPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
         >
           New staff member?{' '}
-          <Link to="/signup" className="font-semibold text-primary hover:text-primary/80 transition-colors">
+          <Link to="/signup" className="font-semibold text-accent hover:text-accent/80 transition-colors">
             Register here
           </Link>
         </motion.p>

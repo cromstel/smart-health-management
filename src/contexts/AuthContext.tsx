@@ -13,7 +13,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<{ requiresMfa: boolean }>;
+  login: (email: string, password: string) => Promise<{ requiresMfa: boolean; user: User | null }>;
   logout: () => void;
   isAuthenticated: boolean;
   hasPermission: (perm: string) => boolean;
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.permissions.includes('all:view');
   };
 
-  const login = async (email: string, password: string): Promise<{ requiresMfa: boolean }> => {
+  const login = async (email: string, password: string): Promise<{ requiresMfa: boolean; user: User | null }> => {
     try {
       const response = await api.login(email, password) as any;
       console.log('API Login Response:', response);
@@ -67,14 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMfaPending(true);
         setMfaPendingUser(response.user);
         setMfaPendingToken(response.token);
-        return { requiresMfa: true };
+        return { requiresMfa: true, user: response.user ?? null };
       } else {
         localStorage.setItem('token', response.token);
         setUser(response.user);
         setMfaPending(false);
         setMfaPendingUser(null);
         setMfaPendingToken(null);
-        return { requiresMfa: false };
+        return { requiresMfa: false, user: response.user ?? null };
       }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : 'Login failed';
@@ -94,12 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Invalid TOTP authenticator code. Code must be 6 numeric digits.');
     }
 
-    // Call API 2FA verify endpoint or finalize auth
-    try {
-      await api.verifyTwoFactor(cleanCode);
-    } catch {
-      // Endpoint fallback allows valid TOTP codes during testing/demo
-    }
+    // Call API 2FA verify endpoint; any failure propagates to the caller
+    await api.verifyTwoFactor(cleanCode);
 
     // Complete authentication
     localStorage.setItem('token', mfaPendingToken);

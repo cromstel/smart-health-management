@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +6,7 @@ import * as z from 'zod';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
-import { AuthLayout } from '@/components/auth';
+import { AuthLayout, PasswordStrength } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,6 @@ import {
   User,
   Mail,
   Lock,
-  ArrowRight,
   Stethoscope,
   Loader2,
 } from 'lucide-react';
@@ -56,9 +55,6 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-const strengthLabels = ['Very Weak', 'Weak', 'Moderate', 'Strong', 'Excellent'];
-const strengthColors = ['bg-destructive', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500', 'bg-emerald-600'];
-
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -78,7 +74,7 @@ export default function RegisterPage() {
     defaultValues: {
       name: '',
       email: '',
-      role: 'Doctor',
+      role: '',
       hospital: 'General Hospital',
       department: 'Cardiology',
       password: '',
@@ -89,16 +85,6 @@ export default function RegisterPage() {
 
   const passwordValue = watch('password') || '';
 
-  const strength = useMemo(() => {
-    const length = passwordValue.length >= 8;
-    const upper = /[A-Z]/.test(passwordValue);
-    const lower = /[a-z]/.test(passwordValue);
-    const number = /[0-9]/.test(passwordValue);
-    const special = /[^A-Za-z0-9]/.test(passwordValue);
-    const score = [length, upper, lower, number, special].filter(Boolean).length;
-    return { length, upper, lower, number, special, score };
-  }, [passwordValue]);
-
   const onSubmit = async (data: RegisterFormValues) => {
     setServerError('');
     setLoading(true);
@@ -108,6 +94,8 @@ export default function RegisterPage() {
         email: data.email,
         password: data.password,
         roleId: data.role.toLowerCase(),
+        hospital: data.hospital,
+        department: data.department,
       });
       setSuccess(true);
 
@@ -205,13 +193,12 @@ export default function RegisterPage() {
                   <div className="space-y-1">
                     <h3 className="text-lg font-semibold text-foreground">Registration Successful!</h3>
                     <p className="text-sm text-muted-foreground">
-                      Your account has been provisioned. Redirecting to your dashboard...
+                      Your account has been provisioned. Redirecting to your workstation...
                     </p>
                   </div>
-                  <div className="pt-2">
-                    <Button onClick={() => navigate('/login')} className="gap-2 bg-accent text-accent-foreground">
-                      Proceed to Login <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                    Establishing your secure session...
                   </div>
                 </motion.div>
               ) : (
@@ -236,7 +223,8 @@ export default function RegisterPage() {
                         type="text"
                         placeholder="e.g. Dr. Kwame Mensah"
                         {...register('name')}
-                        className={`h-10 text-sm bg-background border-border transition-all duration-200 ${
+                        autoComplete="name"
+                        className={`h-10 text-sm bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                           errors.name ? 'border-destructive focus-visible:ring-destructive' : ''
                         }`}
                         aria-invalid={errors.name ? 'true' : 'false'}
@@ -260,7 +248,8 @@ export default function RegisterPage() {
                         type="email"
                         placeholder="k.mensah@smarthealth.com"
                         {...register('email')}
-                        className={`h-10 text-sm bg-background border-border transition-all duration-200 ${
+                        autoComplete="email"
+                        className={`h-10 text-sm bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                           errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
                         }`}
                         aria-invalid={errors.email ? 'true' : 'false'}
@@ -289,6 +278,9 @@ export default function RegisterPage() {
                         aria-invalid={errors.role ? 'true' : 'false'}
                         aria-describedby={errors.role ? 'role-error' : undefined}
                       >
+                        <option value="" disabled>
+                          Select your role…
+                        </option>
                         <option value="Doctor">Doctor / Physician</option>
                         <option value="Nurse">Registered Nurse</option>
                         <option value="Pharmacist">Pharmacist</option>
@@ -369,7 +361,8 @@ export default function RegisterPage() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...register('password')}
-                          className={`h-10 pr-10 text-sm bg-background border-border transition-all duration-200 ${
+                          autoComplete="new-password"
+                          className={`h-10 pr-10 text-sm bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
                           aria-invalid={errors.password ? 'true' : 'false'}
@@ -403,7 +396,8 @@ export default function RegisterPage() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...register('confirmPassword')}
-                          className={`h-10 pr-10 text-sm bg-background border-border transition-all duration-200 ${
+                          autoComplete="new-password"
+                          className={`h-10 pr-10 text-sm bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
                           aria-invalid={errors.confirmPassword ? 'true' : 'false'}
@@ -428,53 +422,7 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Password Strength Meter */}
-                  <AnimatePresence>
-                    {passwordValue.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="p-4 rounded-xl bg-muted/40 border border-border text-xs space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground font-medium">Password Complexity</span>
-                          <span className="font-semibold text-foreground">
-                            {strengthLabels[Math.max(0, strength.score - 1)]}
-                          </span>
-                        </div>
-
-                        {/* Strength Bar */}
-                        <div className="h-1.5 bg-border rounded-full overflow-hidden">
-                          <motion.div
-                            className={`h-full ${strengthColors[Math.max(0, strength.score - 1)]}`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(strength.score / 5) * 100}%` }}
-                            transition={{ duration: 0.3 }}
-                          />
-                        </div>
-
-                        {/* Requirements */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                          {[
-                            { label: '8+ Characters', met: strength.length },
-                            { label: 'Upper & Lower', met: strength.upper && strength.lower },
-                            { label: 'Numbers (0-9)', met: strength.number },
-                            { label: 'Special Symbol', met: strength.special },
-                          ].map((req, i) => (
-                            <motion.div
-                              key={i}
-                              className={`flex items-center gap-1.5 ${req.met ? 'text-emerald-500' : 'text-muted-foreground'}`}
-                              animate={{ scale: req.met ? 1.05 : 1 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span>{req.label}</span>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <PasswordStrength password={passwordValue} />
 
                   {/* Terms and compliance */}
                   <div className="space-y-2">

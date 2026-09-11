@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { AuthLayout } from '@/components/auth';
+import { AuthLayout, OtpHero } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Badge } from '@/components/ui/badge';
 import {
   Activity,
@@ -34,7 +33,7 @@ export default function TwoFactorPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [cooldown, setCooldown] = useState(30);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -158,7 +157,11 @@ export default function TwoFactorPage() {
             </div>
 
             {/* Method Switcher */}
-            <div className="flex items-center justify-center gap-1.5 pt-2">
+            <div
+              className="flex items-center justify-center gap-1.5 pt-2"
+              role="group"
+              aria-label="Verification method"
+            >
               {methods.map((m) => (
                 <motion.button
                   key={m.id}
@@ -169,8 +172,7 @@ export default function TwoFactorPage() {
                       ? 'bg-accent text-accent-foreground shadow-sm'
                       : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/60'
                   }`}
-                  role="tab"
-                  aria-selected={method === m.id}
+                  aria-pressed={method === m.id}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -229,8 +231,7 @@ export default function TwoFactorPage() {
                 >
                   {/* OTP Input */}
                   <div className="flex flex-col items-center justify-center space-y-3">
-                    <InputOTP
-                      maxLength={6}
+                    <OtpHero
                       value={code}
                       onChange={(val) => {
                         setCode(val);
@@ -238,20 +239,8 @@ export default function TwoFactorPage() {
                           setError('');
                         }
                       }}
-                      autoFocus
-                      aria-label="Enter 6-digit authentication code"
-                    >
-                      <InputOTPGroup className="gap-2 sm:gap-2.5">
-                        {[0, 1, 2, 3, 4, 5].map((i) => (
-                          <InputOTPSlot
-                            key={i}
-                            index={i}
-                            className="h-13 w-12 text-xl font-mono rounded-xl border-border bg-background transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/20"
-                            aria-label={`Digit ${i + 1}`}
-                          />
-                        ))}
-                      </InputOTPGroup>
-                    </InputOTP>
+                      ariaLabel="Enter 6-digit authentication code"
+                    />
                     <span className="text-[11px] text-muted-foreground">
                       Auto-focus enabled. You can type or paste code.
                     </span>
@@ -294,16 +283,18 @@ export default function TwoFactorPage() {
 
             {/* Helper Buttons */}
             <div className="space-y-2 pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleQuickFill}
-                className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>Quick Test: Autofill Demo Code (123456)</span>
-              </Button>
+              {import.meta.env.DEV && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleQuickFill}
+                  className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                  <span>Quick Test: Autofill Demo Code (123456)</span>
+                </Button>
+              )}
 
               {method === 'sms' && (
                 <Button
@@ -322,7 +313,7 @@ export default function TwoFactorPage() {
           </CardContent>
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-            <Link to="/login" className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-medium transition-colors">
+            <Link to="/login" className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors">
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Cancel & Return to Login</span>
             </Link>

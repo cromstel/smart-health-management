@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth';
 import { Button } from '@/components/ui/button';
@@ -23,14 +23,17 @@ import {
   Loader2,
 } from 'lucide-react';
 
+const DEMO_EMAIL = 'superadmin@smarthealth.com';
+const DEMO_PASSWORD = 'password123';
+
 const SuperAdminLogin = React.memo(() => {
-  const [email, setEmail] = useState('superadmin@smarthealth.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState(() => (import.meta.env.DEV ? DEMO_EMAIL : ''));
+  const [password, setPassword] = useState(() => (import.meta.env.DEV ? DEMO_PASSWORD : ''));
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,12 +41,21 @@ const SuperAdminLogin = React.memo(() => {
     setLoading(true);
 
     try {
-      await login(email, password);
-      if (user && user.role !== 'super_admin' && user.role !== 'Super Admin') {
+      const res = await login(email, password);
+
+      if (res.requiresMfa) {
+        // The pending MFA session is now active in AuthContext; the standard
+        // workstation sign-in page renders the TOTP step to complete it.
+        navigate('/login');
+        return;
+      }
+
+      if (res.user && res.user.role !== 'super_admin' && res.user.role !== 'Super Admin') {
         setError('Access denied. Privileged Super Administrator credentials required.');
         setLoading(false);
         return;
       }
+
       navigate('/super-admin/dashboard');
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Invalid Super Admin credentials';
@@ -54,8 +66,8 @@ const SuperAdminLogin = React.memo(() => {
   };
 
   const handleQuickFill = () => {
-    setEmail('superadmin@smarthealth.com');
-    setPassword('password123');
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
     setError('');
   };
 
@@ -123,18 +135,21 @@ const SuperAdminLogin = React.memo(() => {
 
           <CardContent className="pt-6 space-y-4">
             {/* Error Alert */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="p-3 rounded-md bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs"
-                role="alert"
-                aria-live="assertive"
-              >
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <span className="font-medium">{error}</span>
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-3 rounded-md bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <span className="font-medium">{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -150,7 +165,7 @@ const SuperAdminLogin = React.memo(() => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="username"
-                  className="h-10 text-sm bg-background border-border transition-all duration-200"
+                  className="h-10 text-sm bg-background border-border transition-all duration-200 focus-visible:ring-accent"
                 />
               </div>
 
@@ -168,13 +183,14 @@ const SuperAdminLogin = React.memo(() => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="h-10 pr-10 text-sm bg-background border-border transition-all duration-200"
+                    className="h-10 pr-10 text-sm bg-background border-border transition-all duration-200 focus-visible:ring-accent"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     title={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
@@ -197,19 +213,21 @@ const SuperAdminLogin = React.memo(() => {
               </Button>
             </form>
 
-            {/* Quick Demo Helper */}
-            <div className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleQuickFill}
-                className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>Autofill Super Admin Demo Credentials</span>
-              </Button>
-            </div>
+            {/* Quick Demo Helper (development only) */}
+            {import.meta.env.DEV && (
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleQuickFill}
+                  className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                  <span>Autofill Super Admin Demo Credentials</span>
+                </Button>
+              </div>
+            )}
 
             {/* Audit Advisory */}
             <motion.div

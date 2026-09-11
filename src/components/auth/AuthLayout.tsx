@@ -1,7 +1,8 @@
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Activity, ShieldCheck, Heart, Stethoscope, Pill, ClipboardList } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -29,10 +30,17 @@ const features = [
 ];
 
 export default function AuthLayout({ children, showBranding = true }: AuthLayoutProps) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <div className="min-h-screen flex w-full bg-background" id="auth-layout">
       {/* Left Side: Form Panel */}
-      <div className="flex-1 flex flex-col justify-center items-center lg:items-stretch px-4 xs:px-6 sm:px-8 lg:px-12 lg:flex-none lg:w-[480px] xl:w-[560px] 2xl:w-[640px] z-10 bg-background relative">
+      <div
+        className={cn(
+          'flex-1 flex flex-col justify-center items-center lg:items-stretch px-4 xs:px-6 sm:px-8 lg:px-12 lg:flex-none lg:w-[480px] xl:w-[560px] 2xl:w-[640px] z-10 bg-background relative',
+          !showBranding && 'lg:mx-auto'
+        )}
+      >
         <div className="w-full max-w-[340px] xs:max-w-sm sm:max-w-md mx-auto my-auto lg:my-0">
           {children}
         </div>
@@ -48,18 +56,26 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
                 key={i}
                 className="absolute"
                 style={{ left: `${shape.x}%`, top: `${shape.y}%` }}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{
-                  opacity: [0, 0.15, 0.15, 0],
-                  scale: [0.8, 1, 1, 0.8],
-                  y: [0, -10, -10, 0],
-                }}
-                transition={{
-                  duration: 8,
-                  repeat: Infinity,
-                  delay: shape.delay,
-                  ease: 'easeInOut',
-                }}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0 }}
+                animate={
+                  reduceMotion
+                    ? { opacity: 0.15, scale: 1 }
+                    : {
+                        opacity: [0, 0.15, 0.15, 0],
+                        scale: [0.8, 1, 1, 0.8],
+                        y: [0, -10, -10, 0],
+                      }
+                }
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : {
+                        duration: 8,
+                        repeat: Infinity,
+                        delay: shape.delay,
+                        ease: 'easeInOut',
+                      }
+                }
               >
                 <shape.icon className={shape.size} style={{ color: 'var(--primary-foreground)' }} />
               </motion.div>
@@ -68,13 +84,13 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
             {/* Decorative circles */}
             <motion.div
               className="absolute -top-20 -right-20 w-64 h-64 rounded-full border border-primary-foreground/10"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+              animate={reduceMotion ? false : { rotate: 360 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 60, repeat: Infinity, ease: 'linear' }}
             />
             <motion.div
               className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full border border-primary-foreground/5"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+              animate={reduceMotion ? false : { rotate: -360 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 80, repeat: Infinity, ease: 'linear' }}
             />
           </div>
 

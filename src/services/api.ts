@@ -80,7 +80,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async register(data: { email: string; password: string; name: string; roleId?: string }) {
+  async register(data: { email: string; password: string; name: string; roleId?: string; hospital?: string; department?: string }) {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: this.getHeaders(false),
