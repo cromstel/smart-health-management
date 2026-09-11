@@ -23,16 +23,19 @@ import {
   Key,
   QrCode,
   Copy,
-  Smartphone
+  Smartphone,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api';
+import type { WebAuthnCredentialRecord } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { registerPasskey, isWebAuthnSupported } from '@/utils/webauthn';
+import { startWebAuthnRegistration, isWebAuthnSupported } from '@/utils/webauthn';
 
 interface Settings {
   systemName?: string;
@@ -85,6 +88,65 @@ export default function SettingsPage() {
   const [mfaEvents, setMfaEvents] = useState<Array<{ id: string; action: string; details: unknown; ip: string | null; createdAt: string }>>([]);
   const [mfaEventsLoading, setMfaEventsLoading] = useState(false);
 
+  // WebAuthn passkeys — real ceremonies against /auth/webauthn/*.
+  const [passkeys, setPasskeys] = useState<WebAuthnCredentialRecord[]>([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyDeviceName, setPasskeyDeviceName] = useState('');
+
+  const loadPasskeys = useCallback(async () => {
+    try {
+      setPasskeysLoading(true);
+      const data = await api.webauthnListCredentials();
+      setPasskeys(data.credentials ?? []);
+    } catch {
+      // Server unavailable or not wired — keep the section inert in dev/mock.
+    } finally {
+      setPasskeysLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPasskeys();
+  }, [loadPasskeys]);
+
+  const handleRegisterPasskey = async () => {
+    if (!isWebAuthnSupported()) {
+      toast.error('WebAuthn (passkeys) is not supported in this browser. Use a current Chrome, Edge, Safari, or Firefox.');
+      return;
+    }
+    setPasskeyBusy(true);
+    try {
+      const { options, challengeToken } = await api.webauthnRegisterOptions();
+      const registration = await startWebAuthnRegistration(options);
+      if (!registration) {
+        toast.info('Passkey registration cancelled.');
+        return;
+      }
+      await api.webauthnRegisterVerify(registration, challengeToken, passkeyDeviceName.trim() || undefined);
+      toast.success('Passkey registered — you can now use it to approve 2FA logins.');
+      setPasskeyDeviceName('');
+      await loadPasskeys();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Passkey registration failed.');
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const handleDeletePasskey = async (credentialId: number) => {
+    setPasskeyBusy(true);
+    try {
+      await api.webauthnDeleteCredential(credentialId);
+      toast.success('Passkey removed.');
+      await loadPasskeys();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove passkey.');
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
   const loadMfaEvents = useCallback(async () => {
     try {
       setMfaEventsLoading(true);
@@ -102,6 +164,9 @@ export default function SettingsPage() {
       case 'mfa_totp_changed': return 'Two-factor enabled / key rotated';
       case 'mfa_totp_disabled': return 'Two-factor disabled';
       case 'mfa_recovery_used': return 'Recovery code used';
+      case 'mfa_passkey_registered': return 'Passkey registered';
+      case 'mfa_passkey_used': return 'Passkey used to approve login';
+      case 'mfa_passkey_removed': return 'Passkey removed';
       default: return action;
     }
   };
@@ -831,6 +896,8 @@ export default function SettingsPage() {
                               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
                             ) : ev.action === 'mfa_totp_disabled' ? (
                               <ShieldOff className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                            ) : ev.action === 'mfa_passkey_registered' || ev.action === 'mfa_passkey_used' ? (
+                              <Fingerprint className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
                             ) : (
                               <KeyRound className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
                             )}
@@ -881,22 +948,77 @@ export default function SettingsPage() {
                       Biometric WebAuthn Passkeys
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Register Touch ID, Face ID, or Windows Hello for instant passwordless clinician login.
+                      Register Touch ID, Face ID, or Windows Hello to approve two-factor logins with a passkey.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2 border-accent/40 text-accent hover:bg-accent/10"
-                    onClick={() => registerPasskey(user?.email || 'clinician@smarthealth.com')}
-                  >
-                    <Fingerprint className="h-4 w-4" />
-                    Register New Passkey
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="h-9 w-44"
+                      placeholder="Device name (optional)"
+                      value={passkeyDeviceName}
+                      onChange={(e) => setPasskeyDeviceName(e.target.value)}
+                      maxLength={120}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 border-accent/40 text-accent hover:bg-accent/10"
+                      onClick={() => void handleRegisterPasskey()}
+                      disabled={passkeyBusy}
+                    >
+                      {passkeyBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Register New Passkey
+                    </Button>
+                  </div>
                 </div>
+
+                <div className="rounded-lg border border-border bg-muted/30">
+                  {passkeysLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : passkeys.length === 0 ? (
+                    <p className="p-4 text-center text-xs text-muted-foreground">
+                      No passkeys registered yet. Add one to approve 2FA logins without entering a code.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {passkeys.map((pk) => (
+                        <li key={pk.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Fingerprint className="h-3.5 w-3.5 text-accent flex-shrink-0" />
+                            <span className="text-sm text-foreground truncate">{pk.device_name}</span>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <p className="text-xs text-muted-foreground">
+                              {pk.last_used_at
+                                ? `Last used ${new Date(pk.last_used_at).toLocaleString()}`
+                                : `Registered ${new Date(pk.created_at).toLocaleString()}`}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                              onClick={() => void handleDeletePasskey(pk.id)}
+                              disabled={passkeyBusy}
+                              aria-label={`Remove passkey ${pk.device_name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
                 <div className="p-3 rounded-lg bg-muted/40 border text-xs text-muted-foreground flex items-center justify-between">
-                  <span>WebAuthn Device Support: <strong>{isWebAuthnSupported() ? 'Supported (Platform Enclave Available)' : 'Browser Standard Fallback'}</strong></span>
-                  <span className="text-emerald-500 font-medium">HIPAA Certified</span>
+                  <span>WebAuthn Device Support: <strong>{isWebAuthnSupported() ? 'Supported (Platform Authenticator)' : 'Not supported by this browser'}</strong></span>
                 </div>
               </div>
 

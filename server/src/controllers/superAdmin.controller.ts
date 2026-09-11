@@ -203,8 +203,8 @@ export const triggerBackup = async (req: Request, res: Response): Promise<void> 
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
-         VALUES (UUID(), ?, 'backup', 'system', ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+         VALUES (?, 'backup', 'system', ?, ?)`,
         [authReq.user.id, `System backup created: ${backupPath}`, req.ip]
       );
       connection.release();
@@ -222,8 +222,8 @@ export const triggerBackup = async (req: Request, res: Response): Promise<void> 
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)` +
-        ` VALUES (UUID(), ?, ?, ?, ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)` +
+        ` VALUES (?, ?, ?, ?, ?)`,
         [authReq.user.id, 'backup_failed', 'system', `System backup failed: ${(_error as Error).message}`, req.ip]
       );
       connection.release();
@@ -291,8 +291,8 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
-         VALUES (UUID(), ?, 'restore', 'system', ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+         VALUES (?, 'restore', 'system', ?, ?)`,
         [authReq.user.id, `System restored from backup: ${backupFileName}`, req.ip]
       );
       connection.release();
@@ -368,8 +368,8 @@ export const triggerUpgrade = async (req: Request, res: Response): Promise<void>
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
-         VALUES (UUID(), ?, 'upgrade', 'system', ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+         VALUES (?, 'upgrade', 'system', ?, ?)`,
         [
           authReq.user.id,
           `System upgrade initiated to version ${version}: ${description || 'No description'}`,
@@ -436,8 +436,8 @@ export const updateSystemSetting = async (req: AuthRequest, res: Response): Prom
     const authReq = req as AuthRequest;
     if (authReq.user) {
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
-         VALUES (UUID(), ?, 'update', 'settings', ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+         VALUES (?, 'update', 'settings', ?, ?)`,
         [authReq.user.id, `Updated setting ${id} to ${setting_value}`, req.ip]
       );
     }
@@ -479,8 +479,8 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
     const authReq = req as AuthRequest;
     if (authReq.user) {
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
-         VALUES (UUID(), ?, 'update', 'users', ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+         VALUES (?, 'update', 'users', ?, ?)`,
         [authReq.user.id, `Updated user ${userId} status to ${status}`, req.ip]
       );
     }
@@ -548,16 +548,21 @@ export const resetUserPassword = async (req: AuthRequest, res: Response): Promis
         [hashed, userId]
       );
       if (clearTwoFactor) {
-        // Resolving a lost-authenticator lockout: drop TOTP + recovery codes
-        // so the user can log in again with just the temp password.
+        // Resolving a lost-authenticator lockout: drop TOTP, recovery codes,
+        // and any registered passkeys so the user can log in again with just
+        // the temp password.
         await connection.query(
           'UPDATE users SET totp_secret = NULL, recovery_codes = NULL WHERE id = ?',
           [userId]
         );
+        await connection.query(
+          'DELETE FROM webauthn_credentials WHERE user_id = ?',
+          [userId]
+        );
       }
       await connection.query(
-        `INSERT INTO audit_logs (id, user_id, action, module, details, ip_address)
-         VALUES (UUID(), ?, 'reset_password', 'users', ?, ?)`,
+        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+         VALUES (?, 'reset_password', 'users', ?, ?)`,
         [
           req.user.id,
           `Admin reset password for ${targetEmail} (${userId})${clearTwoFactor ? '; 2FA cleared' : ''}`,

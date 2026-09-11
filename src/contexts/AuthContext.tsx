@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { api, API_ORIGIN } from '@/services/api';
+import type { AuthenticationResponseJSON } from '@simplewebauthn/browser';
 
 export interface User {
   id: string;
@@ -25,6 +26,7 @@ interface AuthContextType {
   mfaPendingUser: User | null;
   verifyMfaTotp: (code: string) => Promise<boolean>;
   verifyMfaRecovery: (code: string) => Promise<boolean>;
+  verifyMfaPasskey: (assertion: AuthenticationResponseJSON, challengeToken: string) => Promise<boolean>;
   cancelMfa: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -132,6 +134,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const verifyMfaPasskey = async (
+    assertion: AuthenticationResponseJSON,
+    challengeToken: string
+  ): Promise<boolean> => {
+    if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
+      throw new Error('No pending MFA session found. Please log in again.');
+    }
+
+    // Passkey assertion consumes the mfa_pending temp token and issues the
+    // full-scope JWT, mirroring the TOTP/recovery success path.
+    const mfaResponse = await api.webauthnLoginVerify(assertion, challengeToken, mfaPendingToken) as { token?: string; user?: User };
+
+    localStorage.setItem('token', mfaResponse.token ?? '');
+    setUser(mfaResponse.user ?? mfaPendingUser);
+    setMfaPending(false);
+    setMfaPendingUser(null);
+    setMfaPendingToken(null);
+    return true;
+  };
+
   const cancelMfa = () => {
     setMfaPending(false);
     setMfaPendingUser(null);
@@ -221,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mfaPendingUser,
         verifyMfaTotp,
         verifyMfaRecovery,
+        verifyMfaPasskey,
         cancelMfa,
         refreshUser,
       }}

@@ -17,6 +17,7 @@ import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
 import { getSecret } from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
+import webauthnRoutes from './routes/webauthn.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import patientRoutes from './routes/patient.routes.js';
 import appointmentRoutes from './routes/appointment.routes.js';
@@ -91,6 +92,7 @@ app.post('/api/analytics/event', (_req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/webauthn', webauthnRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);

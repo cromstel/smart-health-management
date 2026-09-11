@@ -18,6 +18,11 @@ const sharedLinks = new Map<string, { patientId: string; patientName: string; ex
 let mockTotpEnabled = false;
 let mockRecoveryCodes: string[] = [];
 const DEMO_TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
+// DEV-only passkey registry so the Settings passkey card + TwoFactorPage keep
+// working against the mock API. The real server (webauthn_credentials table)
+// is the source of truth in production.
+let mockPasskeys: Array<{ id: number; credential_id: string; device_name: string; created_at: string; last_used_at: string | null }> = [];
+let mockPasskeySeq = 1;
 
 const hospitals = [
   { id: '1', hospital_id: 'HOSP-001', name: 'General Hospital', address: '123 Main St, Accra, Ghana', phone: '+233 30 212 3456', email: 'contact@generalhospital.gh', status: 'active', beds: 250, occupancy: 198 },
@@ -318,6 +323,84 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       mockRecoveryCodes = [];
       sendJson(res, 200, { enabled: false });
     });
+    return true;
+  }
+
+  // ── WebAuthn passkeys (mock mirrors the real /auth/webauthn/* endpoints) ──
+  if (pathname === '/api/auth/webauthn/register/options' && req.method === 'POST') {
+    const now = Date.now();
+    sendJson(res, 200, {
+      options: {
+        rp: { id: 'localhost', name: 'Smart Health Management System' },
+        user: { id: 'bW9jay11c2VyLWhhbmRsZQ', name: users[1].email, displayName: 'Admin User' },
+        challenge: `mock-challenge-${now}`,
+        pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+        timeout: 60000,
+        attestation: 'none',
+        authenticatorSelection: { authenticatorAttachment: 'platform', residentKey: 'preferred', userVerification: 'preferred' },
+      },
+      challengeToken: `mock-challenge-token-${now}`,
+    });
+    return true;
+  }
+
+  if (pathname === '/api/auth/webauthn/register/verify' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      const device = String(body.deviceName || '').trim() || 'Passkey';
+      mockPasskeys.push({
+        id: mockPasskeySeq++,
+        credential_id: `mock-cred-${mockPasskeySeq}`,
+        device_name: device,
+        created_at: new Date().toISOString(),
+        last_used_at: null,
+      });
+      sendJson(res, 201, { message: 'Passkey registered successfully' });
+    });
+    return true;
+  }
+
+  if (pathname === '/api/auth/webauthn/login/options' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      const email = String(body.email || '').trim();
+      const hasAccount = users.some((u) => u.email === email);
+      if (!email || !hasAccount) {
+        sendJson(res, 404, { error: 'No account found for that email' });
+        return;
+      }
+      const now = Date.now();
+      sendJson(res, 200, {
+        options: {
+          rpId: 'localhost',
+          challenge: `mock-assert-challenge-${now}`,
+          allowCredentials: mockPasskeys.map((pk) => ({ id: pk.credential_id, type: 'public-key' })),
+          timeout: 60000,
+          userVerification: 'preferred',
+        },
+        challengeToken: `mock-assert-challenge-token-${now}`,
+      });
+    });
+    return true;
+  }
+
+  if (pathname === '/api/auth/webauthn/login/verify' && req.method === 'POST') {
+    sendJson(res, 200, { token: `mock-token-passkey-${Date.now()}`, user: { ...users[1], totp_enabled: true, recovery_codes_count: mockRecoveryCodes.length } });
+    return true;
+  }
+
+  if (pathname === '/api/auth/webauthn/credentials' && req.method === 'GET') {
+    sendJson(res, 200, { credentials: mockPasskeys });
+    return true;
+  }
+
+  if (pathname.startsWith('/api/auth/webauthn/credentials/') && req.method === 'DELETE') {
+    const id = Number(pathname.split('/').pop());
+    const before = mockPasskeys.length;
+    mockPasskeys = mockPasskeys.filter((pk) => pk.id !== id);
+    if (mockPasskeys.length === before) {
+      sendJson(res, 404, { error: 'Passkey not found' });
+      return true;
+    }
+    sendJson(res, 200, { message: 'Passkey removed' });
     return true;
   }
 

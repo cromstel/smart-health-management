@@ -488,3 +488,18 @@ CREATE TABLE IF NOT EXISTS forecasts (
   model VARCHAR(50) NOT NULL,
   generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 28. WebAuthn passkey credentials (real browser attestation/assertion)
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  credential_id VARCHAR(255) NOT NULL UNIQUE,
+  public_key TEXT NOT NULL,
+  counter INT NOT NULL DEFAULT 0,
+  device_name VARCHAR(120) NOT NULL DEFAULT 'Passkey',
+  transports JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_used_at DATETIME NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_webauthn_user (user_id)
+);

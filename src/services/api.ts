@@ -1,4 +1,10 @@
 import type { User } from "@/contexts/AuthContext";
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON
+} from '@simplewebauthn/browser';
 
 
 interface SystemHealthResponse { status: string; }
@@ -13,6 +19,15 @@ export interface DemoRequestPayload {
   phone?: string;
   message?: string;
   website?: string;
+}
+
+/** A passkey registered to the current user (server mirror of webauthn_credentials). */
+export interface WebAuthnCredentialRecord {
+  id: number;
+  credential_id: string;
+  device_name: string;
+  created_at: string;
+  last_used_at: string | null;
 }
 
 let configuredUrl = import.meta.env.VITE_API_URL || '/api';
@@ -210,6 +225,73 @@ class ApiService {
 
   async getMfaEvents() {
     const response = await fetch(`${API_BASE_URL}/auth/mfa-events`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // ── WebAuthn passkeys ──────────────────────────────────────────────────────
+  // Real browser attestation/assertion. The backend signs the ceremony
+  // challenge into a short-lived token that is returned with the verify call.
+
+  /** Start a passkey registration ceremony (authenticated). */
+  async webauthnRegisterOptions(): Promise<{ options: PublicKeyCredentialCreationOptionsJSON; challengeToken: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/register/options`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify + persist the credential returned by the browser ceremony. */
+  async webauthnRegisterVerify(registration: RegistrationResponseJSON, challengeToken: string, deviceName?: string) {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/register/verify`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ registration, challengeToken, deviceName }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Start a passkey login ceremony for the given account (public). */
+  async webauthnLoginOptions(email: string): Promise<{ options: PublicKeyCredentialRequestOptionsJSON; challengeToken: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/login/options`, {
+      method: 'POST',
+      headers: this.getHeaders(false),
+      body: JSON.stringify({ email }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify a passkey assertion and exchange it for a full session (mfa_pending token in header). */
+  async webauthnLoginVerify(assertion: AuthenticationResponseJSON, challengeToken: string, mfaToken?: string) {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mfaToken) {
+      headers['Authorization'] = `Bearer ${mfaToken}`;
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/login/verify`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ assertion, challengeToken }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** List the caller's registered passkeys. */
+  async webauthnListCredentials(): Promise<{ credentials: WebAuthnCredentialRecord[] }> {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/credentials`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Remove one of the caller's passkeys. */
+  async webauthnDeleteCredential(credentialId: number) {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/credentials/${credentialId}`, {
+      method: 'DELETE',
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);

@@ -21,7 +21,7 @@ router.patch('/users/:userId/status', requirePermission('superAdmin', 'edit'), s
 router.post(
   '/users/:userId/reset-password',
   requirePermission('superAdmin', 'edit'),
-  param('userId').isUUID().withMessage('Invalid user id'),
+  param('userId').isInt().withMessage('Invalid user id'),
   body('clear_two_factor').optional().isBoolean().withMessage('clear_two_factor must be a boolean'),
   superAdminController.resetUserPassword
 );

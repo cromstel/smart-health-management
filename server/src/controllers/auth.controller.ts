@@ -396,12 +396,13 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
 };
 
 /**
- * Shared success path for the MFA verification endpoints (TOTP or recovery
- * code): looks up the role + permissions and issues the full-scope JWT in the
- * same shape as a direct password login, so the frontend session is identical
- * regardless of which verification path authenticated it.
+ * Shared success path for the MFA verification endpoints (TOTP, recovery
+ * code, or passkey): looks up the role + permissions and issues the
+ * full-scope JWT in the same shape as a direct password login, so the
+ * frontend session is identical regardless of which verification path
+ * authenticated it.
  */
-const issueMfaSuccessResponse = async (res: Response, user: any): Promise<void> => {
+export const issueMfaSuccessResponse = async (res: Response, user: any): Promise<void> => {
   const [roles] = await pool.query('SELECT name FROM roles WHERE id = ?', [user.role_id]);
   const role = (roles as any[])[0]?.name || 'User';
 
