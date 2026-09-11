@@ -42,6 +42,9 @@ coverage/
 server/backups/
 backups/
 
+# Local-only review notes — never commit
+thoughts/
+
 # Demo accounts (may contain PHI) — never commit
 demo-accounts/
 demo-accounts/Demo Accounts - SMART HEALTH MANAGEMENT.md
