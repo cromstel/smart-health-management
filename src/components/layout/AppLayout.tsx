@@ -25,6 +25,11 @@ export function AppLayout() {
   });
 
   useEffect(() => {
+    // User Timing: first post-auth render + per-navigation marks.
+    if (typeof performance !== 'undefined') {
+      performance.mark(`nav:${location.pathname}`);
+      performance.measure('app:ready', 'app:bootstrap');
+    }
     analyticsService.trackEvent('page_view', { path: location.pathname });
   }, [location]);
 

@@ -343,7 +343,7 @@ export default function AiAssistantPage() {
               {/* Persona selection */}
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-foreground">Select AI Clinical Role</Label>
-                <div className="grid gap-2">
+                <div className="grid gap-2" role="radiogroup" aria-label="AI clinical role">
                   {PERSONAS.map((p) => {
                     const PersonaIcon = p.icon;
                     const isSelected = selectedPersona.id === p.id;
@@ -356,8 +356,8 @@ export default function AiAssistantPage() {
                             ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500'
                             : 'border-border/60 hover:bg-muted/40 hover:border-border'
                         }`}
-                        role="tab"
-                        aria-selected={isSelected}
+                        role="radio"
+                        aria-checked={isSelected}
                       >
                         <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
                           <PersonaIcon className={`h-4 w-4 ${isSelected ? 'text-indigo-500' : 'text-muted-foreground'}`} aria-hidden="true" />

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, ComponentType } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuditProvider } from './contexts/AuditContext';
@@ -13,38 +13,54 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ShortcutManager } from './components/ShortcutManager';
 import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
-// Lazy-loaded route components for optimized PWA code-splitting
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const RequestDemoPage = lazy(() => import('./pages/RequestDemoPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const TwoFactorPage = lazy(() => import('./pages/TwoFactorPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const AiAssistantPage = lazy(() => import('./pages/AiAssistantPage'));
-const PatientsPage = lazy(() => import('./pages/PatientsPage'));
-const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'));
-const HospitalsPage = lazy(() => import('./pages/HospitalsPage'));
-const StaffPage = lazy(() => import('./pages/StaffPage'));
-const CompanyStaffDashboardPage = lazy(() => import('./pages/CompanyStaffDashboardPage'));
-const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
-const PharmacyPage = lazy(() => import('./pages/PharmacyPage'));
-const PurchaseOrdersPage = lazy(() => import('./pages/PurchaseOrdersPage'));
-const InventoryReportsPage = lazy(() => import('./pages/InventoryReportsPage'));
-const PrescriptionFulfillmentPage = lazy(() => import('./pages/PrescriptionFulfillmentPage'));
-const FinancialPage = lazy(() => import('./pages/FinancialPage'));
-const RolesPage = lazy(() => import('./pages/RolesPage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
-const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
-const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
-const SuperAdminUsers = lazy(() => import('./pages/SuperAdminUsers'));
-const SuperAdminHospitals = lazy(() => import('./pages/SuperAdminHospitals'));
-const SuperAdminAuditLogs = lazy(() => import('./pages/SuperAdminAuditLogs'));
-const SuperAdminSettings = lazy(() => import('./pages/SuperAdminSettings'));
-const SuperAdminOperations = lazy(() => import('./pages/SuperAdminOperations'));
-const SharedPatientSummaryPage = lazy(() => import('./pages/SharedPatientSummaryPage'));
+// Lazy-loaded route components for optimized PWA code-splitting.
+// timedLazy additionally records each chunk's fetch/eval time into the
+// User Timing API (performance.measure) for Lighthouse/devtools visibility.
+function timedLazy(name: string, load: () => Promise<{ default: ComponentType }>) {
+  return lazy(() => {
+    const startMark = `route:${name}:load-start`;
+    if (typeof performance !== 'undefined') performance.mark(startMark);
+    return load().then((mod) => {
+      if (typeof performance !== 'undefined') {
+        performance.mark(`route:${name}:load-end`);
+        performance.measure(`route:${name}:load`, startMark, `route:${name}:load-end`);
+      }
+      return mod;
+    });
+  });
+}
+
+const LandingPage = timedLazy('landing', () => import('./pages/LandingPage'));
+const RequestDemoPage = timedLazy('request-demo', () => import('./pages/RequestDemoPage'));
+const LoginPage = timedLazy('login', () => import('./pages/LoginPage'));
+const RegisterPage = timedLazy('register', () => import('./pages/RegisterPage'));
+const ForgotPasswordPage = timedLazy('forgot-password', () => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = timedLazy('reset-password', () => import('./pages/ResetPasswordPage'));
+const TwoFactorPage = timedLazy('two-factor', () => import('./pages/TwoFactorPage'));
+const DashboardPage = timedLazy('dashboard', () => import('./pages/DashboardPage'));
+const AiAssistantPage = timedLazy('ai-assistant', () => import('./pages/AiAssistantPage'));
+const PatientsPage = timedLazy('patients', () => import('./pages/PatientsPage'));
+const AppointmentsPage = timedLazy('appointments', () => import('./pages/AppointmentsPage'));
+const HospitalsPage = timedLazy('hospitals', () => import('./pages/HospitalsPage'));
+const StaffPage = timedLazy('staff', () => import('./pages/StaffPage'));
+const CompanyStaffDashboardPage = timedLazy('company-staff-dashboard', () => import('./pages/CompanyStaffDashboardPage'));
+const DocumentsPage = timedLazy('documents', () => import('./pages/DocumentsPage'));
+const PharmacyPage = timedLazy('pharmacy', () => import('./pages/PharmacyPage'));
+const PurchaseOrdersPage = timedLazy('purchase-orders', () => import('./pages/PurchaseOrdersPage'));
+const InventoryReportsPage = timedLazy('inventory-reports', () => import('./pages/InventoryReportsPage'));
+const PrescriptionFulfillmentPage = timedLazy('prescription-fulfillment', () => import('./pages/PrescriptionFulfillmentPage'));
+const FinancialPage = timedLazy('financial', () => import('./pages/FinancialPage'));
+const RolesPage = timedLazy('roles', () => import('./pages/RolesPage'));
+const SettingsPage = timedLazy('settings', () => import('./pages/SettingsPage'));
+const AuditLogsPage = timedLazy('audit-logs', () => import('./pages/AuditLogsPage'));
+const SuperAdminLogin = timedLazy('super-admin-login', () => import('./pages/SuperAdminLogin'));
+const SuperAdminDashboard = timedLazy('super-admin-dashboard', () => import('./pages/SuperAdminDashboard'));
+const SuperAdminUsers = timedLazy('super-admin-users', () => import('./pages/SuperAdminUsers'));
+const SuperAdminHospitals = timedLazy('super-admin-hospitals', () => import('./pages/SuperAdminHospitals'));
+const SuperAdminAuditLogs = timedLazy('super-admin-audit-logs', () => import('./pages/SuperAdminAuditLogs'));
+const SuperAdminSettings = timedLazy('super-admin-settings', () => import('./pages/SuperAdminSettings'));
+const SuperAdminOperations = timedLazy('super-admin-operations', () => import('./pages/SuperAdminOperations'));
+const SharedPatientSummaryPage = timedLazy('shared-patient-summary', () => import('./pages/SharedPatientSummaryPage'));
 
 function PageLoader() {
   return (

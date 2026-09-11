@@ -113,6 +113,33 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    target: 'es2020',
+    // Vendor chunking: keep heavy, stable third-party libs out of the entry
+    // bundle so the bootstrap network payload stays small and repeat visits
+    // hit long-term browser/page cache instead of re-downloading them.
+    // (motion/react used to be inlined into the entry chunk ~90 kB.)
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (
+            id.includes('motion-dom') ||
+            id.includes('/motion/') ||
+            id.includes('/motion-')
+          ) {
+            return 'vendor-motion';
+          }
+          if (id.includes('html2canvas')) return 'vendor-html2canvas';
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('zod')) return 'vendor-zod';
+          if (id.includes('sonner')) return 'vendor-sonner';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          return undefined;
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
