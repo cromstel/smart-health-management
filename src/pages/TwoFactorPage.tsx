@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthLayout, OtpHero } from '@/components/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ const methods = [
 
 export default function TwoFactorPage() {
   const navigate = useNavigate();
+  const { mfaPending, mfaPendingUser, verifyMfaTotp } = useAuth();
   const [code, setCode] = useState('');
   const [method, setMethod] = useState<'totp' | 'sms' | 'backup'>('totp');
   const [loading, setLoading] = useState(false);
@@ -50,10 +52,15 @@ export default function TwoFactorPage() {
     setError('');
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setCode('123456');
+      // The biometric path is a DEV demo: it simulates a successful fingerprint
+      // check by fetching the demo user's current TOTP code and verifying it.
+      if (!import.meta.env.DEV) {
+        throw new Error('Biometric verification is not configured on this deployment.');
+      }
+      const { code: demoCode } = await api.devCurrentTotp();
+      setCode(demoCode);
       setLoading(true);
-      await api.verifyTwoFactor('123456');
+      await verifyMfaTotp(demoCode);
       setSuccess(true);
       setTimeout(() => {
         navigate('/dashboard');
@@ -78,7 +85,7 @@ export default function TwoFactorPage() {
 
     setLoading(true);
     try {
-      await api.verifyTwoFactor(code);
+      await verifyMfaTotp(code);
       setSuccess(true);
       setTimeout(() => {
         navigate('/dashboard');
@@ -91,9 +98,14 @@ export default function TwoFactorPage() {
     }
   };
 
-  const handleQuickFill = () => {
-    setCode('123456');
-    setError('');
+  const handleQuickFill = async () => {
+    try {
+      const { code: demoCode } = await api.devCurrentTotp();
+      setCode(demoCode);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not fetch the demo code. Is the API running?');
+    }
   };
 
   const handleResend = () => {
@@ -107,6 +119,52 @@ export default function TwoFactorPage() {
     return 'Enter one of your 6-digit offline emergency backup recovery codes';
   };
 
+  // ── No pending MFA session ──────────────────────────────────────────────
+  if (!mfaPending) {
+    return (
+      <AuthLayout showBranding={false}>
+        <div className="space-y-6">
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
+            </div>
+          </div>
+
+          <Card className="border border-border bg-card shadow-lg shadow-border/50">
+            <CardHeader className="space-y-4 text-center pb-4 border-b border-border">
+              <div className="flex justify-center">
+                <div className="h-16 w-16 rounded-2xl bg-muted border border-border text-muted-foreground flex items-center justify-center shadow-inner">
+                  <ShieldCheck className="h-8 w-8" aria-hidden="true" />
+                </div>
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold text-foreground">No Verification Session</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground mt-1">
+                  A two-factor authentication session has not been initiated. Please log in with
+                  your email and password to begin verification.
+                </CardDescription>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6 flex justify-center">
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
+                Return to Login
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  // ── Active MFA session ──────────────────────────────────────────────────
   return (
     <AuthLayout showBranding={false}>
       <div className="space-y-6">
@@ -154,6 +212,14 @@ export default function TwoFactorPage() {
               <CardDescription className="text-xs text-muted-foreground mt-1">
                 {getMethodDescription()}
               </CardDescription>
+              {mfaPendingUser && (
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  Verifying for{' '}
+                  <span className="font-medium text-foreground">{mfaPendingUser.name}</span>
+                  {' • '}
+                  <span className="font-mono">{mfaPendingUser.email}</span>
+                </p>
+              )}
             </div>
 
             {/* Method Switcher */}

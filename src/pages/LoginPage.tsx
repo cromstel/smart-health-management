@@ -297,14 +297,21 @@ export default function LoginPage() {
                       type="button"
                       id="fill-demo-totp-btn"
                       variant="outline"
-                      onClick={() => {
-                        setTotpCode('123456');
-                        setServerError('');
+                      onClick={async () => {
+                        try {
+                          const { code } = await api.devCurrentTotp();
+                          setTotpCode(code);
+                          setServerError('');
+                        } catch (err) {
+                          setServerError(
+                            err instanceof Error ? err.message : 'Could not fetch the demo code. Is the API running?'
+                          );
+                        }
                       }}
                       className="w-full text-xs h-9 border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                      Quick Test: Fill Demo TOTP Token (123456)
+                      Quick Test: Fetch Current Demo TOTP Token
                     </Button>
                   )}
 

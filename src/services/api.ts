@@ -116,12 +116,25 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async verifyTwoFactor(code: string) {
+  async verifyTwoFactor(code: string, mfaToken?: string) {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mfaToken) {
+      headers['Authorization'] = `Bearer ${mfaToken}`;
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
     const response = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers,
       body: JSON.stringify({ code }),
     });
+    return this.handleResponse(response);
+  }
+
+  /** DEV-only: current valid TOTP code for the seeded demo user (auto-fill button). */
+  async devCurrentTotp(): Promise<{ code: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/dev-totp-current`);
     return this.handleResponse(response);
   }
 

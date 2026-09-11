@@ -54,23 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ requiresMfa: boolean; user: User | null }> => {
     try {
-      const response = await api.login(email, password) as any;
-      console.log('API Login Response:', response);
+      const response = await api.login(email, password) as { requiresMfa?: boolean; tempToken?: string; token?: string; user?: User };
 
-      const isMfaEnabled = localStorage.getItem('mfa_enabled') !== 'false';
-      const isStaffRole = ['doctor', 'admin', 'super_admin', 'nurse', 'pharmacist', 'lab_tech'].includes(
-        (response.user?.role || '').toLowerCase()
-      ) || (response.user?.email || '').includes('smarthealth.com');
-
-      if (isMfaEnabled || isStaffRole) {
-        // Staff MFA Required -> Put auth into TOTP MFA Verification mode
+      // The backend is the source of truth for MFA — a user with a stored TOTP
+      // secret never receives a full JWT from /auth/login, only a short-lived
+      // temp token that gates the verify-2fa endpoint.
+      if (response.requiresMfa && response.tempToken) {
         setMfaPending(true);
-        setMfaPendingUser(response.user);
-        setMfaPendingToken(response.token);
+        setMfaPendingUser(response.user ?? null);
+        setMfaPendingToken(response.tempToken);
         return { requiresMfa: true, user: response.user ?? null };
       } else {
-        localStorage.setItem('token', response.token);
-        setUser(response.user);
+        localStorage.setItem('token', response.token ?? '');
+        setUser(response.user ?? null);
+        if (!response.token) {
+          throw new Error('Login succeeded but no session token was returned');
+        }
         setMfaPending(false);
         setMfaPendingUser(null);
         setMfaPendingToken(null);
@@ -94,12 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Invalid TOTP authenticator code. Code must be 6 numeric digits.');
     }
 
-    // Call API 2FA verify endpoint; any failure propagates to the caller
-    await api.verifyTwoFactor(cleanCode);
+    // Call API 2FA verify endpoint with the temp token; verification issues a
+    // fresh full JWT. Any failure propagates to the caller.
+    const mfaResponse = await api.verifyTwoFactor(cleanCode, mfaPendingToken) as { token?: string; user?: User };
 
-    // Complete authentication
-    localStorage.setItem('token', mfaPendingToken);
-    setUser(mfaPendingUser);
+    // Complete authentication with the verified full-token response
+    localStorage.setItem('token', mfaResponse.token ?? '');
+    setUser(mfaResponse.user ?? mfaPendingUser);
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
