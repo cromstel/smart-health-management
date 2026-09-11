@@ -45,6 +45,9 @@ backups/
 # Local-only review notes — never commit
 thoughts/
 
+# Internal documentation — never commit (protected from public exposure)
+docs/
+
 # Demo accounts (may contain PHI) — never commit
 demo-accounts/
 demo-accounts/Demo Accounts - SMART HEALTH MANAGEMENT.md
