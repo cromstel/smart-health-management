@@ -3,6 +3,18 @@ import type { User } from "@/contexts/AuthContext";
 
 interface SystemHealthResponse { status: string; }
 
+export interface DemoRequestPayload {
+  name: string;
+  email: string;
+  organization: string;
+  role: string;
+  organizationSize: '1-50' | '51-250' | '251-1000' | '1000+';
+  preferredContact: 'email' | 'phone';
+  phone?: string;
+  message?: string;
+  website?: string;
+}
+
 let configuredUrl = import.meta.env.VITE_API_URL || '/api';
 if (import.meta.env.DEV && configuredUrl.includes('localhost:5600')) {
   // Use Vite's local mock API middleware if the default 5600 is injected but not running
@@ -70,6 +82,15 @@ class ApiService {
 
   async register(data: { email: string; password: string; name: string; roleId?: string }) {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: this.getHeaders(false),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async requestDemo(data: DemoRequestPayload): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/demo-requests`, {
       method: 'POST',
       headers: this.getHeaders(false),
       body: JSON.stringify(data),

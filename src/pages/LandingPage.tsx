@@ -332,7 +332,7 @@ function Hero() {
               className="h-12 px-8 text-base font-semibold border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-200"
               asChild
             >
-              <Link to="/login" className="gap-2">
+              <Link to="/request-demo" className="gap-2">
                 <Play className="h-4 w-4" aria-hidden="true" />
                 Watch Demo
               </Link>
@@ -671,7 +671,7 @@ function CtaBanner() {
               className="h-12 px-8 text-base font-semibold border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-200"
               asChild
             >
-              <Link to="/login" className="gap-2">
+              <Link to="/request-demo" className="gap-2">
                 <Stethoscope className="h-4 w-4" aria-hidden="true" />
                 Request a Demo
               </Link>

@@ -15,6 +15,7 @@ import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
 // Lazy-loaded route components for optimized PWA code-splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const RequestDemoPage = lazy(() => import('./pages/RequestDemoPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
@@ -69,6 +70,7 @@ function AppRoutes() {
         {/* Public Landing Page */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/request-demo" element={<RequestDemoPage />} />
 
         {/* Public Auth Routes */}
         <Route path="/login" element={<LoginPage />} />

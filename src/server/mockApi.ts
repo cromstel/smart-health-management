@@ -1055,6 +1055,23 @@ ${medAdjustments}
     return true;
   }
 
+  if (pathname === '/api/demo-requests' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      if (body.website) {
+        sendJson(res, 202, { message: 'Thanks for your interest. We will be in touch shortly.' });
+        return;
+      }
+
+      if (!body.name || !body.email || !body.organization || !body.role || !body.organizationSize || !body.preferredContact || (body.preferredContact === 'phone' && !body.phone)) {
+        sendJson(res, 400, { error: 'Please complete all required demo request fields.' });
+        return;
+      }
+
+      sendJson(res, 202, { message: 'Thanks for your interest. Our team will be in touch shortly.' });
+    });
+    return true;
+  }
+
   // Fallback for any other API route
   sendJson(res, 200, { status: 'ok', message: 'Endpoint processed' });
   return true;

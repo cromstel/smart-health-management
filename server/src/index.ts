@@ -33,6 +33,7 @@ import purchaseOrderRoutes from './routes/purchaseOrder.routes.js';
 import batchRoutes from './routes/batch.routes.js';
 import prescriptionRoutes from './routes/prescription.routes.js';
 import patientLoadPredictionRoutes from './routes/patientLoadPrediction.routes.js';
+import demoRequestRoutes from './routes/demoRequest.routes.js';
 import './jobs/inventory.job.js';
 import './jobs/backup.job.js';
 import { scheduleBackups } from './services/cron.service.js';
@@ -106,6 +107,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/patient-load-predictions', patientLoadPredictionRoutes);
+app.use('/api/demo-requests', demoRequestRoutes);
 
 // Error handlers
 app.use(notFoundHandler);
