@@ -100,3 +100,43 @@ export function verifyToken(secret: string, token: string): boolean {
 export function generateSecret(): string {
   return base32Encode(crypto.randomBytes(20));
 }
+
+/* ── Recovery codes ───────────────────────────────────────────────── */
+
+const RECOVERY_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L
+
+/**
+ * Generate `count` single-use recovery codes in `XXXXX-XXXXX` format.
+ * High-entropy (≈30 bits each) so a single SHA-256 hash is sufficient for
+ * at-rest storage: an attacker who reads the DB hash still cannot recover
+ * the code, and online verification is brute-force limited.
+ */
+export function generateRecoveryCodes(count = 10): string[] {
+  const codes: string[] = [];
+  const group = (len: number): string => {
+    let s = '';
+    for (let i = 0; i < len; i++) {
+      s += RECOVERY_ALPHABET[crypto.randomInt(RECOVERY_ALPHABET.length)];
+    }
+    return s;
+  };
+  for (let i = 0; i < count; i++) {
+    codes.push(`${group(5)}-${group(5)}`);
+  }
+  return codes;
+}
+
+/** SHA-256 hex hash of a recovery code (the only form persisted in DB). */
+export function hashRecoveryCode(code: string): string {
+  return crypto.createHash('sha256').update(code.trim().toUpperCase()).digest('hex');
+}
+
+/**
+ * Constant-time check that `code` matches one of the stored hashes.
+ * The candidate is hashed identically before comparison, so a mismatch
+ * never leaks the code contents via timing.
+ */
+export function verifyRecoveryCode(hashedCodes: string[], code: string): boolean {
+  const candidate = hashRecoveryCode(code);
+  return hashedCodes.some((h) => h.length === candidate.length && crypto.timingSafeEqual(Buffer.from(h), Buffer.from(candidate)));
+}

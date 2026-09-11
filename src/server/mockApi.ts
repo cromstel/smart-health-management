@@ -16,6 +16,7 @@ const sharedLinks = new Map<string, { patientId: string; patientName: string; ex
 // card behaves coherently while running against the mock API. The real server
 // is the source of truth in production.
 let mockTotpEnabled = false;
+let mockRecoveryCodes: string[] = [];
 const DEMO_TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
 
 const hospitals = [
@@ -209,7 +210,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       };
       sendJson(res, 200, {
         token: `mock-token-${user.id}-${Date.now()}`,
-        user: { ...user, totp_enabled: mockTotpEnabled },
+        user: { ...user, totp_enabled: mockTotpEnabled, recovery_codes_count: mockTotpEnabled ? mockRecoveryCodes.length : 0 },
       });
     });
     return true;
@@ -217,7 +218,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
 
   if (pathname === '/api/auth/me') {
     sendJson(res, 200, {
-      user: { ...users[1], totp_enabled: mockTotpEnabled }, // Default to Admin
+      user: { ...users[1], totp_enabled: mockTotpEnabled, recovery_codes_count: mockTotpEnabled ? mockRecoveryCodes.length : 0 }, // Default to Admin
     });
     return true;
   }
@@ -251,7 +252,23 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   }
 
   if (pathname === '/api/auth/verify-2fa') {
-    sendJson(res, 200, { token: `mock-token-2fa-${Date.now()}`, user: { ...users[1], totp_enabled: true } });
+    sendJson(res, 200, { token: `mock-token-2fa-${Date.now()}`, user: { ...users[1], totp_enabled: true, recovery_codes_count: mockRecoveryCodes.length } });
+    return true;
+  }
+
+  if (pathname === '/api/auth/verify-recovery') {
+    readJsonBody(req).then((body) => {
+      const submitted = String(body.code || '').trim().toUpperCase();
+      const valid = mockRecoveryCodes.some((c) => c.toUpperCase() === submitted);
+      if (!valid) {
+        sendJson(res, mockRecoveryCodes.length ? 401 : 400, {
+          error: mockRecoveryCodes.length ? 'Invalid or already used recovery code' : 'No recovery codes are available for this account',
+        });
+        return;
+      }
+      mockRecoveryCodes = mockRecoveryCodes.filter((c) => c.toUpperCase() !== submitted); // single-use
+      sendJson(res, 200, { token: `mock-token-recovery-${Date.now()}`, user: { ...users[1], totp_enabled: true, recovery_codes_count: mockRecoveryCodes.length } });
+    });
     return true;
   }
 
@@ -270,7 +287,12 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         return;
       }
       mockTotpEnabled = true;
-      sendJson(res, 200, { enabled: true });
+      mockRecoveryCodes = [
+        'ABCDE-FGHJK', 'MNPQR-STUVW', 'X2345-6789A', 'BCDEF-GHJKM',
+        'NPQRS-TUVWX', '23456-789AB', 'CDEFG-HJKMN', 'PQRST-UVWXY',
+        '34567-89ABC', 'DEFGH-JKMNP',
+      ];
+      sendJson(res, 200, { enabled: true, recoveryCodes: mockRecoveryCodes });
     });
     return true;
   }
@@ -282,6 +304,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         return;
       }
       mockTotpEnabled = false;
+      mockRecoveryCodes = [];
       sendJson(res, 200, { enabled: false });
     });
     return true;

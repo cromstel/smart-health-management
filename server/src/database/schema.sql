@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_changed_at DATETIME NULL,
   password_postpone_count INT DEFAULT 0,
   totp_secret VARCHAR(64) NULL,
+  recovery_codes JSON NULL,
   hospital_id BIGINT UNSIGNED NULL,
   department_id BIGINT UNSIGNED NULL,
   onedrive_access_token TEXT NULL,

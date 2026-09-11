@@ -9,6 +9,7 @@ export interface User {
   permissions: string[];
   hospital_id?: string;
   totp_enabled?: boolean;
+  recovery_codes_count?: number;
   password_must_change?: boolean;
 }
 
@@ -23,6 +24,7 @@ interface AuthContextType {
   mfaPending: boolean;
   mfaPendingUser: User | null;
   verifyMfaTotp: (code: string) => Promise<boolean>;
+  verifyMfaRecovery: (code: string) => Promise<boolean>;
   cancelMfa: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -100,6 +102,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const mfaResponse = await api.verifyTwoFactor(cleanCode, mfaPendingToken) as { token?: string; user?: User };
 
     // Complete authentication with the verified full-token response
+    localStorage.setItem('token', mfaResponse.token ?? '');
+    setUser(mfaResponse.user ?? mfaPendingUser);
+    setMfaPending(false);
+    setMfaPendingUser(null);
+    setMfaPendingToken(null);
+    return true;
+  };
+
+  const verifyMfaRecovery = async (recoveryCodeInput: string): Promise<boolean> => {
+    if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
+      throw new Error('No pending MFA session found. Please log in again.');
+    }
+
+    const cleanCode = recoveryCodeInput.trim().toUpperCase();
+    if (!/^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(cleanCode)) {
+      throw new Error('Invalid recovery code. Use the XXXXX-XXXXX format from your setup screen.');
+    }
+
+    // Call the recovery-code endpoint with the temp token; a match issues a
+    // fresh full JWT and burns the code (single-use).
+    const mfaResponse = await api.verifyRecovery(cleanCode, mfaPendingToken) as { token?: string; user?: User };
+
     localStorage.setItem('token', mfaResponse.token ?? '');
     setUser(mfaResponse.user ?? mfaPendingUser);
     setMfaPending(false);
@@ -196,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mfaPending,
         mfaPendingUser,
         verifyMfaTotp,
+        verifyMfaRecovery,
         cancelMfa,
         refreshUser,
       }}

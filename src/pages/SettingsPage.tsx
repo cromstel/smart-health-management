@@ -75,10 +75,11 @@ export default function SettingsPage() {
   const [totpDisableCode, setTotpDisableCode] = useState('');
   const [mfaMethod, setMfaMethod] = useState<'totp' | 'sms' | 'passkey'>(() => (localStorage.getItem('mfa_method') as any) || 'totp');
   const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
-  const recoveryCodes = [
-    '8F92-3B1A', '1E90-C782', '4D81-9F33', '7A22-8E11', '9C04-5B66',
-    '3F11-2A99', '6E88-4D55', '2C77-1B44', '5A99-8F22', '0D33-7E11'
-  ];
+  // Recovery codes are generated/returned by the server exactly once at
+  // /totp/confirm (only their hashes are stored). Keep the cleartext copy from
+  // the current session in state; on reload the count comes from `me`.
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const recoveryCodesCount = recoveryCodes.length > 0 ? recoveryCodes.length : (user?.recovery_codes_count ?? 0);
 
   // Keep the toggle in sync with the authenticated user's server-side 2FA state.
   useEffect(() => {
@@ -113,11 +114,14 @@ export default function SettingsPage() {
     }
     setTotpBusy(true);
     try {
-      await api.totpConfirm(totpSecret, cleanCode);
+      const result = await api.totpConfirm(totpSecret, cleanCode);
       setTotpEnabled(true);
       setTotpPairing(false);
       setTotpConfirmCode('');
+      setRecoveryCodes(result.recoveryCodes ?? []);
+      setShowRecoveryCodes(Boolean(result.recoveryCodes?.length));
       toast.success('Two-factor authentication enabled! Your account is now protected.');
+      toast.info('Save your recovery codes somewhere secure — they are only shown once.');
       await refreshUser();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Verification failed. Check the code and try again.');
@@ -709,7 +713,11 @@ export default function SettingsPage() {
                         <span>Offline Emergency Recovery Codes</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        10 single-use emergency backup keys for account recovery if you lose your device.
+                        {recoveryCodesCount > 0
+                          ? `${recoveryCodesCount} single-use backup code${recoveryCodesCount === 1 ? '' : 's'} for account recovery if you lose your device.`
+                          : totpEnabled
+                            ? 'You have no viewable recovery codes. Rotate your two-factor key to generate a fresh set.'
+                            : 'Single-use codes for account recovery are generated when two-factor is enabled.'}
                       </p>
                     </div>
                     <Button
@@ -718,6 +726,7 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
                       className="gap-1.5 text-xs"
+                      disabled={!totpEnabled}
                     >
                       <Key className="h-3.5 w-3.5" />
                       {showRecoveryCodes ? 'Hide Codes' : 'View Recovery Codes'}
@@ -726,29 +735,41 @@ export default function SettingsPage() {
 
                   {showRecoveryCodes && (
                     <div className="p-4 rounded-xl border bg-card space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted-foreground">Emergency Single-Use Backup Keys</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => copyToClipboard(recoveryCodes.join('\n'), 'Recovery codes copied to clipboard!')}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy All
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
-                        {recoveryCodes.map((code, idx) => (
-                          <div key={idx} className="p-2 rounded border bg-muted/40 text-center font-bold text-foreground">
-                            {code}
+                      {recoveryCodes.length > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground">Emergency Single-Use Backup Codes (shown once)</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => copyToClipboard(recoveryCodes.join('\n'), 'Recovery codes copied to clipboard!')}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              Copy All
+                            </Button>
                           </div>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Keep these codes stored securely offline. Each code can only be used once.
-                      </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
+                            {recoveryCodes.map((rCode, idx) => (
+                              <div key={idx} className="p-2 rounded border bg-muted/40 text-center font-bold text-foreground">
+                                {rCode}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            Keep these codes stored securely offline. Each code can only be used once, and they provide
+                            the only way back in if you lose your authenticator app.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Recovery codes exist only as server-side hashes — they cannot be displayed again after setup.
+                          {totpEnabled
+                            ? ' To generate a new set, disable two-factor and re-enable it (or rotate the key).'
+                            : ' Enable two-factor authentication to generate a set of 10 single-use codes.'}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

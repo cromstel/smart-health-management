@@ -138,6 +138,23 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /** Verify a single-use offline recovery code issued at TOTP setup (backup login). */
+  async verifyRecovery(code: string, mfaToken?: string) {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mfaToken) {
+      headers['Authorization'] = `Bearer ${mfaToken}`;
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/auth/verify-recovery`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ code }),
+    });
+    return this.handleResponse(response);
+  }
+
   /** Generate a fresh TOTP secret for authenticator pairing (stateless; persists only on confirm). */
   async totpEnroll(): Promise<{ secret: string; otpauthUrl: string }> {
     const response = await fetch(`${API_BASE_URL}/auth/totp/enroll`, {
@@ -148,7 +165,7 @@ class ApiService {
   }
 
   /** Verify a code against a secret and persist it (enables 2FA or rotates the key). */
-  async totpConfirm(secret: string, code: string): Promise<{ enabled: boolean }> {
+  async totpConfirm(secret: string, code: string): Promise<{ enabled: boolean; recoveryCodes: string[] }> {
     const response = await fetch(`${API_BASE_URL}/auth/totp/confirm`, {
       method: 'POST',
       headers: this.getHeaders(),

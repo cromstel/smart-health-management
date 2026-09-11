@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
-import { verifyToken, currentToken, generateSecret, base32Decode } from '../utils/totp.js';
+import { verifyToken, currentToken, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
 
 const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret'); // Hard-fails in production when unset
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -386,45 +386,124 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
       return res.status(401).json({ error: 'Invalid or expired authentication code' });
     }
 
-    // Code verified — issue the full JWT plus role and permissions
-    const [roles] = await pool.query('SELECT name FROM roles WHERE id = ?', [user.role_id]);
-    const role = (roles as any[])[0]?.name || 'User';
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role, hospital_id: user.hospital_code || undefined },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
-    );
-
-    const [perms] = await pool.query(
-      'SELECT module, can_view, can_add, can_edit, can_delete FROM permissions WHERE role_id = ?',
-      [user.role_id]
-    );
-    const permissions = (perms as any[]).flatMap((p) => {
-      const list: string[] = [];
-      if (p.can_view) list.push(`${p.module}:view`);
-      if (p.can_add) list.push(`${p.module}:add`);
-      if (p.can_edit) list.push(`${p.module}:edit`);
-      if (p.can_delete) list.push(`${p.module}:delete`);
-      return list;
-    });
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role,
-        hospital_id: user.hospital_code || undefined,
-        permissions,
-        totp_enabled: true,
-        password_must_change: !!user.password_must_change
-      }
-    });
+    // Code verified — sign the full JWT and return the authenticated session.
+    // Shared with the recovery-code verifier so both MFA paths behave identically.
+    await issueMfaSuccessResponse(res, user);
   } catch (error) {
     console.error('2FA verification error:', error);
     res.status(500).json({ error: 'Failed to verify code' });
+  }
+};
+
+/**
+ * Shared success path for the MFA verification endpoints (TOTP or recovery
+ * code): looks up the role + permissions and issues the full-scope JWT in the
+ * same shape as a direct password login, so the frontend session is identical
+ * regardless of which verification path authenticated it.
+ */
+const issueMfaSuccessResponse = async (res: Response, user: any): Promise<void> => {
+  const [roles] = await pool.query('SELECT name FROM roles WHERE id = ?', [user.role_id]);
+  const role = (roles as any[])[0]?.name || 'User';
+
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role, hospital_id: user.hospital_code || undefined },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+  );
+
+  const [perms] = await pool.query(
+    'SELECT module, can_view, can_add, can_edit, can_delete FROM permissions WHERE role_id = ?',
+    [user.role_id]
+  );
+  const permissions = (perms as any[]).flatMap((p) => {
+    const list: string[] = [];
+    if (p.can_view) list.push(`${p.module}:view`);
+    if (p.can_add) list.push(`${p.module}:add`);
+    if (p.can_edit) list.push(`${p.module}:edit`);
+    if (p.can_delete) list.push(`${p.module}:delete`);
+    return list;
+  });
+
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role,
+      hospital_id: user.hospital_code || undefined,
+      permissions,
+      totp_enabled: true,
+      password_must_change: !!user.password_must_change
+    }
+  });
+};
+
+/**
+ * Verify a single-use recovery code issued at TOTP enrollment. Fallback access
+ * for when the authenticator app is lost — shares the 2FA brute-force limiter.
+ * On a match the code is burned (its hash removed) so each code works once,
+ * then the full JWT is issued exactly as verify-2fa would.
+ */
+export const verifyRecovery = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { code } = req.body as { code: string };
+
+    if (!code || !/^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/.test(code)) {
+      return res.status(400).json({ error: 'Recovery code must be in XXXXX-XXXXX format' });
+    }
+
+    const [users] = await pool.query(
+      `SELECT u.*, h.hospital_id AS hospital_code
+       FROM users u
+       LEFT JOIN hospitals h ON u.hospital_id = h.id
+       WHERE u.id = ?`,
+      [req.user.id]
+    );
+    const user = (users as any[])[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    if (!user.totp_secret) {
+      return res.status(400).json({ error: 'Two-factor authentication is not enabled for this account' });
+    }
+
+    const hashedCodes: string[] = Array.isArray(user.recovery_codes)
+      ? user.recovery_codes
+      : (() => {
+          try {
+            const parsed = JSON.parse(user.recovery_codes || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })();
+
+    if (!hashedCodes.length) {
+      return res.status(400).json({ error: 'No recovery codes are available for this account' });
+    }
+
+    if (!recoveryCodeMatches(hashedCodes, code)) {
+      return res.status(401).json({ error: 'Invalid or already used recovery code' });
+    }
+
+    // Re-hash the submitted code and drop it from the stored list → single-use,
+    // so a replay of the same code is rejected even inside the limiter window.
+    const burned = hashRecoveryCode(code);
+    const remaining = hashedCodes.filter((h) => h !== burned);
+    await pool.query('UPDATE users SET recovery_codes = ? WHERE id = ?', [JSON.stringify(remaining), req.user.id]);
+
+    await logMfaEvent(req, 'mfa_recovery_used', { remaining: remaining.length });
+
+    await issueMfaSuccessResponse(res, user);
+  } catch (error) {
+    console.error('Recovery code verification error:', error);
+    res.status(500).json({ error: 'Failed to verify recovery code' });
   }
 };
 
@@ -471,6 +550,18 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response |
       return list;
     });
 
+    // Recovery codes are stored as hashes only, so the count (not the values)
+    // is exposed for the settings UI; codes themselves are shown once at setup.
+    const recoveryCodesCount = (() => {
+      if (!user.recovery_codes) return 0;
+      try {
+        const parsed = JSON.parse(user.recovery_codes);
+        return Array.isArray(parsed) ? parsed.length : 0;
+      } catch {
+        return 0;
+      }
+    })();
+
     res.json({
       user: {
         id: user.id,
@@ -480,6 +571,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response |
         hospital_id: user.hospital_code || undefined,
         permissions,
         totp_enabled: !!user.totp_secret,
+        recovery_codes_count: recoveryCodesCount,
         password_must_change: !!user.password_must_change
       }
     });
@@ -546,10 +638,19 @@ export const totpConfirm = async (req: AuthRequest, res: Response): Promise<Resp
       return res.status(401).json({ error: 'Invalid or expired authentication code' });
     }
 
-    await pool.query('UPDATE users SET totp_secret = ? WHERE id = ?', [secret.trim(), req.user.id]);
-    await logMfaEvent(req, 'mfa_totp_changed', { enabled: true });
+    const recoveryCodes = generateRecoveryCodes(10);
+    const recovered = recoveryCodes.map(hashRecoveryCode);
+    await pool.query('UPDATE users SET totp_secret = ?, recovery_codes = ? WHERE id = ?', [
+      secret.trim(),
+      JSON.stringify(recovered),
+      req.user.id,
+    ]);
+    await logMfaEvent(req, 'mfa_totp_changed', { enabled: true, recovery_codes: recovered.length });
 
-    res.json({ enabled: true });
+    // Recovery codes are returned in cleartext exactly once — from this
+    // moment only their hashes exist in the database. Rotating the key
+    // regenerates a fresh set and invalidates the previous one.
+    res.json({ enabled: true, recoveryCodes });
   } catch (error) {
     console.error('TOTP confirm error:', error);
     res.status(500).json({ error: 'Failed to enable two-factor authentication' });
@@ -584,7 +685,7 @@ export const totpDisable = async (req: AuthRequest, res: Response): Promise<Resp
       return res.status(401).json({ error: 'Invalid or expired authentication code' });
     }
 
-    await pool.query('UPDATE users SET totp_secret = NULL WHERE id = ?', [req.user.id]);
+    await pool.query('UPDATE users SET totp_secret = NULL, recovery_codes = NULL WHERE id = ?', [req.user.id]);
     await logMfaEvent(req, 'mfa_totp_disabled', { enabled: false });
 
     res.json({ enabled: false });

@@ -108,6 +108,20 @@ router.post(
   authController.verifyTwoFactor
 );
 
+// Verify a single-use offline recovery code (backup access when the
+// authenticator app is lost). The code space is ~10^6 so it shares the 2FA
+// brute-force limiter; a valid code is burned (removed) server-side.
+router.post(
+  '/verify-recovery',
+  authenticate,
+  twoFactorLimiter,
+  [
+    body('code').matches(/^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/).withMessage('Recovery code must be in XXXXX-XXXXX format'),
+    validate
+  ],
+  authController.verifyRecovery
+);
+
 // ── TOTP enrollment / rotation / disable ───────────────────────────────────
 // Authenticated self-service endpoints. The code space is tiny (10^6) so all
 // confirmation paths share the two-factor brute-force limiter.
