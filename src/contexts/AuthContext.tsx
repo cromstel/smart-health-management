@@ -8,6 +8,7 @@ export interface User {
   role: string;
   permissions: string[];
   hospital_id?: string;
+  totp_enabled?: boolean;
   password_must_change?: boolean;
 }
 
@@ -23,6 +24,7 @@ interface AuthContextType {
   mfaPendingUser: User | null;
   verifyMfaTotp: (code: string) => Promise<boolean>;
   cancelMfa: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,6 +114,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaPendingToken(null);
   };
 
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const data: { user: User } = await api.getMe();
+      setUser(data.user);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -186,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mfaPendingUser,
         verifyMfaTotp,
         cancelMfa,
+        refreshUser,
       }}
     >
       {children}

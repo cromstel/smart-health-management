@@ -138,6 +138,35 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /** Generate a fresh TOTP secret for authenticator pairing (stateless; persists only on confirm). */
+  async totpEnroll(): Promise<{ secret: string; otpauthUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/totp/enroll`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify a code against a secret and persist it (enables 2FA or rotates the key). */
+  async totpConfirm(secret: string, code: string): Promise<{ enabled: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/auth/totp/confirm`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ secret, code }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify a current code against the stored secret and remove it (disables 2FA). */
+  async totpDisable(code: string): Promise<{ enabled: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/auth/totp/disable`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ code }),
+    });
+    return this.handleResponse(response);
+  }
+
   async changePassword(currentPassword: string, newPassword: string) {
     const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
       method: 'POST',

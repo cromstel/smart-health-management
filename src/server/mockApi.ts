@@ -12,6 +12,12 @@ const users: Array<{ id: string; role_id: number; email: string; password?: stri
 // In-memory store for secure temporary view-only patient summary links
 const sharedLinks = new Map<string, { patientId: string; patientName: string; expiresAt: string }>();
 
+// DEV-only reflection of the user's TOTP enrollment flag so the Settings 2FA
+// card behaves coherently while running against the mock API. The real server
+// is the source of truth in production.
+let mockTotpEnabled = false;
+const DEMO_TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
+
 const hospitals = [
   { id: '1', hospital_id: 'HOSP-001', name: 'General Hospital', address: '123 Main St, Accra, Ghana', phone: '+233 30 212 3456', email: 'contact@generalhospital.gh', status: 'active', beds: 250, occupancy: 198 },
   { id: '2', hospital_id: 'HOSP-002', name: 'Ridge Regional Hospital', address: 'Castle Rd, Accra, Ghana', phone: '+233 30 222 7890', email: 'info@ridgehospital.gh', status: 'active', beds: 420, occupancy: 350 },
@@ -203,7 +209,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       };
       sendJson(res, 200, {
         token: `mock-token-${user.id}-${Date.now()}`,
-        user,
+        user: { ...user, totp_enabled: mockTotpEnabled },
       });
     });
     return true;
@@ -211,7 +217,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
 
   if (pathname === '/api/auth/me') {
     sendJson(res, 200, {
-      user: users[1], // Default to Admin
+      user: { ...users[1], totp_enabled: mockTotpEnabled }, // Default to Admin
     });
     return true;
   }
@@ -245,7 +251,39 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   }
 
   if (pathname === '/api/auth/verify-2fa') {
-    sendJson(res, 200, { token: `mock-token-2fa-${Date.now()}`, user: users[1] });
+    sendJson(res, 200, { token: `mock-token-2fa-${Date.now()}`, user: { ...users[1], totp_enabled: true } });
+    return true;
+  }
+
+  if (pathname === '/api/auth/totp/enroll' && req.method === 'POST') {
+    sendJson(res, 200, {
+      secret: DEMO_TOTP_SECRET,
+      otpauthUrl: `otpauth://totp/SmartHealth:${encodeURIComponent(users[1].email)}?secret=${DEMO_TOTP_SECRET}&issuer=SmartHealth&algorithm=SHA1&digits=6&period=30`,
+    });
+    return true;
+  }
+
+  if (pathname === '/api/auth/totp/confirm' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      if (!body.secret || !/^\d{6}$/.test((body.code || '').toString())) {
+        sendJson(res, 400, { error: 'Invalid code' });
+        return;
+      }
+      mockTotpEnabled = true;
+      sendJson(res, 200, { enabled: true });
+    });
+    return true;
+  }
+
+  if (pathname === '/api/auth/totp/disable' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      if (!/^\d{6}$/.test((body.code || '').toString())) {
+        sendJson(res, 400, { error: 'Invalid code' });
+        return;
+      }
+      mockTotpEnabled = false;
+      sendJson(res, 200, { enabled: false });
+    });
     return true;
   }
 
