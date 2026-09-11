@@ -27,7 +27,7 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 - Modular and extensible design
 - Comprehensive documentation
 - Full security support across all versions
-- **AI-native development**: canonical rules in [AGENTS.md](AGENTS.md), agent/skill/workflow definitions in [`.opencode/`](.opencode/), and AI memory in [`ai/`](ai/) keep every coding agent aligned with the project's constraints
+- **AI-native development**: canonical rules in [AGENTS.md](AGENTS.md); agent/skill/workflow definitions (`.opencode/`) and AI memory (`ai/`) are **local-only** and not distributed with this public repository
 
 ---
 
@@ -168,12 +168,7 @@ smart-health-management/
 │       ├── routes/
 │       └── database/
 ├── public/                 # Static assets
-├── docs/
-│   ├── developer-guide.md
-│   ├── api-reference.md
-│   ├── CHANGELOG.md
-│   ├── CONTRIBUTING.md
-│   └── SECURITY.md
+├── docs/                   # (local-only) developer-guide, api-reference, CHANGELOG, CONTRIBUTING, SECURITY
 ├── LICENSE
 └── NOTICE
 ```
@@ -192,11 +187,11 @@ smart-health-management/
 
 * ✅ Frontend UI: Complete (React 19 + TypeScript + Vite + Tailwind v4, refactored for best UI/UX)
 * ✅ Backend API: Complete (Express 5 + MySQL2, all modules implemented and building with zero TS errors)
-* ✅ Testing: Vitest suites green (frontend + backend); Playwright e2e available in `e2e/`
-* ✅ Dependency Hygiene: All packages on latest stable versions; residual advisories tracked (see `docs/CHANGELOG.md`)
-* 🟡 Deployment: Configured per environment — see `docs/DEPLOYMENT.md` (requires operator-provided credentials/DB)
+* ✅ Testing: Vitest suites green (frontend + backend); Playwright e2e available in `e2e/` (local-only)
+* ✅ Dependency Hygiene: All packages on latest stable versions; residual advisories tracked in local `docs/CHANGELOG.md`
+* 🟡 Deployment: Configured per environment — see local `docs/DEPLOYMENT.md` (requires operator-provided credentials/DB)
 
-See [docs/developer-guide.md](docs/developer-guide.md) for detailed implementation guidance.
+> **Note:** `docs/`, `ai/`, `.opencode/`, and `scripts/` are local-only (kept out of this public repository). Detailed guides referenced below are available in the full internal checkout.
 
 ## 🔐 Default Credentials (Development)
 
@@ -207,11 +202,7 @@ Alternatively, create a user via the registration endpoint.
 
 ## 📝 Documentation Links
 
-* **Developer Guide**: [docs/developer-guide.md](docs/developer-guide.md)
-* **API Reference**: [docs/api-reference.md](docs/api-reference.md)
-* **Security Policy**: [docs/SECURITY.md](docs/SECURITY.md)
-* **Contribution Guidelines**: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
-* **Changelog**: [docs/CHANGELOG.md](docs/CHANGELOG.md)
+* **Code of Conduct**: for the full developer guide, API reference, security policy, contribution guidelines, and changelog, see the local-only `docs/` folder in the internal checkout (`docs/developer-guide.md`, `docs/api-reference.md`, `docs/SECURITY.md`, `docs/CONTRIBUTING.md`, `docs/CHANGELOG.md`).
 * **License**: [LICENSE](LICENSE)
 * **Notice**: [NOTICE](NOTICE)
 
@@ -255,11 +246,11 @@ npm start
 
 ## 🤝 Contributing
 
-Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for full contribution guidelines.
+Please see the local `docs/CONTRIBUTING.md` (internal checkout) for full contribution guidelines.
 
 ## 🔐 Security
 
-Refer to [docs/SECURITY.md](docs/SECURITY.md) for reporting vulnerabilities and supported version details.
+Refer to local `docs/SECURITY.md` for reporting vulnerabilities and supported version details.
 
 ## 👥 Team
 

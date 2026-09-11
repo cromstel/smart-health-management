@@ -293,11 +293,11 @@ For instant testing and evaluation without manual registration, use the pre-conf
 smart-health-management/
 ├── AGENTS.md                   # Canonical operating rules for AI agents (read first)
 ├── opencode.json                # opencode config: agents, skills paths, permissions
-├── .opencode/                   # AI agent definitions, skills, and command workflows
+├── .opencode/                   # AI agent definitions, skills, and command workflows (local-only, not in public repo)
 │   ├── agent/                   # build, frontend, backend, review, docs, dependencies, security
 │   ├── skills/                  # frontend-refactor, backend-api, security-review, testing, documentation, production-readiness
 │   └── command/                 # /verify, /test, /build, /docs, /deploy workflows
-├── ai/                          # AI memory: context, agents, skills, memory, scratchpad
+├── ai/                          # AI memory: context, agents, skills, memory, scratchpad (local-only)
 ├── public/                      # Static assets & public images
 ├── src/                         # Frontend Application Source
 │   ├── components/              # UI Components

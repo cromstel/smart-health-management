@@ -48,6 +48,12 @@ thoughts/
 # Internal documentation — never commit (protected from public exposure)
 docs/
 
+# AI operating memory — local-only agent tooling
+ai/
+
+# Local-only scripts (e.g., secret generator)
+scripts/
+
 # Demo accounts (may contain PHI) — never commit
 demo-accounts/
 demo-accounts/Demo Accounts - SMART HEALTH MANAGEMENT.md
@@ -57,10 +63,7 @@ e2e/
 
 # Editor directories and files
 .vscode/*
-.opencode/*
-!.opencode/agent/
-!.opencode/skills/
-!.opencode/command/
+.opencode/
 .trae/
 !.vscode/extensions.json
 .idea
