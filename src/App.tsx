@@ -14,6 +14,7 @@ import { ShortcutManager } from './components/ShortcutManager';
 import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
 // Lazy-loaded route components for optimized PWA code-splitting
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
@@ -58,13 +59,17 @@ function PageLoader() {
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
   useSessionTimeout();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
+        {/* Public Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/landing" element={<LandingPage />} />
+
         {/* Public Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -93,34 +98,33 @@ function AppRoutes() {
           <Route path="operations" element={<SuperAdminOperations />} />
         </Route>
         
-        {/* Regular App Routes */}
+        {/* Regular App Routes (Protected — layout route, no path prefix) */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <AppLayout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="ai-assistant" element={<AiAssistantPage />} />
-          <Route path="patients" element={<PatientsPage />} />
-          <Route path="appointments" element={<AppointmentsPage />} />
-          <Route path="hospitals" element={<HospitalsPage />} />
-          <Route path="staff" element={<StaffPage />} />
-          <Route path="staff-dashboard" element={<CompanyStaffDashboardPage />} />
-          <Route path="documents" element={<DocumentsPage />} />
-          <Route path="pharmacy" element={<PharmacyPage />} />
-          <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
-          <Route path="inventory-reports" element={<InventoryReportsPage />} />
-          <Route path="prescriptions" element={<PrescriptionFulfillmentPage />} />
-          <Route path="financial" element={<FinancialPage />} />
-          <Route path="roles" element={<RolesPage />} />
-          <Route path="audit-logs" element={<AuditLogsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/ai-assistant" element={<AiAssistantPage />} />
+          <Route path="/patients" element={<PatientsPage />} />
+          <Route path="/appointments" element={<AppointmentsPage />} />
+          <Route path="/hospitals" element={<HospitalsPage />} />
+          <Route path="/staff" element={<StaffPage />} />
+          <Route path="/staff-dashboard" element={<CompanyStaffDashboardPage />} />
+          <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/pharmacy" element={<PharmacyPage />} />
+          <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+          <Route path="/inventory-reports" element={<InventoryReportsPage />} />
+          <Route path="/prescriptions" element={<PrescriptionFulfillmentPage />} />
+          <Route path="/financial" element={<FinancialPage />} />
+          <Route path="/roles" element={<RolesPage />} />
+          <Route path="/audit-logs" element={<AuditLogsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
