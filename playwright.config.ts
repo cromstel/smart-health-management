@@ -19,7 +19,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'VITE_API_URL=/api npm run dev:all',
+    // The Vite dev server mounts the local mock API, so browser tests do not
+    // need a second API process. Keeping this command shell-neutral also
+    // makes Playwright work on Windows, macOS, and Linux.
+    command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
