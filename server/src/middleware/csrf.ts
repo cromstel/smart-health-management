@@ -23,6 +23,15 @@ export const validateCsrfToken = (req: Request, res: Response, next: NextFunctio
     return next();
   }
 
+  // Bearer-token requests (the SPA authenticates with an Authorization header,
+  // not an ambient cookie) cannot be triggered cross-origin — the header is
+  // never attached automatically — so the cookie double-submit check does not
+  // apply. Skip the check when a Bearer credential is present.
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
   const clientToken = req.body._csrf || req.headers['x-xsrf-token'];
   const sessionSecret = req.session._csrfSecret;
 

@@ -40,7 +40,12 @@ router.post(
   '/register',
   [
     body('email').trim().isEmail().withMessage('Valid email is required').escape(),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password')
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/).withMessage('Must include uppercase letter')
+      .matches(/[a-z]/).withMessage('Must include lowercase letter')
+      .matches(/[0-9]/).withMessage('Must include number')
+      .matches(/[^A-Za-z0-9]/).withMessage('Must include special character'),
     body('name').trim().notEmpty().withMessage('Name is required').escape(),
     validate
   ],
@@ -63,7 +68,7 @@ router.post(
   '/reset-password',
   [
     body('token').notEmpty().withMessage('Reset token is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     validate
   ],
   authController.resetPassword
@@ -101,6 +106,40 @@ router.post(
     validate
   ],
   authController.verifyTwoFactor
+);
+
+// ── TOTP enrollment / rotation / disable ───────────────────────────────────
+// Authenticated self-service endpoints. The code space is tiny (10^6) so all
+// confirmation paths share the two-factor brute-force limiter.
+
+// Generate a fresh secret for authenticator pairing. Stateless: nothing is
+// persisted until /totp/confirm proves possession of the new key.
+router.post('/totp/enroll', authenticate, twoFactorLimiter, authController.totpEnroll);
+
+// Verify a code against a freshly generated secret and persist it, enabling
+// 2FA (or rotating an existing secret).
+router.post(
+  '/totp/confirm',
+  authenticate,
+  twoFactorLimiter,
+  [
+    body('secret').isString().withMessage('Secret is required').isLength({ min: 16, max: 64 }).withMessage('Secret must be 16-64 characters'),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
+    validate
+  ],
+  authController.totpConfirm
+);
+
+// Verify a current code against the stored secret and remove it, disabling 2FA.
+router.post(
+  '/totp/disable',
+  authenticate,
+  twoFactorLimiter,
+  [
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
+    validate
+  ],
+  authController.totpDisable
 );
 
 // DEV-ONLY: current demo TOTP code for the auto-fill buttons. Never exposed

@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
-import { verifyToken, currentToken } from '../utils/totp.js';
+import { verifyToken, currentToken, generateSecret, base32Decode } from '../utils/totp.js';
 
 const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret'); // Hard-fails in production when unset
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -85,6 +85,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
           name: user.name,
           email: user.email,
           role,
+          totp_enabled: true,
           password_must_change: !!user.password_must_change
         }
       });
@@ -121,6 +122,7 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
         email: user.email,
         role,
         permissions,
+        totp_enabled: !!user.totp_secret,
         password_must_change: mustChange
       }
     });
@@ -389,6 +391,7 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
         email: user.email,
         role,
         permissions,
+        totp_enabled: true,
         password_must_change: !!user.password_must_change
       }
     });
@@ -420,7 +423,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response |
     }
 
     const [users] = await pool.query(
-      'SELECT u.id, u.email, u.name, u.role_id, u.password_must_change, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
+      'SELECT u.id, u.email, u.name, u.role_id, u.password_must_change, u.totp_secret, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
       [req.user.id]
     );
     const user = (users as any[])[0];
@@ -448,11 +451,117 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response |
         email: user.email,
         role: user.role_name || 'User',
         permissions,
+        totp_enabled: !!user.totp_secret,
         password_must_change: !!user.password_must_change
       }
     });
   } catch {
     console.error('Get me error');
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+};
+
+/** Shared audit trail helper for 2FA lifecycle events. */
+const logMfaEvent = async (req: AuthRequest, action: string, payload: Record<string, unknown>) => {
+  await pool.query(
+    'INSERT INTO audit_logs (user_id, action, module, record_id, new_value, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [req.user?.id || null, action, 'auth', req.user?.id || null, JSON.stringify(payload), (req as any).ip, req.headers['user-agent'] || '']
+  );
+};
+
+/**
+ * Generate a fresh TOTP secret for authenticator pairing. Stateless — the
+ * secret is returned but NOT persisted; /totp/confirm proves possession of
+ * the new key first. Works both for first-time enrollment and rotation.
+ */
+export const totpEnroll = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const secret = generateSecret();
+    const otpauthUrl = `otpauth://totp/SmartHealth:${encodeURIComponent(req.user.email)}?secret=${secret}&issuer=SmartHealth&algorithm=SHA1&digits=6&period=30`;
+
+    res.json({ secret, otpauthUrl });
+  } catch (error) {
+    console.error('TOTP enroll error:', error);
+    res.status(500).json({ error: 'Failed to generate authenticator secret' });
+  }
+};
+
+/**
+ * Verify a code against a freshly generated (or existing) secret and persist
+ * it, enabling 2FA or rotating the current key. The code proves the caller
+ * controls the authenticator app for the new secret.
+ */
+export const totpConfirm = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { secret, code } = req.body as { secret: string; code: string };
+
+    if (!secret || !code || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Invalid code' });
+    }
+
+    // Sanity-check the secret is base32-decodable before treating it as a key.
+    try {
+      base32Decode(secret.trim());
+    } catch {
+      return res.status(400).json({ error: 'Invalid secret key' });
+    }
+
+    if (!verifyToken(secret.trim(), code)) {
+      return res.status(401).json({ error: 'Invalid or expired authentication code' });
+    }
+
+    await pool.query('UPDATE users SET totp_secret = ? WHERE id = ?', [secret.trim(), req.user.id]);
+    await logMfaEvent(req, 'mfa_totp_changed', { enabled: true });
+
+    res.json({ enabled: true });
+  } catch (error) {
+    console.error('TOTP confirm error:', error);
+    res.status(500).json({ error: 'Failed to enable two-factor authentication' });
+  }
+};
+
+/**
+ * Remove two-factor by verifying a current code against the stored secret —
+ * possession of the authenticator app is required before disabling.
+ */
+export const totpDisable = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { code } = req.body as { code: string };
+    if (!code || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Invalid code' });
+    }
+
+    const [rows] = await pool.query('SELECT totp_secret FROM users WHERE id = ?', [req.user.id]);
+    const user = (rows as any[])[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    if (!user.totp_secret) {
+      return res.status(400).json({ error: 'Two-factor authentication is not enabled for this account' });
+    }
+
+    if (!verifyToken(user.totp_secret, code)) {
+      return res.status(401).json({ error: 'Invalid or expired authentication code' });
+    }
+
+    await pool.query('UPDATE users SET totp_secret = NULL WHERE id = ?', [req.user.id]);
+    await logMfaEvent(req, 'mfa_totp_disabled', { enabled: false });
+
+    res.json({ enabled: false });
+  } catch (error) {
+    console.error('TOTP disable error:', error);
+    res.status(500).json({ error: 'Failed to disable two-factor authentication' });
   }
 };
