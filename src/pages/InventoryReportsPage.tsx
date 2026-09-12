@@ -50,8 +50,10 @@ export default function InventoryReportsPage() {
   const loadReport = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.getPharmacyReport(reportType);
-      setRows(data as any[]);
+      const data: any = await api.getPharmacyReport({ type: reportType });
+      // The API returns report rows. Retain a safe empty state if an older
+      // deployment returns a summary object instead of the row collection.
+      setRows(Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : []);
     } catch (_e) {
       toast.error('Failed to load report');
     } finally {

@@ -75,3 +75,6 @@ e2e/
 *.sw? 
 todo-plan.md
 *.test.*
+todo/playwright-repair-plan.md
+todo/*
+README.md

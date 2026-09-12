@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { api } from '@/services/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -585,15 +585,13 @@ export default function DashboardPage() {
                     <CardContent>
                       {patientLoadPredictions.length > 0 ? (
                         <ChartContainer config={chartConfig} className="h-[200px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={patientLoadPredictions} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-                              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                              <ChartTooltip content={<ChartTooltipContent />} />
-                              <Bar dataKey="predictedLoad" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
+                          <BarChart data={patientLoadPredictions} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                            <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="predictedLoad" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
                         </ChartContainer>
                       ) : (
                         <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
@@ -646,21 +644,19 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                       <ChartContainer config={chartConfig} className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={patientGrowth}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                            <XAxis dataKey="month" stroke="var(--muted-foreground)" />
-                            <YAxis stroke="var(--muted-foreground)" />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Line
-                              type="monotone"
-                              dataKey="patients"
-                              stroke="var(--chart-1)"
-                              strokeWidth={2}
-                              dot={{ fill: 'var(--chart-1)' }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
+                        <LineChart data={patientGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+                          <YAxis stroke="var(--muted-foreground)" />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Line
+                            type="monotone"
+                            dataKey="patients"
+                            stroke="var(--chart-1)"
+                            strokeWidth={2}
+                            dot={{ fill: 'var(--chart-1)' }}
+                          />
+                        </LineChart>
                       </ChartContainer>
                     </CardContent>
                   </Card>
@@ -674,15 +670,13 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                       <ChartContainer config={chartConfig} className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={weeklyAppointments}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                            <XAxis dataKey="day" stroke="var(--muted-foreground)" />
-                            <YAxis stroke="var(--muted-foreground)" />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="appointments" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                        <BarChart data={weeklyAppointments}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis dataKey="day" stroke="var(--muted-foreground)" />
+                          <YAxis stroke="var(--muted-foreground)" />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey="appointments" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
                       </ChartContainer>
                     </CardContent>
                   </Card>
@@ -701,7 +695,7 @@ export default function DashboardPage() {
           return (
             <div
               key={module.id}
-              className={`relative group/module transition-all duration-300 ${colSpanClass} ${
+              className={`relative min-w-0 group/module transition-all duration-300 ${colSpanClass} ${
                 isCustomizing ? 'border-2 border-dashed border-accent/40 rounded-xl p-3 bg-accent/5 shadow-inner' : ''
               } ${!module.visible ? 'opacity-40 filter grayscale' : ''}`}
               draggable={isCustomizing}

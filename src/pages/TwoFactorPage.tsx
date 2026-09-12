@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AuthLayout, OtpHero } from '@/components/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,7 @@ const methods = [
 
 export default function TwoFactorPage() {
   const navigate = useNavigate();
-  const { mfaPending, mfaPendingUser, verifyMfaTotp, verifyMfaRecovery, verifyMfaPasskey } = useAuth();
+  const { mfaPending, mfaPendingUser, verifyMfaTotp, verifyMfaRecovery, verifyMfaPasskey, cancelMfa } = useAuth();
   const [code, setCode] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [method, setMethod] = useState<'totp' | 'passkey' | 'sms' | 'backup'>('totp');
@@ -181,7 +181,7 @@ export default function TwoFactorPage() {
                 </div>
               </div>
               <div>
-                <CardTitle className="text-xl font-bold text-foreground">No Verification Session</CardTitle>
+                <h2 className="text-xl font-bold text-foreground">No Verification Session</h2>
                 <CardDescription className="text-xs text-muted-foreground mt-1">
                   A two-factor authentication session has not been initiated. Please log in with
                   your email and password to begin verification.
@@ -244,7 +244,7 @@ export default function TwoFactorPage() {
 
             <div>
               <div className="flex items-center justify-center gap-2">
-                <CardTitle className="text-xl font-bold text-foreground">Identity Verification</CardTitle>
+                <h3 className="text-xl font-bold text-foreground">Identity Verification</h3>
                 <Badge variant="outline" className="text-[10px] border-accent/40 text-accent font-semibold">
                   2FA REQUIRED
                 </Badge>
@@ -432,7 +432,7 @@ export default function TwoFactorPage() {
                   className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                  <span>Quick Test: Autofill Demo Code (123456)</span>
+                  <span>Quick Test: Fetch Current Demo TOTP Token</span>
                 </Button>
               )}
 
@@ -453,7 +453,11 @@ export default function TwoFactorPage() {
           </CardContent>
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-            <Link to="/login" className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors">
+            <Link
+              to="/login"
+              onClick={cancelMfa}
+              className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors"
+            >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Cancel & Return to Login</span>
             </Link>

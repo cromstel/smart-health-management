@@ -34,6 +34,7 @@ export default function SuperAdminDashboard() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [backupMessage, setBackupMessage] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,9 +57,9 @@ export default function SuperAdminDashboard() {
   const handleBackup = async () => {
     try {
       await api.triggerBackup();
-      alert('Backup initiated successfully');
-    } catch (err: any) {
-      alert('Failed to trigger backup: ' + err.message);
+      setBackupMessage('Backup initiated successfully. You can monitor it from System Settings.');
+    } catch (err: unknown) {
+      setBackupMessage(err instanceof Error ? `Failed to trigger backup: ${err.message}` : 'Failed to trigger backup.');
     }
   };
 
@@ -92,9 +93,9 @@ export default function SuperAdminDashboard() {
   const stats = systemStatus?.statistics;
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">System Dashboard</h1>
           <p className="text-muted-foreground mt-1">Monitor and manage your health management system</p>
@@ -110,6 +111,12 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
       </div>
+
+      {backupMessage && (
+        <div role="status" className="rounded-lg border border-accent/30 bg-accent/10 p-4 text-sm text-foreground">
+          {backupMessage}
+        </div>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -1,4 +1,4 @@
-import type { User } from "@/contexts/AuthContext";
+﻿import type { User } from "@/contexts/AuthContext";
 import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
@@ -28,6 +28,49 @@ export interface WebAuthnCredentialRecord {
   device_name: string;
   created_at: string;
   last_used_at: string | null;
+}
+
+/** Super-admin hospital overview record (GET /super-admin/hospitals). */
+export interface SuperAdminHospital {
+  id: string;
+  hospital_id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  status: 'active' | 'inactive';
+  beds: number;
+  occupancy: number;
+  departments: number;
+  staff_count: number;
+}
+
+/** Super-admin user management record (GET /super-admin/users). */
+export interface SuperAdminUser {
+  id: string;
+  email: string;
+  name: string;
+  status: 'active' | 'inactive' | 'locked';
+  last_login: string | null;
+  created_at: string;
+  role_name: string;
+  role_description: string;
+}
+
+/** Super-admin system setting (GET /super-admin/settings). */
+export interface SuperAdminSetting {
+  id: string;
+  setting_key: string;
+  setting_value: string;
+  category: string;
+}
+
+/** Super-admin backup record (GET /super-admin/backups). */
+export interface SuperAdminBackup {
+  id: string;
+  name: string;
+  size: string;
+  createdAt: string;
 }
 
 let configuredUrl = import.meta.env.VITE_API_URL || '/api';
@@ -230,7 +273,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // ── WebAuthn passkeys ──────────────────────────────────────────────────────
+  // â”€â”€ WebAuthn passkeys â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Real browser attestation/assertion. The backend signs the ceremony
   // challenge into a short-lived token that is returned with the verify call.
 
@@ -497,7 +540,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getBackups() {
+  async getBackups(): Promise<SuperAdminBackup[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/backups`, {
       headers: this.getHeaders(),
     });
@@ -652,6 +695,27 @@ class ApiService {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
+  }
+
+
+  /** Fetch a document blob (preview or download) with the auth header attached. */
+  async getDocumentBlob(id: string, action: 'preview' | 'download'): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/documents/${id}/${action}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(text || `Failed to ${action} document`);
+    }
+    return response.blob();
+  }
+
+  async downloadDocument(id: string): Promise<Blob> {
+    return this.getDocumentBlob(id, 'download');
+  }
+
+  async previewDocument(id: string): Promise<Blob> {
+    return this.getDocumentBlob(id, 'preview');
   }
 
   // Predictions & Ghana Health
@@ -841,7 +905,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getAllHospitalsAdmin() {
+  async getAllHospitalsAdmin(): Promise<SuperAdminHospital[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/hospitals`, {
       headers: this.getHeaders(),
     });
@@ -857,7 +921,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getSystemSettings() {
+  async getSystemSettings(): Promise<SuperAdminSetting[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/settings`, {
       headers: this.getHeaders(),
     });
@@ -876,14 +940,14 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getAllUsers() {
+  async getAllUsers(): Promise<SuperAdminUser[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/users`, {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
 
-  async updateUserStatus(id: string, status: string) {
+  async updateUserStatus(id: string, status: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/status`, {
       method: 'PUT',
       headers: this.getHeaders(),
@@ -892,7 +956,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async resetUserPassword(id: string, clearTwoFactor = false) {
+  async resetUserPassword(id: string, clearTwoFactor = false): Promise<{ temporaryPassword: string; twoFactorDisabled: boolean }> {
     const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/reset-password`, {
       method: 'POST',
       headers: this.getHeaders(),

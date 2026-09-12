@@ -30,21 +30,21 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-3 sm:gap-4 border-b border-border bg-card px-4 sm:px-6" role="banner">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-1.5 sm:gap-4 border-b border-border bg-card px-2 sm:px-6" role="banner">
       <SidebarTrigger aria-label="Toggle navigation menu" />
-      <div className="flex-1 max-w-lg mx-auto sm:mx-0">
+      <div className="min-w-0 flex-1 max-w-lg sm:mx-0">
         <GlobalSearch />
       </div>
-      <div className="flex-1" />
+      <div className="hidden flex-1 sm:block" />
 
       {/* Visual Offline Status Badge (PWA Service Worker State) */}
-      <OfflineStatusBadge />
+      <div className="hidden md:block"><OfflineStatusBadge /></div>
 
       {/* Global Voice Command Navigation */}
-      <VoiceNavigationButton />
+      <div className="hidden md:block"><VoiceNavigationButton /></div>
 
       {/* PWA In-App Install Prompt */}
-      <PWAInstallButton />
+      <div className="hidden md:block"><PWAInstallButton /></div>
 
       {/* Theme Toggle Button */}
       <Button
@@ -52,7 +52,7 @@ export function Header() {
         size="icon"
         onClick={toggleTheme}
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        className="text-foreground hover:text-accent hover:bg-secondary"
+        className="shrink-0 text-foreground hover:text-accent hover:bg-secondary"
         title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       >
         {isDark ? (
@@ -70,7 +70,7 @@ export function Header() {
         variant="ghost"
         size="sm"
         onClick={handleLogout}
-        className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 font-medium"
+        className="shrink-0 gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 font-medium"
         title="Sign out of system workstation"
       >
         <LogOut className="h-4 w-4" aria-hidden="true" />
@@ -80,7 +80,7 @@ export function Header() {
       {/* User Profile Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full" aria-label="User menu">
+          <Button variant="ghost" className="relative h-10 w-10 shrink-0 rounded-full" aria-label="User menu">
             <Avatar>
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {user?.name?.split(' ').map((n) => n[0]).join('') || 'U'}

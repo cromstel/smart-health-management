@@ -55,6 +55,15 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+const roleApiValues: Record<RegisterFormValues['role'], string> = {
+  Doctor: 'doctor',
+  Nurse: 'nurse',
+  Pharmacist: 'pharmacist',
+  Administrator: 'admin',
+  Patient: 'patient',
+  '': '',
+};
+
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -93,7 +102,7 @@ export default function RegisterPage() {
         name: data.name,
         email: data.email,
         password: data.password,
-        roleId: data.role.toLowerCase(),
+        roleId: roleApiValues[data.role],
         hospital: data.hospital,
         department: data.department,
       });

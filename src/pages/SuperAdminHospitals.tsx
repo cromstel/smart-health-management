@@ -1,25 +1,12 @@
 import { useState, useEffect } from 'react';
-import { api } from '@/services/api';
+import { api, type SuperAdminHospital } from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Building2, Users, Bed, Briefcase, AlertCircle } from 'lucide-react';
 
-interface Hospital {
-  id: string;
-  hospital_id: string;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  departments: number;
-  staff_count: number;
-  beds: number;
-  status: 'active' | 'inactive';
-}
-
 export default function SuperAdminHospitals() {
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [hospitals, setHospitals] = useState<SuperAdminHospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -30,8 +17,7 @@ export default function SuperAdminHospitals() {
   const loadHospitals = async () => {
     try {
       setLoading(true);
-      const data = await api.getAllHospitalsAdmin() as { hospitals: Hospital[] };
-      setHospitals(data.hospitals);
+      setHospitals(await api.getAllHospitalsAdmin());
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load hospitals');
@@ -42,7 +28,7 @@ export default function SuperAdminHospitals() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <Skeleton className="h-12 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -54,7 +40,7 @@ export default function SuperAdminHospitals() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Hospital Overview</h1>
         <p className="text-muted-foreground mt-1">View all registered hospitals in the system</p>

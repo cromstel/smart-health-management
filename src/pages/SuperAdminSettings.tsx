@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '@/services/api';
+import { api, type SuperAdminBackup, type SuperAdminSetting } from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,15 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, CheckCircle, HardDriveUpload, HardDriveDownload, HeartPulse } from 'lucide-react';
 
-interface Setting {
-  id: string;
-  setting_key: string;
-  setting_value: string;
-  category: string;
-}
-
 export default function SuperAdminSettings() {
-  const [settings, setSettings] = useState<Setting[]>([]);
+  const [settings, setSettings] = useState<SuperAdminSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
@@ -26,7 +19,7 @@ export default function SuperAdminSettings() {
   const [backupError, setBackupError] = useState<string | null>(null);
 
   const [restoreLoading, setRestoreLoading] = useState(false);
-  const [backups, setBackups] = useState<any[]>([]);
+  const [backups, setBackups] = useState<SuperAdminBackup[]>([]);
   const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
@@ -43,8 +36,7 @@ export default function SuperAdminSettings() {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      const data = await api.getSystemSettings() as { settings: Setting[] };
-      setSettings(data.settings);
+      setSettings(await api.getSystemSettings());
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load settings');
@@ -61,7 +53,7 @@ export default function SuperAdminSettings() {
       setSuccess(settingId);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      alert('Failed to update setting: ' + err.message);
+      setError(err instanceof Error ? `Failed to update setting: ${err.message}` : 'Failed to update setting.');
     } finally {
       setSaving(null);
     }
@@ -84,10 +76,7 @@ export default function SuperAdminSettings() {
 
   const loadBackups = async () => {
     try {
-      // expected shape from API
-      const data = await api.getBackups() as { backups?: { name: string; createdAt: string }[] } | null;
-      const backupList = data && Array.isArray(data.backups) ? data.backups : [];
-      setBackups(backupList);
+      setBackups(await api.getBackups());
     } catch (err: any) {
       console.error('Failed to load backups:', err?.message ?? err);
     }
@@ -136,11 +125,11 @@ export default function SuperAdminSettings() {
     }
     acc[setting.category].push(setting);
     return acc;
-  }, {} as Record<string, Setting[]>);
+  }, {} as Record<string, SuperAdminSetting[]>);
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <Skeleton className="h-12 w-64" />
         <Skeleton className="h-96" />
       </div>
@@ -148,7 +137,7 @@ export default function SuperAdminSettings() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">System Settings</h1>
         <p className="text-muted-foreground mt-1">Configure system-wide settings and preferences</p>
@@ -176,7 +165,7 @@ export default function SuperAdminSettings() {
                   <Label htmlFor={setting.id} className="text-muted-foreground capitalize">
                     {setting.setting_key.replace(/_/g, ' ')}
                   </Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                       id={setting.id}
                       defaultValue={setting.setting_value}
@@ -214,7 +203,7 @@ export default function SuperAdminSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Label className="text-muted-foreground">Trigger System Backup</Label>
               <Button
                 onClick={handleTriggerBackup}
@@ -260,7 +249,7 @@ export default function SuperAdminSettings() {
             {restoreSuccess && <p className="text-green-500 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Restore successful!</p>}
             {restoreError && <p className="text-red-500 text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {restoreError}</p>}
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Label className="text-muted-foreground">Check System Health</Label>
               <Button
                 onClick={handleGetSystemHealth}

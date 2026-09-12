@@ -18,6 +18,9 @@ const sharedLinks = new Map<string, { patientId: string; patientName: string; ex
 let mockTotpEnabled = false;
 let mockRecoveryCodes: string[] = [];
 const DEMO_TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
+const MFA_DEMO_EMAIL = 'doctor@smarthealth.com';
+const MFA_DEMO_CODE = '123456';
+const MFA_DEMO_RECOVERY_CODE = 'ABCDE-FGHJK';
 // DEV-only passkey registry so the Settings passkey card + TwoFactorPage keep
 // working against the mock API. The real server (webauthn_credentials table)
 // is the source of truth in production.
@@ -55,10 +58,10 @@ const appointments = [
 ];
 
 const medicines = [
-  { id: '1', name: 'Amoxicillin 500mg', category: 'Antibiotic', stock: 350, unitPrice: 12.50, expiryDate: '2027-06-30', supplier: 'PharmaGhana Ltd', minStock: 50 },
-  { id: '2', name: 'Paracetamol 500mg', category: 'Analgesic', stock: 1200, unitPrice: 2.00, expiryDate: '2028-01-15', supplier: 'HealthCare Dist', minStock: 200 },
-  { id: '3', name: 'Amlodipine 5mg', category: 'Antihypertensive', stock: 450, unitPrice: 8.75, expiryDate: '2026-11-20', supplier: 'MediCorp Int', minStock: 60 },
-  { id: '4', name: 'Salbutamol Inhaler 100mcg', category: 'Respiratory', stock: 85, unitPrice: 24.00, expiryDate: '2027-03-10', supplier: 'PharmaGhana Ltd', minStock: 30 },
+  { id: '1', medicine_name: 'Amoxicillin 500mg', category: 'Antibiotic', stock_level: 350, unit_price: 12.50, expiry_date: '2027-06-30', supplier: 'PharmaGhana Ltd', low_stock_threshold: 50 },
+  { id: '2', medicine_name: 'Paracetamol 500mg', category: 'Analgesic', stock_level: 1200, unit_price: 2.00, expiry_date: '2028-01-15', supplier: 'HealthCare Dist', low_stock_threshold: 200 },
+  { id: '3', medicine_name: 'Amlodipine 5mg', category: 'Antihypertensive', stock_level: 450, unit_price: 8.75, expiry_date: '2026-11-20', supplier: 'MediCorp Int', low_stock_threshold: 60 },
+  { id: '4', medicine_name: 'Salbutamol Inhaler 100mcg', category: 'Respiratory', stock_level: 85, unit_price: 24.00, expiry_date: '2027-03-10', supplier: 'PharmaGhana Ltd', low_stock_threshold: 30 },
 ];
 
 const suppliers = [
@@ -88,11 +91,12 @@ const roles = [
   { id: '3', name: 'doctor', description: 'Medical doctor with access to patient data', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit'] },
   { id: '4', name: 'nurse', description: 'Nurse with care management access', permissions: ['patients:view', 'appointments:view'] },
   { id: '5', name: 'patient', description: 'Patient with self-service access', permissions: ['appointments:view', 'appointments:add'] },
+  { id: '6', name: 'pharmacist', description: 'Pharmacist with medication-management access', permissions: ['pharmacy:view', 'pharmacy:add', 'pharmacy:edit'] },
 ];
 
 const documents = [
-  { id: '1', title: 'Cardiology Guidelines 2026.pdf', patientId: '1', patientName: 'John Doe', type: 'Medical Report', uploadedAt: '2026-03-01', size: '1.4 MB' },
-  { id: '2', title: 'Chest X-Ray Analysis.pdf', patientId: '2', patientName: 'Grace Appiah', type: 'Radiology', uploadedAt: '2026-03-04', size: '3.8 MB' },
+  { id: '1', document_id: 'DOC-001', name: 'Cardiology Guidelines 2026.pdf', patient_id: '1', file_type: 'PDF', category: 'medical_record', uploaded_by: 'Dr. John Smith', uploaded_at: '2026-03-01', file_size: '1.4 MB', storage_type: 'local' },
+  { id: '2', document_id: 'DOC-002', name: 'Chest X-Ray Analysis.pdf', patient_id: '2', file_type: 'PDF', category: 'lab_report', uploaded_by: 'Dr. John Smith', uploaded_at: '2026-03-04', file_size: '3.8 MB', storage_type: 'local' },
 ];
 
 const auditLogs = [
@@ -109,6 +113,18 @@ let appSettings: Record<string, any> = {
   theme: 'light',
   language: 'en',
 };
+
+const superAdminSettings = [
+  { id: 'maintenance-mode', setting_key: 'maintenance_mode', setting_value: 'false', category: 'security' },
+  { id: 'allow-registration', setting_key: 'allow_registration', setting_value: 'true', category: 'access' },
+  { id: 'audit-retention', setting_key: 'audit_log_retention_days', setting_value: '90', category: 'security' },
+  { id: 'password-rotation', setting_key: 'enforce_password_rotation', setting_value: 'false', category: 'security' },
+];
+
+const mockBackups = [
+  { id: '1', name: 'backup-2026-03-05.sql', size: '28.4 MB', createdAt: '2026-03-05 02:00 UTC' },
+  { id: '2', name: 'backup-2026-03-04.sql', size: '27.9 MB', createdAt: '2026-03-04 02:00 UTC' },
+];
 
 // Helper to read request body
 function readJsonBody(req: IncomingMessage): Promise<any> {
@@ -213,6 +229,16 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'],
         hospital_id: 'HOSP-001',
       };
+      const isMfaDemoUser = user.email.toLowerCase() === MFA_DEMO_EMAIL;
+      if (isMfaDemoUser) {
+        sendJson(res, 200, {
+          requiresMfa: true,
+          tempToken: `mock-mfa-token-${user.id}-${Date.now()}`,
+          user: { ...user, totp_enabled: true, recovery_codes_count: 1 },
+        });
+        return;
+      }
+
       sendJson(res, 200, {
         token: `mock-token-${user.id}-${Date.now()}`,
         user: { ...user, totp_enabled: mockTotpEnabled, recovery_codes_count: mockTotpEnabled ? mockRecoveryCodes.length : 0 },
@@ -222,8 +248,21 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   }
 
   if (pathname === '/api/auth/me') {
+    const authorization = String(req.headers.authorization || '');
+    const token = authorization.replace(/^Bearer\s+/i, '');
+    const isMfaDoctor = token.startsWith('mock-token-2fa-') || token.startsWith('mock-token-recovery-');
+    const idMatch = token.match(/^mock-token-(\d+)-/);
+    const sessionUser = isMfaDoctor
+      ? users.find((user) => user.email === MFA_DEMO_EMAIL)
+      : idMatch
+        ? users.find((user) => user.id === idMatch[1])
+        : undefined;
     sendJson(res, 200, {
-      user: { ...users[1], totp_enabled: mockTotpEnabled, recovery_codes_count: mockTotpEnabled ? mockRecoveryCodes.length : 0 }, // Default to Admin
+      user: {
+        ...(sessionUser ?? users[1]),
+        totp_enabled: sessionUser?.email === MFA_DEMO_EMAIL || mockTotpEnabled,
+        recovery_codes_count: sessionUser?.email === MFA_DEMO_EMAIL ? 1 : mockTotpEnabled ? mockRecoveryCodes.length : 0,
+      },
     });
     return true;
   }
@@ -241,13 +280,19 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
 
   if (pathname === '/api/auth/register' && req.method === 'POST') {
     readJsonBody(req).then((body) => {
+      const requestedRole = String(body.roleId || '').trim().toLowerCase();
+      const selectedRole = roles.find((role) => role.name === requestedRole);
+      if (!selectedRole) {
+        sendJson(res, 400, { error: 'The selected role is not configured for this system.' });
+        return;
+      }
       const newUser = {
         id: String(users.length + 1),
-        role_id: 2,
+        role_id: Number(selectedRole.id),
         email: body.email || 'user@example.com',
         password: body.password || 'Default123!',
         name: body.name || 'New User',
-        role: 'admin',
+        role: selectedRole.name,
         permissions: ['all:view', 'all:add', 'all:edit'],
         hospital_id: 'HOSP-001',
         status: 'active',
@@ -267,15 +312,27 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
     return true;
   }
 
-  if (pathname === '/api/auth/verify-2fa') {
-    sendJson(res, 200, { token: `mock-token-2fa-${Date.now()}`, user: { ...users[1], totp_enabled: true, recovery_codes_count: mockRecoveryCodes.length } });
+  if (pathname === '/api/auth/dev-totp-current') {
+    sendJson(res, 200, { code: MFA_DEMO_CODE });
+    return true;
+  }
+
+  if (pathname === '/api/auth/verify-2fa' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      if (String(body.code || '') !== MFA_DEMO_CODE) {
+        sendJson(res, 401, { error: 'Invalid authenticator code' });
+        return;
+      }
+      const demoUser = users.find((user) => user.email === MFA_DEMO_EMAIL)!;
+      sendJson(res, 200, { token: `mock-token-2fa-${Date.now()}`, user: { ...demoUser, totp_enabled: true, recovery_codes_count: 1 } });
+    });
     return true;
   }
 
   if (pathname === '/api/auth/verify-recovery') {
     readJsonBody(req).then((body) => {
       const submitted = String(body.code || '').trim().toUpperCase();
-      const valid = mockRecoveryCodes.some((c) => c.toUpperCase() === submitted);
+      const valid = submitted === MFA_DEMO_RECOVERY_CODE || mockRecoveryCodes.some((c) => c.toUpperCase() === submitted);
       if (!valid) {
         sendJson(res, mockRecoveryCodes.length ? 401 : 400, {
           error: mockRecoveryCodes.length ? 'Invalid or already used recovery code' : 'No recovery codes are available for this account',
@@ -283,7 +340,8 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         return;
       }
       mockRecoveryCodes = mockRecoveryCodes.filter((c) => c.toUpperCase() !== submitted); // single-use
-      sendJson(res, 200, { token: `mock-token-recovery-${Date.now()}`, user: { ...users[1], totp_enabled: true, recovery_codes_count: mockRecoveryCodes.length } });
+      const demoUser = users.find((user) => user.email === MFA_DEMO_EMAIL)!;
+      sendJson(res, 200, { token: `mock-token-recovery-${Date.now()}`, user: { ...demoUser, totp_enabled: true, recovery_codes_count: 1 } });
     });
     return true;
   }
@@ -722,12 +780,13 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   }
 
   if (pathname === '/api/pharmacy/reports') {
-    sendJson(res, 200, {
-      totalMedicines: medicines.length,
-      lowStockItems: medicines.filter((m) => m.stock <= m.minStock),
-      expiringWithin90Days: medicines.filter((m) => m.expiryDate.startsWith('2026')),
-      stockValuation: medicines.reduce((sum, m) => sum + m.stock * m.unitPrice, 0),
-    });
+    const reportType = params.get('type');
+    const reportRows = reportType === 'low_stock'
+      ? medicines.filter((medicine) => medicine.stock_level <= medicine.low_stock_threshold)
+      : reportType === 'expiry_dates'
+        ? [...medicines].sort((a, b) => a.expiry_date.localeCompare(b.expiry_date))
+        : medicines;
+    sendJson(res, 200, reportRows);
     return true;
   }
 
@@ -842,14 +901,18 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       return true;
     }
     if (req.method === 'POST') {
+      const nextId = String(documents.length + 1);
       const doc = {
-        id: String(documents.length + 1),
-        title: 'Uploaded Document.pdf',
-        patientId: '1',
-        patientName: 'John Doe',
-        type: 'General Medical',
-        uploadedAt: new Date().toISOString().split('T')[0],
-        size: '1.2 MB',
+        id: nextId,
+        document_id: `DOC-${String(documents.length + 1).padStart(3, '0')}`,
+        name: 'Uploaded Document.pdf',
+        patient_id: '1',
+        file_type: 'PDF',
+        category: 'medical_record',
+        uploaded_by: 'Dr. John Smith',
+        uploaded_at: new Date().toISOString().split('T')[0],
+        file_size: '1.2 MB',
+        storage_type: 'local',
       };
       documents.unshift(doc);
       sendJson(res, 201, doc);
@@ -858,11 +921,39 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
   }
 
   if (pathname.startsWith('/api/documents/')) {
-    const id = pathname.replace('/api/documents/', '');
-    const idx = documents.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.splice(idx, 1);
-    sendJson(res, 200, { message: 'Document deleted' });
-    return true;
+    const rest = pathname.replace('/api/documents/', '');
+
+    if (rest === 'storage/usage') {
+      sendJson(res, 200, {
+        uploadsDir: 'server/uploads',
+        usedBytes: 0,
+        diskTotal: 0,
+        diskFree: 0,
+        quotaBytes: null,
+        remainingQuota: null,
+      });
+      return true;
+    }
+
+    if (rest.endsWith('/preview') || rest.endsWith('/download')) {
+      const id = rest.replace(/\/preview$|\/download$/, '');
+      const doc = documents.find((d) => d.document_id === id);
+      if (!doc) {
+        sendJson(res, 404, { error: 'Document not found' });
+        return true;
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${doc.name}"`);
+      res.end('Mock document content');
+      return true;
+    }
+
+    if (req.method === 'DELETE') {
+      const idx = documents.findIndex((d) => d.document_id === rest);
+      if (idx !== -1) documents.splice(idx, 1);
+      sendJson(res, 200, { message: 'Document deleted' });
+      return true;
+    }
   }
 
   // Gemini Chat Proxy Endpoint with Google Search Grounding
@@ -1142,14 +1233,18 @@ ${medAdjustments}
   }
 
   // Super Admin endpoints
-  if (pathname === '/api/super-admin/status') {
+  if (pathname === '/api/super-admin/system-status') {
     sendJson(res, 200, {
-      status: 'operational',
-      version: '1.2.0',
-      uptime: '99.98%',
-      activeUsers: users.length,
-      storageUsed: '4.8 GB',
-      lastBackup: '2026-03-05 02:00 UTC',
+      status: 'OK',
+      message: 'System is running',
+      statistics: {
+        totalUsers: users.length,
+        totalHospitals: hospitals.length,
+        totalPatients: patients.length,
+        totalAppointments: appointments.length,
+        databaseSize: 4.8,
+      },
+      timestamp: new Date().toISOString(),
     });
     return true;
   }
@@ -1160,20 +1255,40 @@ ${medAdjustments}
   }
 
   if (pathname === '/api/super-admin/backups') {
-    sendJson(res, 200, [
-      { id: '1', name: 'backup-2026-03-05.sql', size: '28.4 MB', createdAt: '2026-03-05 02:00 UTC' },
-      { id: '2', name: 'backup-2026-03-04.sql', size: '27.9 MB', createdAt: '2026-03-04 02:00 UTC' },
-    ]);
+    sendJson(res, 200, { backups: mockBackups });
     return true;
   }
 
   if (pathname === '/api/super-admin/audit-logs') {
-    sendJson(res, 200, { logs: auditLogs, total: auditLogs.length });
+    sendJson(res, 200, {
+      logs: auditLogs.map((log) => ({
+        id: log.id,
+        user_id: log.user,
+        user_name: log.user,
+        user_email: log.user,
+        action: log.action,
+        module: 'system',
+        details: log.details,
+        ip_address: '127.0.0.1',
+        created_at: log.timestamp,
+      })),
+      total: auditLogs.length,
+    });
     return true;
   }
 
   if (pathname === '/api/super-admin/hospitals') {
-    sendJson(res, 200, hospitals);
+    // Enrich hospitals with department and staff counts
+    const enrichedHospitals = hospitals.map((hospital) => {
+      const hospitalDepts = departments.filter((d) => d.hospital_id === hospital.id);
+      const hospitalStaff = staff.filter((s) => s.hospital_id === hospital.hospital_id);
+      return {
+        ...hospital,
+        departments: hospitalDepts.length,
+        staff_count: hospitalStaff.length,
+      };
+    });
+    sendJson(res, 200, { hospitals: enrichedHospitals });
     return true;
   }
 
@@ -1184,29 +1299,77 @@ ${medAdjustments}
 
   if (pathname === '/api/super-admin/settings') {
     if (req.method === 'GET') {
-      sendJson(res, 200, {
-        maintenanceMode: false,
-        allowRegistration: true,
-        auditLogRetentionDays: 90,
-        enforcePasswordRotation: false,
-      });
-      return true;
-    }
-    if (req.method === 'PUT') {
-      sendJson(res, 200, { message: 'System settings updated' });
+      sendJson(res, 200, { settings: superAdminSettings });
       return true;
     }
   }
 
+  if (pathname.match(/^\/api\/super-admin\/settings\/[^/]+$/) && req.method === 'PATCH') {
+    readJsonBody(req).then((body) => {
+      if (typeof body.setting_value !== 'string' || !body.setting_value.trim()) {
+        sendJson(res, 400, { error: 'Setting value is required' });
+        return;
+      }
+      const settingId = pathname.split('/')[4];
+      const setting = superAdminSettings.find((item) => item.id === settingId);
+      if (!setting) {
+        sendJson(res, 404, { error: 'Setting not found' });
+        return;
+      }
+      setting.setting_value = body.setting_value;
+      sendJson(res, 200, { message: 'Setting updated successfully' });
+    });
+    return true;
+  }
+
+  if (pathname === '/api/super-admin/restore' && req.method === 'POST') {
+    readJsonBody(req).then((body) => {
+      if (!mockBackups.some((backup) => backup.name === body.backupFileName)) {
+        sendJson(res, 404, { error: 'Backup file not found' });
+        return;
+      }
+      sendJson(res, 200, { message: 'System restored successfully from backup' });
+    });
+    return true;
+  }
+
   if (pathname === '/api/super-admin/users') {
     if (req.method === 'GET') {
-      sendJson(res, 200, users);
+      sendJson(res, 200, {
+        users: users.map((user) => ({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          status: user.status ?? 'active',
+          last_login: null,
+          created_at: '2026-01-01T00:00:00.000Z',
+          role_name: user.role,
+          role_description: roles.find((role) => role.name === user.role)?.description ?? '',
+        })),
+      });
       return true;
     }
   }
 
   if (pathname.match(/^\/api\/super-admin\/users\/([^/]+)\/status$/)) {
-    sendJson(res, 200, { message: 'User status updated' });
+    if (req.method !== 'PATCH') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return true;
+    }
+    const userId = pathname.split('/')[4];
+    readJsonBody(req).then((body) => {
+      const target = users.find((user) => user.id === userId);
+      if (!target) {
+        sendJson(res, 404, { error: 'User not found' });
+        return;
+      }
+      if (!['active', 'inactive', 'locked'].includes(body.status)) {
+        sendJson(res, 400, { error: 'Invalid status value' });
+        return;
+      }
+      target.status = body.status;
+      sendJson(res, 200, { message: 'User status updated successfully' });
+    });
     return true;
   }
 

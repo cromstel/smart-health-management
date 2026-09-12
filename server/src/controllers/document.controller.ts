@@ -4,10 +4,27 @@ import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 import fs from 'fs';
+import path from 'path';
 import axios from 'axios';
 import { getStorageProvider } from '../services/storage.service.js';
 
+/** Maps frontend title-case categories to the schema snake_case ENUM values. */
+const CATEGORY_MAP: Record<string, string> = {
+  'Medical Record': 'medical_record',
+  'Lab Report': 'lab_report',
+  'Prescription': 'prescription',
+  'Administrative': 'administrative',
+};
 
+const normalizeCategory = (category: string | undefined | null): string | null => {
+  if (!category) return null;
+  const trimmed = String(category).trim();
+  if (!trimmed) return null;
+  return CATEGORY_MAP[trimmed] || trimmed.toLowerCase().replace(/\s+/g, '_');
+};
+
+/** Whitelist of columns that may be updated via PATCH/PUT to prevent column-name injection. */
+const ALLOWED_UPDATE_FIELDS = ['name', 'category', 'notes', 'patient_id', 'file_type'];
 
 export const getDocuments = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -37,7 +54,7 @@ export const getDocuments = async (req: AuthRequest, res: Response): Promise<Res
 
     if (category) {
       query += ' AND d.category = ?';
-      params.push(category);
+      params.push(normalizeCategory(category as string));
     }
 
     if (storageLocation) {
@@ -80,7 +97,7 @@ export const getDocumentById = async (req: AuthRequest, res: Response): Promise<
       `SELECT d.*, p.first_name as patient_first_name, p.last_name as patient_last_name
        FROM documents d
        LEFT JOIN patients p ON d.patient_id = p.id
-       WHERE d.id = ?`,
+       WHERE d.document_id = ?`,
       [id]
     );
     const document = (documents as any[])[0];
@@ -103,6 +120,7 @@ export const getDocumentById = async (req: AuthRequest, res: Response): Promise<
 
 export const createDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   const connection = await pool.getConnection();
+  let writtenFilePath: string | null = null;
   try {
     await connection.beginTransaction();
     const { patientId, category, notes, tags, storageLocation = 'local' } = req.body;
@@ -117,19 +135,21 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Select the storage backend: inbuilt local filesystem or a connected cloud provider.
     const currentStorageProvider = getStorageProvider(storageLocation, Number(req.user.id));
 
-    const { filename, mimetype, size } = file as any;
+    const { originalname, mimetype, size } = file;
     const now = new Date();
 
     try {
       const storageResult = await currentStorageProvider.upload(file, patientId, category);
+      writtenFilePath = storageResult.filePath;
       const { filePath: finalPath, storageType, documentId: documentIdStr } = storageResult;
 
       const [result] = await connection.query(
         `INSERT INTO documents (patient_id, document_id, name, file_type, file_size, category, file_path, storage_type, uploaded_by, uploaded_at, notes)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [patientId || null, documentIdStr, filename, mimetype, size, category || null, finalPath, storageType, req.user?.id || null, now, notes || null]
+        [patientId || null, documentIdStr, originalname, mimetype, size, normalizeCategory(category), finalPath, storageType, req.user.id, now, notes || null]
       );
       const documentId = (result as any).insertId;
 
@@ -156,10 +176,14 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       }
       throw storageError;
     }
-
-
   } catch (error) {
     await connection.rollback();
+    // Remove the file written to disk if the DB transaction failed.
+    if (writtenFilePath && fs.existsSync(writtenFilePath)) {
+      const versionDir = path.dirname(writtenFilePath);
+      const docDir = path.dirname(versionDir);
+      fs.rmSync(docDir, { recursive: true, force: true });
+    }
     console.error('Create document error:', error);
     res.status(500).json({ error: 'Failed to create document' });
   } finally {
@@ -171,13 +195,19 @@ export const updateDocument = async (req: AuthRequest, res: Response): Promise<R
   try {
     const { id } = req.params;
     const updates = req.body;
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), id];
 
-    await pool.query(
-      `UPDATE documents SET ${fields} WHERE id = ?`,
-      values
-    );
+    const allowedFields = ALLOWED_UPDATE_FIELDS.filter((field) => field in updates);
+    if (allowedFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    const fields = allowedFields.map((field) => `${field} = ?`).join(', ');
+    const values = allowedFields.map((field) => {
+      const value = updates[field];
+      return field === 'category' ? normalizeCategory(value) : value;
+    });
+
+    await pool.query(`UPDATE documents SET ${fields} WHERE document_id = ?`, [...values, id]);
     res.json({ message: 'Document updated successfully' });
   } catch (error) {
     console.error('Update document error:', error);
@@ -188,7 +218,19 @@ export const updateDocument = async (req: AuthRequest, res: Response): Promise<R
 export const deleteDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM documents WHERE id = ?', [id]);
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const [rows] = await pool.query('SELECT storage_type FROM documents WHERE document_id = ?', [id]);
+    const doc = (rows as any[])[0];
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const currentStorageProvider = getStorageProvider(doc.storage_type, Number(req.user.id));
+    await currentStorageProvider.delete(id as string);
+    await pool.query('DELETE FROM documents WHERE document_id = ?', [id]);
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {
     console.error('Delete document error:', error);
@@ -203,7 +245,7 @@ export const downloadDocument = async (req: AuthRequest, res: Response): Promise
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const [rows] = await pool.query('SELECT storage_type, file_type FROM documents WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT storage_type, file_type FROM documents WHERE document_id = ?', [id]);
     const doc = (rows as any[])[0];
     if (!doc) {
       return res.status(404).json({ error: 'Document not found' });
@@ -231,7 +273,7 @@ export const previewDocument = async (req: AuthRequest, res: Response): Promise<
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const [rows] = await pool.query('SELECT storage_type, file_type FROM documents WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT storage_type, file_type FROM documents WHERE document_id = ?', [id]);
     const doc = (rows as any[])[0];
     if (!doc) {
       return res.status(404).json({ error: 'Document not found' });
@@ -265,7 +307,7 @@ export const initiateOneDriveOAuth = (_req: AuthRequest, res: Response): void =>
 export const initiateGoogleDriveOAuth = (_req: AuthRequest, res: Response): void => {
   const client_id = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const redirect_uri = process.env.GOOGLE_DRIVE_REDIRECT_URI;
-  const scope = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile'; // Adjust scopes as needed
+  const scope = 'https://www.googleapis.com/auth/drive.file';
   const response_type = 'code';
   const access_type = 'offline';
   const prompt = 'consent';
@@ -288,11 +330,11 @@ export const handleOneDriveCallback = async (req: AuthRequest, res: Response): P
       'https://login.microsoftonline.com/common/oauth2/v2.0/token',
       new URLSearchParams({
         client_id: client_id as string,
+        client_secret: client_secret as string,
         scope: 'Files.ReadWrite.All User.Read',
         code: code as string,
         redirect_uri: redirect_uri as string,
         grant_type: 'authorization_code',
-        client_secret: client_secret as string,
       }).toString(),
       {
         headers: {
@@ -361,3 +403,4 @@ export const handleGoogleDriveCallback = async (req: AuthRequest, res: Response)
     res.status(500).json({ error: 'Failed to authenticate with Google Drive' });
   }
 };
+

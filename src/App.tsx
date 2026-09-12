@@ -74,8 +74,9 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAuthLoading } = useAuth();
   useSessionTimeout();
+  if (isAuthLoading) return <PageLoader />;
   return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 }
 

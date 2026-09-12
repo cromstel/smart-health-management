@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileText, Download, Eye, Trash2, Search, Filter } from 'lucide-react';
-import { API_ORIGIN } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -57,7 +56,7 @@ const mockDocuments: Document[] = [
     uploadedBy: 'Dr. Michael Chen',
     uploadDate: '2024-01-15',
     size: '2.4 MB',
-    storageLocation: 'Cloud',
+    storageLocation: 'local',
   },
   {
     id: 'D002',
@@ -68,7 +67,7 @@ const mockDocuments: Document[] = [
     uploadedBy: 'Dr. Emily Davis',
     uploadDate: '2024-01-14',
     size: '15.8 MB',
-    storageLocation: 'Local',
+    storageLocation: 'googledrive',
   },
   {
     id: 'D003',
@@ -79,7 +78,7 @@ const mockDocuments: Document[] = [
     uploadedBy: 'Dr. Robert Lee',
     uploadDate: '2024-01-10',
     size: '156 KB',
-    storageLocation: 'Cloud',
+    storageLocation: 'onedrive',
   },
   {
     id: 'D004',
@@ -89,7 +88,7 @@ const mockDocuments: Document[] = [
     uploadedBy: 'Admin',
     uploadDate: '2024-01-01',
     size: '5.2 MB',
-    storageLocation: 'Local',
+    storageLocation: 'local',
   },
 ];
 
@@ -102,14 +101,14 @@ export default function DocumentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-  const [newDocument, setNewDocument] = useState({
+const [newDocument, setNewDocument] = useState({
     file: null as File | null,
     filename: '',
     fileType: '',
     fileSize: '',
     category: '',
-    storageLocation: '',
     patientId: '',
+    storageLocation: 'local',
     uploadDate: new Date().toISOString().split('T')[0],
     notes: '',
   });
@@ -117,7 +116,7 @@ export default function DocumentsPage() {
   const loadDocuments = useCallback(async () => {
     try {
       const data = await api.getDocuments() as any[];
-      const transformedData = data.map((doc: any) => ({
+const transformedData = data.map((doc: any) => ({
         id: doc.document_id,
         name: doc.name,
         type: doc.file_type,
@@ -126,7 +125,7 @@ export default function DocumentsPage() {
         uploadedBy: doc.uploaded_by ? String(doc.uploaded_by) : 'Admin',
         uploadDate: doc.uploaded_at,
         size: doc.file_size,
-        storageLocation: doc.storage_type === 'cloud' ? 'Cloud' : 'Local',
+        storageLocation: doc.storage_type || 'local',
       }));
       setDocuments(transformedData);
     } catch (error: any) {
@@ -182,6 +181,7 @@ export default function DocumentsPage() {
       if (newDocument.patientId) formData.append('patientId', newDocument.patientId);
       if (newDocument.category) formData.append('category', newDocument.category);
       if (newDocument.notes) formData.append('notes', newDocument.notes);
+      formData.append('storageLocation', newDocument.storageLocation);
       await api.uploadDocument(formData);
       await loadDocuments();
       setIsDialogOpen(false);
@@ -191,8 +191,8 @@ export default function DocumentsPage() {
         fileType: '',
         fileSize: '',
         category: '',
-        storageLocation: '',
         patientId: '',
+        storageLocation: 'local',
         uploadDate: new Date().toISOString().split('T')[0],
         notes: '',
       });
@@ -221,9 +221,28 @@ export default function DocumentsPage() {
     }
   };
 
+  const openDocumentBlob = async (id: string, action: 'preview' | 'download') => {
+    try {
+      const blob = await api.getDocumentBlob(id, action);
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = action === 'download' ? id : '';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    } catch (error: any) {
+      console.error(`Failed to ${action} document:`, error);
+      toast.error(`Failed to ${action} document: ${error.message}`);
+    }
+  };
+
   const filteredDocuments = documents.filter((doc) =>
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.category.toLowerCase().includes(searchTerm.toLowerCase())
+    String(doc.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(doc.category ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -310,19 +329,7 @@ export default function DocumentsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="storageLocation">Storage Location</Label>
-                    <Select onValueChange={(value) => handleSelectChange('storageLocation', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select storage" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Local">Local Storage</SelectItem>
-                        <SelectItem value="Cloud">Cloud Storage</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
+<div className="space-y-2">
                     <Label htmlFor="patientId">Patient (Optional)</Label>
                     <Select onValueChange={(value) => handleSelectChange('patientId', value)}>
                       <SelectTrigger>
@@ -334,6 +341,30 @@ export default function DocumentsPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="storageLocation">Storage Location</Label>
+                    <Select value={newDocument.storageLocation} onValueChange={(value) => handleSelectChange('storageLocation', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select storage location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="local">Local Storage</SelectItem>
+                        <SelectItem value="googledrive">Google Drive</SelectItem>
+                        <SelectItem value="onedrive">OneDrive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {newDocument.storageLocation === 'googledrive' && (
+                        <>Stored in Google Drive. <a className="text-accent underline" href="/api/documents/googledrive/auth">Connect Google Drive</a></>
+                      )}
+                      {newDocument.storageLocation === 'onedrive' && (
+                        <>Stored in OneDrive. <a className="text-accent underline" href="/api/documents/onedrive/auth">Connect OneDrive</a></>
+                      )}
+                      {newDocument.storageLocation === 'local' && (
+                        <>Stored on the hospital server.</>
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -370,17 +401,6 @@ export default function DocumentsPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">1,234</div>
                 <p className="text-xs text-muted-foreground">+89 this month</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Cloud Storage
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">45.2 GB</div>
-                <p className="text-xs text-muted-foreground">of 100 GB used</p>
               </CardContent>
             </Card>
             <Card>
@@ -443,7 +463,7 @@ export default function DocumentsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Document</TableHead>
+<TableHead>Document</TableHead>
                             <TableHead>Category</TableHead>
                             <TableHead>Patient</TableHead>
                             <TableHead>Uploaded By</TableHead>
@@ -473,8 +493,8 @@ export default function DocumentsPage() {
                               <TableCell>{doc.uploadDate}</TableCell>
                               <TableCell>{doc.size}</TableCell>
                               <TableCell>
-                                <Badge variant={doc.storageLocation === 'Cloud' ? 'default' : 'secondary'}>
-                                  {doc.storageLocation}
+                                <Badge variant="outline">
+                                  {doc.storageLocation === 'googledrive' ? 'Google Drive' : doc.storageLocation === 'onedrive' ? 'OneDrive' : 'Local'}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -482,10 +502,7 @@ export default function DocumentsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => {
-                                      const url = `${API_ORIGIN}/api/documents/${doc.id}/preview`;
-                                      window.open(url, '_blank');
-                                    }}
+                                    onClick={() => openDocumentBlob(doc.id, 'preview')}
                                     aria-label="Preview document"
                                   >
                                     <Eye className="h-4 w-4" aria-hidden="true" />
@@ -493,10 +510,7 @@ export default function DocumentsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => {
-                                      const url = `${API_ORIGIN}/api/documents/${doc.id}/download`;
-                                      window.open(url, '_blank');
-                                    }}
+                                    onClick={() => openDocumentBlob(doc.id, 'download')}
                                     aria-label="Download document"
                                   >
                                     <Download className="h-4 w-4" aria-hidden="true" />

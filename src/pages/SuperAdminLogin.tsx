@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 const DEMO_EMAIL = 'superadmin@smarthealth.com';
-const DEMO_PASSWORD = 'password123';
+const DEMO_PASSWORD = 'April--2024!!!!';
 
 const SuperAdminLogin = React.memo(() => {
   const [email, setEmail] = useState(() => (import.meta.env.DEV ? DEMO_EMAIL : ''));

@@ -77,23 +77,15 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
 
   async download(documentId: string): Promise<{ filePath: string; fileName: string }> {
     const accessToken = await this.getValidAccessToken();
-    const fileId = documentId.replace('googledrive://', '');
+    const [rows] = await pool.query('SELECT file_path, name FROM documents WHERE document_id = ?', [documentId]);
+    const doc = (rows as any[])[0];
+    if (!doc || !doc.file_path || !doc.name) {
+      throw new Error('Document not found in database.');
+    }
+    const fileId = doc.file_path.replace('googledrive://', '');
+    const fileName = doc.name;
 
     try {
-      const metadataResponse = await axios.get(
-        `https://www.googleapis.com/drive/v3/files/${fileId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          params: {
-            fields: 'name,mimeType',
-          },
-        }
-      );
-
-      const fileName = metadataResponse.data.name;
-
       const response = await axios.get(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         {
@@ -128,7 +120,12 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
 
   async getMetadata(documentId: string): Promise<any> {
     const accessToken = await this.getValidAccessToken();
-    const fileId = documentId.replace('googledrive://', '');
+    const [rows] = await pool.query('SELECT file_path FROM documents WHERE document_id = ?', [documentId]);
+    const doc = (rows as any[])[0];
+    if (!doc || !doc.file_path) {
+      throw new Error('Document not found in database.');
+    }
+    const fileId = doc.file_path.replace('googledrive://', '');
 
     try {
       const response = await axios.get(
@@ -151,7 +148,12 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
 
   async delete(documentId: string): Promise<void> {
     const accessToken = await this.getValidAccessToken();
-    const fileId = documentId.replace('googledrive://', '');
+    const [rows] = await pool.query('SELECT file_path FROM documents WHERE document_id = ?', [documentId]);
+    const doc = (rows as any[])[0];
+    if (!doc || !doc.file_path) {
+      throw new Error('Document not found in database.');
+    }
+    const fileId = doc.file_path.replace('googledrive://', '');
 
     try {
       await axios.delete(
@@ -170,7 +172,12 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
 
   async getSignedUrl?(documentId: string, action: 'read' | 'write'): Promise<string> {
     const accessToken = await this.getValidAccessToken();
-    const fileId = documentId.replace('googledrive://', '');
+    const [rows] = await pool.query('SELECT file_path FROM documents WHERE document_id = ?', [documentId]);
+    const doc = (rows as any[])[0];
+    if (!doc || !doc.file_path) {
+      throw new Error('Document not found in database.');
+    }
+    const fileId = doc.file_path.replace('googledrive://', '');
 
     try {
       const response = await axios.get(

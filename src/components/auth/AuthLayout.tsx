@@ -48,7 +48,7 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
 
       {/* Right Side: Branding Panel */}
       {showBranding && (
-        <div className="hidden lg:flex flex-1 flex-col justify-between bg-primary px-12 py-16 text-primary-foreground overflow-hidden relative">
+        <div className="auth-branding-panel flex-1 flex-col justify-between bg-primary px-12 py-16 text-primary-foreground overflow-hidden relative">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {floatingShapes.map((shape, i) => (
@@ -83,12 +83,12 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
 
             {/* Decorative circles */}
             <motion.div
-              className="absolute -top-20 -right-20 w-64 h-64 rounded-full border border-primary-foreground/10"
+              className="absolute right-16 top-16 h-64 w-64 rounded-full border border-primary-foreground/10"
               animate={reduceMotion ? false : { rotate: 360 }}
               transition={reduceMotion ? { duration: 0 } : { duration: 60, repeat: Infinity, ease: 'linear' }}
             />
             <motion.div
-              className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full border border-primary-foreground/5"
+              className="absolute bottom-24 left-24 h-96 w-96 rounded-full border border-primary-foreground/5"
               animate={reduceMotion ? false : { rotate: -360 }}
               transition={reduceMotion ? { duration: 0 } : { duration: 80, repeat: Infinity, ease: 'linear' }}
             />

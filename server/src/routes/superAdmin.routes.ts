@@ -10,7 +10,7 @@ router.use(authenticate);
 router.use(enforcePasswordChange);
 
 // Apply super admin authorization to all routes
-router.use(authorize('Super Admin'));
+router.use(authorize('Super Admin', 'super_admin'));
 
 // System status and statistics
 router.get('/system-status', requirePermission('superAdmin', 'view'), superAdminController.getSystemStatus);

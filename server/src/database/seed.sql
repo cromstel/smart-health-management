@@ -37,7 +37,9 @@ INSERT INTO roles (id, name, description) VALUES
 (1, 'super_admin', 'Super Administrator with ultimate control'),
 (2, 'admin', 'Administrator with full access'),
 (3, 'doctor', 'Medical doctor with access to patient data'),
-(4, 'patient', 'Patient with access to their own data');
+(4, 'patient', 'Patient with access to their own data'),
+(5, 'nurse', 'Registered nurse with clinical care access'),
+(6, 'pharmacist', 'Pharmacist with medication-management access');
 
 -- 2. Seed Users
 INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
@@ -69,6 +71,15 @@ INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delet
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (4, 'appointments', 1, 1, 0, 0),
 (4, 'medical_history', 1, 0, 0, 0);
+-- Nurse permissions (role_id = 5)
+INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
+(5, 'patients', 1, 0, 1, 0),
+(5, 'appointments', 1, 1, 1, 0),
+(5, 'medical_history', 1, 1, 1, 0);
+-- Pharmacist permissions (role_id = 6)
+INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
+(6, 'pharmacy', 1, 1, 1, 0),
+(6, 'inventory', 1, 1, 1, 0);
 
 -- 4. Seed Hospitals
 INSERT INTO hospitals (id, hospital_id, name, address, phone, email) VALUES
@@ -104,8 +115,8 @@ INSERT INTO appointment_reminders (appointment_id, reminder_date) VALUES
 (1, CURDATE() + INTERVAL 1 DAY - INTERVAL 1 HOUR);
 
 -- 12. Seed Documents
-INSERT INTO documents (id, patient_id, document_type, document_id, name, file_type, category, uploaded_by) VALUES
-(1, 1, 'Lab Report', 'DOC-001', 'Blood Test Results', 'pdf', 'lab_report', 2);
+INSERT INTO documents (id, patient_id, document_type, document_id, name, file_type, category, storage_type, uploaded_by) VALUES
+(1, 1, 'Lab Report', 'DOC-001', 'Blood Test Results', 'pdf', 'lab_report', 'local', 2);
 
 -- 13. Seed Medicines
 INSERT INTO medicines (id, medicine_id, name, category, stock, min_stock, price, expiry_date, supplier) VALUES

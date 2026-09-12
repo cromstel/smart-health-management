@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/services/api';
+import { api, type SuperAdminUser } from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,36 +33,26 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  status: 'active' | 'inactive' | 'locked';
-  last_login: string | null;
-  created_at: string;
-  role_name: string;
-  role_description: string;
-}
-
 export default function SuperAdminUsers() {
   const { hasPermission, user: currentUser } = useAuth();
   const { logAction } = useAudit();
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<SuperAdminUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<SuperAdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [resetTarget, setResetTarget] = useState<User | null>(null);
+  const [resetTarget, setResetTarget] = useState<SuperAdminUser | null>(null);
   const [resetResult, setResetResult] = useState<{ temporaryPassword: string; twoFactorDisabled: boolean } | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.getAllUsers() as { users: User[] };
-      setUsers(data.users);
+      const data = await api.getAllUsers();
+      setUsers(data);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load users');
@@ -101,19 +91,21 @@ export default function SuperAdminUsers() {
     filterUsers();
   }, [filterUsers]);
 
-  const openResetDialog = (user: User) => {
+  const openResetDialog = (user: SuperAdminUser) => {
     setResetTarget(user);
     setResetResult(null);
+    setActionError('');
   };
 
   const handleResetPassword = async (clearTwoFactor: boolean) => {
     if (!resetTarget) return;
     try {
       setResetting(true);
+      setActionError('');
       const result = await api.resetUserPassword(resetTarget.id, clearTwoFactor) as { temporaryPassword: string; twoFactorDisabled: boolean };
       setResetResult({ temporaryPassword: result.temporaryPassword, twoFactorDisabled: result.twoFactorDisabled });
     } catch (err: any) {
-      alert('Failed to reset password: ' + err.message);
+      setActionError(err.message || 'Failed to reset the password.');
     } finally {
       setResetting(false);
     }
@@ -125,12 +117,13 @@ export default function SuperAdminUsers() {
     setResetting(false);
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'active' | 'inactive' | 'locked') => {
+  const handleStatusChange = async (userId: string, newStatus: SuperAdminUser['status']) => {
     try {
+      setActionError('');
       await api.updateUserStatus(userId, newStatus);
       await loadUsers();
     } catch (err: any) {
-      alert('Failed to update user status: ' + err.message);
+      setActionError(err.message || 'Failed to update the user status.');
     }
   };
 
@@ -144,7 +137,7 @@ export default function SuperAdminUsers() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const uniqueRoles = Array.from(new Set(users.map((u) => u.role_name)));
+  const uniqueRoles = Array.from(new Set(users.map((u) => u.role_name).filter(Boolean)));
 
   if (loading) {
     return (
@@ -163,9 +156,16 @@ export default function SuperAdminUsers() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2" role="alert">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-red-500">{error}</p>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2" role="alert">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-500">{actionError}</p>
         </div>
       )}
 
@@ -189,7 +189,7 @@ export default function SuperAdminUsers() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-background border-border">
+              <SelectTrigger aria-label="Filter by status" className="w-full md:w-48 bg-background border-border">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -200,7 +200,7 @@ export default function SuperAdminUsers() {
               </SelectContent>
             </Select>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-background border-border">
+              <SelectTrigger aria-label="Filter by role" className="w-full md:w-48 bg-background border-border">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
@@ -215,7 +215,7 @@ export default function SuperAdminUsers() {
           </div>
 
           {/* Table */}
-          <div className="border border-border rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-muted">
@@ -269,6 +269,7 @@ export default function SuperAdminUsers() {
                                         handleStatusChange(user.id, 'inactive');
                                       }}
                                       className="border-border text-muted-foreground hover:text-foreground"
+                                      aria-label={`Deactivate ${user.name}`}
                                     >
                                       <UserX className="w-4 h-4" />
                                     </Button>
@@ -299,6 +300,7 @@ export default function SuperAdminUsers() {
                                         handleStatusChange(user.id, 'active');
                                       }}
                                       className="border-border text-muted-foreground hover:text-foreground"
+                                      aria-label={`Activate ${user.name}`}
                                     >
                                       <UserCheck className="w-4 h-4" />
                                     </Button>
@@ -320,7 +322,7 @@ export default function SuperAdminUsers() {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      disabled={!hasPermission('superadmin:edit')}
+                                      disabled={!hasPermission('superadmin:edit') || user.email === currentUser?.email}
                                       onClick={() => {
                                         if (!hasPermission('superadmin:edit')) {
                                           logAction('permission_block', 'superadmin', { recordId: user.id, oldValue: 'lock' });
@@ -329,6 +331,7 @@ export default function SuperAdminUsers() {
                                         handleStatusChange(user.id, 'locked');
                                       }}
                                       className="border-border text-muted-foreground hover:text-foreground"
+                                      aria-label={`Lock ${user.name}`}
                                     >
                                       <Lock className="w-4 h-4" />
                                     </Button>
@@ -350,7 +353,7 @@ export default function SuperAdminUsers() {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      disabled={!hasPermission('superadmin:edit')}
+                                      disabled={!hasPermission('superadmin:edit') || user.email === currentUser?.email}
                                       onClick={() => {
                                         if (!hasPermission('superadmin:edit')) {
                                           logAction('permission_block', 'superadmin', { recordId: user.id, oldValue: 'unlock' });
@@ -359,6 +362,7 @@ export default function SuperAdminUsers() {
                                         handleStatusChange(user.id, 'active');
                                       }}
                                       className="border-border text-muted-foreground hover:text-foreground"
+                                      aria-label={`Unlock ${user.name}`}
                                     >
                                       <Unlock className="w-4 h-4" />
                                     </Button>

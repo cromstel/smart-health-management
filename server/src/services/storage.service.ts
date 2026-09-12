@@ -1,6 +1,6 @@
+import pool from '../config/database.js';
 import { OneDriveStorageProvider } from './onedrive.storage.service.js';
 import { GoogleDriveStorageProvider } from './googledrive.storage.service.js';
-import pool from '../config/database.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -16,6 +16,13 @@ export interface IStorageProvider {
   getSignedUrl?(documentId: string, action: 'read' | 'write'): Promise<string>;
 }
 
+/**
+ * Inbuilt local filesystem storage provider.
+ *
+ * Documents are stored under `server/uploads/{patientId|unassigned}/{category|uncategorized}/{documentId}/version-1/{filename}`.
+ * The provider works with `multer.memoryStorage()` (writes `file.buffer` to disk).
+ * External providers (Google Drive, OneDrive) are available via `getStorageProvider`.
+ */
 export class LocalStorageProvider implements IStorageProvider {
   private getUploadsDir(): string {
     return path.join(__dirname, '../../uploads');
@@ -32,7 +39,7 @@ export class LocalStorageProvider implements IStorageProvider {
   }
 
   async upload(file: Express.Multer.File, patientId: string | null, category: string | null): Promise<{ filePath: string; storageType: string; documentId: string }> {
-    const { filename, size, path: tempPath } = file;
+    const { originalname, size, buffer } = file;
     const documentIdStr = uuidv4();
     const baseUploads = this.getUploadsDir();
     const patientSegment = patientId ? String(patientId) : 'unassigned';
@@ -49,8 +56,8 @@ export class LocalStorageProvider implements IStorageProvider {
       }
     }
 
-    const finalPath = path.join(docDir, filename);
-    fs.renameSync(tempPath, finalPath);
+    const finalPath = path.join(docDir, originalname);
+    fs.writeFileSync(finalPath, buffer);
 
     return { filePath: finalPath, storageType: 'local', documentId: documentIdStr };
   }
@@ -73,14 +80,20 @@ export class LocalStorageProvider implements IStorageProvider {
     return { filePath: doc.file_path as string, fileName: doc.name as string };
   }
 
-  async getMetadata(_documentId: string): Promise<any> {
-    // This will require querying the database
-    throw new Error('Method not implemented. Requires database access.');
+  async getMetadata(documentId: string): Promise<any> {
+    const [rows] = await pool.query('SELECT * FROM documents WHERE document_id = ?', [documentId]);
+    return (rows as any[])[0] || null;
   }
 
-  async delete(_documentId: string): Promise<void> {
-    // This will require querying the database to get the file_path and then deleting the file
-    throw new Error('Method not implemented. Requires database access.');
+  async delete(documentId: string): Promise<void> {
+    const [rows] = await pool.query('SELECT file_path FROM documents WHERE document_id = ?', [documentId]);
+    const doc = (rows as any[])[0];
+    if (doc?.file_path && fs.existsSync(doc.file_path)) {
+      // Remove the version directory and its parent document directory
+      const versionDir = path.dirname(doc.file_path);
+      const docDir = path.dirname(versionDir);
+      fs.rmSync(docDir, { recursive: true, force: true });
+    }
   }
 }
 

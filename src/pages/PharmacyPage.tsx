@@ -224,8 +224,8 @@ export default function PharmacyPage() {
   };
 
   const filteredMedicines = medicines.filter((med) =>
-    med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    med.category.toLowerCase().includes(searchTerm.toLowerCase())
+    String(med.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(med.category ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const lowStockCount = medicines.filter((m) => m.status === 'Low Stock' || m.status === 'Out of Stock').length;
@@ -515,12 +515,12 @@ export default function PharmacyPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Medicine</TableHead>
-                          <TableHead>Category</TableHead>
+                          <TableHead className="hidden sm:table-cell">Category</TableHead>
                           <TableHead>Stock</TableHead>
-                          <TableHead>Unit Price</TableHead>
-                          <TableHead>Total Value</TableHead>
-                          <TableHead>Expiry Date</TableHead>
-                          <TableHead>Supplier</TableHead>
+                          <TableHead className="hidden 2xl:table-cell">Unit Price</TableHead>
+                          <TableHead className="hidden 2xl:table-cell">Total Value</TableHead>
+                          <TableHead className="hidden lg:table-cell">Expiry Date</TableHead>
+                          <TableHead className="hidden 2xl:table-cell">Supplier</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -529,7 +529,7 @@ export default function PharmacyPage() {
                         {filteredMedicines.map((med) => (
                           <TableRow key={med.id}>
                             <TableCell className="font-medium">{med.name}</TableCell>
-                            <TableCell>{med.category}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{med.category}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <span>{med.stock}</span>
@@ -538,10 +538,10 @@ export default function PharmacyPage() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>GHS {med.price.toFixed(2)}</TableCell>
-                            <TableCell>GHS {(med.stock * med.price).toFixed(2)}</TableCell>
-                            <TableCell>{med.expiryDate}</TableCell>
-                            <TableCell>{med.supplier}</TableCell>
+                            <TableCell className="hidden 2xl:table-cell">GHS {med.price.toFixed(2)}</TableCell>
+                            <TableCell className="hidden 2xl:table-cell">GHS {(med.stock * med.price).toFixed(2)}</TableCell>
+                            <TableCell className="hidden lg:table-cell">{med.expiryDate}</TableCell>
+                            <TableCell className="hidden 2xl:table-cell">{med.supplier}</TableCell>
                             <TableCell>
                               <Badge
                                 variant={

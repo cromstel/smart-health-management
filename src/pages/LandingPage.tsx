@@ -254,8 +254,8 @@ function Hero() {
     <section className="relative overflow-hidden bg-primary pt-20 pb-24 sm:pt-28 sm:pb-32" id="hero">
       {/* Subtle decorative circles (flat, no gradient) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full border border-primary-foreground/5" />
-        <div className="absolute -bottom-48 -left-48 h-[600px] w-[600px] rounded-full border border-primary-foreground/5" />
+        <div className="absolute right-0 top-0 h-[min(35vw,500px)] w-[min(35vw,500px)] rounded-full border border-primary-foreground/5" />
+        <div className="absolute bottom-0 left-0 h-[min(42vw,600px)] w-[min(42vw,600px)] rounded-full border border-primary-foreground/5" />
         <motion.div
           className="absolute top-20 left-[15%] h-3 w-3 rounded-full bg-accent/30"
           animate={{ y: [0, -12, 0] }}

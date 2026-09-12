@@ -4,16 +4,12 @@ import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { Loader2 } from 'lucide-react';
 
 export function SuperAdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAuthLoading, user } = useAuth();
   useSessionTimeout();
 
-  // AuthContext restores the session from a token asynchronously on mount.
-  // While a token exists but the user is not yet hydrated, show a loader
-  // instead of flashing the login redirect.
-  const isRestoringSession =
-    !isAuthenticated && typeof window !== 'undefined' && !!localStorage.getItem('token');
-
-  if (isRestoringSession) {
+  // AuthContext restores an existing session asynchronously on mount. Wait for
+  // that request to finish so direct navigation never flashes a redirect.
+  if (isAuthLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background" role="status" aria-live="polite">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -28,7 +24,7 @@ export function SuperAdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/super-admin/login" replace />;
   }
 
-  if (user?.role !== 'Super Admin') {
+  if (user?.role !== 'Super Admin' && user?.role !== 'super_admin') {
     return <Navigate to="/dashboard" replace />;
   }
 

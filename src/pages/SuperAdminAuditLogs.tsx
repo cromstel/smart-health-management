@@ -109,7 +109,7 @@ export default function SuperAdminAuditLogs() {
 
   if (loading && logs.length === 0) {
     return (
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <Skeleton className="h-12 w-64" />
         <Skeleton className="h-96" />
       </div>
@@ -117,8 +117,8 @@ export default function SuperAdminAuditLogs() {
   }
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
           <p className="text-muted-foreground mt-1">View all system activity and user actions</p>
@@ -208,7 +208,7 @@ export default function SuperAdminAuditLogs() {
           </div>
 
           {/* Table */}
-          <div className="border border-border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-muted">
@@ -257,7 +257,7 @@ export default function SuperAdminAuditLogs() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Showing {(currentPage - 1) * limit + 1} to{' '}
               {Math.min(currentPage * limit, total)} of {total} logs

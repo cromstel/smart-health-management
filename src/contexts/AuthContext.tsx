@@ -19,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ requiresMfa: boolean; user: User | null }>;
   logout: () => void;
   isAuthenticated: boolean;
+  isAuthLoading: boolean;
   hasPermission: (perm: string) => boolean;
   canActOnHospital: (hospitalId?: string) => boolean;
   canActOnDepartment: (departmentId?: string) => boolean;
@@ -35,6 +36,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [mfaPending, setMfaPending] = useState<boolean>(false);
   const [mfaPendingUser, setMfaPendingUser] = useState<User | null>(null);
   const [mfaPendingToken, setMfaPendingToken] = useState<string | null>(null);
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMfaPending(false);
         setMfaPendingUser(null);
         setMfaPendingToken(null);
+        setIsAuthLoading(false);
         return { requiresMfa: false, user: response.user ?? null };
       }
     } catch (e: unknown) {
@@ -109,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
+    setIsAuthLoading(false);
     return true;
   };
 
@@ -131,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
+    setIsAuthLoading(false);
     return true;
   };
 
@@ -151,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
+    setIsAuthLoading(false);
     return true;
   };
 
@@ -190,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       }
+      setIsAuthLoading(false);
     };
 
     fetchUser();
@@ -236,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         isAuthenticated: !!user,
+        isAuthLoading,
         hasPermission,
         canActOnHospital,
         canActOnDepartment,

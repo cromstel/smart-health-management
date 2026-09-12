@@ -461,6 +461,11 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
       res.status(400).json({ error: 'Invalid status value' });
       return;
     }
+
+    if (req.user?.id === userId && status !== 'active') {
+      res.status(400).json({ error: 'You cannot deactivate or lock your own account.' });
+      return;
+    }
     
     const connection = await pool.getConnection();
     

@@ -26,7 +26,7 @@ export default function SuperAdminOperations() {
       const result = await api.triggerBackup() as any;
       setMessage({
         type: 'success',
-        text: `Backup initiated successfully: ${result.backupName}`,
+        text: `Backup initiated successfully${result.backupPath || result.backupId ? `: ${result.backupPath || result.backupId}` : ''}`,
       });
     } catch (err: any) {
       setMessage({

@@ -108,7 +108,9 @@ export default function LoginPage() {
         localStorage.removeItem('remember_email');
       }
       const res = await login(data.email, data.password);
-      if (!res.requiresMfa) {
+      if (res.requiresMfa) {
+        navigate('/two-factor');
+      } else {
         toast.success('Successfully logged in!');
         navigate('/dashboard');
       }

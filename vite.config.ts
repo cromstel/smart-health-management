@@ -2,11 +2,15 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from "path"
 import { VitePWA } from 'vite-plugin-pwa'
+import tailwindcss from '@tailwindcss/vite'
 import { handleMockApi } from './src/server/mockApi.ts'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    // Tailwind v4 directives in src/index.css must be compiled before Vite's
+    // Lightning CSS minifier sees the stylesheet.
+    tailwindcss(),
     react(),
     {
       name: 'mock-api-middleware',
@@ -131,10 +135,21 @@ export default defineConfig({
             return 'vendor-motion';
           }
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
-          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('recharts')) return 'vendor-recharts';
+          if (id.includes('/d3-') || id.includes('node_modules/d3/')) return 'vendor-d3';
           if (id.includes('zod')) return 'vendor-zod';
           if (id.includes('sonner')) return 'vendor-sonner';
           if (id.includes('lucide-react')) return 'vendor-icons';
+          if (id.includes('react-dom') || id.includes('react-router') || id.includes('/react/')) return 'vendor-react';
+          if (id.includes('@radix-ui')) return 'vendor-radix';
+          if (id.includes('@emotion')) return 'vendor-emotion';
+          if (id.includes('react-hook-form') || id.includes('@hookform')) return 'vendor-forms';
+          if (id.includes('input-otp')) return 'vendor-otp';
+          if (id.includes('react-day-picker') || id.includes('date-fns')) return 'vendor-calendar';
+          if (id.includes('qrcode')) return 'vendor-qrcode';
+          if (id.includes('jspdf')) return 'vendor-pdf';
+          if (id.includes('@simplewebauthn')) return 'vendor-webauthn';
+          if (id.includes('@google/genai')) return 'vendor-ai';
           return undefined;
         },
       },
