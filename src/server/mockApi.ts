@@ -28,8 +28,8 @@ let mockPasskeys: Array<{ id: number; credential_id: string; device_name: string
 let mockPasskeySeq = 1;
 
 const hospitals = [
-  { id: '1', hospital_id: 'HOSP-001', name: 'General Hospital', address: '123 Main St, Accra, Ghana', phone: '+233 30 212 3456', email: 'contact@generalhospital.gh', status: 'active', beds: 250, occupancy: 198 },
-  { id: '2', hospital_id: 'HOSP-002', name: 'Ridge Regional Hospital', address: 'Castle Rd, Accra, Ghana', phone: '+233 30 222 7890', email: 'info@ridgehospital.gh', status: 'active', beds: 420, occupancy: 350 },
+  { id: '1', hospital_id: 'HOSP-001', name: 'General Hospital', address: '123 Main St, Accra, Ghana', phone: '+233 30 212 3456', email: 'contact@generalhospital.gh', status: 'active', beds: 250, occupancy: 198, departments: 4, staff_count: 46 },
+  { id: '2', hospital_id: 'HOSP-002', name: 'Ridge Regional Hospital', address: 'Castle Rd, Accra, Ghana', phone: '+233 30 222 7890', email: 'info@ridgehospital.gh', status: 'active', beds: 420, occupancy: 350, departments: 6, staff_count: 85 },
 ];
 
 const departments = [
@@ -136,6 +136,47 @@ function readJsonBody(req: IncomingMessage): Promise<any> {
     req.on('end', () => {
       try {
         resolve(body ? JSON.parse(body) : {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+}
+
+// Helper to parse multipart/form-data text fields (used by document upload FormData)
+function readMultipartFormData(req: IncomingMessage): Promise<Record<string, string>> {
+  return new Promise((resolve) => {
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.startsWith('multipart/form-data')) {
+      resolve({});
+      return;
+    }
+    const boundaryMatch = contentType.match(/boundary=(.+)$/);
+    if (!boundaryMatch) {
+      resolve({});
+      return;
+    }
+    const boundary = `--${boundaryMatch[1].replace(/"/g, '')}`;
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const fields: Record<string, string> = {};
+        const parts = body.split(boundary);
+        for (const part of parts) {
+          if (!part || part.trim() === '--' || part.trim() === '' || part.includes('--')) continue;
+          const headerEnd = part.indexOf('\r\n\r\n');
+          if (headerEnd === -1) continue;
+          const headerSection = part.substring(0, headerEnd);
+          const value = part.substring(headerEnd + 4).replace(/\r\n$/, '');
+          const nameMatch = headerSection.match(/name="([^"]+)"/);
+          if (nameMatch && !headerSection.includes('filename=')) {
+            fields[nameMatch[1]] = value;
+          }
+        }
+        resolve(fields);
       } catch {
         resolve({});
       }
@@ -901,23 +942,43 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       return true;
     }
     if (req.method === 'POST') {
+      const formFields = await readMultipartFormData(req);
+      const storageLocation = formFields.storageLocation || 'local';
       const nextId = String(documents.length + 1);
       const doc = {
         id: nextId,
         document_id: `DOC-${String(documents.length + 1).padStart(3, '0')}`,
-        name: 'Uploaded Document.pdf',
-        patient_id: '1',
-        file_type: 'PDF',
-        category: 'medical_record',
-        uploaded_by: 'Dr. John Smith',
+        name: formFields.name || 'Uploaded Document.pdf',
+        patient_id: formFields.patientId || '1',
+        file_type: formFields.fileType || 'PDF',
+        category: formFields.category || 'medical_record',
+        uploaded_by: formFields.uploadedBy || 'Dr. John Smith',
         uploaded_at: new Date().toISOString().split('T')[0],
-        file_size: '1.2 MB',
-        storage_type: 'local',
+        file_size: formFields.fileSize || '1.2 MB',
+        storage_type: storageLocation,
       };
       documents.unshift(doc);
       sendJson(res, 201, doc);
       return true;
     }
+  }
+
+  // Document storage OAuth endpoints
+  if (pathname === '/api/documents/onedrive/auth') {
+    sendJson(res, 200, { authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=mock-client-id&response_type=code&redirect_uri=http://localhost:3000/api/documents/onedrive/callback' });
+    return true;
+  }
+  if (pathname === '/api/documents/googledrive/auth') {
+    sendJson(res, 200, { authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=mock-client-id&redirect_uri=http://localhost:3000/api/documents/googledrive/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file&access_type=offline&prompt=consent' });
+    return true;
+  }
+  if (pathname === '/api/documents/onedrive/callback') {
+    sendJson(res, 200, { success: true, provider: 'onedrive', message: 'Mock OneDrive OAuth callback processed' });
+    return true;
+  }
+  if (pathname === '/api/documents/googledrive/callback') {
+    sendJson(res, 200, { success: true, provider: 'googledrive', message: 'Mock Google Drive OAuth callback processed' });
+    return true;
   }
 
   if (pathname.startsWith('/api/documents/')) {
