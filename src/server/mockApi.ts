@@ -942,23 +942,24 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
       return true;
     }
     if (req.method === 'POST') {
-      const formFields = await readMultipartFormData(req);
-      const storageLocation = formFields.storageLocation || 'local';
-      const nextId = String(documents.length + 1);
-      const doc = {
-        id: nextId,
-        document_id: `DOC-${String(documents.length + 1).padStart(3, '0')}`,
-        name: formFields.name || 'Uploaded Document.pdf',
-        patient_id: formFields.patientId || '1',
-        file_type: formFields.fileType || 'PDF',
-        category: formFields.category || 'medical_record',
-        uploaded_by: formFields.uploadedBy || 'Dr. John Smith',
-        uploaded_at: new Date().toISOString().split('T')[0],
-        file_size: formFields.fileSize || '1.2 MB',
-        storage_type: storageLocation,
-      };
-      documents.unshift(doc);
-      sendJson(res, 201, doc);
+      readMultipartFormData(req).then((formFields) => {
+        const storageLocation = formFields.storageLocation || 'local';
+        const nextId = String(documents.length + 1);
+        const doc = {
+          id: nextId,
+          document_id: `DOC-${String(documents.length + 1).padStart(3, '0')}`,
+          name: formFields.name || 'Uploaded Document.pdf',
+          patient_id: formFields.patientId || '1',
+          file_type: formFields.fileType || 'PDF',
+          category: formFields.category || 'medical_record',
+          uploaded_by: formFields.uploadedBy || 'Dr. John Smith',
+          uploaded_at: new Date().toISOString().split('T')[0],
+          file_size: formFields.fileSize || '1.2 MB',
+          storage_type: storageLocation,
+        };
+        documents.unshift(doc);
+        sendJson(res, 201, doc);
+      });
       return true;
     }
   }

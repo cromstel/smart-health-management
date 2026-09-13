@@ -161,13 +161,13 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0',
+    host: process.env.NODE_ENV === 'production' ? 'medicare.cromstelit.com' : '0.0.0.0',
     port: 3000,
-    allowedHosts: true,
+    allowedHosts: process.env.NODE_ENV === 'production' ? ['medicare.cromstelit.com'] : true,
   },
   preview: {
-    host: '0.0.0.0',
+    host: process.env.NODE_ENV === 'production' ? 'medicare.cromstelit.com' : '0.0.0.0',
     port: 3000,
-    allowedHosts: true,
+    allowedHosts: process.env.NODE_ENV === 'production' ? ['medicare.cromstelit.com'] : true,
   },
 })
