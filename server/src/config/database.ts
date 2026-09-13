@@ -1,7 +1,13 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
+// Load default .env first (if present), then override with .env.local for local development.
+// .env.local is ignored by git but contains real credentials for the developer's environment.
+// By loading it after the default .env we ensure the local values take precedence.
+
 dotenv.config();
+// Load a local .env file if it exists – this will override any previously loaded vars.
+dotenv.config({ path: '.env.local' });
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
