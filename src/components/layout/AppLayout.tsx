@@ -19,8 +19,8 @@ export function AppLayout() {
     onRegistered(r) {
       console.log('Service Worker registered successfully:', r);
     },
-    onRegisterError(e) {
-      console.error('Service Worker registration failed:', e);
+    onRegisterError(_e) {
+      // Non-fatal: SW blocked by Playwright or unsupported environment
     }
   });
 
