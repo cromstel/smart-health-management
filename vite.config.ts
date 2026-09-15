@@ -131,4 +131,26 @@ export default defineConfig({
     port: 3000,
     allowedHosts: true,
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // React core (runtime + DOM) – shared by every page
+            if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
+              return 'vendor-react';
+            }
+            // Radix UI primitives used by shadcn/ui
+            if (/node_modules[\\/]@radix-ui[\\/]/.test(id)) {
+              return 'vendor-radix';
+            }
+            // lucide-react icon tree-shake bundle
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+          }
+        },
+      },
+    },
+  },
 })
