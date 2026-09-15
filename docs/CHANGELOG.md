@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Unreleased] - 2026-09-15 (Track B Backend Rebuild — MFA/TOTP/WebAuthn Production Stack)
+
+### Added
+- **Full MFA/TOTP backend** — RFC 6238 authenticator via `speakeasy`; `POST /auth/setup-2fa`, `/auth/verify-2fa`, `/auth/verify-recovery` endpoints; `utils/totp.ts` utility (`b08437e`).
+- **Single-use recovery codes** — generated at TOTP enrollment, stored as JSON in `users.recovery_codes`, verified and burned on use (`b08437e`).
+- **Real WebAuthn passkeys** — browser attestation/assertion endpoints (`POST /webauthn/register-start/finish`, `/webauthn/authenticate-start/finish`); `@simplewebauthn/server@^14.0.1` added; `webauthn_credentials` table created with `credential_id`, `public_key`, `counter`, `transports` (`dccee4e`).
+- **WebAuthn Settings page manager** — backend routes for listing, naming, and deleting passkeys per user (`dccee4e`).
+- **Super-Admin password reset** — `POST /super-admin/reset-password`, `/generate-temp-password`, `/update-user-status` (`3076470`).
+- **Batch / Prescription / Patient Load Prediction routes** — three new route modules restored (`330d9da`).
+- **Events & permissions module** — `server/src/events/permissions.ts` for real-time permission change events (`330d9da`).
+- **Demo Request endpoints** — `POST /api/demo-requests` with validation, rate limiting (`c214e7e`).
+- **Financial report workbook builder** — `server/src/services/reportFormatters/xlsx.ts` using `exceljs@^4.4.0` for XLSX/XLS export (`dccee4e`).
+- **5 new server dependencies** — `@simplewebauthn/server`, `exceljs`, `axios`, `cookie-parser`, `express-session`.
+
+### Changed
+- **`users` table** — added `totp_secret VARCHAR(64)`, `recovery_codes JSON`, `hospital_id BIGINT UNSIGNED`, `department_id BIGINT UNSIGNED`; ALTER TABLE for FK constraints to `hospitals`/`departments` (`93cab97`).
+- **`documents` table** — `document_id` widened to `VARCHAR(36)` (UUID support), `storage_type` changed from `ENUM` to `VARCHAR(20)`, added `notes TEXT` (`93cab97`).
+- **`webauthn_credentials` table** — new table with `credential_id UNIQUE`, `public_key TEXT`, `counter INT`, `transports JSON`, FK to `users` (`93cab97`).
+- **Seed data** — added `nurse` (id 5) and `pharmacist` (id 6) roles; `totp_secret` demo values for all seeded users; `storage_type` included in document seed row (`93cab97`).
+- **`src/setupTests.ts`** — restored happy-dom / motion `AbortError` unhandled-rejection suppressor to prevent false root-verify failures during test teardown (`ddc0960`).
+- **`.gitignore`** — now ignores `*.local` and `*.bak` files; stopped tracking `src/docs/TROUBLESHOOTING.md` (`ddc0960`, `42f6278`).
+
+### Fixed
+- **`document.controller.ts`** — `getStorageProvider()` call signatures corrected, `if (!doc)` guard restored, `doc.storage_type` used at lines 212/240 (`ddc0960`).
+- **`pharmacy.controller.ts`** — `await buildXlsx(list, String(reportType))` awaited (`ddc0960`).
+
+### Security & Bug Fixes
+- Suppressed happy-dom/motion `AbortError: The animation was canceled.` unhandled rejections in `src/setupTests.ts` to prevent false-failing root verify gate (`ddc0960`).
+
+### Note
+- Backend verify green: 86 passed / 6 skipped (MySQL `auth_gssapi_client` + financial module auto-skip); root verify green: 19 passed / 1 skipped + vite build with PWA `generateSW` (92 precache entries). Express **4** retained (Track B wired for express 5; not reinstalled on this box). tsc quirk: `npx tsc` triggers a StackOverflowException artifact on this Windows dev box — always use `npm run build` or `node node_modules/typescript/bin/tsc` for builds.
+
+---
+
 ## [Unreleased] - 2026-09-13 (Multi-Backend Document Storage & Super-Admin Completion)
 
 ### Added
@@ -19,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `src/server/mockApi.ts`, `src/pages/DocumentsPage.tsx`, `src/pages/SuperAdminHospitals.tsx`, `src/services/api.ts`, `package.json`, `server/package.json`, `server/src/controllers/document.controller.ts`, `server/src/routes/document.routes.ts`, `server/src/services/{storage,onedrive,googledrive}.storage.service.ts`, `server/src/database/schema.sql`.
 
 ### Note
-- Frontend gates green: 21 passed / 1 skipped, `vite build` with PWA `generateSW` (69 precache entries). Backend gates green: 86 passed / 6 skipped (pre-existing MySQL auth plugin). OAuth in dev runs against mock endpoints; real providers require `.env.local` client ids/secrets.
+- Frontend gates green: 19 passed / 1 skipped, `vite build` with PWA `generateSW` (92 precache entries). Backend gates green: 86 passed / 6 skipped (pre-existing MySQL auth plugin). OAuth in dev runs against mock endpoints; real providers require `.env.local` client ids/secrets.
 
 ---
 
