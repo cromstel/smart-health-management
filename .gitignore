@@ -1,11 +1,11 @@
-#.clinerules/byterover-rules.md
-#.kilocode/rules/byterover-rules.md
-#.roo/rules/byterover-rules.md
-#.windsurf/rules/byterover-rules.md
-#.cursor/rules/byterover-rules.mdc
-#.kiro/steering/byterover-rules.md
-#.qoder/rules/byterover-rules.md
-#.augment/rules/byterover-rules.md
+.clinerules/       
+.kilocode/
+.roo/rules/
+.windsurf/
+.cursor/
+.kiro/
+.qoder/
+.augment/
 
 # Logs
 logs
@@ -23,6 +23,10 @@ dist-ssr
 
 # Editor directories and files
 .vscode/*
+.opencode/
+opencode/
+docs/
+docs/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -31,3 +35,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+thoughts/reviews/landing-page-review.md
+todo/playwright-repair-plan.md
+src/docs/TROUBLESHOOTING.md

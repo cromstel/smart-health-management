@@ -15,7 +15,9 @@ import session from 'express-session';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
+import { getSecret } from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
+import webauthnRoutes from './routes/webauthn.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import patientRoutes from './routes/patient.routes.js';
 import appointmentRoutes from './routes/appointment.routes.js';
@@ -32,6 +34,7 @@ import purchaseOrderRoutes from './routes/purchaseOrder.routes.js';
 import batchRoutes from './routes/batch.routes.js';
 import prescriptionRoutes from './routes/prescription.routes.js';
 import patientLoadPredictionRoutes from './routes/patientLoadPrediction.routes.js';
+import demoRequestRoutes from './routes/demoRequest.routes.js';
 import './jobs/inventory.job.js';
 import './jobs/backup.job.js';
 import { scheduleBackups } from './services/cron.service.js';
@@ -40,7 +43,7 @@ import { rateLimit } from 'express-rate-limit';
 const app = express();
 const PORT = process.env.PORT || 5000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 8443;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'supersecretkey'; // Fallback for development
+const SESSION_SECRET = getSecret('SESSION_SECRET', 'dev-session-only-secret'); // Hard-fails in production when unset
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,12 +86,13 @@ app.get('/', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/analytics/event', (req, res) => {
+app.post('/api/analytics/event', (_req, res) => {
   res.json({ status: 'success', synced: true });
 });
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/webauthn', webauthnRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
@@ -105,6 +109,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/patient-load-predictions', patientLoadPredictionRoutes);
+app.use('/api/demo-requests', demoRequestRoutes);
 
 // Error handlers
 app.use(notFoundHandler);

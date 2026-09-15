@@ -117,7 +117,7 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const currentStorageProvider = getStorageProvider(storageLocation, req.user.id);
+    const currentStorageProvider = getStorageProvider(storageLocation, Number(req.user.id));
 
     const { filename, mimetype, size } = file as any;
     const now = new Date();
@@ -205,11 +205,11 @@ export const downloadDocument = async (req: AuthRequest, res: Response): Promise
 
     const [rows] = await pool.query('SELECT storage_type FROM documents WHERE id = ?', [id]);
     const doc = (rows as any[])[0];
-    if (!docDetails) {
+    if (!doc) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    const currentStorageProvider = getStorageProvider(doc.storage_type, req.user.id);
+    const currentStorageProvider = getStorageProvider(doc.storage_type, Number(req.user.id));
     const { filePath, fileName } = await currentStorageProvider.download(id);
     if (!fs.existsSync(filePath)) {
       return res.status(410).json({ error: 'File missing' });
@@ -237,7 +237,7 @@ export const previewDocument = async (req: AuthRequest, res: Response): Promise<
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    const currentStorageProvider = getStorageProvider(doc.storage_type, req.user.id);
+    const currentStorageProvider = getStorageProvider(doc.storage_type, Number(req.user.id));
     const { filePath } = await currentStorageProvider.preview(id);
     const [docRows] = await pool.query('SELECT file_type FROM documents WHERE document_id = ?', [id]);
     const docDetails = (docRows as any[])[0];

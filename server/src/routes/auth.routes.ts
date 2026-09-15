@@ -16,6 +16,15 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Brute-force protection for TOTP code guessing (6-digit space is small)
+const twoFactorLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Limit each IP to 10 TOTP attempts per windowMs
+  message: 'Too many verification attempts from this IP, please try again after 5 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/login',
   loginLimiter, // Apply brute-force protection
@@ -31,7 +40,12 @@ router.post(
   '/register',
   [
     body('email').trim().isEmail().withMessage('Valid email is required').escape(),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password')
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/).withMessage('Must include uppercase letter')
+      .matches(/[a-z]/).withMessage('Must include lowercase letter')
+      .matches(/[0-9]/).withMessage('Must include number')
+      .matches(/[^A-Za-z0-9]/).withMessage('Must include special character'),
     body('name').trim().notEmpty().withMessage('Name is required').escape(),
     validate
   ],
@@ -54,7 +68,7 @@ router.post(
   '/reset-password',
   [
     body('token').notEmpty().withMessage('Reset token is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     validate
   ],
   authController.resetPassword
@@ -85,6 +99,8 @@ router.post(
 
 router.post(
   '/verify-2fa',
+  authenticate,
+  twoFactorLimiter, // Apply brute-force protection
   [
     body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
     validate
@@ -92,6 +108,61 @@ router.post(
   authController.verifyTwoFactor
 );
 
+// Verify a single-use offline recovery code (backup access when the
+// authenticator app is lost). The code space is ~10^6 so it shares the 2FA
+// brute-force limiter; a valid code is burned (removed) server-side.
+router.post(
+  '/verify-recovery',
+  authenticate,
+  twoFactorLimiter,
+  [
+    body('code').matches(/^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/).withMessage('Recovery code must be in XXXXX-XXXXX format'),
+    validate
+  ],
+  authController.verifyRecovery
+);
+
+// ── TOTP enrollment / rotation / disable ───────────────────────────────────
+// Authenticated self-service endpoints. The code space is tiny (10^6) so all
+// confirmation paths share the two-factor brute-force limiter.
+
+// Generate a fresh secret for authenticator pairing. Stateless: nothing is
+// persisted until /totp/confirm proves possession of the new key.
+router.post('/totp/enroll', authenticate, twoFactorLimiter, authController.totpEnroll);
+
+// Verify a code against a freshly generated secret and persist it, enabling
+// 2FA (or rotating an existing secret).
+router.post(
+  '/totp/confirm',
+  authenticate,
+  twoFactorLimiter,
+  [
+    body('secret').isString().withMessage('Secret is required').isLength({ min: 16, max: 64 }).withMessage('Secret must be 16-64 characters'),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
+    validate
+  ],
+  authController.totpConfirm
+);
+
+// Verify a current code against the stored secret and remove it, disabling 2FA.
+router.post(
+  '/totp/disable',
+  authenticate,
+  twoFactorLimiter,
+  [
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
+    validate
+  ],
+  authController.totpDisable
+);
+
+// DEV-ONLY: current demo TOTP code for the auto-fill buttons. Never exposed
+// in production.
+if (process.env.NODE_ENV !== 'production') {
+  router.get('/dev-totp-current', authController.devCurrentTotp);
+}
+
 router.get('/me', authenticate, authController.getMe);
+router.get('/mfa-events', authenticate, authController.getMfaEvents);
 
 export default router;
