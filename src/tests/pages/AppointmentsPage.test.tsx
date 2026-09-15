@@ -40,6 +40,14 @@ vi.mock('@/contexts/AuthContext', async () => {
   }
 })
 
+vi.mock('@/contexts/NotificationContext', () => {
+  return {
+    useNotifications: () => ({
+      alertStaffForUpcomingAppointments: vi.fn(),
+    })
+  }
+})
+
 describe('AppointmentsPage hospital-aware gating', () => {
   beforeEach(() => {
     vi.clearAllMocks()

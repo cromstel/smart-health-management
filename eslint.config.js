@@ -74,5 +74,14 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^(e|error|_e)' }],
     }
+  },
+  {
+    files: ['scripts/**/*.{js,mjs}'], // Node.js dev/ops scripts (root)
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        console: true,
+      }
+    }
   }
 ];

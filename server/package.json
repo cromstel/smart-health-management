@@ -11,7 +11,8 @@
     "db:migrate": "npx sequelize-cli db:migrate",
     "db:seed": "node src/database/seed.js",
     "test": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "verify": "npm run lint && npm run build && npm run test -- --run"
   },
   "keywords": [
     "healthcare",

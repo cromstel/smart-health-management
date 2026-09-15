@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Unreleased] - 2026-09-13 (Multi-Backend Document Storage & Super-Admin Completion)
+
+### Added
+- **Multi-backend document storage** — documents now carry a `storage_type` (`local` | `onedrive` | `googledrive`); `DocumentsPage` upload dialog has a Storage Location selector with per-provider connect links, and the library table shows a Storage badge per row.
+- **Cloud OAuth endpoints** — `GET /api/documents/onedrive/auth`, `/googledrive/auth`, `/onedrive/callback`, `/googledrive/callback` (server routes + controllers; tokens persisted per user in `users.onedrive_*` / `googledrive_*` columns).
+- **Super-Admin hospital overview** — hospital cards render Departments, Staff, and Beds counts (`departments`, `staff_count`, `beds`).
+
+### Changed
+- **Mock API parity** — mock now parses multipart upload bodies (`readMultipartFormData`) so `storageLocation` maps to `storage_type` on create; serves the four OAuth endpoints with dev-friendly JSON responses; hospital records include `departments`/`staff_count`.
+- **Sequential `verify` scripts** — root and `server/` now expose `npm run verify` (lint → type-check/build → vitest --run, plus vite build at root). Chaining gates is mandatory on this dev machine: running builds and test suites in parallel exhausts RAM and OOMs Node.
+- `src/server/mockApi.ts`, `src/pages/DocumentsPage.tsx`, `src/pages/SuperAdminHospitals.tsx`, `src/services/api.ts`, `package.json`, `server/package.json`, `server/src/controllers/document.controller.ts`, `server/src/routes/document.routes.ts`, `server/src/services/{storage,onedrive,googledrive}.storage.service.ts`, `server/src/database/schema.sql`.
+
+### Note
+- Frontend gates green: 21 passed / 1 skipped, `vite build` with PWA `generateSW` (69 precache entries). Backend gates green: 86 passed / 6 skipped (pre-existing MySQL auth plugin). OAuth in dev runs against mock endpoints; real providers require `.env.local` client ids/secrets.
+
+---
+
 ## [1.3.0] - 2026-09-08
 
 ### Added

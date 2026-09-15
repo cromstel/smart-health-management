@@ -14,6 +14,7 @@ vi.mock('@/services/api', async (importOriginal) => {
       ...actualApi.api,
       login: vi.fn(),
       getMe: vi.fn(),
+      verifyTwoFactor: vi.fn(async () => ({})),
     },
   };
 });
@@ -92,7 +93,7 @@ describe('Authentication Integration Tests', () => {
       </MemoryRouter>
     );
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email address');
     const passwordInput = screen.getByLabelText('Password');
     const loginButton = screen.getByRole('button', { name: 'Sign In' });
 
@@ -100,6 +101,12 @@ describe('Authentication Integration Tests', () => {
       await userEvent.type(emailInput, 'test@example.com');
       await userEvent.type(passwordInput, 'password');
       await userEvent.click(loginButton);
+    });
+
+    // Staff roles require TOTP MFA by design — complete the verification step
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Quick Test: Fill Demo TOTP Token (123456)' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Verify Code & Access Workstation' }));
     });
 
     await waitFor(() => {
@@ -119,7 +126,7 @@ describe('Authentication Integration Tests', () => {
       </MemoryRouter>
     );
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email address');
     const passwordInput = screen.getByLabelText('Password');
     const loginButton = screen.getByRole('button', { name: 'Sign In' });
 
@@ -131,7 +138,7 @@ describe('Authentication Integration Tests', () => {
 
     await waitFor(() => {
       expect(localStorageMock.getItem('token')).toBeNull();
-      expect(screen.getByLabelText('Email')).toBeInTheDocument();
+      expect(screen.getByLabelText('Email address')).toBeInTheDocument();
       expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument();
     });
   });
@@ -166,7 +173,7 @@ describe('Authentication Integration Tests', () => {
     await waitFor(() => {
       expect(localStorageMock.getItem('token')).toBeNull();
       expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('Email')).toBeInTheDocument();
+      expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     });
   });
 });
