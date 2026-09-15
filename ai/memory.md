@@ -28,4 +28,4 @@ Project enforces strict adherence to **NO GRADIENTS**, **zero unresolved TypeScr
 
 ## Known follow-ups (post-verify)
 
-- `server/src/database/schema.sql` (last commit 3076470) lacks the `webauthn_credentials` table that dccee4e added (+15 lines) — runtime seed gap for the passkey feature, not a build/test blocker.
+- None blocking. (The `webauthn_credentials` schema/seed gap was closed: schema.sql + seed.sql restored from `3076470` in `93cab97`.)
