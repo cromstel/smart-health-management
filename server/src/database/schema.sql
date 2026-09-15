@@ -27,6 +27,10 @@ CREATE TABLE IF NOT EXISTS users (
   password_must_change BOOLEAN DEFAULT FALSE,
   password_changed_at DATETIME NULL,
   password_postpone_count INT DEFAULT 0,
+  totp_secret VARCHAR(64) NULL,
+  recovery_codes JSON NULL,
+  hospital_id BIGINT UNSIGNED NULL,
+  department_id BIGINT UNSIGNED NULL,
   onedrive_access_token TEXT NULL,
   onedrive_refresh_token TEXT NULL,
   googledrive_access_token TEXT NULL,
@@ -82,6 +86,12 @@ CREATE TABLE IF NOT EXISTS departments (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE
 );
+
+-- users affiliation: hospitals/departments are created after users above, so
+-- the FK constraints are wired in a follow-up ALTER for fresh installs.
+ALTER TABLE users
+  ADD CONSTRAINT fk_users_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL,
+  ADD CONSTRAINT fk_users_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;
 
 -- 6. Staff table
 CREATE TABLE IF NOT EXISTS staff (
@@ -185,13 +195,14 @@ CREATE TABLE IF NOT EXISTS documents (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   patient_id BIGINT UNSIGNED,
   document_type VARCHAR(100),
-  document_id VARCHAR(20) UNIQUE NOT NULL,
+  document_id VARCHAR(36) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
   file_type VARCHAR(50),
   category ENUM('medical_record', 'lab_report', 'prescription', 'administrative'),
   file_path VARCHAR(500),
   file_size BIGINT,
-  storage_type ENUM('local', 'cloud') DEFAULT 'local',
+  storage_type VARCHAR(20) DEFAULT 'local',
+  notes TEXT NULL,
   uploaded_by BIGINT UNSIGNED,
   uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
@@ -477,4 +488,19 @@ CREATE TABLE IF NOT EXISTS forecasts (
   predicted_value DECIMAL(15,2) NOT NULL,
   model VARCHAR(50) NOT NULL,
   generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 28. WebAuthn passkey credentials (real browser attestation/assertion)
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  credential_id VARCHAR(255) NOT NULL UNIQUE,
+  public_key TEXT NOT NULL,
+  counter INT NOT NULL DEFAULT 0,
+  device_name VARCHAR(120) NOT NULL DEFAULT 'Passkey',
+  transports JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_used_at DATETIME NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_webauthn_user (user_id)
 );
