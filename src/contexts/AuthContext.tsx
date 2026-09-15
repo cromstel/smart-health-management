@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { api, API_ORIGIN } from '@/services/api';
+import type { AuthenticationResponseJSON } from '@simplewebauthn/browser';
 
 export interface User {
   id: string;
@@ -8,27 +9,34 @@ export interface User {
   role: string;
   permissions: string[];
   hospital_id?: string;
+  totp_enabled?: boolean;
+  recovery_codes_count?: number;
   password_must_change?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<{ requiresMfa: boolean }>;
+  login: (email: string, password: string) => Promise<{ requiresMfa: boolean; user: User | null }>;
   logout: () => void;
   isAuthenticated: boolean;
+  isAuthLoading: boolean;
   hasPermission: (perm: string) => boolean;
   canActOnHospital: (hospitalId?: string) => boolean;
   canActOnDepartment: (departmentId?: string) => boolean;
   mfaPending: boolean;
   mfaPendingUser: User | null;
   verifyMfaTotp: (code: string) => Promise<boolean>;
+  verifyMfaRecovery: (code: string) => Promise<boolean>;
+  verifyMfaPasskey: (assertion: AuthenticationResponseJSON, challengeToken: string) => Promise<boolean>;
   cancelMfa: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [mfaPending, setMfaPending] = useState<boolean>(false);
   const [mfaPendingUser, setMfaPendingUser] = useState<User | null>(null);
   const [mfaPendingToken, setMfaPendingToken] = useState<string | null>(null);
@@ -52,29 +60,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.permissions.includes('all:view');
   };
 
-  const login = async (email: string, password: string): Promise<{ requiresMfa: boolean }> => {
+  const login = async (email: string, password: string): Promise<{ requiresMfa: boolean; user: User | null }> => {
     try {
-      const response = await api.login(email, password) as any;
-      console.log('API Login Response:', response);
+      const response = await api.login(email, password) as { requiresMfa?: boolean; tempToken?: string; token?: string; user?: User };
 
-      const isMfaEnabled = localStorage.getItem('mfa_enabled') !== 'false';
-      const isStaffRole = ['doctor', 'admin', 'super_admin', 'nurse', 'pharmacist', 'lab_tech'].includes(
-        (response.user?.role || '').toLowerCase()
-      ) || (response.user?.email || '').includes('smarthealth.com');
-
-      if (isMfaEnabled || isStaffRole) {
-        // Staff MFA Required -> Put auth into TOTP MFA Verification mode
+      // The backend is the source of truth for MFA — a user with a stored TOTP
+      // secret never receives a full JWT from /auth/login, only a short-lived
+      // temp token that gates the verify-2fa endpoint.
+      if (response.requiresMfa && response.tempToken) {
         setMfaPending(true);
-        setMfaPendingUser(response.user);
-        setMfaPendingToken(response.token);
-        return { requiresMfa: true };
+        setMfaPendingUser(response.user ?? null);
+        setMfaPendingToken(response.tempToken);
+        return { requiresMfa: true, user: response.user ?? null };
       } else {
-        localStorage.setItem('token', response.token);
-        setUser(response.user);
+        localStorage.setItem('token', response.token ?? '');
+        setUser(response.user ?? null);
+        if (!response.token) {
+          throw new Error('Login succeeded but no session token was returned');
+        }
         setMfaPending(false);
         setMfaPendingUser(null);
         setMfaPendingToken(null);
-        return { requiresMfa: false };
+        setIsAuthLoading(false);
+        return { requiresMfa: false, user: response.user ?? null };
       }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : 'Login failed';
@@ -94,19 +102,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Invalid TOTP authenticator code. Code must be 6 numeric digits.');
     }
 
-    // Call API 2FA verify endpoint or finalize auth
-    try {
-      await api.verifyTwoFactor(cleanCode);
-    } catch {
-      // Endpoint fallback allows valid TOTP codes during testing/demo
-    }
+    // Call API 2FA verify endpoint with the temp token; verification issues a
+    // fresh full JWT. Any failure propagates to the caller.
+    const mfaResponse = await api.verifyTwoFactor(cleanCode, mfaPendingToken) as { token?: string; user?: User };
 
-    // Complete authentication
-    localStorage.setItem('token', mfaPendingToken);
-    setUser(mfaPendingUser);
+    // Complete authentication with the verified full-token response
+    localStorage.setItem('token', mfaResponse.token ?? '');
+    setUser(mfaResponse.user ?? mfaPendingUser);
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
+    setIsAuthLoading(false);
+    return true;
+  };
+
+  const verifyMfaRecovery = async (recoveryCodeInput: string): Promise<boolean> => {
+    if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
+      throw new Error('No pending MFA session found. Please log in again.');
+    }
+
+    const cleanCode = recoveryCodeInput.trim().toUpperCase();
+    if (!/^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(cleanCode)) {
+      throw new Error('Invalid recovery code. Use the XXXXX-XXXXX format from your setup screen.');
+    }
+
+    // Call the recovery-code endpoint with the temp token; a match issues a
+    // fresh full JWT and burns the code (single-use).
+    const mfaResponse = await api.verifyRecovery(cleanCode, mfaPendingToken) as { token?: string; user?: User };
+
+    localStorage.setItem('token', mfaResponse.token ?? '');
+    setUser(mfaResponse.user ?? mfaPendingUser);
+    setMfaPending(false);
+    setMfaPendingUser(null);
+    setMfaPendingToken(null);
+    setIsAuthLoading(false);
+    return true;
+  };
+
+  const verifyMfaPasskey = async (
+    assertion: AuthenticationResponseJSON,
+    challengeToken: string
+  ): Promise<boolean> => {
+    if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
+      throw new Error('No pending MFA session found. Please log in again.');
+    }
+
+    // Passkey assertion consumes the mfa_pending temp token and issues the
+    // full-scope JWT, mirroring the TOTP/recovery success path.
+    const mfaResponse = await api.webauthnLoginVerify(assertion, challengeToken, mfaPendingToken) as { token?: string; user?: User };
+
+    localStorage.setItem('token', mfaResponse.token ?? '');
+    setUser(mfaResponse.user ?? mfaPendingUser);
+    setMfaPending(false);
+    setMfaPendingUser(null);
+    setMfaPendingToken(null);
+    setIsAuthLoading(false);
     return true;
   };
 
@@ -114,6 +164,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
+  };
+
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const data: { user: User } = await api.getMe();
+      setUser(data.user);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
   };
 
   const logout = () => {
@@ -137,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       }
+      setIsAuthLoading(false);
     };
 
     fetchUser();
@@ -183,13 +243,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         isAuthenticated: !!user,
+        isAuthLoading,
         hasPermission,
         canActOnHospital,
         canActOnDepartment,
         mfaPending,
         mfaPendingUser,
         verifyMfaTotp,
+        verifyMfaRecovery,
+        verifyMfaPasskey,
         cancelMfa,
+        refreshUser,
       }}
     >
       {children}

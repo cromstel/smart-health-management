@@ -26,7 +26,7 @@ export default function SuperAdminOperations() {
       const result = await api.triggerBackup() as any;
       setMessage({
         type: 'success',
-        text: `Backup initiated successfully: ${result.backupName}`,
+        text: `Backup initiated successfully${result.backupPath || result.backupId ? `: ${result.backupPath || result.backupId}` : ''}`,
       });
     } catch (err: any) {
       setMessage({
@@ -68,8 +68,8 @@ export default function SuperAdminOperations() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">System Operations</h1>
-        <p className="text-gray-400 mt-1">Manage system backups and upgrades</p>
+        <h1 className="text-3xl font-bold text-foreground">System Operations</h1>
+        <p className="text-muted-foreground mt-1">Manage system backups and upgrades</p>
       </div>
 
       {message && (
@@ -93,24 +93,24 @@ export default function SuperAdminOperations() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Backup Section */}
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#00BFFF]/10 flex items-center justify-center">
-                <Download className="w-5 h-5 text-[#00BFFF]" />
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <Download className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <CardTitle className="text-white">System Backup</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle className="text-foreground">System Backup</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Create a backup of the entire system
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
-              <h4 className="text-sm font-medium text-white mb-2">Backup Information</h4>
-              <ul className="text-sm text-gray-400 space-y-1">
+            <div className="p-4 rounded-lg bg-card border border-border">
+              <h4 className="text-sm font-medium text-foreground mb-2">Backup Information</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Includes all database tables</li>
                 <li>• Includes system configuration</li>
                 <li>• Stored with timestamp</li>
@@ -131,7 +131,7 @@ export default function SuperAdminOperations() {
                         handleBackup();
                       }}
                       disabled={backupLoading || !hasPermission('superadmin:edit')}
-                      className="w-full bg-[#00BFFF] hover:bg-[#00BFFF]/90 text-white"
+                      className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                     >
                       {backupLoading ? (
                         'Creating Backup...'
@@ -155,15 +155,15 @@ export default function SuperAdminOperations() {
         </Card>
 
         {/* Upgrade Section */}
-        <Card className="bg-[#001F3F]/50 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#00BFFF]/10 flex items-center justify-center">
-                <Upload className="w-5 h-5 text-[#00BFFF]" />
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <Upload className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <CardTitle className="text-white">System Upgrade</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle className="text-foreground">System Upgrade</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Upgrade the system to a new version
                 </CardDescription>
               </div>
@@ -172,7 +172,7 @@ export default function SuperAdminOperations() {
           <CardContent>
             <form onSubmit={handleUpgrade} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="version" className="text-gray-300">
+                <Label htmlFor="version" className="text-muted-foreground">
                   Version Number *
                 </Label>
                 <Input
@@ -181,12 +181,12 @@ export default function SuperAdminOperations() {
                   value={version}
                   onChange={(e) => setVersion(e.target.value)}
                   required
-                  className="bg-[#001F3F]/50 border-gray-700 text-white"
+                  className="bg-background border-border"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-gray-300">
+                <Label htmlFor="description" className="text-muted-foreground">
                   Description (Optional)
                 </Label>
                 <Textarea
@@ -195,7 +195,7 @@ export default function SuperAdminOperations() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="bg-[#001F3F]/50 border-gray-700 text-white"
+                  className="bg-background border-border"
                 />
               </div>
 
@@ -206,7 +206,7 @@ export default function SuperAdminOperations() {
                       <Button
                         type="submit"
                         disabled={upgradeLoading || !hasPermission('superadmin:edit')}
-                        className="w-full bg-[#00BFFF] hover:bg-[#00BFFF]/90 text-white"
+                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                         onClick={(e) => {
                           if (!hasPermission('superadmin:edit')) {
                             e.preventDefault();

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 type ReportType = 'stock_levels' | 'expiry_dates' | 'low_stock';
 
@@ -25,19 +27,17 @@ export default function InventoryReportsPage() {
   const [loading, setLoading] = useState(false);
   const [scheduleTime, setScheduleTime] = useState(localStorage.getItem('inventoryReportSchedule') || '');
   const [batchView, setBatchView] = useState<{ medicine: any; batches: any[] } | null>(null);
-  
-  // Custom states for Print and Export preferences
+
   const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
   const [preferredFormat, setPreferredFormat] = useState<string>('PDF');
   const [systemName, setSystemName] = useState('Smart Health Hospital');
 
-  // Load configuration and settings
   useEffect(() => {
     const saved = localStorage.getItem('preferred_inventory_export');
     if (saved) {
       setPreferredFormat(saved);
     }
-    
+
     api.getSettings()
       .then((data: any) => {
         if (data && data.systemName) {
@@ -50,14 +50,16 @@ export default function InventoryReportsPage() {
   const loadReport = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.getPharmacyReport(reportType);
-      setRows(data as any[]);
+      const data: any = await api.getPharmacyReport({ type: reportType });
+      // The API returns report rows. Retain a safe empty state if an older
+      // deployment returns a summary object instead of the row collection.
+      setRows(Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : []);
     } catch (_e) {
       toast.error('Failed to load report');
     } finally {
       setLoading(false);
     }
-  }, [reportType, setRows, setLoading]);
+  }, [reportType]);
 
   useEffect(() => {
     loadReport();
@@ -267,16 +269,16 @@ export default function InventoryReportsPage() {
             />
           </div>
           <Button variant="outline" className="h-9" onClick={scheduleReport}>
-            <Clock className="h-4 w-4 mr-1" />
+            <Clock className="h-4 w-4 mr-1" aria-hidden="true" />
             Schedule
           </Button>
-          <Button 
-            variant={preferredFormat === 'PDF' ? 'default' : 'outline'} 
-            className="h-9 gap-1" 
-            onClick={handleExportPDF} 
+          <Button
+            variant={preferredFormat === 'PDF' ? 'default' : 'outline'}
+            className="h-9 gap-1"
+            onClick={handleExportPDF}
             title="Export report to PDF"
           >
-            <FileText className="h-4 w-4 text-red-500" />
+            <FileText className="h-4 w-4 text-red-500" aria-hidden="true" />
             <span>Export PDF</span>
             {preferredFormat === 'PDF' && (
               <span className="ml-1 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
@@ -285,16 +287,16 @@ export default function InventoryReportsPage() {
             )}
           </Button>
           <Button variant="outline" className="h-9 gap-1" onClick={handlePrint} title="Print printer-friendly report">
-            <Printer className="h-4 w-4 text-sky-500" />
+            <Printer className="h-4 w-4 text-accent" aria-hidden="true" />
             <span>Print</span>
           </Button>
-          <Button 
-            variant={preferredFormat === 'CSV' ? 'default' : 'outline'} 
-            className="h-9 gap-1" 
-            onClick={exportCSV} 
+          <Button
+            variant={preferredFormat === 'CSV' ? 'default' : 'outline'}
+            className="h-9 gap-1"
+            onClick={exportCSV}
             title="Export report to CSV"
           >
-            <Download className="h-4 w-4 text-emerald-500" />
+            <Download className="h-4 w-4 text-emerald-500" aria-hidden="true" />
             <span>Export CSV</span>
             {preferredFormat === 'CSV' && (
               <span className="ml-1 text-[10px] bg-emerald-500 text-white rounded-full px-1.5 py-0.5 font-bold">
@@ -305,98 +307,107 @@ export default function InventoryReportsPage() {
         </div>
       </div>
 
-      <Card className="print:border-none print:shadow-none">
-        <CardHeader className="print:pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle>{reportTitle}</CardTitle>
-            <div className="print:hidden">
-              <select
-                className="border border-border bg-background text-foreground rounded-md px-3 py-1.5 text-sm"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value as ReportType)}
-              >
-                <option value="stock_levels">Stock Levels</option>
-                <option value="expiry_dates">Expiry Dates</option>
-                <option value="low_stock">Low Stock</option>
-              </select>
+      <ErrorBoundary fallbackTitle="Error loading Inventory Report">
+        <Card className="print:border-none print:shadow-none">
+          <CardHeader className="print:pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle>{reportTitle}</CardTitle>
+              <div className="print:hidden">
+                <select
+                  className="border border-border bg-background text-foreground rounded-md px-3 py-1.5 text-sm"
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value as ReportType)}
+                >
+                  <option value="stock_levels">Stock Levels</option>
+                  <option value="expiry_dates">Expiry Dates</option>
+                  <option value="low_stock">Low Stock</option>
+                </select>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">Loading report...</p></div>
-          ) : rows.length === 0 ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">No data available for this report.</p></div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {Object.keys(rows[0]).map((h) => (
-                      <TableHead key={h} className="capitalize font-semibold">
-                        {h.replace(/_/g, ' ')}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((r, i) => (
-                    <TableRow key={i}>
-                      {Object.keys(rows[0]).map((h) => (
-                        <TableCell key={h}>{String(r[h] ?? '')}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {batchView && (
-        <Card className="print:hidden">
-          <CardHeader>
-            <CardTitle>Batches for {batchView.medicine.name}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Expired batches: {batchExpiredCount}</p>
-              <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: [...batchView.batches, { batchNumber: '', expiryDate: '', quantity: 0, recalled: false }] })}>Add Batch</Button>
-              <div className="space-y-2">
-                {batchView.batches.map((b, idx) => (
-                  <div key={idx} className="grid grid-cols-5 gap-2">
-                    <Input placeholder="Batch #" value={b.batchNumber} onChange={(e) => {
-                      const copy = [...batchView.batches];
-                      copy[idx].batchNumber = e.target.value;
-                      setBatchView({ medicine: batchView.medicine, batches: copy });
-                    }} />
-                    <Input type="date" value={b.expiryDate} onChange={(e) => {
-                      const copy = [...batchView.batches];
-                      copy[idx].expiryDate = e.target.value;
-                      setBatchView({ medicine: batchView.medicine, batches: copy });
-                    }} />
-                    <Input type="number" value={b.quantity} onChange={(e) => {
-                      const copy = [...batchView.batches];
-                      copy[idx].quantity = Number(e.target.value);
-                      setBatchView({ medicine: batchView.medicine, batches: copy });
-                    }} />
-                    <Button variant="outline" onClick={() => {
-                      const copy = [...batchView.batches];
-                      copy[idx].recalled = !copy[idx].recalled;
-                      setBatchView({ medicine: batchView.medicine, batches: copy });
-                      toast.info(copy[idx].recalled ? 'Batch recalled' : 'Recall removed');
-                    }}>{b.recalled ? 'Un-recall' : 'Recall'}</Button>
-                    <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: batchView.batches.filter((_, i) => i !== idx) })}>Remove</Button>
-                  </div>
-                ))}
+            {loading ? (
+              <div className="space-y-3 py-2" role="status" aria-label="Loading report">
+                <span className="sr-only">Loading report...</span>
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => saveBatch(batchView.medicine.id, batchView.batches)}>Save Batches</Button>
+            ) : rows.length === 0 ? (
+              <div className="text-center py-12"><p className="text-muted-foreground">No data available for this report.</p></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {Object.keys(rows[0]).map((h) => (
+                        <TableHead key={h} className="capitalize font-semibold">
+                          {h.replace(/_/g, ' ')}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((r, i) => (
+                      <TableRow key={i}>
+                        {Object.keys(rows[0]).map((h) => (
+                          <TableCell key={h}>{String(r[h] ?? '')}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
+      </ErrorBoundary>
+
+      {batchView && (
+        <ErrorBoundary fallbackTitle="Error loading Batch Management">
+          <Card className="print:hidden">
+            <CardHeader>
+              <CardTitle>Batches for {batchView.medicine.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Expired batches: {batchExpiredCount}</p>
+                <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: [...batchView.batches, { batchNumber: '', expiryDate: '', quantity: 0, recalled: false }] })}>Add Batch</Button>
+                <div className="space-y-2">
+                  {batchView.batches.map((b, idx) => (
+                    <div key={idx} className="grid grid-cols-5 gap-2">
+                      <Input placeholder="Batch #" value={b.batchNumber} onChange={(e) => {
+                        const copy = [...batchView.batches];
+                        copy[idx].batchNumber = e.target.value;
+                        setBatchView({ medicine: batchView.medicine, batches: copy });
+                      }} />
+                      <Input type="date" value={b.expiryDate} onChange={(e) => {
+                        const copy = [...batchView.batches];
+                        copy[idx].expiryDate = e.target.value;
+                        setBatchView({ medicine: batchView.medicine, batches: copy });
+                      }} />
+                      <Input type="number" value={b.quantity} onChange={(e) => {
+                        const copy = [...batchView.batches];
+                        copy[idx].quantity = Number(e.target.value);
+                        setBatchView({ medicine: batchView.medicine, batches: copy });
+                      }} />
+                      <Button variant="outline" onClick={() => {
+                        const copy = [...batchView.batches];
+                        copy[idx].recalled = !copy[idx].recalled;
+                        setBatchView({ medicine: batchView.medicine, batches: copy });
+                        toast.info(copy[idx].recalled ? 'Batch recalled' : 'Recall removed');
+                      }}>{b.recalled ? 'Un-recall' : 'Recall'}</Button>
+                      <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: batchView.batches.filter((_, i) => i !== idx) })}>Remove</Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => saveBatch(batchView.medicine.id, batchView.batches)}>Save Batches</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </ErrorBoundary>
       )}
 
       {/* Print Confirmation Dialog */}
@@ -412,7 +423,7 @@ export default function InventoryReportsPage() {
             <Button variant="outline" onClick={() => setIsPrintConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={triggerBrowserPrint} className="bg-sky-600 hover:bg-sky-700 text-white">
+            <Button onClick={triggerBrowserPrint} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               Yes, Print Report
             </Button>
           </DialogFooter>

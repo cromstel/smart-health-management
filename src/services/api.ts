@@ -1,7 +1,77 @@
-import type { User } from "@/contexts/AuthContext";
+﻿import type { User } from "@/contexts/AuthContext";
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON
+} from '@simplewebauthn/browser';
 
 
 interface SystemHealthResponse { status: string; }
+
+export interface DemoRequestPayload {
+  name: string;
+  email: string;
+  organization: string;
+  role: string;
+  organizationSize: '1-50' | '51-250' | '251-1000' | '1000+';
+  preferredContact: 'email' | 'phone';
+  phone?: string;
+  message?: string;
+  website?: string;
+}
+
+/** A passkey registered to the current user (server mirror of webauthn_credentials). */
+export interface WebAuthnCredentialRecord {
+  id: number;
+  credential_id: string;
+  device_name: string;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+/** Super-admin hospital overview record (GET /super-admin/hospitals). */
+export interface SuperAdminHospital {
+  id: string;
+  hospital_id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  status: 'active' | 'inactive';
+  beds: number;
+  occupancy: number;
+  departments: number;
+  staff_count: number;
+}
+
+/** Super-admin user management record (GET /super-admin/users). */
+export interface SuperAdminUser {
+  id: string;
+  email: string;
+  name: string;
+  status: 'active' | 'inactive' | 'locked';
+  last_login: string | null;
+  created_at: string;
+  role_name: string;
+  role_description: string;
+}
+
+/** Super-admin system setting (GET /super-admin/settings). */
+export interface SuperAdminSetting {
+  id: string;
+  setting_key: string;
+  setting_value: string;
+  category: string;
+}
+
+/** Super-admin backup record (GET /super-admin/backups). */
+export interface SuperAdminBackup {
+  id: string;
+  name: string;
+  size: string;
+  createdAt: string;
+}
 
 let configuredUrl = import.meta.env.VITE_API_URL || '/api';
 if (import.meta.env.DEV && configuredUrl.includes('localhost:5600')) {
@@ -68,8 +138,17 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async register(data: { email: string; password: string; name: string; roleId?: string }) {
+  async register(data: { email: string; password: string; name: string; roleId?: string; hospital?: string; department?: string }) {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: this.getHeaders(false),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async requestDemo(data: DemoRequestPayload): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/demo-requests`, {
       method: 'POST',
       headers: this.getHeaders(false),
       body: JSON.stringify(data),
@@ -95,8 +174,67 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async verifyTwoFactor(code: string) {
+  async verifyTwoFactor(code: string, mfaToken?: string) {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mfaToken) {
+      headers['Authorization'] = `Bearer ${mfaToken}`;
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
     const response = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ code }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** DEV-only: current valid TOTP code for the seeded demo user (auto-fill button). */
+  async devCurrentTotp(): Promise<{ code: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/dev-totp-current`);
+    return this.handleResponse(response);
+  }
+
+  /** Verify a single-use offline recovery code issued at TOTP setup (backup login). */
+  async verifyRecovery(code: string, mfaToken?: string) {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mfaToken) {
+      headers['Authorization'] = `Bearer ${mfaToken}`;
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/auth/verify-recovery`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ code }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Generate a fresh TOTP secret for authenticator pairing (stateless; persists only on confirm). */
+  async totpEnroll(): Promise<{ secret: string; otpauthUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/totp/enroll`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify a code against a secret and persist it (enables 2FA or rotates the key). */
+  async totpConfirm(secret: string, code: string): Promise<{ enabled: boolean; recoveryCodes: string[] }> {
+    const response = await fetch(`${API_BASE_URL}/auth/totp/confirm`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ secret, code }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify a current code against the stored secret and remove it (disables 2FA). */
+  async totpDisable(code: string): Promise<{ enabled: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/auth/totp/disable`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ code }),
@@ -123,6 +261,80 @@ class ApiService {
 
   async getMe(): Promise<{ user: User }> {
     const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getMfaEvents() {
+    const response = await fetch(`${API_BASE_URL}/auth/mfa-events`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // â”€â”€ WebAuthn passkeys â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Real browser attestation/assertion. The backend signs the ceremony
+  // challenge into a short-lived token that is returned with the verify call.
+
+  /** Start a passkey registration ceremony (authenticated). */
+  async webauthnRegisterOptions(): Promise<{ options: PublicKeyCredentialCreationOptionsJSON; challengeToken: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/register/options`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify + persist the credential returned by the browser ceremony. */
+  async webauthnRegisterVerify(registration: RegistrationResponseJSON, challengeToken: string, deviceName?: string) {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/register/verify`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ registration, challengeToken, deviceName }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Start a passkey login ceremony for the given account (public). */
+  async webauthnLoginOptions(email: string): Promise<{ options: PublicKeyCredentialRequestOptionsJSON; challengeToken: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/login/options`, {
+      method: 'POST',
+      headers: this.getHeaders(false),
+      body: JSON.stringify({ email }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Verify a passkey assertion and exchange it for a full session (mfa_pending token in header). */
+  async webauthnLoginVerify(assertion: AuthenticationResponseJSON, challengeToken: string, mfaToken?: string) {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mfaToken) {
+      headers['Authorization'] = `Bearer ${mfaToken}`;
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/login/verify`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ assertion, challengeToken }),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** List the caller's registered passkeys. */
+  async webauthnListCredentials(): Promise<{ credentials: WebAuthnCredentialRecord[] }> {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/credentials`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Remove one of the caller's passkeys. */
+  async webauthnDeleteCredential(credentialId: number) {
+    const response = await fetch(`${API_BASE_URL}/auth/webauthn/credentials/${credentialId}`, {
+      method: 'DELETE',
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
@@ -328,7 +540,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getBackups() {
+  async getBackups(): Promise<SuperAdminBackup[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/backups`, {
       headers: this.getHeaders(),
     });
@@ -483,6 +695,27 @@ class ApiService {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
+  }
+
+
+  /** Fetch a document blob (preview or download) with the auth header attached. */
+  async getDocumentBlob(id: string, action: 'preview' | 'download'): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/documents/${id}/${action}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(text || `Failed to ${action} document`);
+    }
+    return response.blob();
+  }
+
+  async downloadDocument(id: string): Promise<Blob> {
+    return this.getDocumentBlob(id, 'download');
+  }
+
+  async previewDocument(id: string): Promise<Blob> {
+    return this.getDocumentBlob(id, 'preview');
   }
 
   // Predictions & Ghana Health
@@ -672,7 +905,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getAllHospitalsAdmin() {
+  async getAllHospitalsAdmin(): Promise<SuperAdminHospital[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/hospitals`, {
       headers: this.getHeaders(),
     });
@@ -688,7 +921,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getSystemSettings() {
+  async getSystemSettings(): Promise<SuperAdminSetting[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/settings`, {
       headers: this.getHeaders(),
     });
@@ -707,14 +940,14 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getAllUsers() {
+  async getAllUsers(): Promise<SuperAdminUser[]> {
     const response = await fetch(`${API_BASE_URL}/super-admin/users`, {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
 
-  async updateUserStatus(id: string, status: string) {
+  async updateUserStatus(id: string, status: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/status`, {
       method: 'PUT',
       headers: this.getHeaders(),
@@ -722,7 +955,16 @@ class ApiService {
     });
     return this.handleResponse(response);
   }
-  
+
+  async resetUserPassword(id: string, clearTwoFactor = false): Promise<{ temporaryPassword: string; twoFactorDisabled: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/reset-password`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ clear_two_factor: clearTwoFactor }),
+    });
+    return this.handleResponse(response);
+  }
+
 }
 
 export const api = new ApiService();

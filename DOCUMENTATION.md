@@ -208,16 +208,17 @@ For instant testing and evaluation without manual registration, use the pre-conf
 ## 7. Developer Setup & Environment Guide
 
 ### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher (or `yarn`)
+- **Node.js**: v22.0 or higher (v24 LTS recommended — required by Vite 8)
+- **npm**: v11.0.0 or higher
 - **Git**
+- **MySQL**: 8.0+ (backend data store; see `server/src/database/schema.sql`)
 
 ### Installation Steps
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/cromstel/smart-health-manager.git
-   cd smart-health-manager
+   git clone https://github.com/cromstel/smart-health-management.git
+   cd smart-health-management
    ```
 
 2. **Install Frontend & Root Dependencies**:
@@ -233,10 +234,25 @@ For instant testing and evaluation without manual registration, use the pre-conf
    ```
 
 4. **Environment Configuration**:
-   Create a `.env` file at the root of the project (refer to `.env.example`):
+   ```bash
+   cp .env.example .env.local   # local-only; NEVER commit (policy in AGENTS.md §2.4)
+   ```
+   Key variables (see `.env.example` for the full list):
    ```env
    # Server Port
-   PORT=3000
+   PORT=5000
+
+   # Frontend
+   VITE_BASE_URL=http://localhost:3000
+   FRONTEND_URL=http://localhost:3000
+   VITE_API_URL=http://localhost:5000/api
+
+   # Database
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_NAME=smart_health_manager
+   DB_USER=root
+   DB_PASSWORD=your_db_password
 
    # Gemini API Key (Required for live Gemini AI calls)
    GEMINI_API_KEY=your_gemini_api_key_here
@@ -244,14 +260,23 @@ For instant testing and evaluation without manual registration, use the pre-conf
    # Stripe Keys (Optional for payments)
    STRIPE_SECRET_KEY=your_stripe_secret_key_here
    ```
+   ⚠️ `.env.local` (and any `.env*`) is in `.gitignore`. Real secrets must never be committed — the repo history previously exposed a committed `.env.local`; all of those secrets must be rotated.
 
-5. **Start the Development Server**:
+5. **Initialize the Database**:
    ```bash
-   npm run dev
+   mysql -u root -p < server/src/database/schema.sql
+   mysql -u root -p < server/src/database/seed.sql
    ```
-   The application will be accessible at `http://localhost:3000`.
 
-6. **Verify Code Quality & Build**:
+6. **Start the Development Server**:
+   ```bash
+   npm run dev        # Frontend (Vite + mock API) at http://localhost:3000
+   cd server
+   npm run dev        # Backend API (tsx watch) at http://localhost:5000
+   ```
+   Or from the root: `npm run dev:all` (requires `concurrently`).
+
+7. **Verify Code Quality & Build**:
    ```bash
    # Run Linter
    npm run lint
@@ -265,7 +290,14 @@ For instant testing and evaluation without manual registration, use the pre-conf
 ## 8. Folder & File Directory Structure
 
 ```
-smart-health-manager/
+smart-health-management/
+├── AGENTS.md                   # Canonical operating rules for AI agents (read first)
+├── opencode.json                # opencode config: agents, skills paths, permissions
+├── .opencode/                   # AI agent definitions, skills, and command workflows (local-only, not in public repo)
+│   ├── agent/                   # build, frontend, backend, review, docs, dependencies, security
+│   ├── skills/                  # frontend-refactor, backend-api, security-review, testing, documentation, production-readiness
+│   └── command/                 # /verify, /test, /build, /docs, /deploy workflows
+├── ai/                          # AI memory: context, agents, skills, memory, scratchpad (local-only)
 ├── public/                      # Static assets & public images
 ├── src/                         # Frontend Application Source
 │   ├── components/              # UI Components

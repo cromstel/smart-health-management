@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { motion } from 'motion/react';
 import {
   Activity,
   ArrowLeft,
@@ -16,6 +17,7 @@ import {
   RotateCw,
   ExternalLink,
 } from 'lucide-react';
+import { AuthLayout } from '@/components/auth';
 import { api } from '@/services/api';
 
 export default function ForgotPasswordPage() {
@@ -70,48 +72,66 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const pageHeader = (
+    <motion.div
+      className="flex flex-col items-center lg:items-start text-center lg:text-left"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <motion.div
+          className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+        </motion.div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
+      </div>
+      <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Password Recovery</h2>
+      <p className="text-sm text-muted-foreground">Self-service credential recovery for verified staff</p>
+    </motion.div>
+  );
+
   if (user?.role === 'Super Admin' || user?.role === 'super_admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
-        <Card className="w-full max-w-md border border-border bg-card">
-          <CardHeader className="text-center space-y-2">
-            <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              Super Admin credentials cannot be reset via public self-service recovery. Use the console security prompt or contact root sysadmin.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="pt-2">
-            <Button onClick={() => navigate('/super-admin/login')} className="w-full bg-accent text-accent-foreground">
-              Return to Super Admin Portal
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <AuthLayout>
+        <div className="space-y-8">
+          {pageHeader}
+          <Card className="w-full border border-border bg-card">
+            <CardHeader className="text-center space-y-2">
+              <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
+                <AlertCircle className="h-6 w-6" aria-hidden="true" />
+              </div>
+              <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Super Admin credentials cannot be reset via public self-service recovery. Use the console security prompt or contact root sysadmin.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-2">
+              <Button onClick={() => navigate('/super-admin/login')} className="w-full bg-accent text-accent-foreground">
+                Return to Super Admin Portal
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground">
-      <div className="w-full max-w-md space-y-4">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center justify-center text-center">
-          <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-2">
-            <Activity className="h-6 w-6 text-accent" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground">Smart Health Manager</h1>
-          <p className="text-xs text-muted-foreground">Self-Service Credential Recovery</p>
-        </div>
+    <AuthLayout>
+      <div className="space-y-8">
+        {pageHeader}
 
-        <Card className="border border-border bg-card shadow-md">
+        <Card className="w-full border border-border bg-card shadow-md">
           {sent ? (
             <>
               <CardHeader className="space-y-3 text-center pb-4 border-b border-border">
                 <div className="flex justify-center">
                   <div className="h-14 w-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-inner">
-                    <Mail className="h-7 w-7" />
+                    <Mail className="h-7 w-7" aria-hidden="true" />
                   </div>
                 </div>
                 <div>
@@ -128,7 +148,7 @@ export default function ForgotPasswordPage() {
               <CardContent className="pt-6 space-y-4">
                 <div className="p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground space-y-2">
                   <div className="flex items-center gap-2 text-foreground font-medium">
-                    <ShieldCheck className="h-4 w-4 text-accent" />
+                    <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
                     <span>Security Verification Details</span>
                   </div>
                   <p>
@@ -140,37 +160,41 @@ export default function ForgotPasswordPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full text-xs gap-2 border-border"
+                    className="w-full text-xs gap-2 border-border focus-visible:ring-accent"
                     onClick={handleResend}
                     disabled={cooldown > 0 || loading}
                   >
-                    <RotateCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    <RotateCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
                     {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend Recovery Email'}
                   </Button>
 
-                  {/* Direct Demo Link */}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full text-xs gap-2 font-medium"
-                    onClick={() => navigate('/reset-password?token=demo-token-hospital-2026')}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 text-accent" />
-                    <span>Test Reset Flow (Use Mock Token)</span>
-                  </Button>
+                  {import.meta.env.DEV && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full text-xs gap-2 font-medium"
+                      onClick={() => navigate('/reset-password?token=demo-token-hospital-2026')}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                      <span>Test Reset Flow (Use Mock Token)</span>
+                    </Button>
+                  )}
                 </div>
               </CardContent>
 
               <CardFooter className="flex items-center justify-between border-t border-border pt-4 text-xs">
                 <button
                   type="button"
-                  onClick={() => setSent(false)}
+                  onClick={() => {
+                    setSent(false);
+                    setCooldown(0);
+                  }}
                   className="text-muted-foreground hover:text-foreground underline"
                 >
                   Use different email
                 </button>
                 <Link to="/login" className="text-accent hover:underline font-medium flex items-center gap-1">
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Sign In
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Sign In
                 </Link>
               </CardFooter>
             </>
@@ -178,9 +202,9 @@ export default function ForgotPasswordPage() {
             <>
               <CardHeader className="space-y-1 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-bold text-foreground">Password Recovery</CardTitle>
+                  <CardTitle className="text-xl font-bold text-foreground">Request Reset Link</CardTitle>
                   <Badge variant="outline" className="text-xs border-accent/40 text-accent font-medium">
-                    256-Bit TLS
+                    TLS 1.2+
                   </Badge>
                 </div>
                 <CardDescription className="text-xs text-muted-foreground">
@@ -190,8 +214,8 @@ export default function ForgotPasswordPage() {
 
               <CardContent className="pt-6 space-y-4">
                 {error && (
-                  <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     <span className="font-medium">{error}</span>
                   </div>
                 )}
@@ -199,7 +223,7 @@ export default function ForgotPasswordPage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="reset-email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                       Registered Work Email
                     </Label>
                     <Input
@@ -209,13 +233,15 @@ export default function ForgotPasswordPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-10 text-sm bg-background border-border"
+                      autoFocus
+                      autoComplete="email"
+                      className="h-10 text-sm bg-background border-border focus-visible:ring-accent"
                     />
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-11 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
+                    className="w-full h-11 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                     disabled={loading}
                   >
                     {loading ? 'Transmitting Token...' : 'Send Recovery Authorization'}
@@ -223,7 +249,7 @@ export default function ForgotPasswordPage() {
                 </form>
 
                 <div className="p-3 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground flex items-start gap-2">
-                  <KeyRound className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <KeyRound className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <span>
                     To maintain strict HIPAA data governance, reset authorizations are time-locked and recorded in the hospital audit trail.
                   </span>
@@ -231,8 +257,8 @@ export default function ForgotPasswordPage() {
               </CardContent>
 
               <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-                <Link to="/login" className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-medium transition-colors">
-                  <ArrowLeft className="h-3.5 w-3.5" />
+                <Link to="/login" className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors">
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Return to Sign In</span>
                 </Link>
               </CardFooter>
@@ -240,6 +266,6 @@ export default function ForgotPasswordPage() {
           )}
         </Card>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

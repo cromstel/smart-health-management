@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "build",
+  "instructions": [
+    "AGENTS.md",
+    "ai/context.md",
+    "ai/memory.md"
+  ],
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+  "agent": {
+    "build": {
+      "description": "Primary agent: plans, coordinates subagents, integrates results, validates builds, and delivers production-ready changes.",
+      "mode": "primary"
+    }
+  },
+  "permission": {
+    "bash": {
+      "git *": "allow",
+      "npm *": "allow",
+      "node *": "allow",
+      "npx *": "allow",
+      "*": "ask"
+    }
+  }
+}

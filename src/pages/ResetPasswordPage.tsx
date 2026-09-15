@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { motion } from 'motion/react';
 import {
   Activity,
   CheckCircle2,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   KeyRound,
 } from 'lucide-react';
+import { AuthLayout, PasswordStrength, computePasswordStrength } from '@/components/auth';
 import { api } from '@/services/api';
 
 export default function ResetPasswordPage() {
@@ -34,37 +36,60 @@ export default function ResetPasswordPage() {
   const rawToken = searchParams.get('token');
   const [token, setToken] = useState(rawToken || '');
 
-  // Password complexity calculation
-  const strength = useMemo(() => {
-    const length = password.length >= 8;
-    const upper = /[A-Z]/.test(password);
-    const lower = /[a-z]/.test(password);
-    const number = /[0-9]/.test(password);
-    const special = /[^A-Za-z0-9]/.test(password);
-    const score = [length, upper, lower, number, special].filter(Boolean).length;
-    return { length, upper, lower, number, special, score };
-  }, [password]);
+  // Keep the token in sync if the URL changes while the page is mounted
+  useEffect(() => {
+    if (rawToken) {
+      setToken(rawToken);
+    }
+  }, [rawToken]);
+
+  const strength = useMemo(() => computePasswordStrength(password), [password]);
+
+  const pageHeader = (
+    <motion.div
+      className="flex flex-col items-center lg:items-start text-center lg:text-left"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <motion.div
+          className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+        </motion.div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
+      </div>
+      <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Set New Password</h2>
+      <p className="text-sm text-muted-foreground">Create new workstation credentials</p>
+    </motion.div>
+  );
 
   if (user?.role === 'Super Admin' || user?.role === 'super_admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
-        <Card className="w-full max-w-md border border-border bg-card">
-          <CardHeader className="text-center space-y-2">
-            <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              Super Admins cannot reset passwords via token. Please use the privileged console security settings.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="pt-2">
-            <Button onClick={() => navigate('/super-admin/dashboard')} className="w-full bg-accent text-accent-foreground">
-              Go to Super Admin Console
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <AuthLayout>
+        <div className="space-y-8">
+          {pageHeader}
+          <Card className="w-full border border-border bg-card">
+            <CardHeader className="text-center space-y-2">
+              <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
+                <AlertCircle className="h-6 w-6" aria-hidden="true" />
+              </div>
+              <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Super Admins cannot reset passwords via token. Please use the privileged console security settings.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-2">
+              <Button onClick={() => navigate('/super-admin/dashboard')} className="w-full bg-accent text-accent-foreground">
+                Go to Super Admin Console
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </AuthLayout>
     );
   }
 
@@ -87,9 +112,15 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    const effectiveToken = token || (import.meta.env.DEV ? 'demo-reset-token' : '');
+    if (!effectiveToken) {
+      setError('No active reset authorization was found. Please request a new reset link.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await api.resetPassword(token || 'demo-reset-token', password);
+      await api.resetPassword(effectiveToken, password);
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
@@ -104,81 +135,82 @@ export default function ResetPasswordPage() {
 
   if (!token && !rawToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
-        <Card className="w-full max-w-md border border-border bg-card shadow-md">
-          <CardHeader className="text-center space-y-2 pb-4 border-b border-border">
-            <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto">
-              <KeyRound className="h-7 w-7" />
-            </div>
-            <CardTitle className="text-xl font-bold text-foreground">Reset Authorization Required</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              No active password reset token was detected in your browser URL.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-3">
-            <Button
-              type="button"
-              className="w-full bg-accent text-accent-foreground text-xs"
-              onClick={() => setToken('demo-token-hospital-2026')}
-            >
-              Continue With Demo Reset Token
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full text-xs border-border"
-              onClick={() => navigate('/forgot-password')}
-            >
-              Request New Reset Link
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthLayout>
+        <div className="space-y-8">
+          {pageHeader}
+          <Card className="w-full border border-border bg-card shadow-md">
+            <CardHeader className="text-center space-y-2 pb-4 border-b border-border">
+              <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto">
+                <KeyRound className="h-7 w-7" aria-hidden="true" />
+              </div>
+              <CardTitle className="text-xl font-bold text-foreground">Reset Authorization Required</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                No active password reset token was detected in your browser URL.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-3">
+              {import.meta.env.DEV && (
+                <Button
+                  type="button"
+                  className="w-full bg-accent text-accent-foreground text-xs"
+                  onClick={() => setToken('demo-token-hospital-2026')}
+                >
+                  Continue With Demo Reset Token
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full text-xs border-border focus-visible:ring-accent"
+                onClick={() => navigate('/forgot-password')}
+              >
+                Request New Reset Link
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthLayout>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
-        <Card className="w-full max-w-md border border-border bg-card shadow-md text-center">
-          <CardHeader className="space-y-3 pb-4">
-            <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="h-9 w-9" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-foreground">Password Updated!</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              Your new password has been verified and saved to the hospital directory. Redirecting you to sign in...
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <Button onClick={() => navigate('/login')} className="w-full gap-2 bg-accent text-accent-foreground">
-              Sign In Now <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthLayout>
+        <div className="space-y-8">
+          {pageHeader}
+          <Card className="w-full border border-border bg-card shadow-md text-center">
+            <CardHeader className="space-y-3 pb-4">
+              <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="h-9 w-9" aria-hidden="true" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-foreground">Password Updated!</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Your new password has been verified and saved to the hospital directory. Redirecting you to sign in...
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <Button onClick={() => navigate('/login')} className="w-full gap-2 bg-accent text-accent-foreground">
+                Sign In Now <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground">
-      <div className="w-full max-w-md space-y-4">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center justify-center text-center">
-          <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-2">
-            <Activity className="h-6 w-6 text-accent" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground">Smart Health Manager</h1>
-          <p className="text-xs text-muted-foreground">Set New Workstation Credentials</p>
-        </div>
+    <AuthLayout>
+      <div className="space-y-8">
+        {pageHeader}
 
-        <Card className="border border-border bg-card shadow-md">
+        <Card className="w-full border border-border bg-card shadow-md">
           <CardHeader className="space-y-1 pb-4 border-b border-border">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-bold text-foreground">Reset Password</CardTitle>
               <Badge variant="outline" className="text-xs border-accent/40 text-accent font-medium flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Token Verified
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                Secure Token
               </Badge>
             </div>
             <CardDescription className="text-xs text-muted-foreground">
@@ -188,8 +220,8 @@ export default function ResetPasswordPage() {
 
           <CardContent className="pt-6 space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs" role="alert" aria-live="assertive">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span className="font-medium">{error}</span>
               </div>
             )}
@@ -197,7 +229,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="new-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   New Password
                 </Label>
                 <div className="relative">
@@ -208,22 +240,25 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-10 pr-10 text-sm bg-background border-border"
+                    autoFocus
+                    autoComplete="new-password"
+                    className="h-10 pr-10 text-sm bg-background border-border focus-visible:ring-accent"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     title={showPassword ? 'Hide' : 'Show'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="confirm-new-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   Confirm New Password
                 </Label>
                 <div className="relative">
@@ -234,52 +269,27 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="h-10 pr-10 text-sm bg-background border-border"
+                    autoComplete="new-password"
+                    className="h-10 pr-10 text-sm bg-background border-border focus-visible:ring-accent"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     title={showConfirmPassword ? 'Hide' : 'Show'}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               {/* Live Password Checklist */}
-              {password.length > 0 && (
-                <div className="p-3 rounded-lg bg-muted/40 border border-border text-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Complexity Score:</span>
-                    <span className="font-semibold text-foreground">
-                      {['Very Weak', 'Weak', 'Moderate', 'Strong', 'Excellent'][Math.max(0, strength.score - 1)]}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5 pt-1">
-                    <div className={`flex items-center gap-1 ${strength.length ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span>8+ Characters</span>
-                    </div>
-                    <div className={`flex items-center gap-1 ${strength.upper && strength.lower ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span>Upper & Lowercase</span>
-                    </div>
-                    <div className={`flex items-center gap-1 ${strength.number ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span>Numbers (0-9)</span>
-                    </div>
-                    <div className={`flex items-center gap-1 ${strength.special ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span>Special Symbols</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <PasswordStrength password={password} />
 
               <Button
                 type="submit"
-                className="w-full h-11 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
+                className="w-full h-11 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                 disabled={loading}
               >
                 {loading ? 'Securing Credentials...' : 'Save New Password & Continue'}
@@ -288,12 +298,12 @@ export default function ResetPasswordPage() {
           </CardContent>
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-            <Link to="/login" className="text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/login" className="text-accent hover:text-accent/80 transition-colors">
               Cancel & Return to Sign In
             </Link>
           </CardFooter>
         </Card>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

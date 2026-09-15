@@ -8,6 +8,7 @@ export default [
   {
     ignores: [
       'node_modules/**',
+      'scripts/**',
       'server/dist/**',
       'server/**/*.js',
       'server/migrations/**',

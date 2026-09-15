@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,6 +92,7 @@ export default function StaffPage() {
       setSearchTerm(urlSearch);
     }
   }, [searchParams, searchTerm]);
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -161,7 +163,6 @@ export default function StaffPage() {
 
   const loadDepartments = useCallback(async (hospitalId: string) => {
     try {
-      // Assuming an API endpoint to get departments by hospital
       const data = await api.getDepartmentsByHospital(hospitalId) as any[];
       setDepartments(data.map((d: any) => ({ id: d.id, name: d.name })));
     } catch (error) {
@@ -191,23 +192,23 @@ export default function StaffPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setNewStaff(prev => ({ ...prev, [id]: value }));
+    setNewStaff((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setEditStaffData(prev => ({ ...prev, [id]: value }));
+    setEditStaffData((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleSelectChange = (id: string, value: string) => {
-    setNewStaff(prev => ({ ...prev, [id]: value }));
+    setNewStaff((prev) => ({ ...prev, [id]: value }));
     if (id === 'hospitalId') {
       loadDepartments(value);
     }
   };
 
   const handleEditSelectChange = (id: string, value: string) => {
-    setEditStaffData(prev => ({ ...prev, [id]: value }));
+    setEditStaffData((prev) => ({ ...prev, [id]: value }));
     if (id === 'hospitalId') {
       loadDepartments(value);
     }
@@ -237,8 +238,7 @@ export default function StaffPage() {
 
   const openEditDialog = (staffMember: Staff) => {
     setSelectedStaff(staffMember);
-    // This is a simplified mapping. You might need a more robust way to get the original data.
-    const staffData = staff.find(s => s.id === staffMember.id);
+    const staffData = staff.find((s) => s.id === staffMember.id);
     if (staffData) {
       setEditStaffData({
         id: staffData.id,
@@ -246,12 +246,12 @@ export default function StaffPage() {
         lastName: staffData.name.split(' ')[1],
         email: staffData.email,
         phone: staffData.phone,
-        roleId: roles.find(r => r.name === staffData.role)?.id || '',
-        hospitalId: hospitals.find(h => h.name === staffData.hospital)?.id || '',
-        departmentId: '', // Needs to be loaded
+        roleId: roles.find((r) => r.name === staffData.role)?.id || '',
+        hospitalId: hospitals.find((h) => h.name === staffData.hospital)?.id || '',
+        departmentId: '',
         status: staffData.status,
       });
-      const hospitalId = hospitals.find(h => h.name === staffData.hospital)?.id;
+      const hospitalId = hospitals.find((h) => h.name === staffData.hospital)?.id;
       if (hospitalId) {
         loadDepartments(hospitalId);
       }
@@ -321,7 +321,7 @@ export default function StaffPage() {
     }
   };
 
-  const filteredStaff = staff.filter(member => {
+  const filteredStaff = staff.filter((member) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -353,8 +353,20 @@ export default function StaffPage() {
   return (
     <div className="space-y-6">
       {loading && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading data...</p>
+        <div className="space-y-4" role="status" aria-label="Loading staff">
+          <span className="sr-only">Loading data...</span>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
         </div>
       )}
       {!loading && (
@@ -367,7 +379,7 @@ export default function StaffPage() {
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2" disabled={!hasPermission('staff:add')}>
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4" aria-hidden="true" />
                   Add Staff
                 </Button>
               </DialogTrigger>
@@ -397,7 +409,9 @@ export default function StaffPage() {
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                          {roles.map((r) => (
+                            <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -408,7 +422,9 @@ export default function StaffPage() {
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent>
-                          {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                          {departments.map((d) => (
+                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -420,7 +436,9 @@ export default function StaffPage() {
                         <SelectValue placeholder="Select hospital" />
                       </SelectTrigger>
                       <SelectContent>
-                        {hospitals.map(h => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
+                        {hospitals.map((h) => (
+                          <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -471,7 +489,7 @@ export default function StaffPage() {
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                        {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -482,7 +500,7 @@ export default function StaffPage() {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -494,7 +512,7 @@ export default function StaffPage() {
                       <SelectValue placeholder="Select hospital" />
                     </SelectTrigger>
                     <SelectContent>
-                      {hospitals.map(h => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
+                      {hospitals.map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -543,7 +561,7 @@ export default function StaffPage() {
                 <Button variant="destructive" onClick={handleDeleteStaff} disabled={!hasPermission('staff:delete')}>Delete</Button>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
@@ -551,8 +569,8 @@ export default function StaffPage() {
               <TabsTrigger value="doctors">Doctors</TabsTrigger>
               <TabsTrigger value="nurses">Nurses</TabsTrigger>
               <TabsTrigger value="other">Other</TabsTrigger>
-              <TabsTrigger value="scheduler" className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400 font-bold">
-                <Sparkles className="h-3.5 w-3.5 text-sky-500" /> Shift Scheduler (Auto-Balance)
+              <TabsTrigger value="scheduler" className="flex items-center gap-1.5 text-accent font-bold">
+                <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" /> Shift Scheduler (Auto-Balance)
               </TabsTrigger>
             </TabsList>
 
@@ -563,131 +581,135 @@ export default function StaffPage() {
             ) : (
               <ErrorBoundary fallbackTitle="Error loading Staff Directory">
                 <TabsContent value={activeTab} className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <CardTitle>Staff Directory</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder="Search staff..."
-                          className="pl-9 w-64"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <CardTitle>Staff Directory</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                            <Input
+                              placeholder="Search staff..."
+                              className="pl-9 w-64"
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                          </div>
+                          <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={handleExportCSV}
+                            title="Export staff records to CSV"
+                          >
+                            <Download className="h-4 w-4" aria-hidden="true" />
+                            <span className="hidden sm:inline">Export CSV</span>
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        className="gap-2"
-                        onClick={handleExportCSV}
-                        title="Export staff records to CSV"
-                      >
-                        <Download className="h-4 w-4" />
-                        <span className="hidden sm:inline">Export CSV</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {(!hasPermission('staff:view') || !canActOnHospital(user?.hospital_id)) ? (
-                    <div className="text-center py-12">
-                      <p className="text-destructive">Unauthorized to view staff for this hospital.</p>
-                    </div>
-                  ) : staff.length === 0 && !loading ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground">No staff members found.</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Staff</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Department</TableHead>
-                          <TableHead>Hospital</TableHead>
-                          <TableHead>Contact</TableHead>
-                          <TableHead>Join Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredStaff.map((member) => (
-                          <TableRow key={member.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarFallback className="bg-primary text-primary-foreground">
-                                    {member.name.split(' ').map(n => n[0]).join('')}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-foreground">{member.name}</p>
-                                  <p className="text-xs text-muted-foreground">{member.id}</p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{member.role}</Badge>
-                            </TableCell>
-                            <TableCell>{member.department}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3 text-muted-foreground" />
-                                {member.hospital}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-1 text-xs">
-                                  <Mail className="h-3 w-3 text-muted-foreground" />
-                                  {member.email}
-                                </div>
-                                <div className="flex items-center gap-1 text-xs">
-                                  <Phone className="h-3 w-3 text-muted-foreground" />
-                                  {member.phone}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm">
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                {member.joinDate}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  member.status === 'Active'
-                                    ? 'default'
-                                    : member.status === 'On Leave'
-                                      ? 'secondary'
-                                      : 'destructive'
-                                }
-                              >
-                                {member.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => openEditDialog(member)} disabled={!hasPermission('staff:edit')}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(member)} disabled={!hasPermission('staff:delete')}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            </ErrorBoundary>
+                    </CardHeader>
+                    <CardContent>
+                      {(!hasPermission('staff:view') || !canActOnHospital(user?.hospital_id)) ? (
+                        <div className="text-center py-12">
+                          <p className="text-destructive">Unauthorized to view staff for this hospital.</p>
+                        </div>
+                      ) : staff.length === 0 && !loading ? (
+                        <div className="text-center py-12">
+                          <p className="text-muted-foreground">No staff members found.</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Staff</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Department</TableHead>
+                                <TableHead>Hospital</TableHead>
+                                <TableHead>Contact</TableHead>
+                                <TableHead>Join Date</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredStaff.map((member) => (
+                                <TableRow key={member.id}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <Avatar>
+                                        <AvatarFallback className="bg-primary text-primary-foreground">
+                                          {member.name.split(' ').map((n) => n[0]).join('')}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <p className="font-medium text-foreground">{member.name}</p>
+                                        <p className="text-xs text-muted-foreground">{member.id}</p>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">{member.role}</Badge>
+                                  </TableCell>
+                                  <TableCell>{member.department}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-1">
+                                      <Building2 className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                      {member.hospital}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1 text-xs">
+                                        <Mail className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                        {member.email}
+                                      </div>
+                                      <div className="flex items-center gap-1 text-xs">
+                                        <Phone className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                        {member.phone}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-1 text-sm">
+                                      <Calendar className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                      {member.joinDate}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        member.status === 'Active'
+                                          ? 'default'
+                                          : member.status === 'On Leave'
+                                          ? 'secondary'
+                                          : 'destructive'
+                                      }
+                                    >
+                                      {member.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Button variant="ghost" size="sm" onClick={() => openEditDialog(member)} disabled={!hasPermission('staff:edit')}>
+                                        <Edit className="h-4 w-4" aria-hidden="true" />
+                                        <span className="sr-only">Edit staff</span>
+                                      </Button>
+                                      <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(member)} disabled={!hasPermission('staff:delete')}>
+                                        <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
+                                        <span className="sr-only">Delete staff</span>
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </ErrorBoundary>
             )}
           </Tabs>
         </>

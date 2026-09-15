@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  // Vite resolves the aliases declared in tsconfig without the deprecated plugin.
+  resolve: {
+    tsconfigPaths: true,
+  },
   test: {
     globals: true,
     environment: 'node',

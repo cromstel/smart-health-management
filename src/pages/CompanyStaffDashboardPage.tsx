@@ -19,6 +19,7 @@ import {
 import { api } from '@/services/api';
 import { toast } from 'sonner';
 
+
 interface DepartmentSummary {
   name: string;
   head: string;
@@ -89,10 +90,10 @@ export function CompanyStaffDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Top Banner & Company Staff Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-primary text-primary-foreground p-6 rounded-2xl shadow-xl">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Badge className="bg-blue-500/20 text-blue-300 border-blue-400/30 px-3 py-1 font-semibold text-xs">
+            <Badge className="bg-accent/20 text-accent border-accent/30 px-3 py-1 font-semibold text-xs">
               Company Staff Management Portal
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-2.5 py-0.5 text-[11px]">
@@ -102,7 +103,7 @@ export function CompanyStaffDashboardPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Company Staff & Operational Command
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+          <p className="text-xs sm:text-sm text-primary-foreground/70 max-w-xl">
             Real-time department capacity tracking, staff duty rosters, role-based authorization matrix, and clinical workload management.
           </p>
         </div>
@@ -110,16 +111,16 @@ export function CompanyStaffDashboardPage() {
         <div className="flex items-center gap-3">
           <Button
             onClick={() => toast.success('Staff duty roster exported to PDF report')}
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-semibold gap-2"
+            className="bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-primary-foreground/20 font-semibold gap-2"
           >
-            <FileSpreadsheet className="h-4 w-4" />
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
             <span>Export Roster</span>
           </Button>
           <Button
             onClick={() => toast.info('System-wide staff alert broadcast sent')}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold gap-2 shadow-lg"
+            className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold gap-2 shadow-lg"
           >
-            <Bell className="h-4 w-4" />
+            <Bell className="h-4 w-4" aria-hidden="true" />
             <span>Broadcast Alert</span>
           </Button>
         </div>
@@ -132,14 +133,14 @@ export function CompanyStaffDashboardPage() {
             <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Total On-Duty Staff
             </CardTitle>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <UserCheck className="h-5 w-5" />
+            <div className="p-2 rounded-xl bg-accent/10 text-accent">
+              <UserCheck className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-foreground">106 / 123</div>
             <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mt-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> 86.2% Staffing Capacity
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> 86.2% Staffing Capacity
             </p>
           </CardContent>
         </Card>
@@ -150,7 +151,7 @@ export function CompanyStaffDashboardPage() {
               Departments Active
             </CardTitle>
             <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <Building2 className="h-5 w-5" />
+              <Building2 className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent>
@@ -167,12 +168,12 @@ export function CompanyStaffDashboardPage() {
               Roles & Permissions
             </CardTitle>
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <ShieldCheck className="h-5 w-5" />
+              <ShieldCheck className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-foreground">8 Defined Roles</div>
-            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+            <p className="text-xs text-accent font-medium mt-1">
               Role-Based Access Control Active
             </p>
           </CardContent>
@@ -184,7 +185,7 @@ export function CompanyStaffDashboardPage() {
               High Load Warnings
             </CardTitle>
             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
-              <AlertTriangle className="h-5 w-5" />
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent>
@@ -200,13 +201,13 @@ export function CompanyStaffDashboardPage() {
       <Tabs defaultValue="departments" className="space-y-4">
         <TabsList className="bg-muted/60 p-1 border border-border">
           <TabsTrigger value="departments" className="text-xs font-bold px-4 gap-2">
-            <Building2 className="h-3.5 w-3.5" /> Department Status
+            <Building2 className="h-3.5 w-3.5" aria-hidden="true" /> Department Status
           </TabsTrigger>
           <TabsTrigger value="roles" className="text-xs font-bold px-4 gap-2">
-            <ShieldCheck className="h-3.5 w-3.5" /> Roles & Permissions Matrix
+            <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Roles & Permissions Matrix
           </TabsTrigger>
           <TabsTrigger value="duty" className="text-xs font-bold px-4 gap-2">
-            <Clock className="h-3.5 w-3.5" /> On-Duty Shift Roster
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" /> On-Duty Shift Roster
           </TabsTrigger>
         </TabsList>
 
@@ -224,7 +225,7 @@ export function CompanyStaffDashboardPage() {
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <div className="relative flex-1 sm:w-48">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                     <Input
                       placeholder="Search department..."
                       value={searchTerm}
@@ -251,7 +252,7 @@ export function CompanyStaffDashboardPage() {
                 {filteredDepartments.map((dept) => (
                   <div
                     key={dept.name}
-                    className="p-4 rounded-xl bg-card border border-border/80 shadow-sm space-y-3 hover:border-blue-500/40 transition-all"
+                    className="p-4 rounded-xl bg-card border border-border/80 shadow-sm space-y-3 hover:border-accent/40 transition-all"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -330,7 +331,7 @@ export function CompanyStaffDashboardPage() {
                     {rolesSummary.map((r) => (
                       <tr key={r.role} className="hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-bold text-foreground flex items-center gap-2">
-                          <ShieldCheck className="h-4 w-4 text-blue-500" />
+                          <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
                           {r.role}
                         </td>
                         <td className="p-3 text-muted-foreground">{r.department}</td>
@@ -348,7 +349,7 @@ export function CompanyStaffDashboardPage() {
                             size="sm"
                             variant="ghost"
                             onClick={() => toast.info(`Viewing permission details for ${r.role}`)}
-                            className="h-7 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                            className="h-7 text-xs font-semibold text-accent hover:text-accent/80"
                           >
                             Manage Scope
                           </Button>
@@ -373,10 +374,10 @@ export function CompanyStaffDashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-2">
+                <div className="p-4 rounded-xl bg-accent/5 border border-accent/20 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase text-blue-600 dark:text-blue-400">Morning Shift (07:00 - 15:00)</span>
-                    <Badge className="bg-blue-600 text-white text-[10px]">Active Now</Badge>
+                    <span className="text-xs font-bold uppercase text-accent">Morning Shift (07:00 - 15:00)</span>
+                    <Badge className="bg-accent text-accent-foreground text-[10px]">Active Now</Badge>
                   </div>
                   <p className="text-2xl font-black text-foreground">42 Staff</p>
                   <p className="text-xs text-muted-foreground">Doctors, Nurses, Triage Nurses, Pharmacists</p>

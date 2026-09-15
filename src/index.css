@@ -129,6 +129,18 @@
   }
 }
 
+/* Auth branding is intentionally desktop-only. This explicit media rule keeps
+   the behaviour stable even when utility CSS is loaded incrementally in dev. */
+.auth-branding-panel {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .auth-branding-panel {
+    display: flex;
+  }
+}
+
 /* Specialized CSS Print Stylesheet for Patient Summaries & Vital Records */
 @media print {
   body, html {

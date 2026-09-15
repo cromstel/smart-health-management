@@ -57,6 +57,16 @@ export function AppSidebar() {
   const location = useLocation();
   const { hasPermission } = useAuth();
 
+  const isPathActive = (path: string) => {
+    if (path === '/staff') {
+      return location.pathname === '/staff' || location.pathname.startsWith('/staff/');
+    }
+    if (path === '/staff-dashboard') {
+      return location.pathname === '/staff-dashboard' || location.pathname.startsWith('/staff-dashboard/');
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
+
   const moduleForPath = (path: string) => {
     if (path.startsWith('/dashboard')) return 'dashboard';
     if (path.startsWith('/staff-dashboard')) return 'staff';
@@ -81,7 +91,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
       <SidebarHeader className="border-b border-sidebar-border p-4 transition-all duration-300">
         <div className="flex items-center gap-2">
-          <Activity className="h-6 w-6 text-sidebar-primary" />
+          <Activity className="h-6 w-6 text-sidebar-primary" aria-hidden="true" />
           <span className="text-lg font-bold text-sidebar-foreground">Health Manager</span>
         </div>
       </SidebarHeader>
@@ -90,22 +100,25 @@ export function AppSidebar() {
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.filter(mi => {
-                const m = moduleForPath(mi.path);
-                return m && hasPermission(`${m}:view`);
-              }).map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.path}
-                  >
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems
+                .filter((mi) => {
+                  const m = moduleForPath(mi.path);
+                  return m && hasPermission(`${m}:view`);
+                })
+                .map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isPathActive(item.path)}
+                      aria-current={isPathActive(item.path) ? 'page' : undefined}
+                    >
+                      <Link to={item.path}>
+                        <item.icon className="h-4 w-4" aria-hidden="true" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -113,22 +126,25 @@ export function AppSidebar() {
           <SidebarGroupLabel>Administration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.filter(ai => {
-                const m = moduleForPath(ai.path);
-                return m && hasPermission(`${m}:view`);
-              }).map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.path}
-                  >
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {adminItems
+                .filter((ai) => {
+                  const m = moduleForPath(ai.path);
+                  return m && hasPermission(`${m}:view`);
+                })
+                .map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isPathActive(item.path)}
+                      aria-current={isPathActive(item.path) ? 'page' : undefined}
+                    >
+                      <Link to={item.path}>
+                        <item.icon className="h-4 w-4" aria-hidden="true" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

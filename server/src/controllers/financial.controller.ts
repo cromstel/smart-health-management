@@ -2,6 +2,9 @@ import type { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import { createStripeCustomer, createStripeCharge } from '../services/stripe.service.js';
+import { buildPDF } from '../services/reportFormatters/pdf.js';
+import { buildXlsx } from '../services/reportFormatters/xlsx.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 const logAudit = async (userId: any, action: string, module: string, recordId: any, newValue?: any, oldValue?: any) => {
   try {
@@ -11,7 +14,6 @@ const logAudit = async (userId: any, action: string, module: string, recordId: a
     );
   } catch (_error) { /* Audit logging errors are intentionally ignored */ }
 };
-import type { AuthRequest } from '../middleware/auth.js';
 
 // Chart of Accounts
 export const getAccounts = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
@@ -431,5 +433,115 @@ export const createCharge = async (req: AuthRequest, res: Response): Promise<Res
   } catch (error) {
     console.error('Error creating charge:', error);
     res.status(500).json({ error: 'Failed to create charge' });
+  }
+};
+
+export const exportPdf = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    const { reportType, startDate, endDate } = req.query as any;
+    if (!reportType || !startDate || !endDate) {
+      return res.status(400).json({ error: 'Report type, start date, and end date are required' });
+    }
+
+    let rows: any[] = [];
+    let title = '';
+
+    switch (reportType) {
+      case 'income_statement': {
+        const [incomeRows] = await pool.query(
+          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "income" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate]
+        );
+        const [expenseRows] = await pool.query(
+          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "expense" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate]
+        );
+        rows = [...(incomeRows as any[]).map(r => ({ type: 'Income', ...r })), ...(expenseRows as any[]).map(r => ({ type: 'Expense', ...r }))];
+        title = 'Income Statement';
+        break;
+      }
+      case 'balance_sheet': {
+        const [assetRows] = await pool.query('SELECT name, balance FROM accounts WHERE type = "asset"');
+        const [liabilityRows] = await pool.query('SELECT name, balance FROM accounts WHERE type = "liability"');
+        rows = [...(assetRows as any[]).map(r => ({ type: 'Asset', ...r })), ...(liabilityRows as any[]).map(r => ({ type: 'Liability', ...r }))];
+        title = 'Balance Sheet';
+        break;
+      }
+      case 'cash_flow': {
+        const [cfRows] = await pool.query(
+          'SELECT date, SUM(credit - debit) AS net_flow FROM transactions WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date',
+          [startDate, endDate]
+        );
+        rows = cfRows as any[];
+        title = 'Cash Flow';
+        break;
+      }
+      default:
+        return res.status(400).json({ error: 'Invalid report type' });
+    }
+
+    const doc = buildPDF(title, rows);
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${title.replace(/\s+/g, '_')}.pdf"`);
+      res.send(pdfBuffer);
+    });
+    doc.end();
+  } catch (error) {
+    console.error('Export PDF error:', error);
+    res.status(500).json({ error: 'Failed to export PDF' });
+  }
+};
+
+export const exportExcel = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    const { reportType, startDate, endDate } = req.query as any;
+    if (!reportType || !startDate || !endDate) {
+      return res.status(400).json({ error: 'Report type, start date, and end date are required' });
+    }
+
+    let rows: any[] = [];
+
+    switch (reportType) {
+      case 'income_statement': {
+        const [incomeRows] = await pool.query(
+          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "income" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate]
+        );
+        const [expenseRows] = await pool.query(
+          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "expense" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate]
+        );
+        rows = [...(incomeRows as any[]).map(r => ({ type: 'Income', ...r })), ...(expenseRows as any[]).map(r => ({ type: 'Expense', ...r }))];
+        break;
+      }
+      case 'balance_sheet': {
+        const [assetRows] = await pool.query('SELECT name, balance FROM accounts WHERE type = "asset"');
+        const [liabilityRows] = await pool.query('SELECT name, balance FROM accounts WHERE type = "liability"');
+        rows = [...(assetRows as any[]).map(r => ({ type: 'Asset', ...r })), ...(liabilityRows as any[]).map(r => ({ type: 'Liability', ...r }))];
+        break;
+      }
+      case 'cash_flow': {
+        const [cfRows] = await pool.query(
+          'SELECT date, SUM(credit - debit) AS net_flow FROM transactions WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date',
+          [startDate, endDate]
+        );
+        rows = cfRows as any[];
+        break;
+      }
+      default:
+        return res.status(400).json({ error: 'Invalid report type' });
+    }
+
+    const buf = await buildXlsx(rows, reportType);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${reportType}.xlsx"`);
+    res.send(buf);
+  } catch (error) {
+    console.error('Export Excel error:', error);
+    res.status(500).json({ error: 'Failed to export Excel' });
   }
 };

@@ -5,7 +5,10 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // Must be 32 bytes (256 bits
 const ENCRYPTION_IV = process.env.ENCRYPTION_IV;   // Must be 16 bytes (128 bits)
 
 if (!ENCRYPTION_KEY || !ENCRYPTION_IV) {
-  console.warn('Encryption key or IV not set. Data encryption will not be active.');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ENCRYPTION_KEY and ENCRYPTION_IV are required in production (32-byte and 16-byte hex values).');
+  }
+  console.warn('Encryption key or IV not set. Data encryption will not be active (development only).');
 }
 
 export function encrypt(text: string): string | null {

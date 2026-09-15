@@ -1,6 +1,7 @@
-.clinerules/       
+# AI editor directories
+.clinerules/
 .kilocode/
-.roo/rules/
+.roo/
 .windsurf/
 .cursor/
 .kiro/
@@ -16,19 +17,57 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Packages & Dependencies
 node_modules
 dist
 dist-ssr
-dev-dist
+
+# Environment files — NEVER commit real secrets (.env.local was previously tracked and has been removed from the index)
+.env
+.env.*
+!.env.example
+!server/.env.example
 *.local
 *.bak
+
+# Build artifacts & generated output
+dev-dist
+playwright-report/
+test-results/
+*.tsbuildinfo
+lint_output.txt
+.vitest-full-output.txt
+*.txt
+coverage/
+
+# Database backups (may contain PHI) — never commit
+server/backups/
+backups/
+
+# Local-only review notes — never commit
+thoughts/
+
+# Internal documentation — never commit (protected from public exposure)
+docs/
+
+# AI operating memory — local-only agent tooling
+ai/
+
+# Local-only scripts (e.g., secret generator)
+scripts/
+
+# Demo accounts (may contain PHI) — never commit
+demo-accounts/*
+demo-accounts/Demo Accounts - SMART HEALTH MANAGEMENT.md
+
+# Playwright E2E specs — local dev only, not required in production
+e2e/
 
 # Editor directories and files
 .vscode/*
 .opencode/
 opencode/
-docs/
-docs/*
+.trae/
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -38,6 +77,11 @@ docs/*
 *.sln
 *.sw?
 
-thoughts/reviews/landing-page-review.md
-todo/playwright-repair-plan.md
+# Local-only plans and notes
+todo/*
+todo-plan.md
+plan.md
+dependabot-alerts.md
+
+# Source docs site
 src/docs/TROUBLESHOOTING.md

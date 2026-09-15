@@ -1,6 +1,8 @@
-# Developer Guide
+# Developer Guide (localhost)
+
 ### Smart Health Management System
-*Version 1.0 — 2025*
+
+_Version 1.0 — 2025_
 
 ---
 
@@ -15,28 +17,33 @@ This guide provides developers with instructions for setting up, building, exten
 ## 2. Technology Stack
 
 ### Frontend
-- Next.js 14+ (React framework for SSR & SSG)
+
+- Next.js 16+ (React framework for SSR & SSG)
 - Vite 5+ (fast frontend bundler & dev server)
 - TypeScript (recommended)
 - TailwindCSS (UI framework)
 - React Query / SWR for data fetching
 
 ### Backend
-- Node.js 20+
+
+- Node.js 24+ (LTS)
 - Express.js or NestJS
 - RESTful API / GraphQL (if implemented)
 
 ### Database
-- PostgreSQL 14+ (primary relational database)
+
+- PostgreSQL 18+ (primary relational database)
 - Redis (optional, caching/session storage)
 
 ### Authentication & Security
+
 - JWT-based authentication
 - Role-Based Access Control (RBAC)
 - bcrypt for password hashing
 - HTTPS/TLS enforced
 
 ### Infrastructure
+
 - Docker & Docker Compose (recommended)
 - NGINX or Caddy reverse proxy
 - CI/CD: GitHub Actions, GitLab CI, or Jenkins
@@ -46,12 +53,14 @@ This guide provides developers with instructions for setting up, building, exten
 ## 3. System Requirements
 
 ### Hardware
+
 - Minimum 4 GB RAM
 - Minimum 2 CPU cores
 - 20 GB free storage
 
 ### Software
-- Node.js 20+
+
+- Node.js 24+
 - PostgreSQL 14+ / MySQL 8+
 - Git
 - Docker (optional, recommended)
@@ -60,8 +69,8 @@ This guide provides developers with instructions for setting up, building, exten
 
 ### Option A: Docker (Recommended)
 
-```bash
-git clone https://github.com/cromstelit/smart-health-management-system.git
+````bash
+git clone https://github.com/cromstelit/smart-health-management.git
 cd smart-health-management-system
 docker-compose up -d
 
@@ -92,7 +101,7 @@ Backend Setup
 
 ## 5. Project Structure
 
-smart-health-management-system/
+smart-health-management/
  ├── frontend/
  │    ├── app/           # Next.js app directory
  │    ├── components/    # Reusable UI components
@@ -150,7 +159,7 @@ smart-health-management-system/
     -  Route naming: /api/v1/resource/:id
     -  Validation middleware for request payloads
     -  Error handling middleware
-    
+
 ## Commit Messages
     `` pgsql
       -  feat: add new appointment scheduler
@@ -173,7 +182,7 @@ smart-health-management-system/
       #2. Run production build:
       ```bash
           -  cd frontend && npm run build
-            
+
       #3. Set up reverse proxy (NGINX / Caddy)
       #4. Run backend migrations:
       ```bash
@@ -204,7 +213,8 @@ smart-health-management-system/
           -  Check CORS and environment variables
         # Backend API issues
           -  Ensure database is running and .env variables are correct
-          -  Check server logs for detailed errors  
+          -  Check server logs for detailed errors
 
 ## 13. Contact
         For professional or technical assistance: https://cromstelit.com/contact-us/
+````

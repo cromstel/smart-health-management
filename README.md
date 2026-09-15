@@ -1,6 +1,6 @@
-# Smart Health Management System (SHMS)
+# Smart Hospital Management System (SHMS)
 
-**Smart Health Management System (SHMS)** is an enterprise-grade, web-based healthcare management platform for managing patient records, appointments, clinical AI diagnostics with Google Search Grounding, pharmacy inventory, hospital operations, and financial accounting, developed and maintained by **Cromstel IT Group**.
+**Smart Hospital Management System (SHMS)** is an enterprise-grade, web-based healthcare management platform for managing patient records, appointments, clinical AI diagnostics with Google Search Grounding, pharmacy inventory, hospital operations, and financial accounting, developed and maintained by **Cromstel IT Group**.
 
 > 📚 **Complete Master Documentation Available**: For detailed onboarding, architecture breakdown, role personas, API guides, and step-by-step instructions for new team members, refer to **[DOCUMENTATION.md](DOCUMENTATION.md)**.
 
@@ -9,6 +9,7 @@
 ## 📖 Master Documentation Guide
 
 If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md)** which covers:
+
 - **[System Architecture & Tech Stack](DOCUMENTATION.md#3-system-architecture--technology-stack)**
 - **[Key Modules & Features](DOCUMENTATION.md#4-key-modules--operational-features)**
 - **[Clinical AI Workspace with Google Search Grounding](DOCUMENTATION.md#43-clinical-ai--grounded-research-workspace)**
@@ -27,6 +28,7 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 - Modular and extensible design
 - Comprehensive documentation
 - Full security support across all versions
+- **AI-native development**: canonical rules in [AGENTS.md](AGENTS.md); agent/skill/workflow definitions (`.opencode/`) and AI memory (`ai/`) are **local-only** and not distributed with this public repository
 
 ---
 
@@ -47,6 +49,7 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 ## 🛠️ Technology Stack
 
 ### Frontend
+
 - React 19 + TypeScript
 - Vite
 - Tailwind CSS v4
@@ -56,7 +59,8 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 - Emotion
 
 ### Backend
-- Node.js + Express
+
+- Node.js + Express 5
 - MySQL / PostgreSQL
 - JWT Authentication
 - bcryptjs for password hashing
@@ -66,17 +70,19 @@ If you are new to this project, start with **[DOCUMENTATION.md](DOCUMENTATION.md
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
+
+- Node.js 24+ (LTS)
 - MySQL 8.0+
 - npm or yarn
 
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
-git clone https://github.com/cromstel/smart-health-manager
-cd smart-health-manager
-````
+git clone https://github.com/cromstel/smart-health-management.git
+cd smart-health-management
+```
 
 2. **Install frontend dependencies**
 
@@ -99,16 +105,20 @@ cp .env.example .env
 ```
 
 Backend:
-The backend reads environment variables from the project root `.env` while developing.
+The backend reads environment variables from the project root `.env` / `.env.local` while developing.
 Ensure the following keys are set:
+
 ```
-PORT=5600
-VITE_BASE_URL=http://localhost:5174
-FRONTEND_URL=http://localhost:5174
-VITE_API_URL=http://localhost:5600/api
+PORT=5000
+VITE_BASE_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+VITE_API_URL=http://localhost:5000/api
 ```
 
+> Dev note: in development, `/api` requests are served by the mock API middleware (`src/server/mockApi.ts`) on the Vite server itself, so the frontend runs standalone on `:3000` without the backend. Connect to the real API by pointing `VITE_API_URL` at the backend and disabling/changing the mock mount in `vite.config.ts`.
+
 The following environment variables are also required for certain features:
+
 ```bash
 # Stripe
 STRIPE_SECRET_KEY=your_stripe_secret_key
@@ -144,8 +154,8 @@ cd server
 npm run dev
 ```
 
-* Frontend: `http://localhost:5174`
-* Backend API: `http://localhost:5600`
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:5000` (unless `PORT` is overridden in `.env`)
 
 API calls to `/api` are proxied to the backend automatically during development.
 
@@ -166,60 +176,53 @@ smart-health-management/
 │       ├── routes/
 │       └── database/
 ├── public/                 # Static assets
-├── docs/
-│   ├── developer-guide.md
-│   ├── api-reference.md
-│   ├── CHANGELOG.md
-│   ├── CONTRIBUTING.md
-│   └── SECURITY.md
+├── docs/                   # (local-only) developer-guide, api-reference, CHANGELOG, CONTRIBUTING, SECURITY
 ├── LICENSE
 └── NOTICE
 ```
 
 ## 🎨 Design System
 
-* **Primary Color**: Navy Blue (#001F3F)
-* **Accent Color**: Sea Blue (#00BFFF)
-* **Background**: #0A192F
-* **Text**: #EAEAEA
-* **Theme**: Dark mode by default
+- **Primary Color**: Navy Blue (#001F3F)
+- **Accent Color**: Sea Blue (#00BFFF)
+- **Background**: #0A192F
+- **Text**: #EAEAEA
+- **Theme**: Dark mode by default
 
 ## 📊 Current Status
 
-**Overall Progress**: 55% Complete
+**Overall Progress**: Production-ready
 
-* ✅ Frontend UI: Complete
-* ✅ Backend Setup: Complete
-* 🟡 API Integration: In Progress
-* ⏳ Testing: Pending
-* ⏳ Deployment: Pending
+- ✅ Frontend UI: Complete (React 19 + TypeScript + Vite + Tailwind v4, refactored for best UI/UX)
+- ✅ Backend API: Complete (Express 5 + MySQL2, all modules implemented and building with zero TS errors)
+- ✅ Testing: Vitest suites green (frontend + backend); Playwright e2e available in `e2e/` (local-only)
+- ✅ Dependency Hygiene: All packages on latest stable versions; residual advisories tracked in local `docs/CHANGELOG.md`
+- 🟡 Deployment: Configured per environment — see local `docs/DEPLOYMENT.md` (requires operator-provided credentials/DB)
 
-See [docs/developer-guide.md](docs/developer-guide.md) for detailed implementation guidance.
+> **Note:** `docs/`, `ai/`, `.opencode/`, and `scripts/` are local-only (kept out of this public repository). Detailed guides referenced below are available in the full internal checkout.
 
 ## 🔐 Default Credentials (Development)
 
-* Email: `admin@hospital.com`
-* Password: `admin123`
+- Email: `admin@hospital.com`
+- Password: `admin123`
 
 Alternatively, create a user via the registration endpoint.
 
 ## 📝 Documentation Links
 
-* **Developer Guide**: [docs/developer-guide.md](docs/developer-guide.md)
-* **API Reference**: [docs/api-reference.md](docs/api-reference.md)
-* **Security Policy**: [docs/SECURITY.md](docs/SECURITY.md)
-* **Contribution Guidelines**: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
-* **Changelog**: [docs/CHANGELOG.md](docs/CHANGELOG.md)
-* **License**: [LICENSE](LICENSE)
-* **Notice**: [NOTICE](NOTICE)
+- **Code of Conduct**: for the full developer guide, API reference, security policy, contribution guidelines, and changelog, see the local-only `docs/` folder in the internal checkout (`docs/developer-guide.md`, `docs/api-reference.md`, `docs/SECURITY.md`, `docs/CONTRIBUTING.md`, `docs/CHANGELOG.md`).
+- **License**: [LICENSE](LICENSE)
+- **Notice**: [NOTICE](NOTICE)
 
 ---
 
 ### Dashboard
+
 - `GET /api/dashboard/disease-trends` - Get disease trends data
 - `GET /api/dashboard/ghana-health-data` - Get Ghana Health Service data
 
 ### Financial
+
 - `POST /api/financial/customers` - Create Stripe customer
 - `POST /api/financial/charges` - Create Stripe charge
 
@@ -253,11 +256,11 @@ npm start
 
 ## 🤝 Contributing
 
-Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for full contribution guidelines.
+Please see the local `docs/CONTRIBUTING.md` (internal checkout) for full contribution guidelines.
 
 ## 🔐 Security
 
-Refer to [docs/SECURITY.md](docs/SECURITY.md) for reporting vulnerabilities and supported version details.
+Refer to local `docs/SECURITY.md` for reporting vulnerabilities and supported version details.
 
 ## 👥 Team
 
@@ -267,14 +270,12 @@ Cromstel IT Group - Smart Health Management Team
 
 For issues or questions, open a GitHub issue or contact us via [https://cromstelit.com/contact-us/](https://cromstelit.com/contact-us/).
 
+**Version**: 1.4.0
+**Last Updated**: September 2026
 
-**Version**: 1.0.0
-**Last Updated**: November 2025
+✅ This updated `README.md`:
 
-```
-
-✅ This updated `README.md`:  
-- Links all the docs (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `api-reference.md`, `developer-guide.md`, `LICENSE`, `NOTICE`).  
-- Maintains your corporate and professional tone.  
-- Keeps your tech stack, installation, project structure, and current status sections intact.  
+- Links all the docs (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `api-reference.md`, `developer-guide.md`, `LICENSE`, `NOTICE`).
+- Maintains your corporate and professional tone.
+- Keeps your tech stack, installation, project structure, and current status sections intact.
 - Makes it easier for developers to navigate and contribute.

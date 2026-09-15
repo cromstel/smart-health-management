@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Account {
   id: string;
@@ -126,12 +127,7 @@ export default function FinancialPage() {
   const [isSubmittingAccount, setIsSubmittingAccount] = useState(false);
   const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
 
-  useEffect(() => {
-    loadAccounts();
-    loadTransactions();
-  }, []);
-
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       setLoadingAccounts(true);
       setAccountsError(null);
@@ -153,9 +149,9 @@ export default function FinancialPage() {
     } finally {
       setLoadingAccounts(false);
     }
-  };
+  }, []);
 
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       setLoadingTransactions(true);
       setTransactionsError(null);
@@ -164,7 +160,7 @@ export default function FinancialPage() {
         id: txn.id,
         date: txn.transaction_date,
         description: txn.description,
-        account: txn.account_name, // Assuming account_name is joined from accounts table
+        account: txn.account_name,
         debit: txn.debit,
         credit: txn.credit,
         balance: txn.balance,
@@ -178,15 +174,20 @@ export default function FinancialPage() {
     } finally {
       setLoadingTransactions(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAccounts();
+    loadTransactions();
+  }, [loadAccounts, loadTransactions]);
 
   const handleAccountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setNewAccount(prev => ({ ...prev, [id]: value }));
+    setNewAccount((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleAccountSelectChange = (id: string, value: string) => {
-    setNewAccount(prev => ({ ...prev, [id]: value }));
+    setNewAccount((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleAddAccount = async () => {
@@ -227,11 +228,11 @@ export default function FinancialPage() {
 
   const handleTransactionInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setNewTransaction(prev => ({ ...prev, [id]: value }));
+    setNewTransaction((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleTransactionSelectChange = (id: string, value: string) => {
-    setNewTransaction(prev => ({ ...prev, [id]: value }));
+    setNewTransaction((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleAddTransaction = async () => {
@@ -281,17 +282,25 @@ export default function FinancialPage() {
     }
   };
 
-  const totalAssets = accounts.filter(a => a.type === 'Asset' && a.level === 0).reduce((sum, a) => sum + a.balance, 0);
-  const totalLiabilities = accounts.filter(a => a.type === 'Liability' && a.level === 0).reduce((sum, a) => sum + a.balance, 0);
-  const totalIncome = accounts.filter(a => a.type === 'Income' && a.level === 0).reduce((sum, a) => sum + a.balance, 0);
-  const totalExpenses = accounts.filter(a => a.type === 'Expense' && a.level === 0).reduce((sum, a) => sum + a.balance, 0);
+  const totalAssets = useMemo(() => 
+    accounts.filter(a => a.type === 'Asset' && a.level === 0).reduce((sum, a) => sum + a.balance, 0), 
+  [accounts]);
+  const totalLiabilities = useMemo(() => 
+    accounts.filter(a => a.type === 'Liability' && a.level === 0).reduce((sum, a) => sum + a.balance, 0), 
+  [accounts]);
+  const totalIncome = useMemo(() => 
+    accounts.filter(a => a.type === 'Income' && a.level === 0).reduce((sum, a) => sum + a.balance, 0), 
+  [accounts]);
+  const totalExpenses = useMemo(() => 
+    accounts.filter(a => a.type === 'Expense' && a.level === 0).reduce((sum, a) => sum + a.balance, 0), 
+  [accounts]);
   const netProfit = totalIncome - totalExpenses;
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const dateStr = new Date().toISOString().split('T')[0];
     if (activeTab === 'coa') {
       if (!accounts.length) {
@@ -342,16 +351,17 @@ export default function FinancialPage() {
       exportToCSV(`income_statement_${dateStr}`, incomeData);
       toast.success('Income Statement exported to CSV');
     }
-  };
+  }, [activeTab, accounts, transactions, totalAssets, totalLiabilities, totalIncome, totalExpenses, netProfit]);
 
-  const activeTabName =
-    activeTab === 'coa'
-      ? 'Chart of Accounts'
-      : activeTab === 'transactions'
-      ? 'Transaction History'
-      : activeTab === 'balance'
-      ? 'Balance Sheet'
-      : 'Income Statement';
+  const activeTabName = useMemo(() => {
+    switch (activeTab) {
+      case 'coa': return 'Chart of Accounts';
+      case 'transactions': return 'Transaction History';
+      case 'balance': return 'Balance Sheet';
+      case 'income': return 'Income Statement';
+      default: return 'Financial Report';
+    }
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -365,7 +375,7 @@ export default function FinancialPage() {
         </div>
       </div>
 
-      {loadingAccounts || loadingTransactions ? (
+      {(loadingAccounts || loadingTransactions) ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -389,26 +399,28 @@ export default function FinancialPage() {
           </div>
         </div>
       ) : accountsError || transactionsError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Error Loading Data</h3>
-          {accountsError && <p className="text-red-500 mb-2">Accounts: {accountsError}</p>}
-          {transactionsError && <p className="text-red-500 mb-2">Transactions: {transactionsError}</p>}
-          <div className="flex gap-2 justify-center mt-4">
-            {accountsError && (
-              <Button onClick={loadAccounts} variant="outline" className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Retry Accounts
-              </Button>
-            )}
-            {transactionsError && (
-              <Button onClick={loadTransactions} variant="outline" className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Retry Transactions
-              </Button>
-            )}
+        <ErrorBoundary fallbackTitle="Error loading Financial Data">
+          <div className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" aria-hidden="true" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Data</h3>
+            {accountsError && <p className="text-red-500 mb-2">Accounts: {accountsError}</p>}
+            {transactionsError && <p className="text-red-500 mb-2">Transactions: {transactionsError}</p>}
+            <div className="flex gap-2 justify-center mt-4">
+              {accountsError && (
+                <Button onClick={loadAccounts} variant="outline" className="gap-2">
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                  Retry Accounts
+                </Button>
+              )}
+              {transactionsError && (
+                <Button onClick={loadTransactions} variant="outline" className="gap-2">
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                  Retry Transactions
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </ErrorBoundary>
       ) : (
         <>
           <div className="flex items-center justify-between flex-wrap gap-4 print:hidden">
@@ -418,17 +430,17 @@ export default function FinancialPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" className="gap-2" onClick={handlePrint} title="Print current financial view">
-                <Printer className="h-4 w-4" />
+                <Printer className="h-4 w-4" aria-hidden="true" />
                 Print
               </Button>
               <Button variant="outline" className="gap-2" onClick={handleExport} title="Export current financial data to CSV">
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4" aria-hidden="true" />
                 Export CSV
               </Button>
               <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="gap-2" disabled={!hasPermission('financial:add')}>
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4" aria-hidden="true" />
                     New Account
                   </Button>
                 </DialogTrigger>
@@ -468,7 +480,7 @@ export default function FinancialPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="">None (Main Account)</SelectItem>
-                          {accounts.map(acc => (
+                          {accounts.map((acc) => (
                             <SelectItem key={acc.id} value={acc.id}>
                               {acc.code} - {acc.name}
                             </SelectItem>
@@ -480,7 +492,7 @@ export default function FinancialPage() {
                       <Label htmlFor="balance">Opening Balance</Label>
                       <Input id="balance" type="number" step="0.01" placeholder="0.00" value={newAccount.balance} onChange={handleAccountInputChange} />
                     </div>
-                    {newAccountError && <p className="text-red-500 text-sm">{newAccountError}</p>}
+                    {newAccountError && <p className="text-red-500 text-sm" role="alert">{newAccountError}</p>}
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setIsAccountDialogOpen(false)} disabled={isSubmittingAccount}>Cancel</Button>
@@ -503,7 +515,7 @@ export default function FinancialPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">GHS {totalAssets.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-500" />
+                  <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
                   +12% from last month
                 </p>
               </CardContent>
@@ -517,7 +529,7 @@ export default function FinancialPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">GHS {totalLiabilities.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingDown className="h-3 w-3 text-red-500" />
+                  <TrendingDown className="h-3 w-3 text-red-500" aria-hidden="true" />
                   -5% from last month
                 </p>
               </CardContent>
@@ -531,7 +543,7 @@ export default function FinancialPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">GHS {totalIncome.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-500" />
+                  <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
                   +18% from last month
                 </p>
               </CardContent>
@@ -558,425 +570,447 @@ export default function FinancialPage() {
             </TabsList>
 
             <TabsContent value="coa">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Chart of Accounts</CardTitle>
-                  <CardDescription>Hierarchical view of all accounts</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loadingAccounts ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Account Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead className="text-right">Balance</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <TableRow key={i}>
-                            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                            <TableCell><Skeleton className="h-8 w-12" /></TableCell>
+              <ErrorBoundary fallbackTitle="Error loading Chart of Accounts">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Chart of Accounts</CardTitle>
+                    <CardDescription>Hierarchical view of all accounts</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingAccounts ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Account Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead className="text-right">Balance</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : accounts.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground">No accounts found.</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Account Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead className="text-right">Balance</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {accounts.map((account) => (
-                          <TableRow key={account.id}>
-                            <TableCell className="font-mono">{account.code}</TableCell>
-                            <TableCell>
-                              <span className={`pl-[${account.level * 20}px]`}>
-                                {account.name}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{account.type}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              GHS {account.balance.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm">Edit</Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+                        </TableHeader>
+                        <TableBody>
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <TableRow key={i}>
+                              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                              <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                              <TableCell><Skeleton className="h-8 w-12" /></TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : accounts.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p className="text-muted-foreground">No accounts found.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Code</TableHead>
+                              <TableHead>Account Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead className="text-right">Balance</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {accounts.map((account) => (
+                              <TableRow key={account.id}>
+                                <TableCell className="font-mono">{account.code}</TableCell>
+                                <TableCell>
+                                  <span style={{ paddingLeft: `${account.level * 20}px` }}>
+                                    {account.name}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{account.type}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  GHS {account.balance.toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Button variant="ghost" size="sm">Edit</Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </ErrorBoundary>
             </TabsContent>
 
             <TabsContent value="transactions">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Transaction History</CardTitle>
-                      <CardDescription>All financial transactions with audit trail</CardDescription>
-                    </div>
-                    <Dialog open={isTransactionDialogOpen} onOpenChange={setIsTransactionDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="sm" className="gap-2" disabled={!hasPermission('financial:add')}>
-                          <Plus className="h-4 w-4" />
-                          New Transaction
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Record Transaction</DialogTitle>
-                          <DialogDescription>Add a new financial transaction</DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="transactionDate">Date</Label>
-                            <Input id="transactionDate" type="date" value={newTransaction.transactionDate} onChange={handleTransactionInputChange} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Input id="description" placeholder="Transaction description" value={newTransaction.description} onChange={handleTransactionInputChange} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="accountId">Account</Label>
-                            <Select onValueChange={(value) => handleTransactionSelectChange('accountId', value)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select account" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {accounts.map(acc => (
-                                  <SelectItem key={acc.id} value={acc.id}>
-                                    {acc.code} - {acc.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="debit">Debit</Label>
-                              <Input id="debit" type="number" step="0.01" placeholder="0.00" value={newTransaction.debit} onChange={handleTransactionInputChange} />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="credit">Credit</Label>
-                              <Input id="credit" type="number" step="0.01" placeholder="0.00" value={newTransaction.credit} onChange={handleTransactionInputChange} />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="reference">Reference</Label>
-                            <Input id="reference" placeholder="e.g., INV-001" value={newTransaction.reference} onChange={handleTransactionInputChange} />
-                          </div>
-                          {newTransactionError && <p className="text-red-500 text-sm">{newTransactionError}</p>}
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setIsTransactionDialogOpen(false)} disabled={isSubmittingTransaction}>Cancel</Button>
-                          <Button onClick={handleAddTransaction} disabled={isSubmittingTransaction || !hasPermission('financial:add')}>
-                            {isSubmittingTransaction ? 'Recording...' : 'Record Transaction'}
+              <ErrorBoundary fallbackTitle="Error loading Transactions">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Transaction History</CardTitle>
+                        <CardDescription>All financial transactions with audit trail</CardDescription>
+                      </div>
+                      <Dialog open={isTransactionDialogOpen} onOpenChange={setIsTransactionDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className="gap-2" disabled={!hasPermission('financial:add')}>
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            New Transaction
                           </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {loadingTransactions ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Account</TableHead>
-                          <TableHead className="text-right">Debit</TableHead>
-                          <TableHead className="text-right">Credit</TableHead>
-                          <TableHead className="text-right">Balance</TableHead>
-                          <TableHead>Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <TableRow key={i}>
-                            <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : transactions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground">No transactions found.</p>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Record Transaction</DialogTitle>
+                            <DialogDescription>Add a new financial transaction</DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="transactionDate">Date</Label>
+                              <Input id="transactionDate" type="date" value={newTransaction.transactionDate} onChange={handleTransactionInputChange} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="description">Description</Label>
+                              <Input id="description" placeholder="Transaction description" value={newTransaction.description} onChange={handleTransactionInputChange} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="accountId">Account</Label>
+                              <Select onValueChange={(value) => handleTransactionSelectChange('accountId', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select account" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {accounts.map((acc) => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                      {acc.code} - {acc.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="debit">Debit</Label>
+                                <Input id="debit" type="number" step="0.01" placeholder="0.00" value={newTransaction.debit} onChange={handleTransactionInputChange} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="credit">Credit</Label>
+                                <Input id="credit" type="number" step="0.01" placeholder="0.00" value={newTransaction.credit} onChange={handleTransactionInputChange} />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="reference">Reference</Label>
+                              <Input id="reference" placeholder="e.g., INV-001" value={newTransaction.reference} onChange={handleTransactionInputChange} />
+                            </div>
+                            {newTransactionError && <p className="text-red-500 text-sm" role="alert">{newTransactionError}</p>}
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setIsTransactionDialogOpen(false)} disabled={isSubmittingTransaction}>Cancel</Button>
+                            <Button onClick={handleAddTransaction} disabled={isSubmittingTransaction || !hasPermission('financial:add')}>
+                              {isSubmittingTransaction ? 'Recording...' : 'Record Transaction'}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Account</TableHead>
-                          <TableHead className="text-right">Debit</TableHead>
-                          <TableHead className="text-right">Credit</TableHead>
-                          <TableHead className="text-right">Balance</TableHead>
-                          <TableHead>Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {transactions.map((txn) => (
-                            <TableRow key={txn.id}>
-                              <TableCell>{txn.date}</TableCell>
-                              <TableCell>{txn.description}</TableCell>
-                              <TableCell>{txn.account}</TableCell>
-                              <TableCell className="text-right">
-                                {txn.debit > 0 ? `GHS ${txn.debit.toLocaleString()}` : '-'}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {txn.credit > 0 ? `GHS ${txn.credit.toLocaleString()}` : '-'}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                GHS {txn.balance.toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{txn.reference}</Badge>
-                              </TableCell>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingTransactions ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Account</TableHead>
+                            <TableHead className="text-right">Debit</TableHead>
+                            <TableHead className="text-right">Credit</TableHead>
+                            <TableHead className="text-right">Balance</TableHead>
+                            <TableHead>Reference</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <TableRow key={i}>
+                              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                              <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                              <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                             </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : transactions.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p className="text-muted-foreground">No transactions found.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead>Account</TableHead>
+                              <TableHead className="text-right">Debit</TableHead>
+                              <TableHead className="text-right">Credit</TableHead>
+                              <TableHead className="text-right">Balance</TableHead>
+                              <TableHead>Reference</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {transactions.map((txn) => (
+                              <TableRow key={txn.id}>
+                                <TableCell>{txn.date}</TableCell>
+                                <TableCell>{txn.description}</TableCell>
+                                <TableCell>{txn.account}</TableCell>
+                                <TableCell className="text-right">
+                                  {txn.debit > 0 ? `GHS ${txn.debit.toLocaleString()}` : '-'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {txn.credit > 0 ? `GHS ${txn.credit.toLocaleString()}` : '-'}
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  GHS {txn.balance.toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{txn.reference}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </ErrorBoundary>
             </TabsContent>
 
             <TabsContent value="balance">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-accent" />
-                        Balance Sheet
-                      </CardTitle>
-                      <CardDescription>As of {new Date().toLocaleDateString()}</CardDescription>
+              <ErrorBoundary fallbackTitle="Error loading Balance Sheet">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-accent" aria-hidden="true" />
+                          Balance Sheet
+                        </CardTitle>
+                        <CardDescription>As of {new Date().toLocaleDateString()}</CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2 print:hidden">
+                        <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint} title="Print Balance Sheet">
+                          <Printer className="h-4 w-4" aria-hidden="true" />
+                          Print
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-2" onClick={handleExport} title="Export to CSV">
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                          Export CSV
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 print:hidden">
-                      <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint} title="Print Balance Sheet">
-                        <Printer className="h-4 w-4" />
-                        Print
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-2" onClick={handleExport} title="Export to CSV">
-                        <Download className="h-4 w-4" />
-                        Export CSV
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 text-foreground">Assets</h3>
-                      <Table>
-                        <TableBody>
-                          {loadingAccounts ? (
-                            <>
-                              {[1, 2, 3].map((i) => (
-                                <TableRow key={i}>
-                                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                  <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                                </TableRow>
-                              ))}
-                            </>
-                          ) : (
-                            accounts.filter(a => a.type === 'Asset').map(acc => (
-                              <TableRow key={acc.id}>
-                                <TableCell className={`pl-[${acc.level * 20}px]`}>
-                                  {acc.name}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  GHS {acc.balance.toLocaleString()}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                          <TableRow className="border-t-2">
-                            <TableCell className="font-bold">Total Assets</TableCell>
-                            <TableCell className="text-right font-bold text-accent">
-                              GHS {totalAssets.toLocaleString()}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 text-foreground">Liabilities</h3>
-                      <Table>
-                        <TableBody>
-                          {loadingAccounts ? (
-                            <>
-                              {[1, 2, 3].map((i) => (
-                                <TableRow key={i}>
-                                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                  <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                                </TableRow>
-                              ))}
-                            </>
-                          ) : (
-                            accounts.filter(a => a.type === 'Liability').map(acc => (
-                              <TableRow key={acc.id}>
-                                <TableCell className={`pl-[${acc.level * 20}px]`}>
-                                  {acc.name}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  GHS {acc.balance.toLocaleString()}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 text-foreground">Assets</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableBody>
+                              {loadingAccounts ? (
+                                <>
+                                  {[1, 2, 3].map((i) => (
+                                    <TableRow key={i}>
+                                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                      <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                                    </TableRow>
+                                  ))}
+                                </>
+                              ) : (
+                                accounts.filter((a) => a.type === 'Asset').map((acc) => (
+                                  <TableRow key={acc.id}>
+                                    <TableCell style={{ paddingLeft: `${acc.level * 20}px` }}>
+                                      {acc.name}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      GHS {acc.balance.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                              <TableRow className="border-t-2">
+                                <TableCell className="font-bold">Total Assets</TableCell>
+                                <TableCell className="text-right font-bold text-accent">
+                                  GHS {totalAssets.toLocaleString()}
                                 </TableCell>
                               </TableRow>
-                            ))
-                          )}
-                          <TableRow className="border-t-2">
-                            <TableCell className="font-bold">Total Liabilities</TableCell>
-                            <TableCell className="text-right font-bold text-accent">
-                              GHS {totalLiabilities.toLocaleString()}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 text-foreground">Liabilities</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableBody>
+                              {loadingAccounts ? (
+                                <>
+                                  {[1, 2, 3].map((i) => (
+                                    <TableRow key={i}>
+                                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                      <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                                    </TableRow>
+                                  ))}
+                                </>
+                              ) : (
+                                accounts.filter((a) => a.type === 'Liability').map((acc) => (
+                                  <TableRow key={acc.id}>
+                                    <TableCell style={{ paddingLeft: `${acc.level * 20}px` }}>
+                                      {acc.name}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      GHS {acc.balance.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                              <TableRow className="border-t-2">
+                                <TableCell className="font-bold">Total Liabilities</TableCell>
+                                <TableCell className="text-right font-bold text-accent">
+                                  GHS {totalLiabilities.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </ErrorBoundary>
             </TabsContent>
 
             <TabsContent value="income">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-accent" />
-                        Income Statement
-                      </CardTitle>
-                      <CardDescription>For the period ending {new Date().toLocaleDateString()}</CardDescription>
+              <ErrorBoundary fallbackTitle="Error loading Income Statement">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <DollarSign className="h-5 w-5 text-accent" aria-hidden="true" />
+                          Income Statement
+                        </CardTitle>
+                        <CardDescription>For the period ending {new Date().toLocaleDateString()}</CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2 print:hidden">
+                        <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint} title="Print Income Statement">
+                          <Printer className="h-4 w-4" aria-hidden="true" />
+                          Print
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-2" onClick={handleExport} title="Export to CSV">
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                          Export CSV
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 print:hidden">
-                      <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint} title="Print Income Statement">
-                        <Printer className="h-4 w-4" />
-                        Print
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-2" onClick={handleExport} title="Export to CSV">
-                        <Download className="h-4 w-4" />
-                        Export CSV
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 text-foreground">Revenue</h3>
-                      <Table>
-                        <TableBody>
-                          {loadingAccounts ? (
-                            <>
-                              {[1, 2, 3].map((i) => (
-                                <TableRow key={i}>
-                                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                  <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                                </TableRow>
-                              ))}
-                            </>
-                          ) : (
-                            accounts.filter(a => a.type === 'Income').map(acc => (
-                              <TableRow key={acc.id}>
-                                <TableCell className={`pl-[${acc.level * 20}px]`}>
-                                  {acc.name}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  GHS {acc.balance.toLocaleString()}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                          <TableRow className="border-t-2">
-                            <TableCell className="font-bold">Total Revenue</TableCell>
-                            <TableCell className="text-right font-bold text-accent">
-                              GHS {totalIncome.toLocaleString()}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 text-foreground">Expenses</h3>
-                      <Table>
-                        <TableBody>
-                          {loadingAccounts ? (
-                            <>
-                              {[1, 2, 3].map((i) => (
-                                <TableRow key={i}>
-                                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                  <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                                </TableRow>
-                              ))}
-                            </>
-                          ) : (
-                            accounts.filter(a => a.type === 'Expense').map(acc => (
-                              <TableRow key={acc.id}>
-                                <TableCell className={`pl-[${acc.level * 20}px]`}>
-                                  {acc.name}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  GHS {acc.balance.toLocaleString()}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 text-foreground">Revenue</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableBody>
+                              {loadingAccounts ? (
+                                <>
+                                  {[1, 2, 3].map((i) => (
+                                    <TableRow key={i}>
+                                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                      <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                                    </TableRow>
+                                  ))}
+                                </>
+                              ) : (
+                                accounts.filter((a) => a.type === 'Income').map((acc) => (
+                                  <TableRow key={acc.id}>
+                                    <TableCell style={{ paddingLeft: `${acc.level * 20}px` }}>
+                                      {acc.name}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      GHS {acc.balance.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                              <TableRow className="border-t-2">
+                                <TableCell className="font-bold">Total Revenue</TableCell>
+                                <TableCell className="text-right font-bold text-accent">
+                                  GHS {totalIncome.toLocaleString()}
                                 </TableCell>
                               </TableRow>
-                            ))
-                          )}
-                          <TableRow className="border-t-2">
-                            <TableCell className="font-bold">Total Expenses</TableCell>
-                            <TableCell className="text-right font-bold text-destructive">
-                              GHS {totalExpenses.toLocaleString()}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 text-foreground">Expenses</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableBody>
+                              {loadingAccounts ? (
+                                <>
+                                  {[1, 2, 3].map((i) => (
+                                    <TableRow key={i}>
+                                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                      <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                                    </TableRow>
+                                  ))}
+                                </>
+                              ) : (
+                                accounts.filter((a) => a.type === 'Expense').map((acc) => (
+                                  <TableRow key={acc.id}>
+                                    <TableCell style={{ paddingLeft: `${acc.level * 20}px` }}>
+                                      {acc.name}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      GHS {acc.balance.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                              <TableRow className="border-t-2">
+                                <TableCell className="font-bold">Total Expenses</TableCell>
+                                <TableCell className="text-right font-bold text-destructive">
+                                  GHS {totalExpenses.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                      <div className="border-t-2 pt-4">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell className="font-bold text-lg">Net Profit</TableCell>
+                                <TableCell className="text-right font-bold text-lg text-accent">
+                                  GHS {netProfit.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
                     </div>
-                    <div className="border-t-2 pt-4">
-                      <Table>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell className="font-bold text-lg">Net Profit</TableCell>
-                            <TableCell className="text-right font-bold text-lg text-accent">
-                              GHS {netProfit.toLocaleString()}
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </ErrorBoundary>
             </TabsContent>
           </Tabs>
         </>

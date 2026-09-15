@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
 import { verifyToken, currentToken, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
@@ -169,17 +168,38 @@ export const register = async (req: Request, res: Response): Promise<Response | 
       departmentId = (deptRows as any[])[0]?.id ?? null;
     }
 
+    // Registration submits the role's canonical name from the UI, while the
+    // database stores its numeric foreign key. Resolve either representation
+    // before the insert so a valid staff registration never creates an
+    // unassigned account or attempts to write a string into a BIGINT column.
+    let resolvedRoleId: number | null = null;
+    if (roleId !== undefined && roleId !== null && String(roleId).trim()) {
+      const numericRoleId = Number(roleId);
+      if (Number.isSafeInteger(numericRoleId) && numericRoleId > 0) {
+        resolvedRoleId = numericRoleId;
+      } else {
+        const [roleRows] = await pool.query(
+          'SELECT id FROM roles WHERE LOWER(name) = LOWER(?) LIMIT 1',
+          [String(roleId).trim()]
+        );
+        resolvedRoleId = Number((roleRows as any[])[0]?.id) || null;
+      }
+
+      if (!resolvedRoleId) {
+        return res.status(400).json({ error: 'The selected role is not configured for this system.' });
+      }
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const userId = uuidv4();
-    await pool.query(
-      'INSERT INTO users (id, email, password, name, role_id, hospital_id, department_id, password_must_change) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [userId, email, hashedPassword, name, roleId || null, hospitalId, departmentId, true]
+    const [insertResult] = await pool.query<any>(
+      'INSERT INTO users (email, password, name, role_id, hospital_id, department_id, password_must_change) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, name, resolvedRoleId, hospitalId, departmentId, true]
     );
 
-    res.status(201).json({ message: 'User registered successfully', userId });
+    res.status(201).json({ message: 'User registered successfully', userId: String(insertResult.insertId) });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration failed' });

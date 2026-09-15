@@ -9,6 +9,8 @@ router.use(authenticate);
 router.use(enforcePasswordChange);
 
 router.get('/', requirePermission('appointments', 'view'), appointmentController.getAppointments);
+router.get('/availability', requirePermission('appointments', 'view'), appointmentController.getDoctorAvailability);
+router.get('/:id/ics', requirePermission('appointments', 'view'), appointmentController.getAppointmentIcs);
 router.get('/:id', requirePermission('appointments', 'view'), appointmentController.getAppointmentById);
 router.post(
   '/',
@@ -33,7 +35,5 @@ router.put(
   appointmentController.updateAppointment
 );
 router.delete('/:id', requirePermission('appointments', 'delete'), appointmentController.deleteAppointment);
-router.get('/availability', requirePermission('appointments', 'view'), appointmentController.getDoctorAvailability);
-router.get('/:id/ics', requirePermission('appointments', 'view'), appointmentController.getAppointmentIcs);
 
 export default router;

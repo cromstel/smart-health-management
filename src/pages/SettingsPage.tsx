@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,19 +18,24 @@ import {
   Clock,
   Fingerprint,
   ShieldCheck,
+  ShieldOff,
+  KeyRound,
   Key,
   QrCode,
   Copy,
-  Smartphone
+  Smartphone,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api';
+import type { WebAuthnCredentialRecord } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { registerPasskey, isWebAuthnSupported } from '@/utils/webauthn';
+import { startWebAuthnRegistration, isWebAuthnSupported } from '@/utils/webauthn';
 
 interface Settings {
   systemName?: string;
@@ -41,7 +47,7 @@ interface Settings {
 }
 
 export default function SettingsPage() {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, refreshUser } = useAuth();
   const { isDark, setTheme } = useTheme();
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
@@ -62,25 +68,183 @@ export default function SettingsPage() {
     toast.success(`Dashboard auto-refresh interval set to ${val === '0' ? 'Disabled' : `${val} seconds`}`);
   };
 
-  // MFA / 2FA States
-  const [mfaEnabled, setMfaEnabled] = useState<boolean>(() => localStorage.getItem('mfa_enabled') !== 'false');
+  // TOTP / 2FA state — the backend is the source of truth for whether 2FA is
+  // enabled. These controls live against the real /auth/totp/* endpoints.
+  const [totpEnabled, setTotpEnabled] = useState<boolean>(!!user?.totp_enabled);
+  const [totpBusy, setTotpBusy] = useState(false);
+  const [totpPairing, setTotpPairing] = useState(false); // pairing wizard open (secret generated)
+  const [totpSecret, setTotpSecret] = useState('');
+  const [totpOtpauthUrl, setTotpOtpauthUrl] = useState('');
+  const [totpConfirmCode, setTotpConfirmCode] = useState('');
+  const [totpDisableMode, setTotpDisableMode] = useState(false);
+  const [totpDisableCode, setTotpDisableCode] = useState('');
   const [mfaMethod, setMfaMethod] = useState<'totp' | 'sms' | 'passkey'>(() => (localStorage.getItem('mfa_method') as any) || 'totp');
-  const [mfaSecret] = useState('JBSWY3DPEHPK3PXP');
-  const [mfaTestCode, setMfaTestCode] = useState('');
-  const [mfaVerified, setMfaVerified] = useState(false);
   const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
-  const recoveryCodes = [
-    '8F92-3B1A', '1E90-C782', '4D81-9F33', '7A22-8E11', '9C04-5B66',
-    '3F11-2A99', '6E88-4D55', '2C77-1B44', '5A99-8F22', '0D33-7E11'
-  ];
+  // Recovery codes are generated/returned by the server exactly once at
+  // /totp/confirm (only their hashes are stored). Keep the cleartext copy from
+  // the current session in state; on reload the count comes from `me`.
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const recoveryCodesCount = recoveryCodes.length > 0 ? recoveryCodes.length : (user?.recovery_codes_count ?? 0);
+  const [mfaEvents, setMfaEvents] = useState<Array<{ id: string; action: string; details: unknown; ip: string | null; createdAt: string }>>([]);
+  const [mfaEventsLoading, setMfaEventsLoading] = useState(false);
 
-  const handleMfaToggle = (enabled: boolean) => {
-    setMfaEnabled(enabled);
-    localStorage.setItem('mfa_enabled', String(enabled));
-    if (enabled) {
-      toast.success('Multi-Factor Authentication (MFA) enabled for account!');
-    } else {
-      toast.warning('MFA disabled. Account security level reduced.');
+  // WebAuthn passkeys — real ceremonies against /auth/webauthn/*.
+  const [passkeys, setPasskeys] = useState<WebAuthnCredentialRecord[]>([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyDeviceName, setPasskeyDeviceName] = useState('');
+
+  const loadPasskeys = useCallback(async () => {
+    try {
+      setPasskeysLoading(true);
+      const data = await api.webauthnListCredentials();
+      setPasskeys(data.credentials ?? []);
+    } catch {
+      // Server unavailable or not wired — keep the section inert in dev/mock.
+    } finally {
+      setPasskeysLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPasskeys();
+  }, [loadPasskeys]);
+
+  const handleRegisterPasskey = async () => {
+    if (!isWebAuthnSupported()) {
+      toast.error('WebAuthn (passkeys) is not supported in this browser. Use a current Chrome, Edge, Safari, or Firefox.');
+      return;
+    }
+    setPasskeyBusy(true);
+    try {
+      const { options, challengeToken } = await api.webauthnRegisterOptions();
+      const registration = await startWebAuthnRegistration(options);
+      if (!registration) {
+        toast.info('Passkey registration cancelled.');
+        return;
+      }
+      await api.webauthnRegisterVerify(registration, challengeToken, passkeyDeviceName.trim() || undefined);
+      toast.success('Passkey registered — you can now use it to approve 2FA logins.');
+      setPasskeyDeviceName('');
+      await loadPasskeys();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Passkey registration failed.');
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const handleDeletePasskey = async (credentialId: number) => {
+    setPasskeyBusy(true);
+    try {
+      await api.webauthnDeleteCredential(credentialId);
+      toast.success('Passkey removed.');
+      await loadPasskeys();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove passkey.');
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const loadMfaEvents = useCallback(async () => {
+    try {
+      setMfaEventsLoading(true);
+      const data = await api.getMfaEvents() as { events: typeof mfaEvents };
+      setMfaEvents(data.events ?? []);
+    } catch {
+      // Non-critical — swallow silently
+    } finally {
+      setMfaEventsLoading(false);
+    }
+  }, []);
+
+  const mfaActionLabel = (action: string): string => {
+    switch (action) {
+      case 'mfa_totp_changed': return 'Two-factor enabled / key rotated';
+      case 'mfa_totp_disabled': return 'Two-factor disabled';
+      case 'mfa_recovery_used': return 'Recovery code used';
+      case 'mfa_passkey_registered': return 'Passkey registered';
+      case 'mfa_passkey_used': return 'Passkey used to approve login';
+      case 'mfa_passkey_removed': return 'Passkey removed';
+      default: return action;
+    }
+  };
+
+  // Keep the toggle in sync with the authenticated user's server-side 2FA state.
+  useEffect(() => {
+    setTotpEnabled(!!user?.totp_enabled);
+    if (!user?.totp_enabled) {
+      setTotpPairing(false);
+      setTotpDisableMode(false);
+    }
+  }, [user?.totp_enabled]);
+
+  // Load the per-user MFA audit trail (server-side 2FA events only).
+  useEffect(() => {
+    void loadMfaEvents();
+  }, [loadMfaEvents]);
+
+  const handleEnableTotp = async () => {
+    setTotpBusy(true);
+    try {
+      const { secret, otpauthUrl } = await api.totpEnroll();
+      setTotpSecret(secret);
+      setTotpOtpauthUrl(otpauthUrl);
+      setTotpPairing(true);
+      setTotpDisableMode(false);
+      toast.success('Secret generated — add it to your authenticator app, then confirm the code below.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to start two-factor setup');
+    } finally {
+      setTotpBusy(false);
+    }
+  };
+
+  const handleConfirmTotp = async () => {
+    const cleanCode = totpConfirmCode.trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      toast.error('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+    setTotpBusy(true);
+    try {
+      const result = await api.totpConfirm(totpSecret, cleanCode);
+      setTotpEnabled(true);
+      setTotpPairing(false);
+      setTotpConfirmCode('');
+      setRecoveryCodes(result.recoveryCodes ?? []);
+      setShowRecoveryCodes(Boolean(result.recoveryCodes?.length));
+      toast.success('Two-factor authentication enabled! Your account is now protected.');
+      toast.info('Save your recovery codes somewhere secure — they are only shown once.');
+      await refreshUser();
+      void loadMfaEvents();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Verification failed. Check the code and try again.');
+    } finally {
+      setTotpBusy(false);
+    }
+  };
+
+  const handleDisableTotp = async () => {
+    const cleanCode = totpDisableCode.trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      toast.error('Enter a current 6-digit code from your authenticator app.');
+      return;
+    }
+    setTotpBusy(true);
+    try {
+      await api.totpDisable(cleanCode);
+      setTotpEnabled(false);
+      setTotpDisableMode(false);
+      setTotpDisableCode('');
+      toast.success('Two-factor authentication disabled.');
+      await refreshUser();
+      void loadMfaEvents();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not disable two-factor.');
+    } finally {
+      setTotpBusy(false);
     }
   };
 
@@ -88,15 +252,6 @@ export default function SettingsPage() {
     setMfaMethod(method);
     localStorage.setItem('mfa_method', method);
     toast.info(`Default MFA method set to ${method.toUpperCase()}`);
-  };
-
-  const handleVerifyTestCode = () => {
-    if (mfaTestCode.trim() === '123456' || mfaTestCode.trim().length === 6) {
-      setMfaVerified(true);
-      toast.success('2FA Token validated! Authenticator app paired and verified.');
-    } else {
-      toast.error('Invalid 2FA token. Use code 123456 to verify test pairing.');
-    }
   };
 
   const copyToClipboard = (text: string, msg: string) => {
@@ -230,8 +385,19 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
 	{loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading settings...</p>
+          <div className="space-y-4" role="status" aria-label="Loading settings">
+            <span className="sr-only">Loading settings...</span>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-56" />
+                <Skeleton className="h-4 w-72" />
+              </div>
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-56 w-full" />
+              <Skeleton className="h-56 w-full" />
+            </div>
           </div>
         ) : (
 		<>
@@ -401,8 +567,8 @@ export default function SettingsPage() {
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Label className="font-semibold text-base">Enable Multi-Factor Authentication</Label>
-                    <Badge variant={mfaEnabled ? 'default' : 'outline'} className={mfaEnabled ? 'bg-emerald-600 text-white' : ''}>
-                      {mfaEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
+                    <Badge variant={totpEnabled ? 'default' : 'outline'} className={totpEnabled ? 'bg-emerald-600 text-white' : ''}>
+                      {totpEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -410,12 +576,20 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={mfaEnabled}
-                  onCheckedChange={handleMfaToggle}
+                  checked={totpEnabled}
+                  disabled={totpBusy}
+                  onCheckedChange={(enabled) => {
+                    if (enabled) {
+                      void handleEnableTotp();
+                    } else {
+                      setTotpDisableMode(true);
+                      setTotpPairing(false);
+                    }
+                  }}
                 />
               </div>
 
-              {mfaEnabled && (
+              {(totpEnabled || totpPairing) && (
                 <div className="space-y-6 pt-2">
                   <div className="space-y-3">
                     <Label className="text-xs font-semibold uppercase text-muted-foreground">Default Authentication Method</Label>
@@ -464,49 +638,34 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  {mfaMethod === 'totp' && (
+                  {mfaMethod === 'totp' && totpPairing && (
                     <div className="p-4 rounded-xl border bg-card space-y-4">
                       <div className="flex items-center gap-2">
                         <QrCode className="h-5 w-5 text-accent" />
                         <h4 className="text-sm font-semibold">Pair Authenticator App (TOTP)</h4>
+                        <Badge variant="outline" className="text-[10px] border-accent/40 text-accent font-semibold ml-auto">NEW KEY</Badge>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                        <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 border rounded-lg text-center">
-                          <div className="w-36 h-36 bg-white p-2 border rounded-md shadow-inner flex items-center justify-center mb-2">
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <rect width="100" height="100" fill="#ffffff" />
-                              <rect x="10" y="10" width="30" height="30" fill="#0f172a" />
-                              <rect x="15" y="15" width="20" height="20" fill="#ffffff" />
-                              <rect x="20" y="20" width="10" height="10" fill="#0f172a" />
-                              <rect x="60" y="10" width="30" height="30" fill="#0f172a" />
-                              <rect x="65" y="15" width="20" height="20" fill="#ffffff" />
-                              <rect x="70" y="20" width="10" height="10" fill="#0f172a" />
-                              <rect x="10" y="60" width="30" height="30" fill="#0f172a" />
-                              <rect x="15" y="65" width="20" height="20" fill="#ffffff" />
-                              <rect x="20" y="70" width="10" height="10" fill="#0f172a" />
-                              <rect x="45" y="10" width="10" height="20" fill="#0f172a" />
-                              <rect x="45" y="45" width="15" height="15" fill="#0f172a" />
-                              <rect x="65" y="60" width="25" height="10" fill="#0f172a" />
-                              <rect x="75" y="75" width="15" height="15" fill="#0f172a" />
-                              <rect x="50" y="70" width="15" height="20" fill="#0f172a" />
-                            </svg>
-                          </div>
-                          <span className="text-[11px] text-muted-foreground font-mono">Scan in Google Auth / 1Password</span>
-                        </div>
 
-                        <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col justify-center p-4 bg-muted/40 border-border border rounded-lg space-y-3">
                           <div>
-                            <Label className="text-xs text-muted-foreground">Secret Setup Key</Label>
+                            <Label className="text-xs font-semibold uppercase text-muted-foreground">Manual Setup</Label>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              In your authenticator app choose "Add account" &gt; "Enter a setup key", then
+                              paste the secret below (or the full otpauth:// link).
+                            </p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Secret Key</Label>
                             <div className="flex items-center gap-2 mt-1">
-                              <code className="p-2 rounded bg-muted font-mono text-xs font-bold tracking-wider flex-1">
-                                {mfaSecret}
+                              <code className="p-2 rounded bg-muted font-mono text-xs font-bold tracking-wider flex-1 border border-border" aria-label="TOTP secret key">
+                                {totpSecret}
                               </code>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => copyToClipboard(mfaSecret, 'Secret key copied to clipboard!')}
+                                onClick={() => copyToClipboard(totpSecret, 'Secret key copied to clipboard!')}
                                 className="gap-1 h-8 text-xs"
                               >
                                 <Copy className="h-3.5 w-3.5" />
@@ -514,36 +673,133 @@ export default function SettingsPage() {
                               </Button>
                             </div>
                           </div>
-
                           <div>
-                            <Label htmlFor="mfaTestCode" className="text-xs">Test 6-Digit Code</Label>
+                            <Label className="text-xs text-muted-foreground">Authenticator Link</Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              <code className="p-2 rounded bg-muted font-mono text-[10px] flex-1 border border-border truncate">
+                                {totpOtpauthUrl}
+                              </code>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyToClipboard(totpOtpauthUrl, 'Authenticator link copied to clipboard!')}
+                                className="gap-1 h-8 text-xs"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor="totpConfirmCode" className="text-xs">6-Digit Code from Your App</Label>
                             <div className="flex gap-2 mt-1">
                               <Input
-                                id="mfaTestCode"
+                                id="totpConfirmCode"
                                 placeholder="e.g. 123456"
                                 className="h-9 font-mono text-xs w-36"
                                 maxLength={6}
-                                value={mfaTestCode}
-                                onChange={(e) => setMfaTestCode(e.target.value)}
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                value={totpConfirmCode}
+                                onChange={(e) => setTotpConfirmCode(e.target.value.replace(/[^\d]/g, ''))}
+                                aria-label="Current authenticator code"
                               />
                               <Button
                                 type="button"
                                 size="sm"
                                 className="h-9 text-xs"
-                                onClick={handleVerifyTestCode}
+                                onClick={() => void handleConfirmTotp()}
+                                disabled={totpBusy}
                               >
-                                {mfaVerified ? 'Verified ✓' : 'Verify Code'}
+                                {totpBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                                Confirm &amp; Enable
                               </Button>
                             </div>
+                            <p className="text-[11px] text-muted-foreground mt-1.5">
+                              Confirming proves you hold the app and immediately enforces 2FA on your next sign-in.
+                            </p>
                           </div>
-                          {mfaVerified && (
-                            <div className="text-xs text-emerald-500 font-medium flex items-center gap-1">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              Pairing confirmed! Your device is synchronized.
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setTotpPairing(false)}>
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {mfaMethod === 'totp' && totpEnabled && !totpPairing && (
+                    <div className="p-4 rounded-xl border bg-card space-y-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-accent" />
+                        <h4 className="text-sm font-semibold">Authenticator App (TOTP)</h4>
+                        <Badge variant="default" className="text-[10px] bg-emerald-600 text-white font-semibold ml-auto">ENFORCED</Badge>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        An authenticator code is required on every sign-in. You can rotate the key at any time
+                        by toggling the switch above — the new secret only takes effect after you confirm a code
+                        from the new app.
+                      </p>
+
+                      {!totpDisableMode ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs gap-1.5"
+                          onClick={() => setTotpDisableMode(true)}
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Disable Two-Factor Authentication
+                        </Button>
+                      ) : (
+                        <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-2.5">
+                          <Label htmlFor="totpDisableCode" className="text-xs font-semibold">
+                            Enter a current 6-digit code to confirm disabling
+                          </Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="totpDisableCode"
+                              placeholder="6-digit code"
+                              className="h-9 font-mono text-xs w-36"
+                              maxLength={6}
+                              inputMode="numeric"
+                              value={totpDisableCode}
+                              onChange={(e) => setTotpDisableCode(e.target.value.replace(/[^\d]/g, ''))}
+                              aria-label="Current authenticator code to disable 2FA"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-9 text-xs"
+                              onClick={() => void handleDisableTotp()}
+                              disabled={totpBusy}
+                            >
+                              {totpBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                              Disable 2FA
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-9 text-xs"
+                              onClick={() => {
+                                setTotpDisableMode(false);
+                                setTotpDisableCode('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -554,7 +810,11 @@ export default function SettingsPage() {
                         <span>Offline Emergency Recovery Codes</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        10 single-use emergency backup keys for account recovery if you lose your device.
+                        {recoveryCodesCount > 0
+                          ? `${recoveryCodesCount} single-use backup code${recoveryCodesCount === 1 ? '' : 's'} for account recovery if you lose your device.`
+                          : totpEnabled
+                            ? 'You have no viewable recovery codes. Rotate your two-factor key to generate a fresh set.'
+                            : 'Single-use codes for account recovery are generated when two-factor is enabled.'}
                       </p>
                     </div>
                     <Button
@@ -563,6 +823,7 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
                       className="gap-1.5 text-xs"
+                      disabled={!totpEnabled}
                     >
                       <Key className="h-3.5 w-3.5" />
                       {showRecoveryCodes ? 'Hide Codes' : 'View Recovery Codes'}
@@ -571,33 +832,87 @@ export default function SettingsPage() {
 
                   {showRecoveryCodes && (
                     <div className="p-4 rounded-xl border bg-card space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted-foreground">Emergency Single-Use Backup Keys</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => copyToClipboard(recoveryCodes.join('\n'), 'Recovery codes copied to clipboard!')}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy All
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
-                        {recoveryCodes.map((code, idx) => (
-                          <div key={idx} className="p-2 rounded border bg-muted/40 text-center font-bold text-foreground">
-                            {code}
+                      {recoveryCodes.length > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground">Emergency Single-Use Backup Codes (shown once)</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => copyToClipboard(recoveryCodes.join('\n'), 'Recovery codes copied to clipboard!')}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              Copy All
+                            </Button>
                           </div>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Keep these codes stored securely offline. Each code can only be used once.
-                      </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
+                            {recoveryCodes.map((rCode, idx) => (
+                              <div key={idx} className="p-2 rounded border bg-muted/40 text-center font-bold text-foreground">
+                                {rCode}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            Keep these codes stored securely offline. Each code can only be used once, and they provide
+                            the only way back in if you lose your authenticator app.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Recovery codes exist only as server-side hashes — they cannot be displayed again after setup.
+                          {totpEnabled
+                            ? ' To generate a new set, disable two-factor and re-enable it (or rotate the key).'
+                            : ' Enable two-factor authentication to generate a set of 10 single-use codes.'}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
               )}
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-accent" />
+                  <Label className="cursor-default">Security Activity</Label>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Your two-factor authentication history, straight from the server audit trail.
+                </p>
+                <div className="rounded-lg border border-border bg-muted/30">
+                  {mfaEventsLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : mfaEvents.length === 0 ? (
+                    <p className="p-4 text-center text-xs text-muted-foreground">No two-factor events recorded yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {mfaEvents.map((ev) => (
+                        <li key={ev.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {ev.action === 'mfa_totp_changed' ? (
+                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                            ) : ev.action === 'mfa_totp_disabled' ? (
+                              <ShieldOff className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                            ) : ev.action === 'mfa_passkey_registered' || ev.action === 'mfa_passkey_used' ? (
+                              <Fingerprint className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                            ) : (
+                              <KeyRound className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+                            )}
+                            <span className="text-sm text-foreground">{mfaActionLabel(ev.action)}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-xs text-muted-foreground">{new Date(ev.createdAt).toLocaleString()}</p>
+                            {ev.ip ? <p className="text-[11px] text-muted-foreground/70">{ev.ip}</p> : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
 
               <Separator />
 
@@ -633,22 +948,77 @@ export default function SettingsPage() {
                       Biometric WebAuthn Passkeys
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Register Touch ID, Face ID, or Windows Hello for instant passwordless clinician login.
+                      Register Touch ID, Face ID, or Windows Hello to approve two-factor logins with a passkey.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2 border-accent/40 text-accent hover:bg-accent/10"
-                    onClick={() => registerPasskey(user?.email || 'clinician@smarthealth.com')}
-                  >
-                    <Fingerprint className="h-4 w-4" />
-                    Register New Passkey
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="h-9 w-44"
+                      placeholder="Device name (optional)"
+                      value={passkeyDeviceName}
+                      onChange={(e) => setPasskeyDeviceName(e.target.value)}
+                      maxLength={120}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 border-accent/40 text-accent hover:bg-accent/10"
+                      onClick={() => void handleRegisterPasskey()}
+                      disabled={passkeyBusy}
+                    >
+                      {passkeyBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Register New Passkey
+                    </Button>
+                  </div>
                 </div>
+
+                <div className="rounded-lg border border-border bg-muted/30">
+                  {passkeysLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : passkeys.length === 0 ? (
+                    <p className="p-4 text-center text-xs text-muted-foreground">
+                      No passkeys registered yet. Add one to approve 2FA logins without entering a code.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {passkeys.map((pk) => (
+                        <li key={pk.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Fingerprint className="h-3.5 w-3.5 text-accent flex-shrink-0" />
+                            <span className="text-sm text-foreground truncate">{pk.device_name}</span>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <p className="text-xs text-muted-foreground">
+                              {pk.last_used_at
+                                ? `Last used ${new Date(pk.last_used_at).toLocaleString()}`
+                                : `Registered ${new Date(pk.created_at).toLocaleString()}`}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                              onClick={() => void handleDeletePasskey(pk.id)}
+                              disabled={passkeyBusy}
+                              aria-label={`Remove passkey ${pk.device_name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
                 <div className="p-3 rounded-lg bg-muted/40 border text-xs text-muted-foreground flex items-center justify-between">
-                  <span>WebAuthn Device Support: <strong>{isWebAuthnSupported() ? 'Supported (Platform Enclave Available)' : 'Browser Standard Fallback'}</strong></span>
-                  <span className="text-emerald-500 font-medium">HIPAA Certified</span>
+                  <span>WebAuthn Device Support: <strong>{isWebAuthnSupported() ? 'Supported (Platform Authenticator)' : 'Not supported by this browser'}</strong></span>
                 </div>
               </div>
 

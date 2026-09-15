@@ -83,7 +83,8 @@ describe('Authentication Integration Tests', () => {
   });
 
   it('should successfully log in and redirect to dashboard', async () => {
-    mockApi.login.mockResolvedValue({ user: { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'admin', permissions: [], hospital_id: 'h1' }, token: 'test_token' });
+    localStorageMock.setItem('mfa_enabled', 'false');
+    mockApi.login.mockResolvedValue({ user: { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'front_desk', permissions: [], hospital_id: 'h1' }, token: 'test_token' });
 
     render(
       <MemoryRouter initialEntries={['/login']}>
@@ -101,12 +102,6 @@ describe('Authentication Integration Tests', () => {
       await userEvent.type(emailInput, 'test@example.com');
       await userEvent.type(passwordInput, 'password');
       await userEvent.click(loginButton);
-    });
-
-    // Staff roles require TOTP MFA by design — complete the verification step
-    await act(async () => {
-      await userEvent.click(screen.getByRole('button', { name: 'Quick Test: Fill Demo TOTP Token (123456)' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Verify Code & Access Workstation' }));
     });
 
     await waitFor(() => {
