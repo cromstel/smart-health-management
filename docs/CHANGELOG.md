@@ -36,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Suppressed happy-dom/motion `AbortError: The animation was canceled.` unhandled rejections in `src/setupTests.ts` to prevent false-failing root verify gate (`ddc0960`).
 
 ### Note
-- Backend verify green: 86 passed / 6 skipped (MySQL `auth_gssapi_client` + financial module auto-skip); root verify green: 19 passed / 1 skipped + vite build with PWA `generateSW` (92 precache entries). Express **4** retained (Track B wired for express 5; not reinstalled on this box). tsc quirk: `npx tsc` triggers a StackOverflowException artifact on this Windows dev box — always use `npm run build` or `node node_modules/typescript/bin/tsc` for builds.
+- Backend verify green: 86 passed / 6 skipped (MySQL `auth_gssapi_client` + financial module auto-skip); root verify green: 19 passed / 1 skipped + vite build with PWA `generateSW` (92 precache entries). Express **5** installed (`^5.2.1`); backend rebuilt to Track B (production-hardening) consistency. tsc quirk: `npx tsc` triggers a StackOverflowException artifact on this Windows dev box — always use `npm run build` or `node node_modules/typescript/bin/tsc` for builds.
 
 ---
 
@@ -119,3 +119,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Core React 19 + Vite + Express Full-Stack architecture.
 - Patient Management, Appointment Scheduling, and Basic Vitals Logging.
 - Role-Based Access Control (RBAC) authorization layer.
+
+---
+
+## [2026-09-15] feat/production-hardening merged into main (154aac3)
+
+### Changed
+- **Production-hardening branch ported into main** — full merge of feat/production-hardening (ec175d2) via port branch; 11 conflicts resolved (express 5 deps, auth/document controllers, vite config dedupe, gitignore, package.json unions, lockfiles regenerated).
+- **PWA duplicate SW registration fixed** (5f60bc4) — single registration, precache from dist; Playwright preview config (port 3001, SW blocked) + app-smoke e2e suite added.
+- **Vendor chunk splitting** (91558b5) — eliminated >500kB entry warning.
+- **Frontend test corrections** — auth test aligned with redirect-to-/two-factor flow (no inline TOTP); AppointmentsPage test mock now exports NotificationProvider passthrough.
+- **Environment note**: root npm ci on this machine can fail with EPERM on @rolldown binding while other node processes run; plain npm install recovers.
