@@ -1,4 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+
+const capitalizeFirst = (str: string): string => 
+  str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+const getDescendantIds = (accounts: Account[], parentId: string): string[] => {
+  const children = accounts.filter(a => a.parent === parentId);
+  const descendantIds = children.map(c => c.id);
+  for (const child of children) {
+    descendantIds.push(...getDescendantIds(accounts, child.id));
+  }
+  return descendantIds;
+};
 import { api } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -108,6 +120,7 @@ export default function FinancialPage() {
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [newAccount, setNewAccount] = useState({
     accountName: '',
     accountType: '',
@@ -133,13 +146,13 @@ export default function FinancialPage() {
       setAccountsError(null);
       const data = await api.getAccounts() as any[];
       const transformedData = data.map((acc: any) => ({
-        id: acc.id,
+        id: String(acc.id),
         code: acc.account_code,
-        name: acc.account_name,
-        type: acc.account_type as 'Asset' | 'Liability' | 'Income' | 'Expense',
-        parent: acc.parent_account_id,
-        balance: acc.balance,
-        level: acc.level,
+        name: acc.name,
+        type: capitalizeFirst(acc.type) as 'Asset' | 'Liability' | 'Income' | 'Expense',
+        parent: acc.parent_id ? String(acc.parent_id) : undefined,
+        balance: Number(acc.balance) || 0,
+        level: Number(acc.level) || 0,
       }));
       setAccounts(transformedData);
     } catch (error: any) {
@@ -157,14 +170,14 @@ export default function FinancialPage() {
       setTransactionsError(null);
       const data = await api.getTransactions() as any[];
       const transformedData = data.map((txn: any) => ({
-        id: txn.id,
-        date: txn.transaction_date,
+        id: String(txn.id),
+        date: txn.date,
         description: txn.description,
         account: txn.account_name,
-        debit: txn.debit,
-        credit: txn.credit,
-        balance: txn.balance,
-        reference: txn.reference,
+        debit: Number(txn.debit) || 0,
+        credit: Number(txn.credit) || 0,
+        balance: Number(txn.balance) || 0,
+        reference: txn.reference || '',
       }));
       setTransactions(transformedData);
     } catch (error: any) {
@@ -212,6 +225,7 @@ export default function FinancialPage() {
       });
       await loadAccounts();
       setIsAccountDialogOpen(false);
+      setEditingAccountId(null);
       setNewAccount({
         accountName: '',
         accountType: '',
@@ -253,6 +267,21 @@ export default function FinancialPage() {
       setNewTransactionError('A transaction cannot have both debit and credit values. Please enter either a debit or a credit.');
       return;
     }
+    // Prevent 0-value transactions
+    const finalDebit = isNaN(debit) ? 0 : debit;
+    const finalCredit = isNaN(credit) ? 0 : credit;
+    if (finalDebit === 0 && finalCredit === 0) {
+      setNewTransactionError('Transaction must have a non-zero debit or credit amount.');
+      return;
+    }
+    // Prevent future dates
+    const selectedDate = new Date(newTransaction.transactionDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate > today) {
+      setNewTransactionError('Transaction date cannot be in the future.');
+      return;
+    }
 
     try {
       setIsSubmittingTransaction(true);
@@ -260,8 +289,8 @@ export default function FinancialPage() {
         accountId: newTransaction.accountId,
         transactionDate: newTransaction.transactionDate,
         description: newTransaction.description,
-        debit: isNaN(debit) ? 0 : debit,
-        credit: isNaN(credit) ? 0 : credit,
+        debit: finalDebit,
+        credit: finalCredit,
         reference: newTransaction.reference,
       });
       await loadTransactions();
@@ -298,6 +327,18 @@ export default function FinancialPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleEditAccount = (account: Account) => {
+    // Pre-fill the account dialog with existing account data for editing
+    setEditingAccountId(account.id);
+    setNewAccount({
+      accountName: account.name,
+      accountType: account.type,
+      parentAccountId: account.parent || '',
+      balance: String(account.balance),
+    });
+    setIsAccountDialogOpen(true);
   };
 
   const handleExport = useCallback(() => {
@@ -480,11 +521,20 @@ export default function FinancialPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="">None (Main Account)</SelectItem>
-                          {accounts.map((acc) => (
-                            <SelectItem key={acc.id} value={acc.id}>
-                              {acc.code} - {acc.name}
-                            </SelectItem>
-                          ))}
+                          {accounts
+                            .filter((acc) => {
+                              if (editingAccountId && acc.id === editingAccountId) return false;
+                              if (editingAccountId) {
+                                const descendants = getDescendantIds(accounts, editingAccountId);
+                                return !descendants.includes(acc.id);
+                              }
+                              return true;
+                            })
+                            .map((acc) => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.code} - {acc.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -631,9 +681,16 @@ export default function FinancialPage() {
                                 <TableCell className="text-right font-medium">
                                   GHS {account.balance.toLocaleString()}
                                 </TableCell>
-                                <TableCell>
-                                  <Button variant="ghost" size="sm">Edit</Button>
-                                </TableCell>
+<TableCell>
+                                   <Button 
+                                     variant="ghost" 
+                                     size="sm" 
+                                     onClick={() => handleEditAccount(account)}
+                                     disabled={!hasPermission('financial:edit')}
+                                   >
+                                     Edit
+                                   </Button>
+                                 </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -669,7 +726,13 @@ export default function FinancialPage() {
                           <div className="grid gap-4 py-4">
                             <div className="space-y-2">
                               <Label htmlFor="transactionDate">Date</Label>
-                              <Input id="transactionDate" type="date" value={newTransaction.transactionDate} onChange={handleTransactionInputChange} />
+                              <Input 
+                                id="transactionDate" 
+                                type="date" 
+                                max={new Date().toISOString().split('T')[0]}
+                                value={newTransaction.transactionDate} 
+                                onChange={handleTransactionInputChange} 
+                              />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="description">Description</Label>
