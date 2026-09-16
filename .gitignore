@@ -44,6 +44,9 @@ coverage/
 server/backups/
 backups/
 
+# TLS certificates and private keys — never commit
+server/certs/
+
 # Local-only review notes — never commit
 thoughts/
 
