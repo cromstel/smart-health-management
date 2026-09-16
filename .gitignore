@@ -86,11 +86,10 @@ todo-plan.md
 plan.md
 dependabot-alerts.md
 
-# Local-only markdown documentation — never commit (except README and CHANGELOG files)
+# Local-only markdown documentation — never commit (except README files)
 *.md
 !README.md
 !src/docs/README.md
-!docs/CHANGELOG.md
 !.github/**/*.md
 
 # Source docs site
