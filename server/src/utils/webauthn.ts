@@ -7,7 +7,7 @@ import { getSecret } from '../config/env.js';
 /** Relying-party identity used for WebAuthn ceremonies and expected values. */
 export const getRpConfig = (): { id: string; name: string; origin: string } => ({
   id: process.env.WEBAUTHN_RP_ID || 'localhost',
-  name: process.env.WEBAUTHN_RP_NAME || 'Smart Health Management System',
+  name: process.env.WEBAUTHN_RP_NAME || 'Smart MediCare',
   origin: process.env.WEBAUTHN_RP_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000'
 });
 

@@ -46,8 +46,8 @@ describe('AppSidebar', () => {
 
   test('renders the sidebar header and footer', () => {
     render(<TestWrapper />);
-    expect(screen.getByText('Health Manager')).toBeInTheDocument();
-    expect(screen.getByText('© 2024 Smart Health Manager')).toBeInTheDocument();
+    expect(screen.getByText('Smart MediCare')).toBeInTheDocument();
+    expect(screen.getByText('© 2024 Smart MediCare')).toBeInTheDocument();
   });
 
   test('renders all menu items when all permissions are granted', () => {

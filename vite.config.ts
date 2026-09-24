@@ -36,8 +36,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         id: '/',
-        name: 'Smart Health Manager',
-        short_name: 'HealthManager',
+        name: 'Smart MediCare',
+        short_name: 'SmartMediCare',
         description: 'A modern solution for managing health records and appointments.',
         theme_color: '#001F3F',
         background_color: '#ffffff',

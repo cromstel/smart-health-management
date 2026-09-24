@@ -614,7 +614,7 @@ export function PatientVitalsModule({
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
         doc.text(
-          `Smart Health Manager (QA/QC Dept) | Patient: ${currentPatient.name} | Page ${i} of ${totalPages}`,
+          `Smart MediCare (QA/QC Dept) | Patient: ${currentPatient.name} | Page ${i} of ${totalPages}`,
           margin,
           pageHeight - 8
         );

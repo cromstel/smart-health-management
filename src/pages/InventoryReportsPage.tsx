@@ -131,7 +131,7 @@ export default function InventoryReportsPage() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Smart Health Manager — ${reportTitle}</title>
+          <title>Smart MediCare — ${reportTitle}</title>
           <style>
             @page { size: A4 portrait; margin: 12mm; }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 20px; }
@@ -151,7 +151,7 @@ export default function InventoryReportsPage() {
         <body>
           <div class="header">
             <div>
-              <div class="logo">Smart Health Manager</div>
+              <div class="logo">Smart MediCare</div>
               <div class="sub-logo">Pharmacy & Medical Inventory System</div>
             </div>
             <div class="meta">
@@ -187,7 +187,7 @@ export default function InventoryReportsPage() {
           </table>
 
           <div class="footer">
-            CONFIDENTIAL — Smart Health Management System • Internal Clinical & Pharmacy Report
+            CONFIDENTIAL — Smart MediCare • Internal Clinical & Pharmacy Report
           </div>
 
           <script>

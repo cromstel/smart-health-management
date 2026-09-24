@@ -23,10 +23,10 @@ export function generateIcsFile(appointment: {
   const endTime = new Date(startTime.getTime() + 30 * 60000)
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Smart Health Manager//EN
+PRODID:-//Smart MediCare//EN
 CALSCALE:GREGORIAN
 BEGIN:VEVENT
-UID:${appointment.id}@smarthealthmanager.com
+UID:${appointment.id}@smartmedicare.com
 DTSTART:${formatIcalDate(startTime)}
 DTEND:${formatIcalDate(endTime)}
 SUMMARY:${type} with ${doctorName}

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import PurchaseOrdersPage from './PurchaseOrdersPage';
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,8 +51,17 @@ describe('PurchaseOrdersPage', () => {
         expect(screen.getByText('Create Purchase Order')).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText('Supplier'), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText('Order Date'), { target: { value: '2025-01-05' } });
+    // Find dialog and select Supplier
+    const dialog = screen.getByRole('dialog');
+    const supplierSelect = within(dialog).getByRole('combobox');
+    fireEvent.click(supplierSelect);
+    fireEvent.click(screen.getByRole('option', { name: 'Supplier A' }));
+
+    // Order Date input - find by type="date" within dialog
+    const dialogContainer = dialog.querySelector('div[role="document"]') || dialog;
+    const dateInputs = dialogContainer.querySelectorAll('input[type="date"]');
+    const orderDateInput = dateInputs[0];
+    fireEvent.change(orderDateInput, { target: { value: '2025-01-05' } });
 
     fireEvent.click(screen.getByText('Add Item'));
     

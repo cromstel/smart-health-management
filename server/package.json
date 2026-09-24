@@ -1,7 +1,7 @@
 {
   "name": "smart-health-manager-server",
   "version": "1.0.0",
-  "description": "Backend API for Smart Health Manager",
+  "description": "Backend API for Smart MediCare",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

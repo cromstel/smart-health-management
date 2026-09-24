@@ -1,6 +1,6 @@
-# Smart Hospital Management System (SHMS)
+# Smart MediCare
 
-**Smart Hospital Management System (SHMS)** is an enterprise-grade, web-based healthcare management platform for managing patient records, appointments, clinical AI diagnostics with Google Search Grounding, pharmacy inventory, hospital operations, and financial accounting, developed and maintained by **Cromstel IT Group**.
+**Smart MediCare** is an enterprise-grade, web-based healthcare management platform for managing patient records, appointments, clinical AI diagnostics with Google Search Grounding, pharmacy inventory, hospital operations, and financial accounting, developed and maintained by **Cromstel IT Group**.
 
 > 📚 **Complete Master Documentation Available**: For detailed onboarding, architecture breakdown, role personas, API guides, and step-by-step instructions for new team members, refer to **[DOCUMENTATION.md](DOCUMENTATION.md)**.
 
@@ -264,7 +264,7 @@ Refer to local `docs/SECURITY.md` for reporting vulnerabilities and supported ve
 
 ## 👥 Team
 
-Cromstel IT Group - Smart Health Management Team
+Cromstel IT Group - Smart MediCare Team
 
 ## 📞 Support
 

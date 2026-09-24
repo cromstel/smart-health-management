@@ -203,6 +203,21 @@ export default function FinancialPage() {
     setNewAccount((prev) => ({ ...prev, [id]: value }));
   };
 
+  const openCreateAccountDialog = () => {
+    setEditingAccountId(null);
+    setNewAccountError(null);
+    setNewAccount({ accountName: '', accountType: '', parentAccountId: '', balance: '' });
+    setIsAccountDialogOpen(true);
+  };
+
+  const handleAccountDialogClose = (open: boolean) => {
+    setIsAccountDialogOpen(open);
+    if (!open) {
+      setEditingAccountId(null);
+      setNewAccountError(null);
+    }
+  };
+
   const handleAddAccount = async () => {
     setNewAccountError(null);
     if (!newAccount.accountName || !newAccount.accountType || newAccount.balance === '') {
@@ -215,14 +230,22 @@ export default function FinancialPage() {
       return;
     }
 
+    const payload = {
+      accountName: newAccount.accountName,
+      accountType: newAccount.accountType,
+      parentAccountId: newAccount.parentAccountId === '' ? undefined : newAccount.parentAccountId,
+      balance,
+    };
+
     try {
       setIsSubmittingAccount(true);
-      await api.createAccount({
-        accountName: newAccount.accountName,
-        accountType: newAccount.accountType,
-        parentAccountId: newAccount.parentAccountId === '' ? undefined : newAccount.parentAccountId,
-        balance: balance,
-      });
+      if (editingAccountId) {
+        await api.updateAccount(editingAccountId, payload);
+        toast.success('Account updated successfully');
+      } else {
+        await api.createAccount(payload);
+        toast.success('Account created successfully');
+      }
       await loadAccounts();
       setIsAccountDialogOpen(false);
       setEditingAccountId(null);
@@ -233,8 +256,8 @@ export default function FinancialPage() {
         balance: '',
       });
     } catch (error: any) {
-      console.error('Failed to create account:', error);
-      setNewAccountError(error.message || 'Failed to create account.');
+      console.error('Failed to save account:', error);
+      setNewAccountError(error.message || 'Failed to save account.');
     } finally {
       setIsSubmittingAccount(false);
     }
@@ -331,6 +354,7 @@ export default function FinancialPage() {
 
   const handleEditAccount = (account: Account) => {
     // Pre-fill the account dialog with existing account data for editing
+    setNewAccountError(null);
     setEditingAccountId(account.id);
     setNewAccount({
       accountName: account.name,
@@ -408,7 +432,7 @@ export default function FinancialPage() {
     <div className="space-y-6">
       {/* Print-only Header */}
       <div className="hidden print:block mb-6 border-b border-gray-400 pb-4">
-        <h1 className="text-2xl font-bold text-black">Smart Health Manager — Financial Report</h1>
+        <h1 className="text-2xl font-bold text-black">Smart MediCare — Financial Report</h1>
         <p className="text-sm text-gray-700 font-medium mt-1">{activeTabName}</p>
         <div className="flex justify-between text-xs text-gray-600 mt-2">
           <span>Generated: {new Date().toLocaleString()}</span>
@@ -478,18 +502,18 @@ export default function FinancialPage() {
                 <Download className="h-4 w-4" aria-hidden="true" />
                 Export CSV
               </Button>
-              <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
+              <Dialog open={isAccountDialogOpen} onOpenChange={handleAccountDialogClose}>
                 <DialogTrigger asChild>
-                  <Button className="gap-2" disabled={!hasPermission('financial:add')}>
+                  <Button className="gap-2" disabled={!hasPermission('financial:add')} onClick={openCreateAccountDialog}>
                     <Plus className="h-4 w-4" aria-hidden="true" />
                     New Account
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Create New Account</DialogTitle>
+                    <DialogTitle>{editingAccountId ? 'Edit Account' : 'Create New Account'}</DialogTitle>
                     <DialogDescription>
-                      Add a new account to the Chart of Accounts
+                      {editingAccountId ? 'Update the selected account in the Chart of Accounts' : 'Add a new account to the Chart of Accounts'}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
@@ -500,7 +524,7 @@ export default function FinancialPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="accountType">Account Type</Label>
-                        <Select onValueChange={(value) => handleAccountSelectChange('accountType', value)}>
+                        <Select value={newAccount.accountType || undefined} onValueChange={(value) => handleAccountSelectChange('accountType', value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
@@ -515,7 +539,7 @@ export default function FinancialPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="parentAccountId">Parent Account (Optional)</Label>
-                      <Select onValueChange={(value) => handleAccountSelectChange('parentAccountId', value)}>
+                      <Select value={newAccount.parentAccountId || undefined} onValueChange={(value) => handleAccountSelectChange('parentAccountId', value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select parent" />
                         </SelectTrigger>
@@ -545,9 +569,9 @@ export default function FinancialPage() {
                     {newAccountError && <p className="text-red-500 text-sm" role="alert">{newAccountError}</p>}
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsAccountDialogOpen(false)} disabled={isSubmittingAccount}>Cancel</Button>
-                    <Button onClick={handleAddAccount} disabled={isSubmittingAccount || !hasPermission('financial:add')}>
-                      {isSubmittingAccount ? 'Creating...' : 'Create Account'}
+                    <Button variant="outline" onClick={() => handleAccountDialogClose(false)} disabled={isSubmittingAccount}>Cancel</Button>
+                    <Button onClick={handleAddAccount} disabled={isSubmittingAccount || (editingAccountId ? !hasPermission('financial:edit') : !hasPermission('financial:add'))}>
+                      {isSubmittingAccount ? (editingAccountId ? 'Saving...' : 'Creating...') : (editingAccountId ? 'Save Changes' : 'Create Account')}
                     </Button>
                   </div>
                 </DialogContent>

@@ -74,15 +74,16 @@ const purchaseOrders = [
 ];
 
 const accounts = [
-  { id: '1', account_number: 'ACC-001', name: 'Operating Account', type: 'Asset', balance: 142500.00, currency: 'USD' },
-  { id: '2', account_number: 'ACC-002', name: 'Pharmacy Revenue', type: 'Revenue', balance: 78900.00, currency: 'USD' },
-  { id: '3', account_number: 'ACC-003', name: 'Medical Equipment CapEx', type: 'Expense', balance: 45000.00, currency: 'USD' },
+  { id: '1', account_code: '1000', name: 'Assets', type: 'asset', parent_id: null, level: 0, balance: 50000.00 },
+  { id: '2', account_code: '2000', name: 'Liabilities', type: 'liability', parent_id: null, level: 0, balance: 0.00 },
+  { id: '3', account_code: '3000', name: 'Income', type: 'income', parent_id: null, level: 0, balance: 0.00 },
+  { id: '4', account_code: '4000', name: 'Expenses', type: 'expense', parent_id: null, level: 0, balance: 0.00 },
 ];
 
 const transactions = [
-  { id: '1', reference: 'TXN-1001', account_id: '1', description: 'Patient Consultation Fees', amount: 1540.00, type: 'credit', date: '2026-03-05' },
-  { id: '2', reference: 'TXN-1002', account_id: '2', description: 'Pharmacy Dispensing Revenue', amount: 890.00, type: 'credit', date: '2026-03-05' },
-  { id: '3', reference: 'TXN-1003', account_id: '3', description: 'Surgical Disposables Supply', amount: -650.00, type: 'debit', date: '2026-03-04' },
+  { id: '1', transaction_id: 'TRN-001', account_id: '1', date: '2026-03-05', description: 'Patient Consultation Fees', debit: 0, credit: 1540.00, balance: 1540.00, reference: 'INV-001', account_name: 'Assets' },
+  { id: '2', transaction_id: 'TRN-002', account_id: '3', date: '2026-03-05', description: 'Pharmacy Dispensing Revenue', debit: 0, credit: 890.00, balance: 890.00, reference: 'INV-002', account_name: 'Income' },
+  { id: '3', transaction_id: 'TRN-003', account_id: '4', date: '2026-03-04', description: 'Surgical Disposables Supply', debit: 650.00, credit: 0, balance: 650.00, reference: 'PO-045', account_name: 'Expenses' },
 ];
 
 const roles = [
@@ -430,7 +431,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
     const now = Date.now();
     sendJson(res, 200, {
       options: {
-        rp: { id: 'localhost', name: 'Smart Health Management System' },
+        rp: { id: 'localhost', name: 'Smart MediCare' },
         user: { id: 'bW9jay11c2VyLWhhbmRsZQ', name: users[1].email, displayName: 'Admin User' },
         challenge: `mock-challenge-${now}`,
         pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
