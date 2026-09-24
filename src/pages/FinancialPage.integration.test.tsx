@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
@@ -170,24 +170,38 @@ describe('FinancialPage Integration Tests', () => {
         expect(screen.getByText('Create New Account')).toBeInTheDocument();
       }, { timeout: 10000 });
 
-      // Fill form - Account Name and Balance (text inputs)
+      // Fill form - Account Name, Account Type (Radix Select), Balance
       const accountNameInput = screen.getByPlaceholderText('e.g., Inventory');
       const balanceInput = screen.getByPlaceholderText('0.00');
 
       await user.type(accountNameInput, 'Inventory');
       await user.type(balanceInput, '50000');
 
-      // Submit - this will fail validation due to missing Account Type, but we can verify the dialog behavior
+      // Select Account Type (Radix Select) - first combobox in dialog
+      const dialog = screen.getByRole('dialog');
+      const accountTypeSelect = within(dialog).getAllByRole('combobox')[0];
+      await user.click(accountTypeSelect);
+      await user.click(await screen.findByRole('option', { name: 'Asset' }));
+
+      // Submit - all required fields filled
       const createButton = screen.getByRole('button', { name: /Create Account/i });
       await user.click(createButton);
 
-      // Verify error is shown for missing required fields
+      // Verify API was called with correct payload
       await waitFor(() => {
-        expect(screen.getByText(/Please fill in all required account fields/i)).toBeInTheDocument();
-      }, { timeout: 10000 });
+        expect(api.createAccount).toHaveBeenCalledWith(
+          expect.objectContaining({
+            accountName: 'Inventory',
+            accountType: 'Asset',
+            balance: 50000,
+          })
+        );
+      }, { timeout: 15000 });
 
-      // Verify dialog remains open
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      // Verify accounts were reloaded
+      await waitFor(() => {
+        expect(api.getAccounts).toHaveBeenCalledTimes(2);
+      }, { timeout: 15000 });
     }, 20000);
 
     it('should handle account creation errors', async () => {
@@ -214,12 +228,19 @@ describe('FinancialPage Integration Tests', () => {
       await user.type(accountNameInput, 'Test');
       await user.type(balanceInput, '1000');
 
+      // Select Account Type (required for API call)
+      const dialog = screen.getByRole('dialog');
+      const accountTypeSelect = within(dialog).getAllByRole('combobox')[0];
+      await user.click(accountTypeSelect);
+      await user.click(await screen.findByRole('option', { name: 'Asset' }));
+
       const createButton = screen.getByRole('button', { name: /Create Account/i });
       await user.click(createButton);
 
-      // Should show validation error first (missing Account Type)
+      // Should show API error in dialog
       await waitFor(() => {
-        expect(screen.getByText(/Please fill in all required account fields/i)).toBeInTheDocument();
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText(/Duplicate account code/i)).toBeInTheDocument();
       });
 
       // Dialog should remain open
