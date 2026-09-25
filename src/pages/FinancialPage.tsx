@@ -408,7 +408,7 @@ export default function FinancialPage() {
     <div className="space-y-6">
       {/* Print-only Header */}
       <div className="hidden print:block mb-6 border-b border-gray-400 pb-4">
-        <h1 className="text-2xl font-bold text-black">Smart Health Manager — Financial Report</h1>
+        <h1 className="text-2xl font-bold text-black">Smart MediCare — Financial Report</h1>
         <p className="text-sm text-gray-700 font-medium mt-1">{activeTabName}</p>
         <div className="flex justify-between text-xs text-gray-600 mt-2">
           <span>Generated: {new Date().toLocaleString()}</span>

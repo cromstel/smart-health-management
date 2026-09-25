@@ -430,7 +430,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
     const now = Date.now();
     sendJson(res, 200, {
       options: {
-        rp: { id: 'localhost', name: 'Smart Health Management System' },
+        rp: { id: 'localhost', name: 'Smart MediCare' },
         user: { id: 'bW9jay11c2VyLWhhbmRsZQ', name: users[1].email, displayName: 'Admin User' },
         challenge: `mock-challenge-${now}`,
         pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],

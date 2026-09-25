@@ -1,4 +1,4 @@
--- Smart Health Manager Seeding Script for BIGINT Schema
+-- Smart MediCare Seeding Script for BIGINT Schema
 
 -- Use the correct database
 USE smart_health_manager;
@@ -135,7 +135,7 @@ INSERT INTO transactions (id, transaction_id, date, description, account_id, deb
 
 -- 16. Seed Settings
 INSERT INTO settings (setting_key, setting_value, category, updated_by) VALUES
-('system_name', 'Smart Health Manager', 'general', 2),
+('system_name', 'Smart MediCare', 'general', 2),
 ('default_language', 'en', 'localization', 2),
 ('patient_portal_enabled', 'true', 'features', 2);
 

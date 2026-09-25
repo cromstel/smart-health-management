@@ -4,7 +4,7 @@ export function buildPDF(reportTitle: string, rows: any[], options?: { author?: 
   const doc = new PDFDocument({ size: 'A4', margin: 40 })
   doc.info = {
     Title: reportTitle,
-    Author: options?.author || 'Smart Health Manager',
+    Author: options?.author || 'Smart MediCare',
     Subject: `Pharmacy Report: ${reportTitle}`
   } as any
 

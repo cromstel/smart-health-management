@@ -92,7 +92,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-4 transition-all duration-300">
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-sidebar-primary" aria-hidden="true" />
-          <span className="text-lg font-bold text-sidebar-foreground">Health Manager</span>
+          <span className="text-lg font-bold text-sidebar-foreground">Smart MediCare</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -150,7 +150,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-sidebar-foreground/60">© 2024 Smart Health Manager</p>
+        <p className="text-xs text-sidebar-foreground/60">© 2024 Smart MediCare</p>
       </SidebarFooter>
     </Sidebar>
   );

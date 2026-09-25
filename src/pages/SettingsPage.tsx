@@ -281,7 +281,7 @@ export default function SettingsPage() {
   // Data Management & Archiving Panel states
   const [automaticBackups, setAutomaticBackups] = useState(true);
   const [backupFrequency, setBackupFrequency] = useState('daily');
-  const [backupLocation, setBackupLocation] = useState('C:\\HealthManager\\Backups');
+  const [backupLocation, setBackupLocation] = useState('C:\\SmartMediCare\\Backups');
   const [retentionDays, setRetentionDays] = useState(30);
   const [backupScheduleEnabled, setBackupScheduleEnabled] = useState(true);
   const [exportScheduleTime, setExportScheduleTime] = useState('02:00 AM');
@@ -1060,7 +1060,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="localPath">Storage Path</Label>
-                  <Input id="localPath" defaultValue="C:\HealthManager\Storage" />
+                  <Input id="localPath" defaultValue="C:\SmartMediCare\Storage" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">

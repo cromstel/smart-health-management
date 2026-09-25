@@ -37,7 +37,7 @@ export function exportAuditLogs(
   if (format === 'json') {
     const payload = {
       complianceMetadata: {
-        system: 'Smart Health Manager - PACS & Clinical EHR',
+        system: 'Smart MediCare - PACS & Clinical EHR',
         exportScope: scopeLabel,
         totalRecords: logs.length,
         generatedAt: timestampIso,

@@ -1,4 +1,4 @@
--- Smart Health Manager (BIGINT Schema)
+-- Smart MediCare (BIGINT Schema)
 
 CREATE DATABASE IF NOT EXISTS smart_health_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE smart_health_manager;
