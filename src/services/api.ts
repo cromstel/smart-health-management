@@ -758,11 +758,45 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async updateAccount(id: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}/financial/accounts/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteAccount(id: string) {
+    const response = await fetch(`${API_BASE_URL}/financial/accounts/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
   async createTransaction(data: any) {
     const response = await fetch(`${API_BASE_URL}/financial/transactions`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateTransaction(id: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}/financial/transactions/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteTransaction(id: string) {
+    const response = await fetch(`${API_BASE_URL}/financial/transactions/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }

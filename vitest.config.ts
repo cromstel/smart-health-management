@@ -14,10 +14,9 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
-    include: ['src/tests/**/*.test.tsx', 'src/tests/**/*.test.ts', 'src/components/ui/**/*.test.tsx'],
+    include: ['src/tests/**/*.test.tsx', 'src/tests/**/*.test.ts', 'src/components/ui/**/*.test.tsx', 'src/pages/**/*.test.tsx'],
     exclude: [
       'server/**',
-      'src/pages/FinancialPage.integration.test.tsx',
       'src/services/api.security.test.ts',
       'src/tests/pages/PharmacyPage.test.tsx',
     ],
