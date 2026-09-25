@@ -176,7 +176,7 @@ export const getAppointmentIcs = async (req: AuthRequest, res: Response): Promis
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    const cal = ical({ name: 'SHMS Appointment' });
+    const cal = ical({ name: 'Smart MediCare Appointment' });
     const start = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 

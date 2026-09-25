@@ -126,7 +126,7 @@ export function VitalsQrCodeModal({
             ${qrDataUrl ? `<img src="${qrDataUrl}" alt="Intake QR Code" />` : ''}
             <p><strong>BP:</strong> ${latestVital ? `${latestVital.systolicBp}/${latestVital.diastolicBp} mmHg` : 'N/A'}</p>
             <p><strong>HR:</strong> ${latestVital ? `${latestVital.heartRate} bpm` : 'N/A'} | <strong>Temp:</strong> ${latestVital ? `${latestVital.temperature.toFixed(1)}°C` : 'N/A'}</p>
-            <p><small>Scan code with Smart Health Scanner for immediate ER/Ward admission</small></p>
+            <p><small>Scan code with Smart MediCare Scanner for immediate ER/Ward admission</small></p>
           </div>
           <script>window.onload = function() { window.print(); window.close(); }</script>
         </body>

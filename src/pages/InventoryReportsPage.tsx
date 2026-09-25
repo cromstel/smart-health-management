@@ -30,7 +30,7 @@ export default function InventoryReportsPage() {
 
   const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
   const [preferredFormat, setPreferredFormat] = useState<string>('PDF');
-  const [systemName, setSystemName] = useState('Smart Health Hospital');
+  const [systemName, setSystemName] = useState('Smart MediCare Hospital');
 
   useEffect(() => {
     const saved = localStorage.getItem('preferred_inventory_export');

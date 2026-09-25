@@ -107,7 +107,7 @@ const auditLogs = [
 ];
 
 let appSettings: Record<string, any> = {
-  hospitalName: 'Smart Health System',
+  hospitalName: 'Smart MediCare System',
   enableTwoFactor: false,
   enableSmsReminders: true,
   enableEmailAlerts: true,

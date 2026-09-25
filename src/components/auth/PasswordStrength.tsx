@@ -18,7 +18,7 @@ export interface PasswordStrengthResult {
   upperLower: boolean;
 }
 
-/** Single source of truth for the SHMS password complexity policy. */
+/** Single source of truth for the Smart MediCare password complexity policy. */
 export function computePasswordStrength(password: string): PasswordStrengthResult {
   const length = password.length >= 8;
   const upper = /[A-Z]/.test(password);

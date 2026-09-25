@@ -166,7 +166,7 @@ function Navbar() {
             <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
           </div>
           <span className="text-lg font-bold tracking-tight text-foreground">
-            Smart <span className="text-accent">Health</span>
+            Smart <span className="text-accent">MediCare</span>
           </span>
         </Link>
 
@@ -383,7 +383,7 @@ function Hero() {
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground font-mono">
-                    app.smarthealth.com/dashboard
+                    app.smartmedicare.com/dashboard
                   </div>
                 </div>
               </div>
@@ -650,7 +650,7 @@ function CtaBanner() {
             Ready to modernize your healthcare operations?
           </h2>
           <p className="text-lg text-primary-foreground/60 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Join 500+ hospitals and clinics that trust Smart Health to manage their clinical
+            Join 500+ hospitals and clinics that trust Smart MediCare to manage their clinical
             workflows, pharmacy operations, and patient care — every single day.
           </p>
 
@@ -738,7 +738,7 @@ function Footer() {
                 <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
               </div>
               <span className="text-lg font-bold tracking-tight text-foreground">
-                Smart <span className="text-accent">Health</span>
+                Smart <span className="text-accent">MediCare</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-6">
@@ -773,7 +773,7 @@ function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Smart Health Systems. All rights reserved.
+            &copy; {new Date().getFullYear()} Smart MediCare. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link

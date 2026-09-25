@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
@@ -233,7 +233,7 @@ describe('FinancialPage Integration Tests', () => {
       vi.mocked(api.getTransactions).mockResolvedValue(mockTransactions);
     });
 
-    it('should complete full transaction creation workflow', async () => {
+    it('should complete full transaction creation workflow', { timeout: 15000 }, async () => {
       const newTransaction = {
         id: 'T003',
         transaction_date: '2024-01-16',

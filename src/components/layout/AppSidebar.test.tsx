@@ -3,6 +3,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { AppSidebar } from './AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 // Mock dependencies
 vi.mock('@/contexts/AuthContext', () => ({
@@ -13,7 +14,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
-    ...actual as object, // Explicitly cast to object to satisfy TypeScript spread
+    ...actual as object,
     useLocation: vi.fn(),
   };
 });
@@ -21,12 +22,14 @@ vi.mock('react-router-dom', async () => {
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseLocation = useLocation as jest.Mock;
 
-// Helper component to wrap AppSidebar with MemoryRouter and mock useLocation
+// Helper component to wrap AppSidebar with MemoryRouter, SidebarProvider, and mock useLocation
 const TestWrapper = ({ initialPath = '/dashboard' }) => {
   mockUseLocation.mockReturnValue({ pathname: initialPath });
   return (
     <MemoryRouter initialEntries={[initialPath]}>
-      <AppSidebar />
+      <SidebarProvider>
+        <AppSidebar />
+      </SidebarProvider>
     </MemoryRouter>
   );
 };

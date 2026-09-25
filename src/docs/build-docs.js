@@ -36,13 +36,13 @@ const template = (title, content, nav) => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - Smart Health Manager</title>
+  <title>${title} - Smart MediCare</title>
   <link href="../output.css" rel="stylesheet">
 </head>
 <body class="bg-navy-blue text-gray-300 font-sans">
   <div class="flex">
     <aside class="w-64 h-screen p-8 bg-sidebar-bg flex flex-col">
-      <h1 class="text-2xl font-bold mb-4"><a href="index.html" class="text-white hover:text-accent">Smart Health Manager</a></h1>
+      <h1 class="text-2xl font-bold mb-4"><a href="index.html" class="text-white hover:text-accent">Smart MediCare</a></h1>
       <input type="text" id="search-input" placeholder="Search docs..." class="w-full px-2 py-1 mb-4 bg-gray-800 border border-gray-600 rounded text-white focus:outline-none focus:border-accent">
       <div class="overflow-y-auto">
         ${nav}
@@ -78,8 +78,8 @@ structure.categories.forEach(category => {
 
 // Generate index page
 const indexContent = `
-  <h1>Welcome to the Smart Health Manager Documentation</h1>
-  <p>This documentation provides a comprehensive guide to using, developing, and maintaining the Smart Health Manager application. Please use the navigation on the left to explore the different sections, or use the search bar to find specific information.</p>
+  <h1>Welcome to the Smart MediCare Documentation</h1>
+  <p>This documentation provides a comprehensive guide to using, developing, and maintaining the Smart MediCare application. Please use the navigation on the left to explore the different sections, or use the search bar to find specific information.</p>
 `;
 const indexNav = generateNav('index.html');
 const indexHtml = template('Welcome', indexContent, indexNav);

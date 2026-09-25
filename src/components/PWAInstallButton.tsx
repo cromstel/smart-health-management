@@ -59,7 +59,7 @@ export const PWAInstallButton: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed space-y-3">
-                To run Smart Health in standalone mode with complete performance:
+                To run Smart MediCare in standalone mode with complete performance:
               </p>
               <div className="mt-3 space-y-2.5 text-xs text-foreground">
                 <div className="flex items-center gap-2 bg-muted/40 p-2 rounded-lg border border-border">

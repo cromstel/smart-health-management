@@ -51,22 +51,23 @@ describe('PurchaseOrdersPage', () => {
         expect(screen.getByText('Create Purchase Order')).toBeInTheDocument();
     });
 
-    // Find dialog and select Supplier
+    // Find dialog - native <select> elements
     const dialog = screen.getByRole('dialog');
+    
+    // Select Supplier - native select (first select in dialog)
     const supplierSelect = within(dialog).getByRole('combobox');
-    fireEvent.click(supplierSelect);
-    fireEvent.click(screen.getByRole('option', { name: 'Supplier A' }));
+    fireEvent.change(supplierSelect, { target: { value: '1' } });
 
-    // Order Date input - find by type="date" within dialog
-    const dialogContainer = dialog.querySelector('div[role="document"]') || dialog;
-    const dateInputs = dialogContainer.querySelectorAll('input[type="date"]');
+    // Order Date input
+    const dateInputs = dialog.querySelectorAll('input[type="date"]');
     const orderDateInput = dateInputs[0];
     fireEvent.change(orderDateInput, { target: { value: '2025-01-05' } });
 
     fireEvent.click(screen.getByText('Add Item'));
     
     await waitFor(() => {
-        const medicineSelect = screen.getByDisplayValue('Select medicine');
+        // Select Medicine - native select (second select after Add Item)
+        const medicineSelect = within(dialog).getAllByRole('combobox')[1];
         fireEvent.change(medicineSelect, { target: { value: '1' } });
     });
 

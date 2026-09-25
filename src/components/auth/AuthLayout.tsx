@@ -152,7 +152,7 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.8 }}
             >
-              <span>&copy; 2026 Smart Health Systems</span>
+              <span>&copy; 2026 Smart MediCare</span>
               <span>&middot;</span>
               <Link to="/super-admin/login" className="hover:text-primary-foreground transition-colors flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />

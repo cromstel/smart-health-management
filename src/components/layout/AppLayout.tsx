@@ -61,7 +61,7 @@ export function AppLayout() {
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-foreground">Updates Available</h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                A new and improved version of Smart Health workstation is ready for your clinical session.
+                A new and improved version of Smart MediCare workstation is ready for your clinical session.
               </p>
               <div className="flex items-center gap-2 mt-3">
                 <Button

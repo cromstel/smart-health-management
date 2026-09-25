@@ -52,7 +52,7 @@ export default function RequestDemoPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5" aria-label="Smart Health home">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary"><Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" /></span>
-            <span className="text-lg font-bold text-foreground">Smart <span className="text-accent">Health</span></span>
+            <span className="text-lg font-bold text-foreground">Smart <span className="text-accent">MediCare</span></span>
           </Link>
           <Button variant="ghost" size="sm" asChild><Link to="/login">Staff sign in</Link></Button>
         </div>
@@ -60,9 +60,9 @@ export default function RequestDemoPage() {
 
       <main className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
         <section className="lg:pt-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart Health</Link>
+          <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
           <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-accent">Personalised platform tour</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">See Smart Health in action.</h1>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">See Smart MediCare in action.</h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">Tell us about your organisation and a product specialist will prepare a focused walkthrough for your team.</p>
           <ul className="mt-10 space-y-5 text-sm text-muted-foreground">
             <li className="flex gap-3"><CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Built around your workflow.</strong><br />Explore the clinical, operations, pharmacy, and reporting tools most relevant to you.</span></li>
@@ -81,7 +81,7 @@ export default function RequestDemoPage() {
             {submitted ? (
               <div className="space-y-5 py-10 text-center" role="status" aria-live="polite">
                 <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600"><CheckCircle2 className="h-9 w-9" aria-hidden="true" /></span>
-                <div><h2 className="text-xl font-semibold text-foreground">Your request is on its way.</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">A Smart Health product specialist will contact you using your selected preference.</p></div>
+                <div><h2 className="text-xl font-semibold text-foreground">Your request is on its way.</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">A Smart MediCare product specialist will contact you using your selected preference.</p></div>
                 <Button asChild><Link to="/">Return to home</Link></Button>
               </div>
             ) : (

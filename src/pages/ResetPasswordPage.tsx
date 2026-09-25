@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
         >
           <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
         </motion.div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart MediCare</h1>
       </div>
       <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Set New Password</h2>
       <p className="text-sm text-muted-foreground">Create new workstation credentials</p>

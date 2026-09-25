@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { getStorageUsage } from '../controllers/storage.controller.js'
 
+vi.mock('check-disk-space', () => ({
+  default: vi.fn(async () => ({ size: 1024 ** 4, free: 900 ** 4 }))
+}))
+
 function createMockRes() {
   const res: any = {}
   res.statusCode = 200

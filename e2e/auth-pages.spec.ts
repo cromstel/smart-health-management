@@ -6,7 +6,7 @@ test.describe('Login Page', () => {
     await page.waitForLoadState('networkidle');
 
     // Brand header
-    await expect(page.getByRole('heading', { name: 'Smart Health' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
 
     // Page title and subtitle
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
@@ -111,7 +111,7 @@ test.describe('Register Page', () => {
     await page.waitForLoadState('networkidle');
 
     // Brand header
-    await expect(page.getByRole('heading', { name: 'Smart Health' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
 
     // Page title
     await expect(page.getByRole('heading', { name: 'Staff Registration' })).toBeVisible();
@@ -200,7 +200,7 @@ test.describe('Two-Factor Page', () => {
     await page.goto('/two-factor');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('heading', { name: 'Smart Health' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'No Verification Session' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Return to Login' })).toBeVisible();
     await expect(page.locator('[aria-label^="Digit "]')).toHaveCount(0);
@@ -213,7 +213,7 @@ test.describe('Super Admin Login Page', () => {
     await page.waitForLoadState('networkidle');
 
     // Brand header
-    await expect(page.getByRole('heading', { name: 'Smart Health' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
 
     // Page title
     await expect(page.getByRole('heading', { name: 'Super Admin Portal' })).toBeVisible();

@@ -69,7 +69,7 @@ interface DashboardModule {
 }
 
 const DEFAULT_MODULES: DashboardModule[] = [
-  { id: 'apiHealth', title: 'Smart Health API Telemetry & Health Monitor', gridClass: 'col-span-2', visible: true },
+  { id: 'apiHealth', title: 'Smart MediCare API Telemetry & Health Monitor', gridClass: 'col-span-2', visible: true },
   { id: 'd3VitalsTrend', title: 'D3.js Patient Health Vitals Trend Analytics', gridClass: 'col-span-2', visible: true },
   { id: 'vitals7Day', title: '7-Day Patient Heart Rate & Blood Pressure Trends', gridClass: 'col-span-2', visible: true },
   { id: 'auditChart', title: 'Critical System Operations & Audit Log Frequency', gridClass: 'col-span-2', visible: true },

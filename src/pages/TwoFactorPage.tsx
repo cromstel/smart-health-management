@@ -169,7 +169,7 @@ export default function TwoFactorPage() {
               <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                 <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart MediCare</h1>
             </div>
           </div>
 
@@ -223,7 +223,7 @@ export default function TwoFactorPage() {
             >
               <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </motion.div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart Health</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart MediCare</h1>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Two-Factor Authentication</h2>
           <p className="text-sm text-muted-foreground">Multi-factor identity verification</p>
