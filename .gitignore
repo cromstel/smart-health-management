@@ -89,6 +89,7 @@ dependabot-alerts.md
 # Local-only markdown documentation — never commit (except README files)
 *.md
 !README.md
+!DOCUMENTATION.md
 !src/docs/README.md
 !.github/**/*.md
 

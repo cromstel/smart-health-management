@@ -1,21 +1,26 @@
-# Smart Health Manager - Documentation
+# Smart MediCare - Documentation
 
-Welcome to the Smart Health Manager documentation directory.
+Welcome to the Smart MediCare documentation directory.
 
 ## 📚 Available Documentation
 
-### [Implementation Checklist](./IMPLEMENTATION_CHECKLIST.md)
-Comprehensive checklist tracking the development progress of all system modules and features.
+The canonical, public-facing documentation lives at the repository root:
+
+- **[DOCUMENTATION.md](../../DOCUMENTATION.md)** — master platform & onboarding documentation (architecture, modules, demo credentials, security & HIPAA).
+- **[README.md](../../README.md)** — quick start, technology stack, and installation.
+- **[LICENSE](../../LICENSE)** / **[NOTICE](../../NOTICE)** — licensing information.
+
+Local-only developer notes (implementation checklists, completion summaries, and change notes) are intentionally kept out of the public repository per project policy and remain in this directory and the internal `docs/` folder in the full checkout.
 
 ## 📖 Quick Links
 
-- **Project Status**: See [Implementation Checklist](./IMPLEMENTATION_CHECKLIST.md) for current progress
-- **Next Steps**: Check the "Next Steps" section in the implementation checklist
-- **Known Issues**: Review the "Known Issues" section for current limitations
+- **Project Status**: See the [Master Documentation](../../DOCUMENTATION.md) for the current feature set and status
+- **Getting Started**: Follow [README.md](../../README.md) installation instructions
+- **Known Issues**: Tracked in the local-only implementation checklist and `docs/CHANGELOG.md` in the internal checkout
 
 ## 🎯 Project Overview
 
-Smart Health Manager is a comprehensive web-based healthcare management platform designed to streamline:
+Smart MediCare is a comprehensive web-based healthcare management platform designed to streamline:
 - Patient records management
 - Appointment scheduling
 - Hospital and staff operations
@@ -34,14 +39,13 @@ Smart Health Manager is a comprehensive web-based healthcare management platform
 - **Routing**: React Router v7
 - **Charts**: Recharts
 - **State Management**: React Context API
-- **CSS-in-JS**: Emotion
 
 ### Backend
 - **Runtime**: Node.js
 - **Framework**: Express
 - **Database**: MySQL
-- **Authentication**: JWT
- - **Dev Ports**: Frontend `5174`, Backend `5600`
+- **Authentication**: JWT, WebAuthn passkeys, TOTP 2FA
+- **Dev Ports**: Frontend `3000`, Backend `5000`
 
 ## 🎨 Design System
 
@@ -63,7 +67,7 @@ src/
 ├── components/
 │   ├── layout/          # Layout components (Sidebar, Header, etc.)
 │   └── ui/              # shadcn UI components
-├── contexts/            # React contexts (Auth, etc.)
+├── contexts/            # React contexts (Auth, Theme, Audit, Notification)
 ├── pages/               # Page components
 │   ├── LoginPage.tsx
 │   ├── DashboardPage.tsx
@@ -76,24 +80,16 @@ src/
 │   ├── FinancialPage.tsx
 │   ├── RolesPage.tsx
 │   └── SettingsPage.tsx
-├── docs/                # Documentation
-│     ├─ overview.md
-│     ├─ architecture.md
-│     ├─ api-reference.md
-│     ├─ deployment-guide.md
-│     ├─ TROUBLESHOOTING.md
-│     └─ faq.md
 ├── App.tsx              # Main app component
 ├── main.tsx             # Entry point
 └── index.css            # Global styles
-
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
+- Node.js 24+ (LTS)
+- MySQL 8.0+
 
 ### Installation
 
@@ -109,60 +105,38 @@ npm run build
 ```
 
 ### Authentication
-Backend authentication is active. Use valid credentials. Tokens are stored in `localStorage`.
-During development, use the `/api` prefix; the dev server proxies requests to the backend.
+Backend authentication is active (JWT, WebAuthn passkeys, TOTP 2FA). Demo credentials are listed in [DOCUMENTATION.md §5](../../DOCUMENTATION.md#5-quick-start-demo-credentials). During development, the Vite dev server serves the mock API for `/api` requests on `:3000` when running standalone.
 
 ## 📊 Current Status
 
-**Overall Progress**: 45% Complete
+**Overall Progress**: Production-ready
 
 - ✅ Frontend UI: Complete
-- 🟡 Backend Integration: Pending
-- ⏳ Testing: Pending
-- ⏳ Deployment: Pending
-
-See [Implementation Checklist](./IMPLEMENTATION_CHECKLIST.md) for detailed progress.
+- ✅ Backend API: Complete
+- ✅ Testing: Vitest suites green (frontend + backend); Playwright e2e available
+- ✅ Security: JWT + WebAuthn + TOTP 2FA, audit logging, RBAC, rate limiting, encryption
 
 ## 🔐 Security Features
 
-### Implemented (UI Only)
-- JWT-based authentication interface
-- Role-based access control UI
-- Session management UI
-- Audit logging UI
-
-### Pending Implementation
-- Actual JWT token handling
-- Two-factor authentication
-- Password encryption
-- Data encryption (AES)
-- SSL/TLS
-- Rate limiting
+### Implemented
+- JWT-based authentication with session management
+- WebAuthn passkeys and TOTP two-factor authentication
+- Password encryption (bcrypt) with complexity policy
+- Data encryption (AES) for sensitive records
+- SSL/TLS support (HTTPS server in production)
+- Rate limiting on auth routes
 - Brute-force protection
+- Immutable HIPAA audit logging
 
 ## 📝 Contributing
 
-Please refer to the implementation checklist for areas that need development.
+Please refer to the [Master Documentation](../../DOCUMENTATION.md) and the local-only contribution notes in the internal checkout.
 
 ## 📞 Support
 
-For questions or issues, please contact the development team.
+For questions or issues, please contact the development team via https://cromstelit.com/contact-us/.
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: January 2024
-### API: Pharmacy Reports
-- Binary formats supported via Accept headers: 
-  - XLSX `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
-  - PDF `application/pdf`
-- Query fallback: `?format=xlsx|pdf|csv|json`
-- Endpoint: `/api/pharmacy/reports?reportType=stock_levels|expiry_dates|low_stock`
-- Responses set appropriate `Content-Type` and `Content-Disposition` for attachments.
-
-### Validation: Drug Interactions
-- Server-side contraindications with severity: `high`, `medium`, `low`
-- On prescription create/update:
-  - `high` → request blocked with error body
-  - `medium|low` → request succeeds with `warnings` payload
-- Data source: `contraindications` table (category-category rules)
+**Version**: 1.4.0  
+**Last Updated**: September 2026

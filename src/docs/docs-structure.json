@@ -10,7 +10,7 @@
     {
       "title": "Technical Documentation",
       "files": [
-        { "title": "Architecture", "file": "ARCHITECTURE.md" },
+        { "title": "Architecture", "file": "architecture.md" },
         { "title": "Database Schema", "file": "DATABASE_SCHEMA.md" },
         { "title": "Deployment Guide", "file": "DEPLOYMENT_GUIDE.md" }
       ]
@@ -20,8 +20,7 @@
       "files": [
         { "title": "Code Style Guide", "file": "CODE_STYLE_GUIDE.md" },
         { "title": "Contributing Guidelines", "file": "CONTRIBUTING.md" },
-        { "title": "Setup Instructions", "file": "SETUP.md" },
-        { "title": "Troubleshooting Guide", "file": "TROUBLESHOOTING.md" }
+        { "title": "Project Overview", "file": "overview.md" }
       ]
     }
   ]
