@@ -2,7 +2,7 @@
   "name": "docs",
   "version": "1.0.0",
   "type": "module",
-  "description": "Enhanced documentation for Smart Health Manager",
+  "description": "Enhanced documentation for Smart MediCare",
   "scripts": {
     "build:css": "postcss styles.css -o output.css",
     "build:html": "node build-docs.js",

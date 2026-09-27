@@ -277,12 +277,12 @@ function Hero() {
         <div className="max-w-4xl mx-auto text-center">
           {/* Status badge */}
           <motion.div
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-sm font-semibold text-emerald-400 mb-8"
+            className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-1.5 text-sm font-semibold text-success mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+            <span className="h-2 w-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
             Trusted by 500+ healthcare institutions
           </motion.div>
 
@@ -347,19 +347,19 @@ function Hero() {
             transition={{ duration: 0.5, delay: 0.7 }}
           >
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400/60" aria-hidden="true" />
+              <CheckCircle2 className="h-4 w-4 text-success/60" aria-hidden="true" />
               HIPAA Compliant
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400/60" aria-hidden="true" />
+              <CheckCircle2 className="h-4 w-4 text-success/60" aria-hidden="true" />
               SOC 2 Type II
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400/60" aria-hidden="true" />
+              <CheckCircle2 className="h-4 w-4 text-success/60" aria-hidden="true" />
               99.9% Uptime
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400/60" aria-hidden="true" />
+              <CheckCircle2 className="h-4 w-4 text-success/60" aria-hidden="true" />
               24/7 Support
             </span>
           </motion.div>
@@ -379,7 +379,7 @@ function Hero() {
                 <div className="flex gap-1.5">
                   <div className="h-3 w-3 rounded-full bg-destructive/60" />
                   <div className="h-3 w-3 rounded-full bg-chart-4/60" />
-                  <div className="h-3 w-3 rounded-full bg-emerald-500/60" />
+                  <div className="h-3 w-3 rounded-full bg-success/60" />
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground font-mono">
@@ -393,8 +393,8 @@ function Hero() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
                     { label: 'Patients Today', value: '284', change: '+12%', color: 'bg-accent/10 text-accent' },
-                    { label: 'Appointments', value: '96', change: '98% kept', color: 'bg-emerald-500/10 text-emerald-500' },
-                    { label: 'Active Staff', value: '47', change: 'All on duty', color: 'bg-violet-500/10 text-violet-500' },
+                    { label: 'Appointments', value: '96', change: '98% kept', color: 'bg-success/10 text-success' },
+                    { label: 'Active Staff', value: '47', change: 'All on duty', color: 'bg-info/10 text-info' },
                     { label: 'Alerts', value: '3', change: 'Critical', color: 'bg-destructive/10 text-destructive' },
                   ].map((card) => (
                     <div key={card.label} className="rounded-lg border border-border bg-card p-4 space-y-2">
@@ -433,8 +433,8 @@ function Hero() {
                       {[
                         { icon: Heart, text: 'Vitals recorded — P-2841', time: '2m ago', color: 'text-destructive' },
                         { icon: FileText, text: 'Lab results — P-1937', time: '8m ago', color: 'text-accent' },
-                        { icon: Stethoscope, text: 'Dr. Chen — consultation', time: '15m ago', color: 'text-emerald-500' },
-                        { icon: Pill, text: 'Rx dispensed — P-2839', time: '22m ago', color: 'text-violet-500' },
+                        { icon: Stethoscope, text: 'Dr. Chen — consultation', time: '15m ago', color: 'text-success' },
+                        { icon: Pill, text: 'Rx dispensed — P-2839', time: '22m ago', color: 'text-info' },
                       ].map((item) => (
                         <div key={item.text} className="flex items-center gap-3">
                           <item.icon className={`h-4 w-4 ${item.color} shrink-0`} aria-hidden="true" />
@@ -745,7 +745,7 @@ function Footer() {
               Enterprise healthcare management platform for hospitals, clinics, and healthcare networks.
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+              <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />
               <span>HIPAA Compliant &middot; SOC 2 Certified</span>
             </div>
           </div>
