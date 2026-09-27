@@ -131,6 +131,7 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
+  --color-navy-raised: var(--navy-raised);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -152,6 +153,9 @@
   --radius: 0.625rem;
   --navy-blue: #001F3F;
   --sea-blue: #0284C7;
+  /* A raised surface sitting on the navy field, for panels that need to read
+     as a layer above it. Declared as a token so rule 1 stays intact. */
+  --navy-raised: #001A33;
   --dark-bg: #F8FAFC;
   --light-text: #0F172A;
 
@@ -204,6 +208,7 @@
 .dark {
   --navy-blue: #001F3F;
   --sea-blue: #00BFFF;
+  --navy-raised: #0C2A4A;
   --dark-bg: #0A192F;
   --light-text: #EAEAEA;
 
