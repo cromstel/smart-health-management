@@ -322,7 +322,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <h1 className="font-display text-3xl font-semibold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">Loading dashboard data...</p>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function DashboardPage() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-muted/20 border border-border/60 p-4 rounded-xl">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <h1 className="font-display text-3xl font-semibold text-foreground">Dashboard</h1>
             {isEmergencyMode && (
               <Badge className="bg-destructive text-white font-bold animate-pulse gap-1">
                 <Siren className="h-3.5 w-3.5" aria-hidden="true" /> Emergency Mode

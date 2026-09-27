@@ -288,7 +288,7 @@ function Hero() {
 
           {/* Headline */}
           <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-primary-foreground leading-[1.1] mb-6"
+            className="font-display text-4xl font-semibold text-primary-foreground sm:text-5xl lg:text-6xl leading-[1.05] mb-6"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -400,7 +400,7 @@ function Hero() {
                     <div key={card.label} className="rounded-lg border border-border bg-card p-4 space-y-2">
                       <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
                       <div className="flex items-baseline justify-between">
-                        <p className="text-2xl font-bold text-foreground">{card.value}</p>
+                        <p className="font-mono text-2xl font-bold text-foreground tabular-nums">{card.value}</p>
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${card.color}`}>
                           {card.change}
                         </span>
@@ -470,7 +470,7 @@ function StatsBar() {
               <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-accent/10 border border-accent/20">
                 <stat.icon className="h-5 w-5 text-accent" aria-hidden="true" />
               </div>
-              <p className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">{stat.value}</p>
+              <p className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight font-mono tabular-nums">{stat.value}</p>
               <p className="text-sm font-medium text-muted-foreground mt-1">{stat.label}</p>
             </div>
           ))}
@@ -491,7 +491,7 @@ function Features() {
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Platform Features</p>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-4">
+          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl mb-4">
             Everything your healthcare team needs
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -535,7 +535,7 @@ function HowItWorks() {
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">How It Works</p>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-4">
+          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl mb-4">
             Up and running in three steps
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -556,7 +556,7 @@ function HowItWorks() {
             >
               {/* Step number */}
               <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary border-2 border-primary/80 shadow-lg shadow-primary/20">
-                <span className="text-xl font-bold text-primary-foreground">{step.number}</span>
+                <span className="font-mono text-xl font-bold text-primary-foreground">{step.number}</span>
               </div>
 
               {/* Connector line (hidden on mobile, hidden for last) */}
@@ -585,7 +585,7 @@ function Testimonials() {
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Testimonials</p>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-4">
+          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl mb-4">
             Trusted by healthcare leaders
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -646,7 +646,7 @@ function CtaBanner() {
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary-foreground mb-4">
+          <h2 className="font-display text-3xl font-semibold text-primary-foreground sm:text-4xl mb-4">
             Ready to modernize your healthcare operations?
           </h2>
           <p className="text-lg text-primary-foreground/60 max-w-2xl mx-auto mb-10 leading-relaxed">

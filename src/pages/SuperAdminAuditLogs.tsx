@@ -120,7 +120,7 @@ export default function SuperAdminAuditLogs() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Audit Logs</h1>
           <p className="text-muted-foreground mt-1">View all system activity and user actions</p>
         </div>
         <DropdownMenu>

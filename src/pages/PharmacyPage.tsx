@@ -255,7 +255,7 @@ export default function PharmacyPage() {
         <>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2 border-b border-border">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Pharmacy & Inventory</h1>
+              <h1 className="font-display text-3xl font-semibold text-foreground">Pharmacy & Inventory</h1>
               <p className="text-muted-foreground">Manage medicines, stock levels, and patient medication compliance</p>
             </div>
             <div className="flex bg-muted/60 p-1 rounded-lg border border-border shrink-0" role="tablist" aria-label="Pharmacy tabs">

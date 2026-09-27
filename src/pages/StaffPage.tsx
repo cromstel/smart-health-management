@@ -373,7 +373,7 @@ export default function StaffPage() {
         <>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Staff Management</h1>
+              <h1 className="font-display text-3xl font-semibold text-foreground">Staff Management</h1>
               <p className="text-muted-foreground">Manage healthcare staff and assignments</p>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

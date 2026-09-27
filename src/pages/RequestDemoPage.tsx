@@ -62,7 +62,7 @@ export default function RequestDemoPage() {
         <section className="lg:pt-8">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
           <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-accent">Personalised platform tour</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">See Smart MediCare in action.</h1>
+          <h1 className="font-display mt-3 text-4xl font-semibold text-foreground sm:text-5xl">See Smart MediCare in action.</h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">Tell us about your organisation and a product specialist will prepare a focused walkthrough for your team.</p>
           <ul className="mt-10 space-y-5 text-sm text-muted-foreground">
             <li className="flex gap-3"><CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Built around your workflow.</strong><br />Explore the clinical, operations, pharmacy, and reporting tools most relevant to you.</span></li>

@@ -385,7 +385,7 @@ export default function PatientsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Patient Management</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Patient Management</h1>
           <p className="text-muted-foreground">Manage records, monitor vital signs, and track biometric trends</p>
         </div>
 

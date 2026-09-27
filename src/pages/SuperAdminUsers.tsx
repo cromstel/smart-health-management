@@ -151,7 +151,7 @@ export default function SuperAdminUsers() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">User Management</h1>
+        <h1 className="font-display text-3xl font-semibold text-foreground">User Management</h1>
         <p className="text-muted-foreground mt-1">Manage all system users and their access</p>
       </div>
 

@@ -130,7 +130,7 @@ export default function AuditLogsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Audit Logs</h1>
           <p className="text-muted-foreground">Track all system activities and changes</p>
         </div>
         <DropdownMenu>

@@ -89,7 +89,7 @@ const SuperAdminLogin = React.memo(() => {
             >
               <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </motion.div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Smart MediCare</h1>
+            <h1 className="font-display text-2xl font-semibold text-foreground">Smart MediCare</h1>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Super Admin Portal</h2>
           <p className="text-sm text-muted-foreground">Multi-hospital governance & database provisioning</p>

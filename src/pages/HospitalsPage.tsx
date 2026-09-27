@@ -246,7 +246,7 @@ export default function HospitalsPage() {
         <>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Hospital Management</h1>
+              <h1 className="font-display text-3xl font-semibold text-foreground">Hospital Management</h1>
               <p className="text-muted-foreground">Manage hospitals and their departments</p>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

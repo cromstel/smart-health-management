@@ -255,7 +255,7 @@ export default function InventoryReportsPage() {
 
       <div className="flex items-center justify-between flex-wrap gap-4 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Inventory Reports</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Inventory Reports</h1>
           <p className="text-muted-foreground">Generate, export, print and schedule inventory reports</p>
         </div>
         <div className="flex flex-wrap gap-2 items-end">

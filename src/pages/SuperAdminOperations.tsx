@@ -68,7 +68,7 @@ export default function SuperAdminOperations() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">System Operations</h1>
+        <h1 className="font-display text-3xl font-semibold text-foreground">System Operations</h1>
         <p className="text-muted-foreground mt-1">Manage system backups and upgrades</p>
       </div>
 

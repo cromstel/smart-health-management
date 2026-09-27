@@ -257,7 +257,7 @@ export default function AiAssistantPage() {
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="font-display text-3xl font-semibold text-foreground flex items-center gap-2">
             <Sparkles className="h-7 w-7 text-info" aria-hidden="true" />
             Clinical AI & Research Workspace
           </h1>

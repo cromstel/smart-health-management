@@ -97,7 +97,7 @@ export default function SuperAdminDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">System Dashboard</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">System Dashboard</h1>
           <p className="text-muted-foreground mt-1">Monitor and manage your health management system</p>
         </div>
         <div className="flex items-center gap-2">

@@ -490,7 +490,7 @@ export default function FinancialPage() {
         <>
           <div className="flex items-center justify-between flex-wrap gap-4 print:hidden">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Financial Management</h1>
+              <h1 className="font-display text-3xl font-semibold text-foreground">Financial Management</h1>
               <p className="text-muted-foreground">Chart of Accounts and financial reporting</p>
             </div>
             <div className="flex flex-wrap gap-2">

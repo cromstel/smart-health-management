@@ -402,7 +402,7 @@ export default function SettingsPage() {
         ) : (
 		<>
       <div>
-        <h1 className="text-3xl font-bold text-foreground">System Settings</h1>
+        <h1 className="font-display text-3xl font-semibold text-foreground">System Settings</h1>
         <p className="text-muted-foreground">Configure system preferences and options</p>
       </div>
 

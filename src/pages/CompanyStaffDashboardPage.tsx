@@ -100,7 +100,7 @@ export function CompanyStaffDashboardPage() {
               Multi-Department Live
             </Badge>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <h1 className="font-display text-2xl font-semibold sm:text-3xl">
             Company Staff & Operational Command
           </h1>
           <p className="text-xs sm:text-sm text-primary-foreground/70 max-w-xl">
