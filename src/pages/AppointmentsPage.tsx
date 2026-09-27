@@ -378,7 +378,7 @@ export default function AppointmentsPage() {
             onClick={() => alertStaffForUpcomingAppointments()}
             title="Send real-time alerts to medical staff about upcoming appointments"
           >
-            <Bell className="h-4 w-4 text-amber-500" aria-hidden="true" />
+            <Bell className="h-4 w-4 text-warning" aria-hidden="true" />
             <span>Notify Staff of Upcoming</span>
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -815,7 +815,7 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Completed</span>
-                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      <span className="font-medium text-success dark:text-success">
                         {appointments.filter((a) => a.status === 'Completed').length}
                       </span>
                     </div>

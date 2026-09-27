@@ -471,9 +471,9 @@ export function D3PatientVitalsTrendChart() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
-              <Activity className="h-5 w-5 text-blue-500 animate-pulse" />
+              <Activity className="h-5 w-5 text-accent animate-pulse" />
               <span>D3.js Patient Health Vitals Trend Analytics</span>
-              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/50">
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider text-accent bg-accent/5 dark:bg-accent/50">
                 Live D3 Engine
               </Badge>
             </CardTitle>
@@ -508,7 +508,7 @@ export function D3PatientVitalsTrendChart() {
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-muted/30 rounded-xl border border-border/50">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 shrink-0">
+              <div className="p-2 rounded-lg bg-accent/10 text-accent shrink-0">
                 <Heart className="h-4 w-4" />
               </div>
               <div>
@@ -520,7 +520,7 @@ export function D3PatientVitalsTrendChart() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
+              <div className="p-2 rounded-lg bg-destructive/10 text-destructive shrink-0">
                 <Activity className="h-4 w-4" />
               </div>
               <div>
@@ -532,19 +532,19 @@ export function D3PatientVitalsTrendChart() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0">
+              <div className="p-2 rounded-lg bg-success/10 text-success shrink-0">
                 <Wind className="h-4 w-4" />
               </div>
               <div>
                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Avg SpO2 Level</span>
                 <span className="text-sm font-bold text-foreground">
-                  {stats.avgSpO2}% <span className="text-[10px] font-normal text-emerald-600 font-semibold">Optimal</span>
+                  {stats.avgSpO2}% <span className="text-[10px] font-normal text-success font-semibold">Optimal</span>
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 shrink-0">
+              <div className="p-2 rounded-lg bg-warning/10 text-warning shrink-0">
                 <Thermometer className="h-4 w-4" />
               </div>
               <div>
@@ -590,13 +590,13 @@ export function D3PatientVitalsTrendChart() {
               <span className="font-bold text-foreground flex items-center gap-1">
                 <Calendar className="h-3 w-3 text-muted-foreground" /> {hoveredPoint.dateStr}
               </span>
-              <span className="text-blue-600 dark:text-blue-400 font-bold">
+              <span className="text-accent dark:text-accent font-bold">
                 BP: {hoveredPoint.systolic}/{hoveredPoint.diastolic} mmHg
               </span>
-              <span className="text-rose-600 dark:text-rose-400 font-bold">
+              <span className="text-destructive dark:text-destructive font-bold">
                 HR: {hoveredPoint.heartRate} BPM
               </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="text-success dark:text-success font-bold">
                 SpO2: {hoveredPoint.spO2}%
               </span>
             </div>

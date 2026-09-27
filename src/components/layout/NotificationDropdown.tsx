@@ -50,19 +50,19 @@ export function NotificationDropdown() {
 
   const getNotificationIcon = (type: NotificationItem['type'], status?: string) => {
     if (status === 'confirmed') {
-      return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+      return <CheckCircle2 className="h-4 w-4 text-success" />;
     }
     switch (type) {
       case 'pending_confirmation':
-        return <Clock className="h-4 w-4 text-amber-500" />;
+        return <Clock className="h-4 w-4 text-warning" />;
       case 'upcoming_appointment':
-        return <Calendar className="h-4 w-4 text-blue-500" />;
+        return <Calendar className="h-4 w-4 text-accent" />;
       case 'vitals_alert':
-        return <Activity className="h-4 w-4 text-rose-500" />;
+        return <Activity className="h-4 w-4 text-destructive" />;
       case 'inventory_alert':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+        return <AlertTriangle className="h-4 w-4 text-warning" />;
       case 'prescription_refill':
-        return <Pill className="h-4 w-4 text-indigo-500" />;
+        return <Pill className="h-4 w-4 text-info" />;
       default:
         return <Bell className="h-4 w-4 text-accent" />;
     }
@@ -87,12 +87,12 @@ export function NotificationDropdown() {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-sm">
+            <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white shadow-sm">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
           {pendingCount > 0 && unreadCount === 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-amber-500" />
+            <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-warning" />
           )}
         </Button>
       </PopoverTrigger>
@@ -148,7 +148,7 @@ export function NotificationDropdown() {
           >
             <span>Pending Confirmations</span>
             {pendingCount > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-warning/20 text-warning dark:text-warning text-[10px] font-bold">
                 {pendingCount}
               </span>
             )}
@@ -213,15 +213,15 @@ export function NotificationDropdown() {
                       {/* Status indicator badges */}
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                         {isPending ? (
-                          <Badge variant="outline" className="text-[10px] border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
+                          <Badge variant="outline" className="text-[10px] border-warning/50 bg-warning/10 text-warning dark:text-warning font-medium">
                             Pending Staff Confirmation
                           </Badge>
                         ) : n.status === 'confirmed' ? (
-                          <Badge variant="outline" className="text-[10px] border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                          <Badge variant="outline" className="text-[10px] border-success/50 bg-success/10 text-success dark:text-success font-medium">
                             Confirmed
                           </Badge>
                         ) : n.type === 'upcoming_appointment' ? (
-                          <Badge variant="outline" className="text-[10px] border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
+                          <Badge variant="outline" className="text-[10px] border-accent/50 bg-accent/10 text-accent dark:text-accent font-medium">
                             Upcoming Today
                           </Badge>
                         ) : null}
@@ -239,7 +239,7 @@ export function NotificationDropdown() {
                         {isPending && (
                           <Button
                             size="sm"
-                            className="h-6 text-[11px] px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                            className="h-6 text-[11px] px-2.5 bg-success hover:bg-success text-white font-medium"
                             onClick={() => confirmAppointment(n.id, n.appointmentId)}
                           >
                             <Check className="h-3 w-3 mr-1" />

@@ -454,22 +454,22 @@ export function PatientVitalsModule({
       }
 
       if (warningTexts.length === 0) {
-        doc.setFillColor(240, 253, 250); // bg-teal-50
-        doc.setDrawColor(153, 246, 228); // border-teal-200
+        doc.setFillColor(240, 253, 250); // bg-chart-2/5
+        doc.setDrawColor(153, 246, 228); // border-chart-2/20
         doc.rect(margin, y, contentWidth, 12, 'FD');
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(13, 148, 136); // text-teal-600
+        doc.setTextColor(13, 148, 136); // text-chart-2
         doc.text('✓ ALL CLINICAL METRICS NOMINAL. NO ACTIVE ANOMALIES OR TREND RISK DETECTED.', margin + 5, y + 8);
         y += 18;
       } else {
-        doc.setFillColor(254, 242, 242); // bg-red-50
-        doc.setDrawColor(254, 202, 202); // border-red-200
+        doc.setFillColor(254, 242, 242); // bg-destructive/5
+        doc.setDrawColor(254, 202, 202); // border-destructive/20
         doc.rect(margin, y, contentWidth, 6 + warningTexts.length * 6, 'FD');
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(220, 38, 38); // text-red-600
+        doc.setTextColor(220, 38, 38); // text-destructive
         doc.text('⚠ EXTREME BIOMETRIC DEVIATIONS OR CRITICAL THRESHOLDS DETECTED:', margin + 5, y + 6);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(127, 29, 29); // text-red-950
+        doc.setTextColor(127, 29, 29); // text-destructive
         warningTexts.forEach((text, i) => {
           doc.text(text, margin + 5, y + 12 + i * 6);
         });
@@ -636,12 +636,12 @@ export function PatientVitalsModule({
       case 'critical':
         return <Badge variant="destructive" className="font-semibold text-xs">Critical</Badge>;
       case 'high':
-        return <Badge variant="destructive" className="bg-rose-600 hover:bg-rose-700 text-xs font-medium">Stage 2 / High</Badge>;
+        return <Badge variant="destructive" className="bg-destructive hover:bg-destructive text-xs font-medium">Stage 2 / High</Badge>;
       case 'elevated':
-        return <Badge variant="outline" className="border-amber-500/60 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">Elevated</Badge>;
+        return <Badge variant="outline" className="border-warning/60 bg-warning/10 text-warning dark:text-warning text-xs font-medium">Elevated</Badge>;
       case 'normal':
       default:
-        return <Badge variant="outline" className="border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">Normal</Badge>;
+        return <Badge variant="outline" className="border-success/60 bg-success/10 text-success dark:text-success text-xs font-medium">Normal</Badge>;
     }
   };
 
@@ -694,7 +694,7 @@ export function PatientVitalsModule({
                 className={`h-9 text-xs gap-1.5 ${deviceSyncOpen ? 'bg-slate-100 border-slate-400' : ''}`}
                 onClick={() => setDeviceSyncOpen(!deviceSyncOpen)}
               >
-                <Bluetooth className={`h-3.5 w-3.5 ${deviceSyncOpen ? 'text-blue-600' : 'text-slate-500'}`} />
+                <Bluetooth className={`h-3.5 w-3.5 ${deviceSyncOpen ? 'text-accent' : 'text-slate-500'}`} />
                 <span>Sync Wearable</span>
               </Button>
 
@@ -704,7 +704,7 @@ export function PatientVitalsModule({
                 className={`h-9 text-xs gap-1.5 ${aiInsightsOpen ? 'bg-slate-100 border-slate-400' : ''}`}
                 onClick={() => setAiInsightsOpen(!aiInsightsOpen)}
               >
-                <Brain className={`h-3.5 w-3.5 ${aiInsightsOpen ? 'text-indigo-600' : 'text-slate-500'}`} />
+                <Brain className={`h-3.5 w-3.5 ${aiInsightsOpen ? 'text-info' : 'text-slate-500'}`} />
                 <span>AI Insights</span>
               </Button>
 
@@ -753,20 +753,20 @@ export function PatientVitalsModule({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 border-indigo-200"
+                className="h-9 text-xs gap-1.5 bg-info/10 text-info dark:text-indigo-300 hover:bg-info/20 border-info/20"
                 onClick={() => setQrModalOpen(true)}
               >
-                <QrCode className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                <QrCode className="h-3.5 w-3.5 text-info dark:text-info" />
                 <span>Intake QR Code</span>
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 border-sky-200"
+                className="h-9 text-xs gap-1.5 bg-accent/10 text-accent hover:bg-accent/20 border-accent/20"
                 onClick={() => setVideoConsultOpen(true)}
               >
-                <Video className="h-3.5 w-3.5 text-sky-600" />
+                <Video className="h-3.5 w-3.5 text-accent" />
                 <span>Video Consult</span>
               </Button>
 
@@ -824,7 +824,7 @@ export function PatientVitalsModule({
               <ul className="space-y-1">
                 {triageResult.factors.map((factor, idx) => (
                   <li key={idx} className="flex items-start gap-1.5 font-medium leading-relaxed">
-                    <span className="text-rose-500 font-extrabold shrink-0">•</span>
+                    <span className="text-destructive font-extrabold shrink-0">•</span>
                     <span>{factor}</span>
                   </li>
                 ))}
@@ -852,7 +852,7 @@ export function PatientVitalsModule({
             <div className="p-3.5 rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground text-xs">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <Gauge className="h-4 w-4 text-blue-500" />
+                  <Gauge className="h-4 w-4 text-accent" />
                   Blood Pressure
                 </span>
                 <span className="text-[10px] uppercase font-mono">mmHg</span>
@@ -866,10 +866,10 @@ export function PatientVitalsModule({
                     variant="outline"
                     className={`text-[10px] font-medium ${
                       summary.bpStatus === 'Normal'
-                        ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
+                        ? 'text-success dark:text-success border-success/40'
                         : summary.bpStatus === 'Elevated'
-                        ? 'text-amber-600 dark:text-amber-400 border-amber-500/40'
-                        : 'text-rose-600 dark:text-rose-400 border-rose-500/40'
+                        ? 'text-warning dark:text-warning border-warning/40'
+                        : 'text-destructive dark:text-destructive border-destructive/40'
                     }`}
                   >
                     {summary.bpStatus}
@@ -885,7 +885,7 @@ export function PatientVitalsModule({
             <div className="p-3.5 rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground text-xs">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <Heart className="h-4 w-4 text-rose-500" />
+                  <Heart className="h-4 w-4 text-destructive" />
                   Heart Rate
                 </span>
                 <span className="text-[10px] uppercase font-mono">bpm</span>
@@ -899,8 +899,8 @@ export function PatientVitalsModule({
                     variant="outline"
                     className={`text-[10px] font-medium ${
                       summary.hrStatus === 'Normal'
-                        ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
-                        : 'text-amber-600 dark:text-amber-400 border-amber-500/40'
+                        ? 'text-success dark:text-success border-success/40'
+                        : 'text-warning dark:text-warning border-warning/40'
                     }`}
                   >
                     {summary.hrStatus}
@@ -916,7 +916,7 @@ export function PatientVitalsModule({
             <div className="p-3.5 rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground text-xs">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <Thermometer className="h-4 w-4 text-amber-500" />
+                  <Thermometer className="h-4 w-4 text-warning" />
                   Temperature
                 </span>
                 <div className="flex items-center gap-1">
@@ -945,8 +945,8 @@ export function PatientVitalsModule({
                     variant="outline"
                     className={`text-[10px] font-medium ${
                       summary.tempStatus === 'Normal'
-                        ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
-                        : 'text-rose-600 dark:text-rose-400 border-rose-500/40'
+                        ? 'text-success dark:text-success border-success/40'
+                        : 'text-destructive dark:text-destructive border-destructive/40'
                     }`}
                   >
                     {summary.tempStatus}
@@ -962,7 +962,7 @@ export function PatientVitalsModule({
             <div className="p-3.5 rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground text-xs">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <TrendingUp className="h-4 w-4 text-teal-500" />
+                  <TrendingUp className="h-4 w-4 text-chart-2" />
                   Oxygen SpO2
                 </span>
                 <span className="text-[10px] uppercase font-mono">%</span>
@@ -973,7 +973,7 @@ export function PatientVitalsModule({
                 </span>
                 <Badge
                   variant="outline"
-                  className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                  className="text-[10px] font-medium text-success dark:text-success border-success/40"
                 >
                   Optimal
                 </Badge>
@@ -1122,18 +1122,18 @@ export function PatientVitalsModule({
                 <div className="p-4 rounded-lg border border-border bg-card">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4 text-blue-500" />
+                      <Gauge className="h-4 w-4 text-accent" />
                       <h4 className="text-sm font-semibold text-foreground">
                         Blood Pressure Trend (Systolic & Diastolic)
                       </h4>
                     </div>
                     <div className="flex items-center gap-3 text-xs">
                       <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-accent" />
                         Systolic (mmHg)
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-chart-2" />
                         Diastolic (mmHg)
                       </span>
                     </div>
@@ -1226,7 +1226,7 @@ export function PatientVitalsModule({
                 <div className="p-4 rounded-lg border border-border bg-card">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-rose-500" />
+                      <Heart className="h-4 w-4 text-destructive" />
                       <h4 className="text-sm font-semibold text-foreground">
                         Heart Rate Trend (BPM)
                       </h4>
@@ -1303,7 +1303,7 @@ export function PatientVitalsModule({
                 <div className="p-4 rounded-lg border border-border bg-card">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Thermometer className="h-4 w-4 text-amber-500" />
+                      <Thermometer className="h-4 w-4 text-warning" />
                       <h4 className="text-sm font-semibold text-foreground">
                         Body Temperature Trend (°{tempUnit})
                       </h4>
@@ -1470,7 +1470,7 @@ export function PatientVitalsModule({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-rose-500"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
                           onClick={() => handleDeleteRecord(record.id)}
                           title="Delete entry"
                         >
@@ -1534,15 +1534,15 @@ export function PatientVitalsModule({
                     }}
                     id="copy-share-link-btn"
                   >
-                    {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
                   </Button>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2" id="expiry-warning-alert">
-                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="bg-warning/5 border border-warning/20 p-3 rounded-xl flex items-start gap-2" id="expiry-warning-alert">
+                  <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
                   <div id="expiry-warning-meta">
-                    <p className="text-xs font-bold text-amber-900">Temporary Access Token Active</p>
-                    <p className="text-[10px] text-amber-800">
+                    <p className="text-xs font-bold text-warning">Temporary Access Token Active</p>
+                    <p className="text-[10px] text-warning">
                       This secure URL will expire in exactly 15 minutes (at {shareExpiry ? new Date(shareExpiry).toLocaleTimeString() : 'N/A'}). Token ID: {shareToken?.substring(0, 8)}... No permanent records are exposed without professional credentials.
                     </p>
                   </div>

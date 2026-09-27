@@ -258,7 +258,7 @@ export default function AiAssistantPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-7 w-7 text-indigo-500" aria-hidden="true" />
+            <Sparkles className="h-7 w-7 text-info" aria-hidden="true" />
             Clinical AI & Research Workspace
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -266,7 +266,7 @@ export default function AiAssistantPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="text-xs py-1 px-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex items-center gap-1.5">
+          <Badge variant="outline" className="text-xs py-1 px-2.5 bg-success/10 text-success dark:text-success border-success/20 flex items-center gap-1.5">
             <Globe className="h-3.5 w-3.5" aria-hidden="true" />
             Google Search Grounding Active
           </Badge>
@@ -283,7 +283,7 @@ export default function AiAssistantPage() {
           <Card className="border border-border">
             <CardHeader className="pb-4">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+                <Settings2 className="h-4 w-4 text-info" aria-hidden="true" />
                 Assistant Workspace Settings
               </CardTitle>
               <CardDescription className="text-xs">
@@ -292,10 +292,10 @@ export default function AiAssistantPage() {
             </CardHeader>
             <CardContent className="space-y-5">
               {/* Search Grounding Switch */}
-              <div className="p-3 rounded-lg border border-indigo-500/20 bg-indigo-500/5 space-y-2">
+              <div className="p-3 rounded-lg border border-info/20 bg-info/5 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+                    <Globe className="h-4 w-4 text-info" aria-hidden="true" />
                     <Label htmlFor="search-grounding-toggle" className="text-xs font-semibold text-foreground cursor-pointer">
                       Google Search Grounding
                     </Label>
@@ -353,14 +353,14 @@ export default function AiAssistantPage() {
                         onClick={() => setSelectedPersona(p)}
                         className={`text-left p-3 rounded-lg border text-xs transition-all duration-150 ${
                           isSelected
-                            ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500'
+                            ? 'border-info bg-info/5 ring-1 ring-info'
                             : 'border-border/60 hover:bg-muted/40 hover:border-border'
                         }`}
                         role="radio"
                         aria-checked={isSelected}
                       >
                         <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
-                          <PersonaIcon className={`h-4 w-4 ${isSelected ? 'text-indigo-500' : 'text-muted-foreground'}`} aria-hidden="true" />
+                          <PersonaIcon className={`h-4 w-4 ${isSelected ? 'text-info' : 'text-muted-foreground'}`} aria-hidden="true" />
                           <span>{p.name}</span>
                         </div>
                         <p className="text-[10px] text-muted-foreground leading-normal">
@@ -392,12 +392,12 @@ export default function AiAssistantPage() {
           </Card>
 
           {/* Quick clinical safety notice */}
-          <Card className="border border-amber-500/10 bg-amber-500/5">
+          <Card className="border border-warning/10 bg-warning/5">
             <CardContent className="p-4 flex gap-3">
-              <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" aria-hidden="true" />
+              <ShieldAlert className="h-5 w-5 text-warning shrink-0 mt-0.5" aria-hidden="true" />
               <div className="space-y-1">
-                <h5 className="text-xs font-bold text-amber-800 dark:text-amber-400">Clinical Safety Advisory</h5>
-                <p className="text-[10px] text-amber-700 dark:text-amber-300/80 leading-normal">
+                <h5 className="text-xs font-bold text-warning dark:text-warning">Clinical Safety Advisory</h5>
+                <p className="text-[10px] text-warning dark:text-warning/80 leading-normal">
                   Clinical AI insights are reference aids designed to support licensed medical professionals. They do not constitute diagnostic validation.
                 </p>
               </div>
@@ -410,17 +410,17 @@ export default function AiAssistantPage() {
           {/* Active Chat Header */}
           <div className="p-4 border-b border-border/80 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500">
+              <div className="p-2 rounded-lg bg-info/10 text-info">
                 <selectedPersona.icon className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-foreground">{selectedPersona.name}</h4>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <span>Engine: <strong className="font-mono text-indigo-600 dark:text-indigo-400">{modelType.toUpperCase()}</strong></span>
+                  <span>Engine: <strong className="font-mono text-info dark:text-info">{modelType.toUpperCase()}</strong></span>
                   {enableSearchGrounding && (
                     <>
                       <span>•</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                      <span className="text-success dark:text-success font-medium flex items-center gap-1">
                         <Globe className="h-3 w-3" aria-hidden="true" /> Grounded Web Search
                       </span>
                     </>
@@ -429,7 +429,7 @@ export default function AiAssistantPage() {
               </div>
             </div>
             {sending && (
-              <Badge variant="outline" className="text-[10px] animate-pulse bg-indigo-500/5 text-indigo-500 border-indigo-500/20">
+              <Badge variant="outline" className="text-[10px] animate-pulse bg-info/5 text-info border-info/20">
                 AI is searching & formulating output...
               </Badge>
             )}
@@ -453,7 +453,7 @@ export default function AiAssistantPage() {
                     {/* Avatar */}
                     <div className={`h-8 w-8 rounded-full shrink-0 flex items-center justify-center border ${
                       isAi
-                        ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500'
+                        ? 'bg-info/10 border-info/20 text-info'
                         : 'bg-muted border-border text-foreground'
                     }`}>
                       {isAi ? <Bot className="h-4 w-4" aria-hidden="true" /> : <User className="h-4 w-4" aria-hidden="true" />}
@@ -464,15 +464,15 @@ export default function AiAssistantPage() {
                       <div className={`p-4 rounded-xl border text-xs leading-relaxed whitespace-pre-wrap ${
                         isAi
                           ? 'bg-card border-border text-foreground shadow-sm'
-                          : 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-info text-white border-info'
                       }`}>
                         {m.content}
                       </div>
 
                       {/* Google Search Grounding Sources Card */}
                       {hasGrounding && (
-                        <div className="p-3 rounded-lg border border-indigo-500/20 bg-indigo-500/5 space-y-2 text-xs">
-                          <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold text-[11px]">
+                        <div className="p-3 rounded-lg border border-info/20 bg-info/5 space-y-2 text-xs">
+                          <div className="flex items-center gap-1.5 text-info dark:text-info font-semibold text-[11px]">
                             <Globe className="h-3.5 w-3.5" aria-hidden="true" />
                             <span>Google Search Grounding & Medical Literature Sources</span>
                           </div>
@@ -506,8 +506,8 @@ export default function AiAssistantPage() {
                                     rel="noreferrer noopener"
                                     className="flex items-center justify-between gap-1.5 p-1.5 rounded bg-background hover:bg-muted border border-border/80 text-[10px] text-foreground font-medium transition-colors group"
                                   >
-                                    <span className="truncate group-hover:text-indigo-600">{src.title}</span>
-                                    <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-indigo-600 shrink-0" aria-hidden="true" />
+                                    <span className="truncate group-hover:text-info">{src.title}</span>
+                                    <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-info shrink-0" aria-hidden="true" />
                                   </a>
                                 ))}
                               </div>
@@ -528,7 +528,7 @@ export default function AiAssistantPage() {
                         {isAi && m.simulated && (
                           <>
                             <span>•</span>
-                            <span className="text-indigo-500 font-medium bg-indigo-500/5 px-1 rounded border border-indigo-500/10">Simulation</span>
+                            <span className="text-info font-medium bg-info/5 px-1 rounded border border-info/10">Simulation</span>
                           </>
                         )}
                         {isAi && (
@@ -551,13 +551,13 @@ export default function AiAssistantPage() {
             {sending && (
               <div className="flex justify-start">
                 <div className="flex gap-3 max-w-[85%] items-center">
-                  <div className="h-8 w-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-info/10 border border-info/20 text-info flex items-center justify-center">
                     <Bot className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div className="flex gap-1.5 p-3 rounded-xl border border-border bg-card shadow-sm">
-                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-info animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-info animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-info animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -578,9 +578,9 @@ export default function AiAssistantPage() {
                       setInputValue(p);
                       handleSendMessage(p);
                     }}
-                    className="text-left w-full p-2.5 rounded border border-border/60 bg-card hover:bg-indigo-500/5 hover:border-indigo-500/30 text-xs text-foreground/80 font-medium transition-all duration-150 flex items-center gap-2 group"
+                    className="text-left w-full p-2.5 rounded border border-border/60 bg-card hover:bg-info/5 hover:border-info/30 text-xs text-foreground/80 font-medium transition-all duration-150 flex items-center gap-2 group"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-indigo-500 opacity-60 group-hover:opacity-100 shrink-0" aria-hidden="true" />
+                    <Sparkles className="h-3.5 w-3.5 text-info opacity-60 group-hover:opacity-100 shrink-0" aria-hidden="true" />
                     <span className="truncate">{p}</span>
                   </button>
                 ))}
@@ -608,7 +608,7 @@ export default function AiAssistantPage() {
               <Button
                 type="submit"
                 disabled={sending || !inputValue.trim()}
-                className="h-9 w-9 p-0 bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                className="h-9 w-9 p-0 bg-info hover:bg-info text-white shrink-0"
                 aria-label="Send message"
               >
                 <Send className="h-4 w-4" aria-hidden="true" />

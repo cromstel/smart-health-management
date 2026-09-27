@@ -567,7 +567,7 @@ export default function SettingsPage() {
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Label className="font-semibold text-base">Enable Multi-Factor Authentication</Label>
-                    <Badge variant={totpEnabled ? 'default' : 'outline'} className={totpEnabled ? 'bg-emerald-600 text-white' : ''}>
+                    <Badge variant={totpEnabled ? 'default' : 'outline'} className={totpEnabled ? 'bg-success text-white' : ''}>
                       {totpEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
                     </Badge>
                   </div>
@@ -738,7 +738,7 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-accent" />
                         <h4 className="text-sm font-semibold">Authenticator App (TOTP)</h4>
-                        <Badge variant="default" className="text-[10px] bg-emerald-600 text-white font-semibold ml-auto">ENFORCED</Badge>
+                        <Badge variant="default" className="text-[10px] bg-success text-white font-semibold ml-auto">ENFORCED</Badge>
                       </div>
 
                       <p className="text-xs text-muted-foreground">
@@ -893,13 +893,13 @@ export default function SettingsPage() {
                         <li key={ev.id} className="flex items-center justify-between gap-3 px-3 py-2">
                           <div className="flex items-center gap-2">
                             {ev.action === 'mfa_totp_changed' ? (
-                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                              <ShieldCheck className="h-3.5 w-3.5 text-success flex-shrink-0" />
                             ) : ev.action === 'mfa_totp_disabled' ? (
-                              <ShieldOff className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                              <ShieldOff className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
                             ) : ev.action === 'mfa_passkey_registered' || ev.action === 'mfa_passkey_used' ? (
-                              <Fingerprint className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                              <Fingerprint className="h-3.5 w-3.5 text-accent flex-shrink-0" />
                             ) : (
-                              <KeyRound className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+                              <KeyRound className="h-3.5 w-3.5 text-warning flex-shrink-0" />
                             )}
                             <span className="text-sm text-foreground">{mfaActionLabel(ev.action)}</span>
                           </div>
@@ -1003,7 +1003,7 @@ export default function SettingsPage() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
                               onClick={() => void handleDeletePasskey(pk.id)}
                               disabled={passkeyBusy}
                               aria-label={`Remove passkey ${pk.device_name}`}
@@ -1190,8 +1190,8 @@ export default function SettingsPage() {
                 <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground font-medium">Database Status:</span>
-                    <span className="font-bold text-emerald-600 flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-bold text-success flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
                       ONLINE (Active)
                     </span>
                   </div>
@@ -1243,7 +1243,7 @@ export default function SettingsPage() {
                       >
                         <div>
                           <p className="font-bold text-foreground">{backup.date}</p>
-                          <p className="text-muted-foreground">Size: {backup.size} | Status: <span className="text-emerald-600 font-semibold">{backup.status}</span></p>
+                          <p className="text-muted-foreground">Size: {backup.size} | Status: <span className="text-success font-semibold">{backup.status}</span></p>
                         </div>
                         <Button 
                           variant="outline" 

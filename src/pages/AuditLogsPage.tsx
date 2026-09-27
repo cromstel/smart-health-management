@@ -148,11 +148,11 @@ export default function AuditLogsPage() {
               <span>Export JSON (Compliance Seal)</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => exportAuditLogs(filteredLogs, 'csv', 'Filtered Logs')}>
-              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" aria-hidden="true" />
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-success" aria-hidden="true" />
               <span>Export CSV (Filtered - {filteredLogs.length})</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => exportAuditLogs(logs, 'csv', 'All Logs')}>
-              <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-500" aria-hidden="true" />
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-accent" aria-hidden="true" />
               <span>Export CSV (All - {logs.length})</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -303,14 +303,14 @@ export default function AuditLogsPage() {
                       Automate compliant delivery of audit ledger reports.
                     </CardDescription>
                   </div>
-                  <Badge className={scheduleEnabled ? "bg-emerald-500 text-white font-extrabold text-[9px]" : "bg-muted text-muted-foreground font-extrabold text-[9px]"}>{scheduleEnabled ? 'SCHEDULER ACTIVE' : 'OFFLINE'}</Badge>
+                  <Badge className={scheduleEnabled ? "bg-success text-white font-extrabold text-[9px]" : "bg-muted text-muted-foreground font-extrabold text-[9px]"}>{scheduleEnabled ? 'SCHEDULER ACTIVE' : 'OFFLINE'}</Badge>
                 </div>
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">
                 {/* Compliance Warning banner */}
                 <div className="p-2.5 bg-accent/10 text-accent border border-accent/20 rounded-lg text-[10px] leading-relaxed flex items-start gap-1.5 font-mono">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" aria-hidden="true" />
                   <div>
                     <strong className="text-accent block mb-0.5">EHR Audit Policy Lock</strong>
                     Dispatched reports are encrypted end-to-end using TLS. Recipient servers must support encrypted SMTP relays.

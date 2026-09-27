@@ -56,7 +56,7 @@ export function Header() {
         title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       >
         {isDark ? (
-          <Sun className="h-5 w-5 text-amber-400" aria-hidden="true" />
+          <Sun className="h-5 w-5 text-warning" aria-hidden="true" />
         ) : (
           <Moon className="h-5 w-5 text-slate-700" aria-hidden="true" />
         )}

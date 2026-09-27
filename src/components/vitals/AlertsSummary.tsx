@@ -322,9 +322,9 @@ export function AlertsSummary({
   const getTrendIcon = (direction: 'up' | 'down' | 'stable', severity: string) => {
     switch (direction) {
       case 'up':
-        return <ArrowUp className={`h-4 w-4 ${severity === 'critical' ? 'text-rose-600' : severity === 'warning' ? 'text-amber-500' : 'text-blue-500'}`} />;
+        return <ArrowUp className={`h-4 w-4 ${severity === 'critical' ? 'text-destructive' : severity === 'warning' ? 'text-warning' : 'text-accent'}`} />;
       case 'down':
-        return <ArrowDown className={`h-4 w-4 ${severity === 'critical' ? 'text-rose-600' : severity === 'warning' ? 'text-amber-500' : 'text-emerald-500'}`} />;
+        return <ArrowDown className={`h-4 w-4 ${severity === 'critical' ? 'text-destructive' : severity === 'warning' ? 'text-warning' : 'text-success'}`} />;
       case 'stable':
       default:
         return <ArrowRight className="h-4 w-4 text-muted-foreground" />;
@@ -334,13 +334,13 @@ export function AlertsSummary({
   const getBadgeStyle = (severity: 'critical' | 'high' | 'elevated' | 'hypo') => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-600 text-white border-red-700 hover:bg-red-700 font-semibold';
+        return 'bg-destructive text-white border-destructive hover:bg-destructive font-semibold';
       case 'high':
-        return 'bg-rose-500 text-white border-rose-600 hover:bg-rose-600 font-medium';
+        return 'bg-destructive text-white border-destructive hover:bg-destructive font-medium';
       case 'elevated':
-        return 'border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium';
+        return 'border-warning/50 bg-warning/10 text-warning dark:text-warning font-medium';
       case 'hypo':
-        return 'border-sky-500/50 bg-sky-500/10 text-sky-700 dark:text-sky-400 font-medium';
+        return 'border-accent/50 bg-accent/10 text-accent dark:text-accent font-medium';
     }
   };
 
@@ -366,7 +366,7 @@ export function AlertsSummary({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <AlertTriangle className={`h-5 w-5 ${warningBadges.length > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
+              <AlertTriangle className={`h-5 w-5 ${warningBadges.length > 0 ? 'text-destructive' : 'text-success'}`} />
               <CardTitle className="text-base font-bold text-foreground">
                 Alerts & Trends Summary
               </CardTitle>
@@ -386,12 +386,12 @@ export function AlertsSummary({
 
       <CardContent className="p-4 space-y-4">
         {isOk ? (
-          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 shrink-0">
+          <div className="p-4 rounded-lg bg-success/10 border border-success/20 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-success/20 text-success dark:text-success shrink-0">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div className="space-y-1">
-              <h5 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+              <h5 className="text-xs font-bold text-success dark:text-emerald-300">
                 Patient Biometrics Excellent
               </h5>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -405,7 +405,7 @@ export function AlertsSummary({
             {warningBadges.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                   Active Physiological Warnings ({warningBadges.length})
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -414,7 +414,7 @@ export function AlertsSummary({
                       key={idx}
                       className="p-3 rounded-lg border border-border bg-card flex items-start gap-3"
                     >
-                      <div className={`p-1.5 rounded-md ${badge.severity === 'critical' ? 'bg-red-500/15 text-red-600' : 'bg-rose-500/15 text-rose-500'} shrink-0`}>
+                      <div className={`p-1.5 rounded-md ${badge.severity === 'critical' ? 'bg-destructive/15 text-destructive' : 'bg-destructive/15 text-destructive'} shrink-0`}>
                         <badge.icon className="h-4 w-4" />
                       </div>
                       <div className="space-y-1">
@@ -440,7 +440,7 @@ export function AlertsSummary({
             {trends.length > 0 && (
               <div className="space-y-2 border-t border-border pt-4">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-foreground mb-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                   Consecutive Trend Trajectory Analysis
                 </div>
                 <div className="space-y-2">
@@ -450,8 +450,8 @@ export function AlertsSummary({
                       className={`p-2.5 rounded-md border text-xs flex items-center justify-between gap-4 ${
                         trend.isAbnormalTrend
                           ? trend.severity === 'critical'
-                            ? 'bg-red-500/5 border-red-500/30'
-                            : 'bg-amber-500/5 border-amber-500/30'
+                            ? 'bg-destructive/5 border-destructive/30'
+                            : 'bg-warning/5 border-warning/30'
                           : 'bg-muted/10 border-border/50'
                       }`}
                     >
@@ -459,8 +459,8 @@ export function AlertsSummary({
                         <div className={`p-1 rounded-md shrink-0 ${
                           trend.isAbnormalTrend
                             ? trend.severity === 'critical'
-                              ? 'bg-red-500/10 text-red-600'
-                              : 'bg-amber-500/10 text-amber-600'
+                              ? 'bg-destructive/10 text-destructive'
+                              : 'bg-warning/10 text-warning'
                             : 'bg-muted/50 text-muted-foreground'
                         }`}>
                           {getTrendIcon(trend.direction, trend.severity)}
@@ -469,7 +469,7 @@ export function AlertsSummary({
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-foreground">{trend.metric}</span>
                             {trend.direction !== 'stable' && (
-                              <span className={`text-[10px] font-mono ${trend.isAbnormalTrend ? 'text-rose-500 font-bold' : 'text-muted-foreground'}`}>
+                              <span className={`text-[10px] font-mono ${trend.isAbnormalTrend ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
                                 ({trend.direction === 'up' ? '+' : '-'}{trend.changeValue.toFixed(1)} {trend.unit})
                               </span>
                             )}
@@ -486,7 +486,7 @@ export function AlertsSummary({
                             {trend.severity === 'critical' ? 'Unstable Spike' : 'Abnormal Rate'}
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[9px] border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 py-0 font-medium">
+                          <Badge variant="outline" className="text-[9px] border-success/30 bg-success/5 text-success dark:text-success py-0 font-medium">
                             Stable
                           </Badge>
                         )}

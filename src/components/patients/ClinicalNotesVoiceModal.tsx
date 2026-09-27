@@ -272,13 +272,13 @@ export function ClinicalNotesVoiceModal({
         <DialogHeader>
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <div className="p-2.5 rounded-xl bg-accent/10 text-accent dark:text-accent">
                 <Stethoscope className="h-5 w-5" />
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                   Voice-to-Text Clinical Dictation
-                  <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-950 font-semibold">
+                  <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent dark:bg-accent font-semibold">
                     Web Speech API
                   </Badge>
                 </DialogTitle>
@@ -337,7 +337,7 @@ export function ClinicalNotesVoiceModal({
           </div>
 
           {/* Voice Microphone Controls & Live Wave Indicator */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl border border-accent/20 bg-accent/5">
             <div className="flex items-center gap-3">
               <Button
                 type="button"
@@ -345,8 +345,8 @@ export function ClinicalNotesVoiceModal({
                 onClick={toggleListening}
                 className={`h-12 px-5 gap-2.5 font-bold transition-all shadow-md ${
                   isListening
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-destructive hover:bg-destructive text-white animate-pulse'
+                    : 'bg-accent hover:bg-accent text-white'
                 }`}
               >
                 {isListening ? (
@@ -364,11 +364,11 @@ export function ClinicalNotesVoiceModal({
 
               {isListening && (
                 <div className="flex items-center gap-1">
-                  <span className="h-4 w-1 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="h-6 w-1 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="h-8 w-1 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  <span className="h-5 w-1 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '450ms' }} />
-                  <span className="text-xs font-bold text-rose-600 dark:text-rose-400 ml-1">Listening...</span>
+                  <span className="h-4 w-1 bg-destructive rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-6 w-1 bg-destructive rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="h-8 w-1 bg-destructive rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="h-5 w-1 bg-destructive rounded-full animate-bounce" style={{ animationDelay: '450ms' }} />
+                  <span className="text-xs font-bold text-destructive dark:text-destructive ml-1">Listening...</span>
                 </div>
               )}
             </div>
@@ -394,7 +394,7 @@ export function ClinicalNotesVoiceModal({
           {/* Quick Voice Shortcuts Chips */}
           <div className="space-y-1.5">
             <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500" /> Medical Voice Shortcuts (Click to insert)
+              <Sparkles className="h-3 w-3 text-warning" /> Medical Voice Shortcuts (Click to insert)
             </Label>
             <div className="flex flex-wrap gap-1.5">
               {[
@@ -422,7 +422,7 @@ export function ClinicalNotesVoiceModal({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-blue-500" />
+                <FileText className="h-4 w-4 text-accent" />
                 Dictated Clinical Note Content
               </Label>
               <div className="flex items-center gap-2">
@@ -442,7 +442,7 @@ export function ClinicalNotesVoiceModal({
                   disabled={!noteContent}
                   className="h-7 text-xs gap-1"
                 >
-                  {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  {isCopied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                   <span>{isCopied ? 'Copied' : 'Copy'}</span>
                 </Button>
               </div>
@@ -453,7 +453,7 @@ export function ClinicalNotesVoiceModal({
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               placeholder="Dictate or type clinical findings here..."
-              className="text-sm font-sans leading-relaxed p-3.5 resize-none border-border focus:ring-2 focus:ring-blue-500"
+              className="text-sm font-sans leading-relaxed p-3.5 resize-none border-border focus:ring-2 focus:ring-accent"
             />
           </div>
 
@@ -462,7 +462,7 @@ export function ClinicalNotesVoiceModal({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button onClick={handleSaveNote} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+            <Button onClick={handleSaveNote} className="gap-2 bg-accent hover:bg-accent text-white font-semibold">
               <Save className="h-4 w-4" />
               <span>Save Clinical Note</span>
             </Button>

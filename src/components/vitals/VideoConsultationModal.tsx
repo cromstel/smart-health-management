@@ -44,10 +44,10 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   }
 
   const INITIAL_QUEUE: WaitingPatient[] = [
-    { id: '101', name: 'Emmanuel Mensah', triageLevel: 'ESI-2 Critical', triageColor: 'bg-rose-500', waitTime: '08:42', status: 'Waiting' },
-    { id: '102', name: 'Abena Koomson', triageLevel: 'ESI-3 Urgent', triageColor: 'bg-amber-500', waitTime: '15:10', status: 'Waiting' },
-    { id: '103', name: 'Kofi Bako', triageLevel: 'ESI-4 Stable', triageColor: 'bg-emerald-500', waitTime: '02:15', status: 'Ready' },
-    { id: '104', name: 'Patricia Antwi', triageLevel: 'ESI-1 Resuscitation', triageColor: 'bg-red-600', waitTime: '22:30', status: 'Waiting' },
+    { id: '101', name: 'Emmanuel Mensah', triageLevel: 'ESI-2 Critical', triageColor: 'bg-destructive', waitTime: '08:42', status: 'Waiting' },
+    { id: '102', name: 'Abena Koomson', triageLevel: 'ESI-3 Urgent', triageColor: 'bg-warning', waitTime: '15:10', status: 'Waiting' },
+    { id: '103', name: 'Kofi Bako', triageLevel: 'ESI-4 Stable', triageColor: 'bg-success', waitTime: '02:15', status: 'Ready' },
+    { id: '104', name: 'Patricia Antwi', triageLevel: 'ESI-1 Resuscitation', triageColor: 'bg-destructive', waitTime: '22:30', status: 'Waiting' },
   ];
 
   const [waitingQueue, setWaitingQueue] = useState<WaitingPatient[]>(INITIAL_QUEUE);
@@ -360,13 +360,13 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
           <div className="flex-1 flex flex-col relative bg-slate-900 border-r border-slate-800">
             <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
                 <h3 className="font-bold text-sm tracking-wide text-slate-200 uppercase">
                   SECURE CONSULTATION WITH: {activePatientName.toUpperCase()}
                 </h3>
               </div>
               <div className="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded border border-slate-800 text-xs">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                <ShieldCheck className="h-3.5 w-3.5 text-success" />
                 <span className="text-slate-400 font-medium">E2EE DTLS Secure Tunnel</span>
               </div>
             </div>
@@ -379,10 +379,10 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                   <div className="lg:col-span-7 flex flex-col h-full bg-slate-900/60 rounded-xl border border-slate-800/80 p-4 min-h-0">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
                       <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-sky-400" />
+                        <Users className="h-4 w-4 text-accent" />
                         <h4 className="font-bold text-sm text-slate-200">Virtual Waiting Room Queue</h4>
                       </div>
-                      <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/20 font-bold text-[10px]">
+                      <Badge className="bg-accent/10 text-accent border-accent/20 font-bold text-[10px]">
                         {waitingQueue.length} Patients Online
                       </Badge>
                     </div>
@@ -395,7 +395,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                             key={patient.id} 
                             className={`p-3 rounded-xl border transition-all duration-200 ${
                               isCurrent 
-                                ? 'bg-sky-500/10 border-sky-500/40 shadow-md' 
+                                ? 'bg-accent/10 border-accent/40 shadow-md' 
                                 : 'bg-slate-950 border-slate-800/60 hover:border-slate-700'
                             } flex flex-col sm:flex-row sm:items-center justify-between gap-3`}
                           >
@@ -410,8 +410,8 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                                 <span>ID: <strong className="font-mono">{patient.id}</strong></span>
                                 <span>•</span>
                                 <span className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                  Wait: <strong className="font-mono text-amber-400">{patient.waitTime} min</strong>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+                                  Wait: <strong className="font-mono text-warning">{patient.waitTime} min</strong>
                                 </span>
                                 <span>•</span>
                                 <span className="font-semibold text-slate-300">Status: {patient.status}</span>
@@ -424,7 +424,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                                 variant={isCurrent ? "default" : "outline"}
                                 className={`h-7 text-[11px] font-bold ${
                                   isCurrent 
-                                    ? 'bg-sky-600 hover:bg-sky-500 text-white' 
+                                    ? 'bg-accent hover:bg-accent text-white' 
                                     : 'border-slate-800 text-slate-300 hover:bg-slate-900'
                                 }`}
                                 onClick={() => {
@@ -437,7 +437,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                               </Button>
                               <Button
                                 size="sm"
-                                className="h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white"
+                                className="h-7 text-[11px] font-bold bg-success hover:bg-success text-white"
                                 onClick={() => {
                                   setActivePatientName(patient.name);
                                   setActivePatientId(patient.id);
@@ -457,7 +457,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
 
                   {/* Right Column: Connection Control */}
                   <div className="lg:col-span-5 flex flex-col justify-center bg-slate-900/60 rounded-xl border border-slate-800/80 p-6 text-center space-y-4">
-                    <div className="mx-auto w-14 h-14 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400 border border-sky-500/20">
+                    <div className="mx-auto w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center text-accent border border-accent/20">
                       <Video className="h-7 w-7 animate-pulse" />
                     </div>
                     <div className="space-y-1">
@@ -471,10 +471,10 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       <div className="text-[10px] uppercase font-bold text-slate-500">Target Session Parameters</div>
                       <div>Patient Name: <strong className="text-slate-300">{activePatientName}</strong></div>
                       <div>Record ID: <strong className="text-slate-300 font-mono">{activePatientId}</strong></div>
-                      <div>Gateway: <strong className="text-emerald-400">Secure E2EE Peer-to-Peer</strong></div>
+                      <div>Gateway: <strong className="text-success">Secure E2EE Peer-to-Peer</strong></div>
                     </div>
 
-                    <Button onClick={initiateWebRTC} className="w-full bg-sky-600 hover:bg-sky-500 text-white gap-2 font-semibold h-9 text-xs">
+                    <Button onClick={initiateWebRTC} className="w-full bg-accent hover:bg-accent text-white gap-2 font-semibold h-9 text-xs">
                       <Play className="h-4 w-4" />
                       <span>Launch Consultation Link</span>
                     </Button>
@@ -482,8 +482,8 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 </div>
               ) : callStatus === 'calling' ? (
                 <div className="text-center space-y-3">
-                  <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-sm text-sky-400 font-medium animate-pulse">Performing SDP secure handshaking...</p>
+                  <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-sm text-accent font-medium animate-pulse">Performing SDP secure handshaking...</p>
                 </div>
               ) : (
                 <div className="w-full h-full relative flex flex-col md:grid md:grid-cols-2 gap-4">
@@ -496,7 +496,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       className="w-full h-full object-cover rounded-xl"
                     />
                     <div className="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-md border border-slate-800 py-1 px-2.5 rounded text-xs flex items-center gap-1.5 font-semibold text-slate-200">
-                      <Users className="h-3.5 w-3.5 text-rose-400" />
+                      <Users className="h-3.5 w-3.5 text-destructive" />
                       <span>{activePatientName} (Patient)</span>
                     </div>
                   </div>
@@ -511,7 +511,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       className="w-full h-full object-cover rounded-xl"
                     />
                     <div className="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-md border border-slate-800 py-1 px-2.5 rounded text-xs flex items-center gap-1.5 font-semibold text-slate-200">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                      <span className="w-2 h-2 rounded-full bg-success animate-ping"></span>
                       <span>You (Clinician Feed)</span>
                     </div>
                   </div>
@@ -524,19 +524,19 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
               <div className="p-3 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap gap-4 text-[11px] text-slate-400">
                   <div className="flex items-center gap-1">
-                    <Wifi className="h-3 w-3 text-emerald-400" />
+                    <Wifi className="h-3 w-3 text-success" />
                     <span>Latency: <strong>{stats.latency}ms</strong></span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-emerald-400" />
+                    <Activity className="h-3 w-3 text-success" />
                     <span>Framerate: <strong>{stats.fps} FPS</strong></span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3 text-rose-400" />
+                    <AlertCircle className="h-3 w-3 text-destructive" />
                     <span>Packet Loss: <strong>{stats.packetLoss}%</strong></span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3 text-sky-400" />
+                    <ShieldCheck className="h-3 w-3 text-accent" />
                     <span>TLS Cipher: <strong className="text-[9px]">{stats.codec}</strong></span>
                   </div>
                 </div>
@@ -546,7 +546,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     variant="outline" 
                     size="icon" 
                     onClick={toggleMic}
-                    className={`h-9 w-9 rounded-full ${!micEnabled ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'}`}
+                    className={`h-9 w-9 rounded-full ${!micEnabled ? 'bg-destructive/20 text-destructive border-destructive/30' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'}`}
                   >
                     {micEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
                   </Button>
@@ -554,7 +554,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     variant="outline" 
                     size="icon" 
                     onClick={toggleVideo}
-                    className={`h-9 w-9 rounded-full ${!videoEnabled ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'}`}
+                    className={`h-9 w-9 rounded-full ${!videoEnabled ? 'bg-destructive/20 text-destructive border-destructive/30' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'}`}
                   >
                     {videoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                   </Button>
@@ -578,7 +578,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
             {/* Split Tab Header: Chat & Diagnostics */}
             <div className="flex-1 flex flex-col min-h-0">
               <div className="p-3 border-b border-slate-800 flex items-center gap-2">
-                <FileText className="h-4 w-4 text-sky-400" />
+                <FileText className="h-4 w-4 text-accent" />
                 <h4 className="font-bold text-xs tracking-wider text-slate-300 uppercase">Consultation Recorder</h4>
               </div>
 
@@ -590,7 +590,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     value={clinicalNotes}
                     onChange={(e) => setClinicalNotes(e.target.value)}
                     placeholder="Enter patient status, reported symptoms, diagnostic observations..."
-                    className="bg-slate-900 border-slate-800 text-xs h-24 placeholder:text-slate-600 focus-visible:ring-sky-500"
+                    className="bg-slate-900 border-slate-800 text-xs h-24 placeholder:text-slate-600 focus-visible:ring-accent"
                     disabled={isNotesSaved}
                   />
                 </div>
@@ -601,7 +601,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     value={prescriptionNotes}
                     onChange={(e) => setPrescriptionNotes(e.target.value)}
                     placeholder="Enter prescribed drug therapies, dosages, schedules, pharmacy fulfillment instruction..."
-                    className="bg-slate-900 border-slate-800 text-xs h-20 placeholder:text-slate-600 focus-visible:ring-sky-500"
+                    className="bg-slate-900 border-slate-800 text-xs h-20 placeholder:text-slate-600 focus-visible:ring-accent"
                     disabled={isNotesSaved}
                   />
                 </div>
@@ -609,7 +609,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 <Button 
                   onClick={handleSaveNotes} 
                   disabled={isNotesSaved}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 h-8 text-xs font-bold"
+                  className="w-full bg-success hover:bg-success text-white gap-1.5 h-8 text-xs font-bold"
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
                   <span>{isNotesSaved ? 'Saved to Patient File' : 'Save & Attach to EHR'}</span>
@@ -629,7 +629,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       key={idx} 
                       className={`flex flex-col max-w-[85%] ${msg.sender === 'clinician' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                     >
-                      <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${msg.sender === 'clinician' ? 'bg-sky-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'}`}>
+                      <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${msg.sender === 'clinician' ? 'bg-accent text-white rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'}`}>
                         {msg.text}
                       </div>
                       <span className="text-[9px] text-slate-500 mt-1">{msg.time}</span>
@@ -643,12 +643,12 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
                     placeholder="Type message to patient..."
-                    className="bg-slate-900 border-slate-800 text-xs h-8 placeholder:text-slate-600 focus-visible:ring-sky-500"
+                    className="bg-slate-900 border-slate-800 text-xs h-8 placeholder:text-slate-600 focus-visible:ring-accent"
                   />
                   <Button 
                     size="icon" 
                     onClick={handleSendMessage}
-                    className="h-8 w-8 bg-sky-600 hover:bg-sky-500 text-white"
+                    className="h-8 w-8 bg-accent hover:bg-accent text-white"
                   >
                     <Send className="h-3.5 w-3.5" />
                   </Button>

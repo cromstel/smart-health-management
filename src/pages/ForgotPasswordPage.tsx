@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
             <>
               <CardHeader className="space-y-3 text-center pb-4 border-b border-border">
                 <div className="flex justify-center">
-                  <div className="h-14 w-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-inner">
+                  <div className="h-14 w-14 rounded-2xl bg-success/15 border border-success/30 text-success flex items-center justify-center shadow-inner">
                     <Mail className="h-7 w-7" aria-hidden="true" />
                   </div>
                 </div>

@@ -76,16 +76,16 @@ export default function SuperAdminOperations() {
         <div
           className={`p-4 rounded-lg flex items-start gap-2 ${
             message.type === 'success'
-              ? 'bg-green-500/10 border border-green-500/20'
-              : 'bg-red-500/10 border border-red-500/20'
+              ? 'bg-success/10 border border-success/20'
+              : 'bg-destructive/10 border border-destructive/20'
           }`}
         >
           {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
           )}
-          <p className={`text-sm ${message.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+          <p className={`text-sm ${message.type === 'success' ? 'text-success' : 'text-destructive'}`}>
             {message.text}
           </p>
         </div>
@@ -239,13 +239,13 @@ export default function SuperAdminOperations() {
       </div>
 
       {/* Warning Notice */}
-      <Card className="bg-yellow-500/10 border-yellow-500/20">
+      <Card className="bg-warning/10 border-warning/20">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-yellow-500 mb-1">Important Notice</h4>
-              <p className="text-sm text-yellow-400/80">
+              <h4 className="text-sm font-medium text-warning mb-1">Important Notice</h4>
+              <p className="text-sm text-warning/80">
                 System operations like backups and upgrades may temporarily affect system performance.
                 It's recommended to perform these operations during off-peak hours. Always ensure you
                 have a recent backup before performing system upgrades.

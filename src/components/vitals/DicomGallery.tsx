@@ -162,7 +162,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
           <div className="lg:col-span-8 flex flex-col relative border-b lg:border-b-0 lg:border-r border-slate-900 bg-black overflow-hidden h-[500px]">
             {/* Study Overview Badge */}
             <div className="absolute top-4 left-4 z-10 bg-slate-950/80 backdrop-blur-md border border-slate-800 py-1.5 px-3 rounded-lg text-xs space-y-0.5">
-              <div className="font-bold text-sky-400 text-[10px] uppercase tracking-wider">Active Patient Context</div>
+              <div className="font-bold text-accent text-[10px] uppercase tracking-wider">Active Patient Context</div>
               <div className="font-semibold text-slate-200">{patientName}</div>
               <div className="text-[10px] text-slate-400 font-mono">ID: {patientId} • ACC: {selectedScan.accessionNumber}</div>
             </div>
@@ -244,7 +244,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                       onClick={() => { setSelectedScan(scan); resetAdjustments(); }}
                       className={`relative aspect-square rounded-lg overflow-hidden border transition-all duration-200 ${
                         isActive 
-                          ? 'border-sky-500 ring-2 ring-sky-500/25' 
+                          ? 'border-accent ring-2 ring-accent/25' 
                           : 'border-slate-800 hover:border-slate-600'
                       }`}
                     >
@@ -272,7 +272,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                 <Button
                   variant="ghost"
                   onClick={resetAdjustments}
-                  className="h-6 text-[10px] text-sky-400 hover:text-sky-300 p-0 hover:bg-transparent"
+                  className="h-6 text-[10px] text-accent hover:text-sky-300 p-0 hover:bg-transparent"
                 >
                   Reset Default
                 </Button>
@@ -282,7 +282,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-semibold text-slate-300">
                   <span className="flex items-center gap-1">
-                    <Sun className="h-3 w-3 text-amber-400" />
+                    <Sun className="h-3 w-3 text-warning" />
                     Contrast Level
                   </span>
                   <span className="font-mono text-[10px]">{contrast}%</span>
@@ -294,7 +294,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                   step="5"
                   value={contrast}
                   onChange={(e) => setContrast(Number(e.target.value))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-accent"
                 />
               </div>
 
@@ -311,7 +311,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                   step="5"
                   value={brightness}
                   onChange={(e) => setBrightness(Number(e.target.value))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-accent"
                 />
               </div>
             </div>

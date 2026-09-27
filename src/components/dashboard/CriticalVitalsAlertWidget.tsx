@@ -61,9 +61,9 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
       id="dashboard-critical-health-alerts-widget"
       className={`border-2 ${
         criticalCount > 0
-          ? 'border-red-600 bg-card'
+          ? 'border-destructive bg-card'
           : warningCount > 0
-          ? 'border-amber-500 bg-card'
+          ? 'border-warning bg-card'
           : 'border-border bg-card'
       } ${className}`}
     >
@@ -73,10 +73,10 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
             <div
               className={`p-2 rounded-lg text-white ${
                 criticalCount > 0
-                  ? 'bg-red-600'
+                  ? 'bg-destructive'
                   : warningCount > 0
-                  ? 'bg-amber-600'
-                  : 'bg-emerald-600'
+                  ? 'bg-warning'
+                  : 'bg-success'
               }`}
             >
               {criticalCount > 0 ? (
@@ -97,8 +97,8 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
                     variant="destructive"
                     className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 ${
                       criticalCount > 0
-                        ? 'bg-red-600 text-white'
-                        : 'bg-amber-600 text-white'
+                        ? 'bg-destructive text-white'
+                        : 'bg-warning text-white'
                     }`}
                   >
                     {criticalCount > 0 ? `${criticalCount} Crisis` : `${warningCount} Abnormal`}
@@ -140,8 +140,8 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
             Checking patient vital telemetry...
           </div>
         ) : alerts.length === 0 ? (
-          <div className="py-5 px-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
-            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+          <div className="py-5 px-4 rounded-lg bg-success/10 border border-success/20 text-center space-y-1">
+            <p className="text-xs font-semibold text-success dark:text-emerald-300">
               All Active Inpatients & Outpatients Stable
             </p>
             <p className="text-[11px] text-muted-foreground">
@@ -158,16 +158,16 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
                   key={alert.id}
                   className={`p-3 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
                     isCritical
-                      ? 'border-red-500/50 bg-red-500/5 dark:bg-red-950/20'
-                      : 'border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/20'
+                      ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/20'
+                      : 'border-warning/50 bg-warning/5 dark:bg-warning/20'
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
                     <div
                       className={`p-1.5 rounded-md shrink-0 mt-0.5 ${
                         isCritical
-                          ? 'bg-red-500/20 text-red-600 dark:text-red-400'
-                          : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                          ? 'bg-destructive/20 text-destructive dark:text-destructive'
+                          : 'bg-warning/20 text-warning dark:text-warning'
                       }`}
                     >
                       {getCategoryIcon(alert.category)}
@@ -184,8 +184,8 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
                           variant="outline"
                           className={`text-[10px] font-bold uppercase px-1.5 py-0 ${
                             isCritical
-                              ? 'border-red-500/60 bg-red-500/10 text-red-700 dark:text-red-300'
-                              : 'border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                              ? 'border-destructive/60 bg-destructive/10 text-destructive dark:text-red-300'
+                              : 'border-warning/60 bg-warning/10 text-warning dark:text-amber-300'
                           }`}
                         >
                           {alert.title}
@@ -208,8 +208,8 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
                     variant={isCritical ? 'destructive' : 'default'}
                     className={`h-7 text-xs font-semibold shrink-0 gap-1 ${
                       isCritical
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-amber-600 hover:bg-amber-700 text-white'
+                        ? 'bg-destructive hover:bg-destructive text-white'
+                        : 'bg-warning hover:bg-warning text-white'
                     }`}
                     onClick={() =>
                       navigate(

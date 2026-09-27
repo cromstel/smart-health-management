@@ -78,7 +78,7 @@ export default function UpcomingAppointmentsAlertWidget({
             >
               <span>Pending</span>
               {pendingCount > 0 && (
-                <span className="h-4 min-w-4 px-1 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold inline-flex items-center justify-center">
+                <span className="h-4 min-w-4 px-1 rounded-full bg-warning/20 text-warning dark:text-warning text-[10px] font-bold inline-flex items-center justify-center">
                   {pendingCount}
                 </span>
               )}
@@ -100,17 +100,17 @@ export default function UpcomingAppointmentsAlertWidget({
       <CardContent>
         {/* Pending Banner Alert if pending items exist */}
         {pendingCount > 0 && filter !== 'confirmed' && (
-          <div className="mb-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-2">
+          <div className="mb-3 p-3 rounded-lg border border-warning/30 bg-warning/10 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+              <AlertCircle className="h-4 w-4 text-warning shrink-0" />
+              <p className="text-xs font-medium text-warning dark:text-amber-300">
                 <span className="font-bold">{pendingCount} patient appointment(s)</span> are awaiting clinic confirmation before reminder dispatch.
               </p>
             </div>
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 shrink-0"
+              className="h-7 text-xs border-warning/40 text-warning dark:text-amber-300 hover:bg-warning/20 shrink-0"
               onClick={() => setFilter('pending')}
             >
               Review Pending
@@ -133,7 +133,7 @@ export default function UpcomingAppointmentsAlertWidget({
                   key={alert.id}
                   className={`p-3 rounded-lg border transition-all flex flex-col justify-between ${
                     isPending
-                      ? 'border-amber-500/40 bg-amber-500/5'
+                      ? 'border-warning/40 bg-warning/5'
                       : 'border-border bg-card hover:border-accent/40'
                   }`}
                 >
@@ -151,14 +151,14 @@ export default function UpcomingAppointmentsAlertWidget({
                       {isPending ? (
                         <Badge
                           variant="outline"
-                          className="border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-semibold shrink-0"
+                          className="border-warning/60 bg-warning/15 text-warning dark:text-warning text-[10px] font-semibold shrink-0"
                         >
                           Pending Confirmation
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
-                          className="border-emerald-500/60 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold shrink-0 flex items-center gap-1"
+                          className="border-success/60 bg-success/15 text-success dark:text-success text-[10px] font-semibold shrink-0 flex items-center gap-1"
                         >
                           <CheckCircle2 className="h-2.5 w-2.5" />
                           Confirmed
@@ -182,14 +182,14 @@ export default function UpcomingAppointmentsAlertWidget({
                     {isPending ? (
                       <Button
                         size="sm"
-                        className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1"
+                        className="h-7 text-xs px-3 bg-success hover:bg-success text-white font-medium gap-1"
                         onClick={() => confirmAppointment(alert.id, alert.appointmentId)}
                       >
                         <Check className="h-3.5 w-3.5" />
                         Confirm Booking
                       </Button>
                     ) : (
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <span className="text-[11px] text-success dark:text-success flex items-center gap-1">
                         <Check className="h-3 w-3" />
                         Status verified
                       </span>

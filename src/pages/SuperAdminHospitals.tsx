@@ -47,9 +47,9 @@ export default function SuperAdminHospitals() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-500">{error}</p>
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 

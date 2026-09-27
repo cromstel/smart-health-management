@@ -66,13 +66,13 @@ export function ApiHealthWidget() {
           </CardTitle>
           <div className="flex items-center gap-2">
             {status === 'online' && (
-              <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
                 OPERATIONAL
               </Badge>
             )}
             {status === 'degraded' && (
-              <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20 flex items-center gap-1">
+              <Badge className="bg-warning/10 text-warning hover:bg-warning/20 border-warning/20 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
                 DEGRADED LATENCY
               </Badge>

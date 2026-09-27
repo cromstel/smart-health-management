@@ -310,10 +310,10 @@ export default function DashboardPage() {
   const statsCards = useMemo(() => {
     if (!stats) return [];
     return [
-      { title: 'Total Patients', rawValue: stats.totalPatients, prefix: '', suffix: '', change: '+12%', icon: Users, color: 'text-blue-500' },
-      { title: 'Appointments Today', rawValue: stats.todayAppointments, prefix: '', suffix: '', change: '+5%', icon: Calendar, color: 'text-green-500' },
-      { title: 'Active Hospitals', rawValue: stats.activeHospitals, prefix: '', suffix: '', change: '+2', icon: Hospital, color: 'text-purple-500' },
-      { title: 'Monthly Revenue', rawValue: stats.monthlyRevenue, prefix: 'GHS ', suffix: '', change: '+18%', icon: DollarSign, color: 'text-yellow-500' },
+      { title: 'Total Patients', rawValue: stats.totalPatients, prefix: '', suffix: '', change: '+12%', icon: Users, color: 'text-accent' },
+      { title: 'Appointments Today', rawValue: stats.todayAppointments, prefix: '', suffix: '', change: '+5%', icon: Calendar, color: 'text-success' },
+      { title: 'Active Hospitals', rawValue: stats.activeHospitals, prefix: '', suffix: '', change: '+2', icon: Hospital, color: 'text-info' },
+      { title: 'Monthly Revenue', rawValue: stats.monthlyRevenue, prefix: 'GHS ', suffix: '', change: '+18%', icon: DollarSign, color: 'text-warning' },
     ];
   }, [stats]);
 
@@ -350,7 +350,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             {isEmergencyMode && (
-              <Badge className="bg-rose-600 text-white font-bold animate-pulse gap-1">
+              <Badge className="bg-destructive text-white font-bold animate-pulse gap-1">
                 <Siren className="h-3.5 w-3.5" aria-hidden="true" /> Emergency Mode
               </Badge>
             )}
@@ -362,10 +362,10 @@ export default function DashboardPage() {
           {/* Emergency Mode Toggle Control */}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
             isEmergencyMode
-              ? 'bg-rose-600/10 border-rose-500 text-rose-600 dark:text-rose-400 font-bold animate-pulse'
+              ? 'bg-destructive/10 border-destructive text-destructive dark:text-destructive font-bold animate-pulse'
               : 'bg-card border-border text-muted-foreground'
           }`}>
-            <Siren className={`h-4 w-4 ${isEmergencyMode ? 'text-rose-600 animate-spin' : 'text-muted-foreground'}`} aria-hidden="true" />
+            <Siren className={`h-4 w-4 ${isEmergencyMode ? 'text-destructive animate-spin' : 'text-muted-foreground'}`} aria-hidden="true" />
             <span className="text-xs font-semibold">Emergency Mode</span>
             <Switch
               checked={isEmergencyMode}
@@ -390,7 +390,7 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs font-semibold h-9 gap-1.5 border-dashed border-red-500/50 text-red-600 hover:bg-red-50"
+                className="text-xs font-semibold h-9 gap-1.5 border-dashed border-destructive/50 text-destructive hover:bg-destructive/5"
                 onClick={handleResetLayout}
               >
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -449,7 +449,7 @@ export default function DashboardPage() {
                 <AnimatedCounter value={stat.rawValue} prefix={stat.prefix} suffix={stat.suffix} />
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
+                <TrendingUp className="h-3 w-3 text-success" aria-hidden="true" />
                 {stat.change} from last month
               </p>
             </CardContent>
@@ -493,7 +493,7 @@ export default function DashboardPage() {
                 <Card className="border border-border bg-card">
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
+                      <div className="p-2.5 rounded-lg bg-destructive/10 text-destructive shrink-0">
                         <Heart className="h-5 w-5" aria-hidden="true" />
                       </div>
                       <div>
@@ -526,10 +526,10 @@ export default function DashboardPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                        <Sparkles className="h-5 w-5 text-warning" aria-hidden="true" />
                         Clinical AI Insights Hub
                       </CardTitle>
-                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">ACTIVE COGNITION</Badge>
+                      <Badge className="bg-warning/5 text-warning border-warning/20">ACTIVE COGNITION</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -562,10 +562,10 @@ export default function DashboardPage() {
 
                     <div className="text-xs space-y-3 leading-relaxed text-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
                       <p>
-                        <strong className="text-amber-950 font-bold">Patient #1024 (Sarah Johnson):</strong> Mild systolic blood pressure increase. Consider scheduling a lipid profile update and recommending reduced sodium intake.
+                        <strong className="text-warning font-bold">Patient #1024 (Sarah Johnson):</strong> Mild systolic blood pressure increase. Consider scheduling a lipid profile update and recommending reduced sodium intake.
                       </p>
                       <p>
-                        <strong className="text-amber-950 font-bold">Patient #2543 (Ebenezer Mensah):</strong> Oxygen levels occasionally dip during physical syncs (94% spO2). Suggest ambulatory pulse oximetry monitoring for a 24-hour cycle.
+                        <strong className="text-warning font-bold">Patient #2543 (Ebenezer Mensah):</strong> Oxygen levels occasionally dip during physical syncs (94% spO2). Suggest ambulatory pulse oximetry monitoring for a 24-hour cycle.
                       </p>
                     </div>
                   </CardContent>
@@ -622,7 +622,7 @@ export default function DashboardPage() {
                         </ul>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-[200px] text-center p-4 bg-muted/20 rounded-md border border-dashed border-border">
-                          <ShieldCheck className="h-8 w-8 text-emerald-500 mb-2 opacity-80" aria-hidden="true" />
+                          <ShieldCheck className="h-8 w-8 text-success mb-2 opacity-80" aria-hidden="true" />
                           <span className="text-sm font-medium text-foreground">No Active Health Advisories</span>
                           <span className="text-xs text-muted-foreground mt-1">National health parameters are currently stable.</span>
                         </div>

@@ -142,32 +142,32 @@ export function evaluateTriagePriority(
 
   if (score >= 8.5) {
     classification = 'ESI-1';
-    levelColor = 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900';
-    badgeColor = 'bg-rose-600 text-white';
+    levelColor = 'bg-destructive/10 text-destructive border-destructive/20 dark:bg-destructive/40 dark:text-rose-300 dark:border-destructive';
+    badgeColor = 'bg-destructive text-white';
     label = 'Immediate (Resuscitation)';
     recommendedWard = 'ICU / Trauma Resuscitation Bay A';
   } else if (score >= 6.0) {
     classification = 'ESI-2';
-    levelColor = 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900';
-    badgeColor = 'bg-orange-500 text-white';
+    levelColor = 'bg-warning/10 text-warning border-warning/20 dark:bg-warning/40 dark:text-orange-300 dark:border-warning';
+    badgeColor = 'bg-warning text-white';
     label = 'Emergent (High Risk)';
     recommendedWard = 'ED Bed Area / Cardiac Step-down';
   } else if (score >= 4.0) {
     classification = 'ESI-3';
-    levelColor = 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900';
-    badgeColor = 'bg-yellow-500 text-slate-900';
+    levelColor = 'bg-warning/10 text-warning border-warning/20 dark:bg-warning/40 dark:text-yellow-300 dark:border-warning';
+    badgeColor = 'bg-warning text-slate-900';
     label = 'Urgent (Stable)';
     recommendedWard = 'ED Main Care Zone / Fast Track';
   } else if (score >= 2.0) {
     classification = 'ESI-4';
-    levelColor = 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900';
-    badgeColor = 'bg-blue-500 text-white';
+    levelColor = 'bg-accent/10 text-accent border-accent/20 dark:bg-accent/40 dark:text-blue-300 dark:border-accent';
+    badgeColor = 'bg-accent text-white';
     label = 'Less Urgent';
     recommendedWard = 'ED Lounge / Rapid Assessment Zone';
   } else {
     classification = 'ESI-5';
-    levelColor = 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
-    badgeColor = 'bg-emerald-500 text-white';
+    levelColor = 'bg-success/10 text-success border-success/20 dark:bg-success/40 dark:text-emerald-300 dark:border-success';
+    badgeColor = 'bg-success text-white';
     label = 'Non-Urgent';
     recommendedWard = 'Outpatient Clinic / Primary Care';
   }

@@ -83,8 +83,8 @@ export function VitalsSessionComparison({
         variant="outline"
         className={`text-[10px] font-bold gap-1 ${
           isFavorable
-            ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-            : 'border-rose-500/50 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+            ? 'border-success/50 bg-success/10 text-success dark:text-success'
+            : 'border-destructive/50 bg-destructive/10 text-destructive dark:text-destructive'
         }`}
       >
         {isDecrease ? (
@@ -104,7 +104,7 @@ export function VitalsSessionComparison({
       <CardHeader className="pb-3 border-b border-border/60">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400">
+            <div className="p-2 rounded-lg bg-accent/15 text-accent dark:text-accent">
               <History className="h-5 w-5" />
             </div>
             <div>
@@ -163,14 +163,14 @@ export function VitalsSessionComparison({
           <div className="p-3.5 rounded-xl border border-border bg-card space-y-2 hover:border-accent/50 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                <Gauge className="h-4 w-4 text-indigo-500" />
+                <Gauge className="h-4 w-4 text-info" />
                 Blood Pressure
               </span>
               {renderDeltaBadge(sysDelta, 'mmHg', true)}
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-center pt-1 border-t border-border/50">
-              <div className="p-2 rounded bg-sky-500/10 dark:bg-sky-950/30">
+              <div className="p-2 rounded bg-accent/10 dark:bg-accent/30">
                 <span className="text-[10px] text-muted-foreground block font-medium">Current</span>
                 <span className="text-base font-extrabold text-foreground font-mono">
                   {currentRecord.systolicBp}/{currentRecord.diastolicBp}
@@ -191,14 +191,14 @@ export function VitalsSessionComparison({
           <div className="p-3.5 rounded-xl border border-border bg-card space-y-2 hover:border-accent/50 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                <Heart className="h-4 w-4 text-rose-500 animate-pulse" />
+                <Heart className="h-4 w-4 text-destructive animate-pulse" />
                 Heart Rate (Pulse)
               </span>
               {renderDeltaBadge(hrDelta, 'bpm', true)}
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-center pt-1 border-t border-border/50">
-              <div className="p-2 rounded bg-rose-500/10 dark:bg-rose-950/30">
+              <div className="p-2 rounded bg-destructive/10 dark:bg-destructive/30">
                 <span className="text-[10px] text-muted-foreground block font-medium">Current</span>
                 <span className="text-base font-extrabold text-foreground font-mono">
                   {currentRecord.heartRate}
@@ -219,7 +219,7 @@ export function VitalsSessionComparison({
           <div className="p-3.5 rounded-xl border border-border bg-card space-y-2 hover:border-accent/50 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                <Thermometer className="h-4 w-4 text-amber-500" />
+                <Thermometer className="h-4 w-4 text-warning" />
                 Body Temp
               </span>
               {renderDeltaBadge(
@@ -232,7 +232,7 @@ export function VitalsSessionComparison({
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-center pt-1 border-t border-border/50">
-              <div className="p-2 rounded bg-amber-500/10 dark:bg-amber-950/30">
+              <div className="p-2 rounded bg-warning/10 dark:bg-warning/30">
                 <span className="text-[10px] text-muted-foreground block font-medium">Current</span>
                 <span className="text-base font-extrabold text-foreground font-mono">
                   {formatTemp(currentRecord.temperature)}
@@ -251,14 +251,14 @@ export function VitalsSessionComparison({
           <div className="p-3.5 rounded-xl border border-border bg-card space-y-2 hover:border-accent/50 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                <Wind className="h-4 w-4 text-emerald-500" />
+                <Wind className="h-4 w-4 text-success" />
                 Oxygen Saturation
               </span>
               {renderDeltaBadge(spo2Delta, '%', false)}
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-center pt-1 border-t border-border/50">
-              <div className="p-2 rounded bg-emerald-500/10 dark:bg-emerald-950/30">
+              <div className="p-2 rounded bg-success/10 dark:bg-success/30">
                 <span className="text-[10px] text-muted-foreground block font-medium">Current</span>
                 <span className="text-base font-extrabold text-foreground font-mono">
                   {currentRecord.oxygenSaturation ? `${currentRecord.oxygenSaturation}%` : '--'}

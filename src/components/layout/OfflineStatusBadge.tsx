@@ -68,22 +68,22 @@ export function OfflineStatusBadge() {
           size="sm"
           className={`h-8 gap-1.5 px-2.5 text-xs font-medium rounded-full transition-all border ${
             !effectiveOnline
-              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700/80 hover:bg-amber-500/25 animate-pulse'
-              : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-500/20'
+              ? 'bg-warning/15 text-warning dark:text-amber-300 border-warning/30 dark:border-warning/80 hover:bg-warning/25 animate-pulse'
+              : 'bg-success/10 text-success dark:text-emerald-300 border-success/20 dark:border-success/80 hover:bg-success/20'
           }`}
           title={!effectiveOnline ? 'PWA Working Offline' : 'PWA Network Online'}
         >
           {!effectiveOnline ? (
             <>
-              <WifiOff className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <WifiOff className="h-3.5 w-3.5 text-warning dark:text-warning shrink-0" />
               <span className="hidden sm:inline">Offline Mode</span>
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+              <span className="h-2 w-2 rounded-full bg-warning animate-ping" />
             </>
           ) : (
             <>
-              <Wifi className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <Wifi className="h-3.5 w-3.5 text-success dark:text-success shrink-0" />
               <span className="hidden sm:inline">Online</span>
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="h-2 w-2 rounded-full bg-success" />
             </>
           )}
         </Button>
@@ -93,9 +93,9 @@ export function OfflineStatusBadge() {
           <div className="flex items-center justify-between border-b pb-2">
             <div className="flex items-center gap-2">
               {!effectiveOnline ? (
-                <WifiOff className="h-5 w-5 text-amber-500" />
+                <WifiOff className="h-5 w-5 text-warning" />
               ) : (
-                <Wifi className="h-5 w-5 text-emerald-500" />
+                <Wifi className="h-5 w-5 text-success" />
               )}
               <div>
                 <h4 className="text-sm font-semibold text-foreground">
@@ -110,7 +110,7 @@ export function OfflineStatusBadge() {
             </div>
             <Badge
               variant={!effectiveOnline ? 'destructive' : 'default'}
-              className={!effectiveOnline ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white'}
+              className={!effectiveOnline ? 'bg-warning text-white' : 'bg-success text-white'}
             >
               {!effectiveOnline ? 'OFFLINE' : 'ONLINE'}
             </Badge>
@@ -120,7 +120,7 @@ export function OfflineStatusBadge() {
             <div className="flex items-center justify-between">
               <span>Service Worker Status:</span>
               <span className="font-semibold text-foreground flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                <ShieldCheck className="h-3.5 w-3.5 text-success" />
                 {swRegistered ? 'Active & Ready' : 'Installed'}
               </span>
             </div>
@@ -132,7 +132,7 @@ export function OfflineStatusBadge() {
             </div>
             <div className="flex items-center justify-between">
               <span>Local Storage Guard:</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="font-semibold text-success dark:text-success">
                 Auto-Save Enabled
               </span>
             </div>

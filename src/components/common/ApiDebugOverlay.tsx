@@ -34,7 +34,7 @@ export function ApiDebugOverlay() {
         title="Toggle API Telemetry (Ctrl+Shift+D)"
         id="api-debug-trigger"
       >
-        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
         <span>API: {metrics.avgLatency}ms ({metrics.errorRate}% err)</span>
       </button>
     );
@@ -69,7 +69,7 @@ export function ApiDebugOverlay() {
         </div>
         <div className="bg-zinc-900 p-2.5 rounded-lg border border-zinc-800/80">
           <div className="text-zinc-400 text-[10px] uppercase">Error Rate</div>
-          <div className={`text-base font-bold mt-0.5 ${metrics.errorRate > 0 ? 'text-destructive' : 'text-emerald-400'}`}>
+          <div className={`text-base font-bold mt-0.5 ${metrics.errorRate > 0 ? 'text-destructive' : 'text-success'}`}>
             {metrics.errorRate}%
           </div>
         </div>
@@ -85,7 +85,7 @@ export function ApiDebugOverlay() {
               <div key={idx} className="flex items-center justify-between bg-zinc-900/60 px-2.5 py-1.5 rounded border border-zinc-800/50">
                 <div className="flex items-center gap-2 truncate">
                   {log.success ? (
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="h-3 w-3 text-success shrink-0" />
                   ) : (
                     <ShieldAlert className="h-3 w-3 text-destructive shrink-0" />
                   )}

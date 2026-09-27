@@ -192,7 +192,7 @@ export default function RegisterPage() {
                   className="py-8 text-center space-y-4"
                 >
                   <motion.div
-                    className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto"
+                    className="h-16 w-16 rounded-full bg-success/15 border border-success/30 text-success flex items-center justify-center mx-auto"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 15 }}

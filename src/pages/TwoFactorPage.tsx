@@ -321,7 +321,7 @@ export default function TwoFactorPage() {
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 15 }}
                   >
-                    <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto" aria-hidden="true" />
+                    <CheckCircle2 className="h-14 w-14 text-success mx-auto" aria-hidden="true" />
                   </motion.div>
                   <p className="text-base font-semibold text-foreground">Security Token Verified!</p>
                   <p className="text-xs text-muted-foreground">Initializing workstation session...</p>

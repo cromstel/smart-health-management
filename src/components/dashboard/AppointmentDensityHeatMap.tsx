@@ -99,10 +99,10 @@ export default function AppointmentDensityHeatMap() {
   // Maps a density count to modern solid Tailwind classes
   const getDensityColor = (count: number) => {
     if (count === 0) return 'bg-slate-50 dark:bg-slate-900/40 border-slate-100 dark:border-slate-800/80 hover:bg-slate-100 hover:dark:bg-slate-800';
-    if (count <= 2) return 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-950/40 hover:bg-indigo-100/80';
-    if (count <= 5) return 'bg-indigo-200 dark:bg-indigo-800/50 text-indigo-900 dark:text-indigo-200 border-indigo-200/50 dark:border-indigo-800/80 hover:bg-indigo-300 dark:hover:bg-indigo-800';
-    if (count <= 8) return 'bg-indigo-400 dark:bg-indigo-600 text-white border-indigo-400 hover:bg-indigo-500';
-    return 'bg-indigo-600 dark:bg-indigo-500 text-white border-indigo-600 hover:bg-indigo-700';
+    if (count <= 2) return 'bg-info/5 dark:bg-info/20 text-info dark:text-info border-info/10 dark:border-info/40 hover:bg-info/80';
+    if (count <= 5) return 'bg-info/20 dark:bg-info/50 text-info dark:text-indigo-200 border-info/50 dark:border-info/80 hover:bg-info/30 dark:hover:bg-info';
+    if (count <= 8) return 'bg-info dark:bg-info text-white border-info hover:bg-info';
+    return 'bg-info dark:bg-info text-white border-info hover:bg-info';
   };
 
   const selectedCellData = selectedCell ? getCellData(selectedCell.day, selectedCell.hour) : null;
@@ -113,7 +113,7 @@ export default function AppointmentDensityHeatMap() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Flame className="h-5 w-5 text-indigo-500" />
+              <Flame className="h-5 w-5 text-info" />
               Appointment Density Heat Map
             </CardTitle>
             <p className="text-xs text-muted-foreground">
@@ -204,7 +204,7 @@ export default function AppointmentDensityHeatMap() {
                           data.count
                         )} ${
                           isSelected 
-                            ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-card border-indigo-500 shadow-md transform scale-105 z-10' 
+                            ? 'ring-2 ring-info ring-offset-2 ring-offset-card border-info shadow-md transform scale-105 z-10' 
                             : 'hover:scale-105 hover:shadow-sm'
                         }`}
                         title={`${day} @ ${hour}: ${data.count} Appointments`}
@@ -218,7 +218,7 @@ export default function AppointmentDensityHeatMap() {
                   <div className="col-span-2 pl-3 flex items-center gap-2 justify-end">
                     <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-indigo-500/80 rounded-full"
+                        className="h-full bg-info/80 rounded-full"
                         style={{ width: `${Math.min(100, (hourTotal / 30) * 100)}%` }}
                       />
                     </div>
@@ -245,25 +245,25 @@ export default function AppointmentDensityHeatMap() {
                 <span className="text-[10px] text-muted-foreground">Idle (0)</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="h-6 w-6 rounded border bg-indigo-50 dark:bg-indigo-950/20" />
+                <div className="h-6 w-6 rounded border bg-info/5 dark:bg-info/20" />
                 <span className="text-[10px] text-muted-foreground">Light (1-2)</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="h-6 w-6 rounded border bg-indigo-200 dark:bg-indigo-800/50" />
+                <div className="h-6 w-6 rounded border bg-info/20 dark:bg-info/50" />
                 <span className="text-[10px] text-muted-foreground">Mod (3-5)</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="h-6 w-6 rounded border bg-indigo-400 dark:bg-indigo-600" />
+                <div className="h-6 w-6 rounded border bg-info dark:bg-info" />
                 <span className="text-[10px] text-muted-foreground">Heavy (6-8)</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="h-6 w-6 rounded border bg-indigo-600 dark:bg-indigo-500" />
+                <div className="h-6 w-6 rounded border bg-info dark:bg-info" />
                 <span className="text-[10px] text-muted-foreground">Peak (9+)</span>
               </div>
             </div>
             
             <div className="text-[11px] text-muted-foreground flex items-start gap-1.5 pt-2 border-t border-border/60">
-              <AlertCircle className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+              <AlertCircle className="h-3.5 w-3.5 text-info shrink-0 mt-0.5" />
               <span>
                 Clinicians can click on any cell in the work week grid to inspect appointment distribution.
               </span>
@@ -276,7 +276,7 @@ export default function AppointmentDensityHeatMap() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between border-b border-border/60 pb-2 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-indigo-500" />
+                    <Calendar className="h-4 w-4 text-info" />
                     <span className="font-semibold text-sm text-foreground">
                       {selectedCell.day}
                     </span>
@@ -284,7 +284,7 @@ export default function AppointmentDensityHeatMap() {
                       {selectedCell.hour}
                     </Badge>
                   </div>
-                  <Badge variant="outline" className="text-xs bg-indigo-500/5 text-indigo-600 border-indigo-500/20 font-medium">
+                  <Badge variant="outline" className="text-xs bg-info/5 text-info border-info/20 font-medium">
                     <Users className="h-3 w-3 mr-1" />
                     {selectedCellData.count} Appointments
                   </Badge>
@@ -305,7 +305,7 @@ export default function AppointmentDensityHeatMap() {
                           key={idx}
                           className="flex items-center gap-2 p-2 rounded border border-border/60 bg-muted/20 text-xs text-foreground/90 font-medium"
                         >
-                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-info shrink-0" />
                           {detail}
                         </div>
                       ))}

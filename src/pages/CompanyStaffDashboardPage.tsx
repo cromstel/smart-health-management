@@ -96,7 +96,7 @@ export function CompanyStaffDashboardPage() {
             <Badge className="bg-accent/20 text-accent border-accent/30 px-3 py-1 font-semibold text-xs">
               Company Staff Management Portal
             </Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-2.5 py-0.5 text-[11px]">
+            <Badge className="bg-success/20 text-emerald-300 border-success/30 px-2.5 py-0.5 text-[11px]">
               Multi-Department Live
             </Badge>
           </div>
@@ -139,7 +139,7 @@ export function CompanyStaffDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-foreground">106 / 123</div>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mt-1">
+            <p className="text-xs text-success dark:text-success flex items-center gap-1 font-medium mt-1">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> 86.2% Staffing Capacity
             </p>
           </CardContent>
@@ -150,7 +150,7 @@ export function CompanyStaffDashboardPage() {
             <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Departments Active
             </CardTitle>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <div className="p-2 rounded-xl bg-info/10 text-info dark:text-info">
               <Building2 className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -167,7 +167,7 @@ export function CompanyStaffDashboardPage() {
             <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Roles & Permissions
             </CardTitle>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <div className="p-2 rounded-xl bg-warning/10 text-warning dark:text-warning">
               <ShieldCheck className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -184,13 +184,13 @@ export function CompanyStaffDashboardPage() {
             <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               High Load Warnings
             </CardTitle>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+            <div className="p-2 rounded-xl bg-destructive/10 text-destructive dark:text-destructive">
               <AlertTriangle className="h-5 w-5" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-rose-600 dark:text-rose-400">2 Departments</div>
-            <p className="text-xs text-rose-600 dark:text-rose-400 font-medium mt-1">
+            <div className="text-2xl font-black text-destructive dark:text-destructive">2 Departments</div>
+            <p className="text-xs text-destructive dark:text-destructive font-medium mt-1">
               Emergency & Surgical ICU nearing limit
             </p>
           </CardContent>
@@ -265,10 +265,10 @@ export function CompanyStaffDashboardPage() {
                         variant="outline"
                         className={`text-[10px] font-bold px-2.5 py-0.5 ${
                           dept.status === 'Critical'
-                            ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-300'
+                            ? 'bg-destructive/5 text-destructive border-destructive/30 dark:bg-destructive dark:text-rose-300'
                             : dept.status === 'High Load'
-                            ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300'
-                            : 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300'
+                            ? 'bg-warning/5 text-warning border-warning/30 dark:bg-warning dark:text-amber-300'
+                            : 'bg-success/5 text-success border-success/30 dark:bg-success dark:text-emerald-300'
                         }`}
                       >
                         {dept.status}
@@ -284,10 +284,10 @@ export function CompanyStaffDashboardPage() {
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             dept.status === 'Critical'
-                              ? 'bg-rose-500'
+                              ? 'bg-destructive'
                               : dept.status === 'High Load'
-                              ? 'bg-amber-500'
-                              : 'bg-emerald-500'
+                              ? 'bg-warning'
+                              : 'bg-success'
                           }`}
                           style={{ width: `${(dept.activeStaff / dept.totalStaff) * 100}%` }}
                         />
@@ -337,7 +337,7 @@ export function CompanyStaffDashboardPage() {
                         <td className="p-3 text-muted-foreground">{r.department}</td>
                         <td className="p-3 font-semibold">{r.count} staff</td>
                         <td className="p-3">
-                          <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950 font-semibold">
+                          <Badge variant="secondary" className="bg-success/5 text-success dark:bg-success font-semibold">
                             {r.onDuty} Active
                           </Badge>
                         </td>
@@ -383,18 +383,18 @@ export function CompanyStaffDashboardPage() {
                   <p className="text-xs text-muted-foreground">Doctors, Nurses, Triage Nurses, Pharmacists</p>
                 </div>
 
-                <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 space-y-2">
+                <div className="p-4 rounded-xl bg-info/5 border border-info/20 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400">Evening Shift (15:00 - 23:00)</span>
+                    <span className="text-xs font-bold uppercase text-info dark:text-info">Evening Shift (15:00 - 23:00)</span>
                     <Badge variant="outline" className="text-[10px]">Upcoming</Badge>
                   </div>
                   <p className="text-2xl font-black text-foreground">38 Staff</p>
                   <p className="text-xs text-muted-foreground">Primary Care, Emergency Response, ICU</p>
                 </div>
 
-                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-2">
+                <div className="p-4 rounded-xl bg-info/5 border border-info/20 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase text-purple-600 dark:text-purple-400">Night Shift (23:00 - 07:00)</span>
+                    <span className="text-xs font-bold uppercase text-info dark:text-info">Night Shift (23:00 - 07:00)</span>
                     <Badge variant="outline" className="text-[10px]">Scheduled</Badge>
                   </div>
                   <p className="text-2xl font-black text-foreground">26 Staff</p>

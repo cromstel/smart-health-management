@@ -144,9 +144,9 @@ export default function SuperAdminSettings() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-500">{error}</p>
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
@@ -182,7 +182,7 @@ export default function SuperAdminSettings() {
                       </Button>
                     )}
                     {success === setting.id && (
-                      <Button disabled className="bg-green-500/10 text-green-500">
+                      <Button disabled className="bg-success/10 text-success">
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Saved
                       </Button>
@@ -213,8 +213,8 @@ export default function SuperAdminSettings() {
                 {backupLoading ? 'Backing up...' : <><HardDriveUpload className="w-4 h-4 mr-2" /> Trigger Backup</>}
               </Button>
             </div>
-            {backupSuccess && <p className="text-green-500 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Backup successful!</p>}
-            {backupError && <p className="text-red-500 text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {backupError}</p>}
+            {backupSuccess && <p className="text-success text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Backup successful!</p>}
+            {backupError && <p className="text-destructive text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {backupError}</p>}
 
             <Card className="bg-card border-border">
               <CardHeader>
@@ -242,12 +242,12 @@ export default function SuperAdminSettings() {
                 <Button onClick={handleTriggerRestore} disabled={restoreLoading || !selectedBackup} className="mt-4 w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                   {restoreLoading ? 'Restoring...' : <><HardDriveDownload className="w-4 h-4 mr-2" /> Restore Selected Backup</>}
                 </Button>
-                {restoreSuccess && <p className="mt-2 text-sm text-green-500 flex items-center"><CheckCircle className="w-4 h-4 mr-2" />Restore successful!</p>}
-                {restoreError && <p className="mt-2 text-sm text-red-500 flex items-center"><AlertCircle className="w-4 h-4 mr-2" />{restoreError}</p>}
+                {restoreSuccess && <p className="mt-2 text-sm text-success flex items-center"><CheckCircle className="w-4 h-4 mr-2" />Restore successful!</p>}
+                {restoreError && <p className="mt-2 text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-2" />{restoreError}</p>}
               </CardContent>
             </Card>
-            {restoreSuccess && <p className="text-green-500 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Restore successful!</p>}
-            {restoreError && <p className="text-red-500 text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {restoreError}</p>}
+            {restoreSuccess && <p className="text-success text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Restore successful!</p>}
+            {restoreError && <p className="text-destructive text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {restoreError}</p>}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Label className="text-muted-foreground">Check System Health</Label>
@@ -259,8 +259,8 @@ export default function SuperAdminSettings() {
                 {healthLoading ? 'Checking...' : <><HeartPulse className="w-4 h-4 mr-2" /> Check Health</>}
               </Button>
             </div>
-            {healthStatus && <p className="text-green-500 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> System Health: {healthStatus}</p>}
-            {healthError && <p className="text-red-500 text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {healthError}</p>}
+            {healthStatus && <p className="text-success text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> System Health: {healthStatus}</p>}
+            {healthError && <p className="text-destructive text-sm flex items-center"><AlertCircle className="w-4 h-4 mr-1" /> {healthError}</p>}
           </CardContent>
         </Card>
       </div>

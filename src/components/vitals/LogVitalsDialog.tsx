@@ -245,7 +245,7 @@ export function LogVitalsDialog({
           </div>
 
           {lastDetectedFields.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
+            <div className="flex items-center gap-1.5 text-[11px] text-success dark:text-success bg-success/10 p-2 rounded-lg border border-success/20">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
               <span>
                 Auto-Filled <strong>{lastDetectedFields.length}</strong> fields from speech: {lastDetectedFields.join(', ')}
@@ -268,7 +268,7 @@ export function LogVitalsDialog({
                 }
                 className="text-[11px] px-2 py-1 rounded-md bg-background hover:bg-muted border border-border text-foreground transition-all flex items-center gap-1"
               >
-                <Sparkles className="h-3 w-3 text-amber-500" />
+                <Sparkles className="h-3 w-3 text-warning" />
                 "BP 135/85, HR 78, Temp 37.2°C, RR 16, SpO2 98%"
               </button>
               <button
@@ -278,9 +278,9 @@ export function LogVitalsDialog({
                     'Blood pressure 165 over 102, pulse 110 bpm, temp 38.8 C, resp rate 24, spo2 94 percent. Patient presents with acute fever and dyspnea.'
                   )
                 }
-                className="text-[11px] px-2 py-1 rounded-md bg-background hover:bg-muted border border-border text-rose-600 dark:text-rose-400 transition-all flex items-center gap-1"
+                className="text-[11px] px-2 py-1 rounded-md bg-background hover:bg-muted border border-border text-destructive dark:text-destructive transition-all flex items-center gap-1"
               >
-                <Sparkles className="h-3 w-3 text-rose-500" />
+                <Sparkles className="h-3 w-3 text-destructive" />
                 "Critical: BP 165/102, Pulse 110, Temp 38.8°C"
               </button>
             </div>
@@ -327,7 +327,7 @@ export function LogVitalsDialog({
           <div className="p-3.5 rounded-lg border border-border bg-card space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Gauge className="h-4 w-4 text-blue-500" />
+                <Gauge className="h-4 w-4 text-accent" />
                 <Label className="font-semibold text-sm">Blood Pressure (mmHg)</Label>
               </div>
               <span className="text-xs text-muted-foreground">Standard target &lt; 120/80</span>
@@ -383,7 +383,7 @@ export function LogVitalsDialog({
             {/* Heart Rate */}
             <div className="p-3.5 rounded-lg border border-border bg-card space-y-2">
               <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-rose-500" />
+                <Heart className="h-4 w-4 text-destructive" />
                 <Label htmlFor="heartRate" className="font-semibold text-sm">
                   Heart Rate
                 </Label>
@@ -410,7 +410,7 @@ export function LogVitalsDialog({
             <div className="p-3.5 rounded-lg border border-border bg-card space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Thermometer className="h-4 w-4 text-amber-500" />
+                  <Thermometer className="h-4 w-4 text-warning" />
                   <Label htmlFor="temperature" className="font-semibold text-sm">
                     Body Temp
                   </Label>
@@ -476,7 +476,7 @@ export function LogVitalsDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="respiratoryRate" className="text-xs flex items-center gap-1.5">
-                <Wind className="h-3.5 w-3.5 text-teal-500" />
+                <Wind className="h-3.5 w-3.5 text-chart-2" />
                 Respiratory Rate (optional)
               </Label>
               <div className="relative">
@@ -495,7 +495,7 @@ export function LogVitalsDialog({
 
             <div className="space-y-1">
               <Label htmlFor="oxygenSaturation" className="text-xs flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5 text-cyan-500" />
+                <Activity className="h-3.5 w-3.5 text-accent" />
                 Oxygen Saturation SpO2 (optional)
               </Label>
               <div className="relative">

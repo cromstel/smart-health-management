@@ -79,11 +79,11 @@ export default function SuperAdminDashboard() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-red-500">Error loading dashboard</p>
-            <p className="text-sm text-red-400 mt-1">{error}</p>
+            <p className="text-sm font-medium text-destructive">Error loading dashboard</p>
+            <p className="text-sm text-destructive mt-1">{error}</p>
           </div>
         </div>
       </div>
@@ -103,8 +103,8 @@ export default function SuperAdminDashboard() {
         <div className="flex items-center gap-2">
           <div className={`px-3 py-1 rounded-full text-sm font-medium ${
             systemStatus?.status === 'OK' 
-              ? 'bg-green-500/10 text-green-500' 
-              : 'bg-red-500/10 text-red-500'
+              ? 'bg-success/10 text-success' 
+              : 'bg-destructive/10 text-destructive'
           }`}>
             <Activity className="w-4 h-4 inline mr-1" />
             {systemStatus?.status}
@@ -244,7 +244,7 @@ export default function SuperAdminDashboard() {
               <Activity className="w-4 h-4" />
               <span>System Status</span>
             </div>
-            <span className="text-green-500 font-medium">{systemStatus?.status}</span>
+            <span className="text-success font-medium">{systemStatus?.status}</span>
           </div>
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-2 text-muted-foreground">

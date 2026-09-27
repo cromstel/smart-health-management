@@ -133,8 +133,8 @@ export function AiClinicalInsightsSidebar({
       // Bullet/disclaimers
       if (line.includes('DISCLAIMER:')) {
         return (
-          <div key={idx} className="mt-4 p-3 bg-red-50/50 border border-red-200 rounded-lg text-[10px] text-red-700 font-medium leading-relaxed" id={`insight-disclaimer-${idx}`}>
-            <AlertCircle className="w-4 h-4 inline mr-1 text-red-600 shrink-0 align-sub" />
+          <div key={idx} className="mt-4 p-3 bg-destructive/50 border border-destructive/20 rounded-lg text-[10px] text-destructive font-medium leading-relaxed" id={`insight-disclaimer-${idx}`}>
+            <AlertCircle className="w-4 h-4 inline mr-1 text-destructive shrink-0 align-sub" />
             {line.replace(/\*\*/g, '')}
           </div>
         );
@@ -142,7 +142,7 @@ export function AiClinicalInsightsSidebar({
       // Emoticons / Highlight warning
       if (line.includes('⚠️')) {
         return (
-          <div key={idx} className="my-2 p-2.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs flex items-center gap-1.5 font-semibold" id={`insight-warning-${idx}`}>
+          <div key={idx} className="my-2 p-2.5 bg-warning/5 border border-warning/20 text-warning rounded-lg text-xs flex items-center gap-1.5 font-semibold" id={`insight-warning-${idx}`}>
             <span>{line}</span>
           </div>
         );
@@ -185,7 +185,7 @@ export function AiClinicalInsightsSidebar({
         </div>
         <div className="flex items-center gap-1.5" id="insights-header-actions">
           {isSimulated && (
-            <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] px-1.5 py-0.5 rounded" id="simulated-badge">
+            <Badge className="bg-warning/5 text-warning border-warning/20 text-[9px] px-1.5 py-0.5 rounded" id="simulated-badge">
               Simulated
             </Badge>
           )}

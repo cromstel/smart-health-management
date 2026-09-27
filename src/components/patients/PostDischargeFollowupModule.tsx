@@ -205,19 +205,19 @@ export function PostDischargeFollowupModule() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Banner */}
-      <div className="p-4 rounded-xl bg-primary border border-emerald-500/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border border-success/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
-            <PhoneCall className="h-7 w-7 text-emerald-400 animate-bounce" />
+          <div className="p-3 rounded-xl bg-success/20 border border-success/30 text-emerald-300">
+            <PhoneCall className="h-7 w-7 text-success animate-bounce" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold tracking-tight text-primary-foreground">
                 Automated Post-Discharge Outreach & Task Center
               </h2>
-              <Badge className="bg-emerald-600 text-white font-mono text-[10px]">READMISSION PREVENTION</Badge>
+              <Badge className="bg-success text-white font-mono text-[10px]">READMISSION PREVENTION</Badge>
             </div>
-            <p className="text-xs text-emerald-200/80 mt-0.5">
+            <p className="text-xs text-success/80 mt-0.5">
               Automatically schedules and assigns 4-phase nurse follow-up outreach calls to prevent 30-day hospital readmissions
             </p>
           </div>
@@ -225,7 +225,7 @@ export function PostDischargeFollowupModule() {
 
         <Button
           onClick={() => setIsEnrollModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-emerald-400/30 shrink-0"
+          className="bg-success hover:bg-success text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-success/30 shrink-0"
         >
           <Plus className="h-4 w-4" />
           <span>Schedule Post-Discharge Plan</span>
@@ -234,43 +234,43 @@ export function PostDischargeFollowupModule() {
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-emerald-500/30 bg-emerald-950/10">
+        <Card className="border-success/30 bg-success/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-emerald-500 uppercase tracking-wider">Outreach Calls Due Today</p>
-              <p className="text-2xl font-black text-emerald-500">{dueTodayCount} Calls</p>
+              <p className="text-[11px] font-semibold text-success uppercase tracking-wider">Outreach Calls Due Today</p>
+              <p className="text-2xl font-black text-success">{dueTodayCount} Calls</p>
             </div>
-            <Clock className="h-7 w-7 text-emerald-500" />
+            <Clock className="h-7 w-7 text-success" />
           </CardContent>
         </Card>
 
-        <Card className="border-rose-500/30 bg-rose-950/10">
+        <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-rose-500 uppercase tracking-wider">Overdue Outreach Tasks</p>
-              <p className="text-2xl font-black text-rose-500">{overdueCount} Patients</p>
+              <p className="text-[11px] font-semibold text-destructive uppercase tracking-wider">Overdue Outreach Tasks</p>
+              <p className="text-2xl font-black text-destructive">{overdueCount} Patients</p>
             </div>
-            <AlertTriangle className="h-7 w-7 text-rose-500" />
+            <AlertTriangle className="h-7 w-7 text-destructive" />
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/30 bg-amber-950/10">
+        <Card className="border-warning/30 bg-warning/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider">High Readmission Risk</p>
-              <p className="text-2xl font-black text-amber-500">{highRiskCount} Patients</p>
+              <p className="text-[11px] font-semibold text-warning uppercase tracking-wider">High Readmission Risk</p>
+              <p className="text-2xl font-black text-warning">{highRiskCount} Patients</p>
             </div>
-            <ShieldAlert className="h-7 w-7 text-amber-500" />
+            <ShieldAlert className="h-7 w-7 text-warning" />
           </CardContent>
         </Card>
 
-        <Card className="border-indigo-500/30 bg-indigo-950/10">
+        <Card className="border-info/30 bg-info/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Nursing Team Lead</p>
+              <p className="text-[11px] font-semibold text-info uppercase tracking-wider">Nursing Team Lead</p>
               <p className="text-xl font-bold text-indigo-300">Nurse Amina Y.</p>
             </div>
-            <UserCheck className="h-7 w-7 text-indigo-400" />
+            <UserCheck className="h-7 w-7 text-info" />
           </CardContent>
         </Card>
       </div>
@@ -280,7 +280,7 @@ export function PostDischargeFollowupModule() {
         <CardHeader className="pb-3 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-emerald-500" />
+              <Calendar className="h-4 w-4 text-success" />
               Patient Outreach Task Queue
             </CardTitle>
             <CardDescription className="text-xs">
@@ -337,7 +337,7 @@ export function PostDischargeFollowupModule() {
                   </TableCell>
 
                   <TableCell>
-                    <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                    <Badge variant="outline" className="text-[10px] font-mono border-success/40 text-success dark:text-success">
                       {t.phase}
                     </Badge>
                   </TableCell>
@@ -346,10 +346,10 @@ export function PostDischargeFollowupModule() {
                     <Badge
                       className={`text-[9px] font-bold font-mono ${
                         t.readmissionRisk === 'HIGH'
-                          ? 'bg-rose-600 text-white'
+                          ? 'bg-destructive text-white'
                           : t.readmissionRisk === 'MODERATE'
-                          ? 'bg-amber-500 text-black'
-                          : 'bg-emerald-600 text-white'
+                          ? 'bg-warning text-black'
+                          : 'bg-success text-white'
                       }`}
                     >
                       {t.readmissionRisk} RISK
@@ -362,9 +362,9 @@ export function PostDischargeFollowupModule() {
                     <span
                       className={
                         t.status === 'OVERDUE'
-                          ? 'text-rose-600 font-bold'
+                          ? 'text-destructive font-bold'
                           : t.status === 'DUE_TODAY'
-                          ? 'text-emerald-600 font-semibold'
+                          ? 'text-success font-semibold'
                           : 'text-muted-foreground'
                       }
                     >
@@ -374,17 +374,17 @@ export function PostDischargeFollowupModule() {
 
                   <TableCell className="text-right">
                     {t.status === 'COMPLETED' ? (
-                      <Badge className="bg-emerald-600 text-white text-[10px] gap-1">
+                      <Badge className="bg-success text-white text-[10px] gap-1">
                         <CheckCircle2 className="h-3 w-3" /> Done
                       </Badge>
                     ) : t.status === 'ESCALATED' ? (
-                      <Badge className="bg-rose-600 text-white text-[10px] gap-1">
+                      <Badge className="bg-destructive text-white text-[10px] gap-1">
                         <ShieldAlert className="h-3 w-3" /> Escalated
                       </Badge>
                     ) : (
                       <Button
                         size="sm"
-                        className="h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        className="h-7 text-[11px] font-bold bg-success hover:bg-success text-white gap-1"
                         onClick={() => handleOpenCallModal(t)}
                       >
                         <PhoneCall className="h-3 w-3" />
@@ -404,7 +404,7 @@ export function PostDischargeFollowupModule() {
         <Dialog open={isCallModalOpen} onOpenChange={setIsCallModalOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-base font-bold text-emerald-600 dark:text-emerald-400">
+              <DialogTitle className="flex items-center gap-2 text-base font-bold text-success dark:text-success">
                 <PhoneCall className="h-5 w-5" />
                 Perform Post-Discharge Call — {selectedTask.patientName}
               </DialogTitle>
@@ -415,8 +415,8 @@ export function PostDischargeFollowupModule() {
 
             <div className="space-y-4 py-2 text-xs">
               {/* Telephonic Checklist */}
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                <p className="font-bold text-emerald-800 dark:text-emerald-200">Standard Nurse Script Checklist:</p>
+              <div className="p-3 rounded-lg bg-success/10 border border-success/20 space-y-2">
+                <p className="font-bold text-success dark:text-emerald-200">Standard Nurse Script Checklist:</p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 text-[11px]">
                   <li>Verify patient has picked up all prescribed discharge medications</li>
                   <li>Inquire about current pain level (Scale 1-10) and wound recovery</li>
@@ -448,7 +448,7 @@ export function PostDischargeFollowupModule() {
 
               {/* Red Flag Symptoms */}
               <div className="space-y-2 pt-1 border-t">
-                <Label className="text-xs font-bold text-rose-500 flex items-center gap-1">
+                <Label className="text-xs font-bold text-destructive flex items-center gap-1">
                   <ShieldAlert className="h-3.5 w-3.5" /> Red-Flag Symptom Screening
                 </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -492,7 +492,7 @@ export function PostDischargeFollowupModule() {
 
                 <Button
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1 text-xs"
+                  className="bg-success hover:bg-success text-white font-bold gap-1 text-xs"
                   onClick={() => handleSaveCallOutcome(false)}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" /> Complete Outreach
@@ -507,7 +507,7 @@ export function PostDischargeFollowupModule() {
       <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-emerald-600 dark:text-emerald-400">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-success dark:text-success">
               <Plus className="h-5 w-5" />
               Schedule Post-Discharge Follow-up Plan
             </DialogTitle>
@@ -569,7 +569,7 @@ export function PostDischargeFollowupModule() {
             </div>
 
             <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 mt-2"
+              className="w-full bg-success hover:bg-success text-white font-bold h-9 mt-2"
               onClick={handleEnrollPatient}
             >
               Generate 4-Phase Outreach Plan

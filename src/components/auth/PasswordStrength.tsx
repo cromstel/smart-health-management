@@ -30,7 +30,7 @@ export function computePasswordStrength(password: string): PasswordStrengthResul
 }
 
 const strengthLabels = ['Very Weak', 'Weak', 'Moderate', 'Strong', 'Excellent'];
-const strengthColors = ['bg-destructive', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500', 'bg-emerald-600'];
+const strengthColors = ['bg-destructive', 'bg-warning', 'bg-warning', 'bg-success', 'bg-success'];
 
 /**
  * Shared password complexity meter used by Register and Reset Password pages.
@@ -80,7 +80,7 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
             {checks.map((check) => (
               <div
                 key={check.label}
-                className={`flex items-center gap-1.5 ${check.met ? 'text-emerald-500' : 'text-muted-foreground'}`}
+                className={`flex items-center gap-1.5 ${check.met ? 'text-success' : 'text-muted-foreground'}`}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>{check.label}</span>

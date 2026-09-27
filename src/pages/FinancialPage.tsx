@@ -468,8 +468,8 @@ export default function FinancialPage() {
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" aria-hidden="true" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Data</h3>
-            {accountsError && <p className="text-red-500 mb-2">Accounts: {accountsError}</p>}
-            {transactionsError && <p className="text-red-500 mb-2">Transactions: {transactionsError}</p>}
+            {accountsError && <p className="text-destructive mb-2">Accounts: {accountsError}</p>}
+            {transactionsError && <p className="text-destructive mb-2">Transactions: {transactionsError}</p>}
             <div className="flex gap-2 justify-center mt-4">
               {accountsError && (
                 <Button onClick={loadAccounts} variant="outline" className="gap-2">
@@ -566,7 +566,7 @@ export default function FinancialPage() {
                       <Label htmlFor="balance">Opening Balance</Label>
                       <Input id="balance" type="number" step="0.01" placeholder="0.00" value={newAccount.balance} onChange={handleAccountInputChange} />
                     </div>
-                    {newAccountError && <p className="text-red-500 text-sm" role="alert">{newAccountError}</p>}
+                    {newAccountError && <p className="text-destructive text-sm" role="alert">{newAccountError}</p>}
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => handleAccountDialogClose(false)} disabled={isSubmittingAccount}>Cancel</Button>
@@ -589,7 +589,7 @@ export default function FinancialPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">GHS {totalAssets.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
+                  <TrendingUp className="h-3 w-3 text-success" aria-hidden="true" />
                   +12% from last month
                 </p>
               </CardContent>
@@ -603,7 +603,7 @@ export default function FinancialPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">GHS {totalLiabilities.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingDown className="h-3 w-3 text-red-500" aria-hidden="true" />
+                  <TrendingDown className="h-3 w-3 text-destructive" aria-hidden="true" />
                   -5% from last month
                 </p>
               </CardContent>
@@ -617,7 +617,7 @@ export default function FinancialPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">GHS {totalIncome.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
+                  <TrendingUp className="h-3 w-3 text-success" aria-hidden="true" />
                   +18% from last month
                 </p>
               </CardContent>
@@ -791,7 +791,7 @@ export default function FinancialPage() {
                               <Label htmlFor="reference">Reference</Label>
                               <Input id="reference" placeholder="e.g., INV-001" value={newTransaction.reference} onChange={handleTransactionInputChange} />
                             </div>
-                            {newTransactionError && <p className="text-red-500 text-sm" role="alert">{newTransactionError}</p>}
+                            {newTransactionError && <p className="text-destructive text-sm" role="alert">{newTransactionError}</p>}
                           </div>
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" onClick={() => setIsTransactionDialogOpen(false)} disabled={isSubmittingTransaction}>Cancel</Button>

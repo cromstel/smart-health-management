@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
           {pageHeader}
           <Card className="w-full border border-border bg-card shadow-md">
             <CardHeader className="text-center space-y-2 pb-4 border-b border-border">
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto">
+              <div className="h-14 w-14 rounded-2xl bg-warning/15 border border-warning/30 text-warning flex items-center justify-center mx-auto">
                 <KeyRound className="h-7 w-7" aria-hidden="true" />
               </div>
               <CardTitle className="text-xl font-bold text-foreground">Reset Authorization Required</CardTitle>
@@ -180,7 +180,7 @@ export default function ResetPasswordPage() {
           {pageHeader}
           <Card className="w-full border border-border bg-card shadow-md text-center">
             <CardHeader className="space-y-3 pb-4">
-              <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto">
+              <div className="h-16 w-16 rounded-full bg-success/15 border border-success/30 text-success flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-9 w-9" aria-hidden="true" />
               </div>
               <CardTitle className="text-2xl font-bold text-foreground">Password Updated!</CardTitle>

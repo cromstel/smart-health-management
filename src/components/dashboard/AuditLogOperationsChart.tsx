@@ -157,21 +157,21 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
           <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
             <div className="text-xs font-medium text-muted-foreground">Total Operations</div>
             <div className="text-2xl font-bold text-foreground mt-1">{totalOps}</div>
-            <div className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+            <div className="text-xs text-success font-medium flex items-center gap-1 mt-1">
               <CheckCircle2 className="h-3.5 w-3.5" /> 100% Verified
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+          <div className="p-3 rounded-xl bg-accent/5 border border-accent/10">
             <div className="text-xs font-medium text-muted-foreground">Clinical & Patient Ops</div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{clinicalOps}</div>
-            <div className="text-xs text-blue-600 font-medium flex items-center gap-1 mt-1">
+            <div className="text-2xl font-bold text-accent dark:text-accent mt-1">{clinicalOps}</div>
+            <div className="text-xs text-accent font-medium flex items-center gap-1 mt-1">
               <FileText className="h-3.5 w-3.5" /> Active Records
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+          <div className="p-3 rounded-xl bg-warning/5 border border-warning/10">
             <div className="text-xs font-medium text-muted-foreground">Security & Access Events</div>
-            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{securityOps}</div>
-            <div className="text-xs text-amber-600 font-medium flex items-center gap-1 mt-1">
+            <div className="text-2xl font-bold text-warning dark:text-warning mt-1">{securityOps}</div>
+            <div className="text-xs text-warning font-medium flex items-center gap-1 mt-1">
               <ShieldAlert className="h-3.5 w-3.5" /> Monitored
             </div>
           </div>
@@ -210,11 +210,11 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
                               <span className="font-bold">{payload[0]?.value}</span>
                             </div>
                             <div className="flex items-center justify-between gap-4">
-                              <span className="font-medium text-blue-600">Clinical Actions:</span>
+                              <span className="font-medium text-accent">Clinical Actions:</span>
                               <span className="font-bold">{payload[1]?.value || 0}</span>
                             </div>
                             <div className="flex items-center justify-between gap-4">
-                              <span className="font-medium text-amber-600">Security & Auth:</span>
+                              <span className="font-medium text-warning">Security & Auth:</span>
                               <span className="font-bold">{payload[2]?.value || 0}</span>
                             </div>
                           </div>

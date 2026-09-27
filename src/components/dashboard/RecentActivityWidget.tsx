@@ -219,17 +219,17 @@ export default function RecentActivityWidget({ initialActivities = [], className
   const getCategoryIcon = (category: string, status?: string) => {
     switch (category) {
       case 'appointment':
-        return <Calendar className="h-4 w-4 text-blue-500" />;
+        return <Calendar className="h-4 w-4 text-accent" />;
       case 'alert':
         return status === 'critical' ? (
-          <AlertCircle className="h-4 w-4 text-red-500" />
+          <AlertCircle className="h-4 w-4 text-destructive" />
         ) : status === 'warning' ? (
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTriangle className="h-4 w-4 text-warning" />
         ) : (
-          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+          <ShieldCheck className="h-4 w-4 text-success" />
         );
       case 'audit':
-        return <FileText className="h-4 w-4 text-purple-500" />;
+        return <FileText className="h-4 w-4 text-info" />;
       case 'update':
       default:
         return <Activity className="h-4 w-4 text-accent" />;
@@ -241,9 +241,9 @@ export default function RecentActivityWidget({ initialActivities = [], className
       case 'critical':
         return <Badge variant="destructive" className="text-xs font-normal">Urgent</Badge>;
       case 'warning':
-        return <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-xs font-normal">Warning</Badge>;
+        return <Badge variant="outline" className="border-warning/40 text-warning dark:text-warning text-xs font-normal">Warning</Badge>;
       case 'success':
-        return <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 text-xs font-normal">Success</Badge>;
+        return <Badge variant="outline" className="border-success/40 text-success dark:text-success text-xs font-normal">Success</Badge>;
       case 'info':
       default:
         return <Badge variant="outline" className="text-xs font-normal">Update</Badge>;

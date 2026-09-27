@@ -127,7 +127,7 @@ export default function SharedPatientSummaryPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6" id="error-container">
         <Card className="w-full max-w-md border-slate-200 shadow-sm" id="error-card">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4" id="error-icon-wrapper">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4" id="error-icon-wrapper">
               <ShieldAlert className="h-6 w-6" id="error-icon" />
             </div>
             <CardTitle className="text-xl font-bold text-slate-900" id="error-title">Access Denied</CardTitle>
@@ -169,7 +169,7 @@ export default function SharedPatientSummaryPage() {
         <div className="bg-slate-900 text-white p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm" id="banner-header">
           <div className="space-y-1" id="banner-title-block">
             <div className="flex items-center gap-2" id="banner-badge-row">
-              <Badge className="bg-emerald-500 hover:bg-emerald-500 text-slate-950 font-bold px-2 py-0.5 rounded flex items-center gap-1 text-xs" id="secure-badge">
+              <Badge className="bg-success hover:bg-success text-slate-950 font-bold px-2 py-0.5 rounded flex items-center gap-1 text-xs" id="secure-badge">
                 <Lock className="w-3 h-3" /> Secure Link Active
               </Badge>
               <span className="text-slate-400 text-xs">Expires in: {timeLeft || 'Calculating...'}</span>
@@ -179,7 +179,7 @@ export default function SharedPatientSummaryPage() {
           </div>
           <div className="text-right sm:text-left self-stretch sm:self-auto pt-2 sm:pt-0 border-t border-slate-800 sm:border-0" id="banner-meta-block">
             <p className="text-xs text-slate-400">Patient Identity</p>
-            <p className="font-semibold text-sm sm:text-lg text-emerald-400">{sharedData.patientName}</p>
+            <p className="font-semibold text-sm sm:text-lg text-success">{sharedData.patientName}</p>
             <p className="text-xs text-slate-500">ID: {sharedData.patientId}</p>
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function SharedPatientSummaryPage() {
                 <Card className="border-slate-200 shadow-none bg-white hover:border-slate-300 transition-colors" id="bp-card">
                   <CardContent className="p-4 flex items-center justify-between" id="bp-card-content">
                     <div className="flex items-center gap-3" id="bp-info-block">
-                      <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg" id="bp-icon-bg">
+                      <div className="p-2.5 bg-destructive/5 text-destructive rounded-lg" id="bp-icon-bg">
                         <Gauge className="w-5 h-5" />
                       </div>
                       <div id="bp-labels">
@@ -207,9 +207,9 @@ export default function SharedPatientSummaryPage() {
                       </div>
                     </div>
                     <Badge className={`text-xs font-semibold px-2 py-0.5 capitalize ${
-                      latestVitals.status === 'normal' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                      latestVitals.status === 'elevated' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      'bg-red-50 text-red-700 border-red-200'
+                      latestVitals.status === 'normal' ? 'bg-success/5 text-success border-success/20' :
+                      latestVitals.status === 'elevated' ? 'bg-warning/5 text-warning border-warning/20' :
+                      'bg-destructive/5 text-destructive border-destructive/20'
                     }`} variant="outline" id="bp-badge">
                       {latestVitals.status}
                     </Badge>
@@ -220,8 +220,8 @@ export default function SharedPatientSummaryPage() {
                 <Card className="border-slate-200 shadow-none bg-white hover:border-slate-300 transition-colors" id="hr-card">
                   <CardContent className="p-4 flex items-center justify-between" id="hr-card-content">
                     <div className="flex items-center gap-3" id="hr-info-block">
-                      <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg animate-pulse" id="hr-icon-bg">
-                        <Heart className="w-5 h-5 fill-rose-600" />
+                      <div className="p-2.5 bg-destructive/5 text-destructive rounded-lg animate-pulse" id="hr-icon-bg">
+                        <Heart className="w-5 h-5 fill-destructive" />
                       </div>
                       <div id="hr-labels">
                         <p className="text-xs font-semibold text-slate-500">Heart Rate</p>
@@ -238,7 +238,7 @@ export default function SharedPatientSummaryPage() {
                 <Card className="border-slate-200 shadow-none bg-white hover:border-slate-300 transition-colors" id="spo2-card">
                   <CardContent className="p-4 flex items-center justify-between" id="spo2-card-content">
                     <div className="flex items-center gap-3" id="spo2-info-block">
-                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg" id="spo2-icon-bg">
+                      <div className="p-2.5 bg-accent/5 text-accent rounded-lg" id="spo2-icon-bg">
                         <Activity className="w-5 h-5" />
                       </div>
                       <div id="spo2-labels">
@@ -250,8 +250,8 @@ export default function SharedPatientSummaryPage() {
                     </div>
                     <Badge className={`text-xs font-semibold px-2 py-0.5 capitalize ${
                       latestVitals.oxygenSaturation !== undefined && latestVitals.oxygenSaturation >= 95 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-red-50 text-red-700 border-red-200'
+                        ? 'bg-success/5 text-success border-success/20' 
+                        : 'bg-destructive/5 text-destructive border-destructive/20'
                     }`} variant="outline" id="spo2-badge">
                       {latestVitals.oxygenSaturation !== undefined && latestVitals.oxygenSaturation >= 95 ? 'Normal' : 'Low / Unknown'}
                     </Badge>
@@ -262,7 +262,7 @@ export default function SharedPatientSummaryPage() {
                 <Card className="border-slate-200 shadow-none bg-white hover:border-slate-300 transition-colors" id="temp-card">
                   <CardContent className="p-4 flex items-center justify-between" id="temp-card-content">
                     <div className="flex items-center gap-3" id="temp-info-block">
-                      <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg" id="temp-icon-bg">
+                      <div className="p-2.5 bg-warning/5 text-warning rounded-lg" id="temp-icon-bg">
                         <Thermometer className="w-5 h-5" />
                       </div>
                       <div id="temp-labels">
@@ -271,7 +271,7 @@ export default function SharedPatientSummaryPage() {
                       </div>
                     </div>
                     <Badge className={`text-xs font-semibold px-2 py-0.5 capitalize ${
-                      latestVitals.temperature >= 38.0 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      latestVitals.temperature >= 38.0 ? 'bg-destructive/5 text-destructive border-destructive/20' : 'bg-success/5 text-success border-success/20'
                     }`} variant="outline" id="temp-badge">
                       {latestVitals.temperature >= 38.0 ? 'Fever' : 'Normal'}
                     </Badge>
@@ -365,7 +365,7 @@ export default function SharedPatientSummaryPage() {
                         {appt.type}
                       </Badge>
                     </div>
-                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold capitalize text-[10px]" variant="outline" id={`appt-badge-status-${appt.id}`}>
+                    <Badge className="bg-success/5 text-success border-success/20 font-bold capitalize text-[10px]" variant="outline" id={`appt-badge-status-${appt.id}`}>
                       {appt.status}
                     </Badge>
                   </CardHeader>
@@ -408,7 +408,7 @@ export default function SharedPatientSummaryPage() {
         {/* Footer info & warnings */}
         <div className="bg-slate-100 p-4 rounded-xl text-center space-y-1 border border-slate-200" id="shared-footer-warnings">
           <p className="text-xs text-slate-500 font-semibold flex items-center justify-center gap-1" id="footer-secure-message">
-            <Lock className="w-3.5 h-3.5 text-emerald-600" /> This clinical summary is securely generated and will self-expire in {timeLeft || '0s'}.
+            <Lock className="w-3.5 h-3.5 text-success" /> This clinical summary is securely generated and will self-expire in {timeLeft || '0s'}.
           </p>
           <p className="text-[10px] text-slate-400" id="footer-confidential-message">
             CONFIDENTIAL MEDICAL REPORT. Strictly intended for the patient and validated healthcare partners. Do not share credentials or duplicate access tokens.

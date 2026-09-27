@@ -144,21 +144,21 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
   return (
     <div className="space-y-6 animate-fade-in">
       {/* High-Pressure Emergency Banner Header */}
-      <div className="p-4 rounded-xl bg-primary border-2 border-rose-600 text-primary-foreground shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border-2 border-destructive text-primary-foreground shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-rose-600/30 border border-rose-500 animate-pulse text-rose-300">
-            <Siren className="h-8 w-8 text-rose-400" />
+          <div className="p-3 rounded-xl bg-destructive/30 border border-destructive animate-pulse text-rose-300">
+            <Siren className="h-8 w-8 text-destructive" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-extrabold tracking-tight uppercase flex items-center gap-2 text-rose-100">
                 STAT Emergency Triage View
               </h2>
-              <Badge className="bg-rose-600 text-white font-bold border-rose-400 animate-pulse">
+              <Badge className="bg-destructive text-white font-bold border-destructive animate-pulse">
                 HIGH PRESSURE MODE ACTIVE
               </Badge>
             </div>
-            <p className="text-xs text-rose-200/90 mt-0.5">
+            <p className="text-xs text-destructive/90 mt-0.5">
               Simplified high-speed layout focusing exclusively on Level-1 Resuscitation, Critical Vitals, and Bed Allocation
             </p>
           </div>
@@ -171,7 +171,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
             size="sm"
             onClick={handleCodeBlueBroadcast}
             disabled={statActionRunning === 'code_blue'}
-            className="h-9 px-3 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white border border-rose-400 shadow-md gap-1.5 animate-bounce"
+            className="h-9 px-3 text-xs font-bold bg-destructive hover:bg-destructive text-white border border-destructive shadow-md gap-1.5 animate-bounce"
           >
             <Zap className="h-4 w-4 fill-amber-300 text-amber-300" />
             <span>Broadcast CODE BLUE</span>
@@ -180,9 +180,9 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
           <Button
             size="sm"
             onClick={onOpenLogVitals}
-            className="h-9 px-3 text-xs font-bold bg-white text-rose-950 hover:bg-slate-100 shadow-md gap-1.5"
+            className="h-9 px-3 text-xs font-bold bg-white text-destructive hover:bg-slate-100 shadow-md gap-1.5"
           >
-            <Stethoscope className="h-4 w-4 text-rose-600" />
+            <Stethoscope className="h-4 w-4 text-destructive" />
             <span>Log STAT Vitals</span>
           </Button>
 
@@ -190,7 +190,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
             variant="outline"
             size="sm"
             onClick={onOpenHandover}
-            className="h-9 px-3 text-xs font-bold border-rose-400 text-white hover:bg-rose-900/50 gap-1.5"
+            className="h-9 px-3 text-xs font-bold border-destructive text-white hover:bg-destructive/50 gap-1.5"
           >
             <FileText className="h-4 w-4 text-rose-300" />
             <span>Shift Handover</span>
@@ -200,52 +200,52 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
 
       {/* Triage Stats Summary row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-rose-950/20 border-rose-500/30">
+        <Card className="bg-destructive/20 border-destructive/30">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Level-1 Red Cases</p>
-              <p className="text-2xl font-black text-rose-600 dark:text-rose-400">
+              <p className="text-[11px] font-semibold text-destructive uppercase tracking-wider">Level-1 Red Cases</p>
+              <p className="text-2xl font-black text-destructive dark:text-destructive">
                 {patients.filter((p) => p.triageLevel === 'RED').length} STAT
               </p>
             </div>
-            <ShieldAlert className="h-7 w-7 text-rose-500" />
+            <ShieldAlert className="h-7 w-7 text-destructive" />
           </CardContent>
         </Card>
 
-        <Card className="bg-amber-950/20 border-amber-500/30">
+        <Card className="bg-warning/20 border-warning/30">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Level-2 Amber Cases</p>
-              <p className="text-2xl font-black text-amber-500">
+              <p className="text-[11px] font-semibold text-warning uppercase tracking-wider">Level-2 Amber Cases</p>
+              <p className="text-2xl font-black text-warning">
                 {patients.filter((p) => p.triageLevel === 'AMBER').length} Urgent
               </p>
             </div>
-            <AlertTriangle className="h-7 w-7 text-amber-500" />
+            <AlertTriangle className="h-7 w-7 text-warning" />
           </CardContent>
         </Card>
 
-        <Card className="bg-emerald-950/20 border-emerald-500/30">
+        <Card className="bg-success/20 border-success/30">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Available ER Bays</p>
-              <p className="text-2xl font-black text-emerald-500">
+              <p className="text-[11px] font-semibold text-success uppercase tracking-wider">Available ER Bays</p>
+              <p className="text-2xl font-black text-success">
                 {beds.filter((b) => b.status === 'AVAILABLE').length} / {beds.length}
               </p>
             </div>
-            <Bed className="h-7 w-7 text-emerald-500" />
+            <Bed className="h-7 w-7 text-success" />
           </CardContent>
         </Card>
 
-        <Card className="bg-sky-950/20 border-sky-500/30">
+        <Card className="bg-accent/20 border-accent/30">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-sky-400 uppercase tracking-wider">Trauma Hotline</p>
+              <p className="text-[11px] font-semibold text-accent uppercase tracking-wider">Trauma Hotline</p>
               <p className="text-sm font-bold text-sky-300 flex items-center gap-1">
                 <PhoneCall className="h-3.5 w-3.5" />
                 Ext. 911 / 4402
               </p>
             </div>
-            <Activity className="h-7 w-7 text-sky-400" />
+            <Activity className="h-7 w-7 text-accent" />
           </CardContent>
         </Card>
       </div>
@@ -253,12 +253,12 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Emergency Patient List */}
         <div className="lg:col-span-8 space-y-4">
-          <Card className="border-rose-500/40 shadow-md">
+          <Card className="border-destructive/40 shadow-md">
             <CardHeader className="pb-3 border-b border-border">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
-                    <Heart className="h-5 w-5 text-rose-500 animate-pulse" />
+                    <Heart className="h-5 w-5 text-destructive animate-pulse" />
                     Immediate Emergency Patient Queue
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -279,14 +279,14 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
 
             <CardContent className="p-0 divide-y divide-border">
               {filteredPatients.map((p) => (
-                <div key={p.id} className="p-4 hover:bg-rose-500/5 transition-colors space-y-3">
+                <div key={p.id} className="p-4 hover:bg-destructive/5 transition-colors space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Badge
                         className={`text-xs font-bold ${
                           p.triageLevel === 'RED'
-                            ? 'bg-rose-600 text-white animate-pulse'
-                            : 'bg-amber-500 text-black'
+                            ? 'bg-destructive text-white animate-pulse'
+                            : 'bg-warning text-black'
                         }`}
                       >
                         {p.triageLevel} STAT
@@ -298,14 +298,14 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                             ({p.age}y, {p.gender})
                           </span>
                         </h4>
-                        <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
+                        <p className="text-xs font-semibold text-destructive dark:text-destructive mt-0.5">
                           {p.condition}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <Badge variant="outline" className="text-xs font-mono border-rose-500/40">
+                      <Badge variant="outline" className="text-xs font-mono border-destructive/40">
                         {p.bed}
                       </Badge>
                       <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
@@ -326,13 +326,13 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
                         Heart Rate
                       </span>
-                      <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{p.hr} bpm</span>
+                      <span className="font-mono font-bold text-destructive dark:text-destructive">{p.hr} bpm</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
                         SpO2 Saturation
                       </span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{p.spo2}%</span>
+                      <span className="font-mono font-bold text-success dark:text-success">{p.spo2}%</span>
                     </div>
                   </div>
 
@@ -344,14 +344,14 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                       onClick={() => {
                         toast.success(`Administered STAT IV Therapy order for ${p.name}`);
                       }}
-                      className="h-7 text-xs border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10"
+                      className="h-7 text-xs border-destructive/30 text-destructive dark:text-destructive hover:bg-destructive/10"
                     >
                       STAT Therapy Order
                     </Button>
                     <Button
                       size="sm"
                       onClick={onOpenLogVitals}
-                      className="h-7 text-xs bg-rose-600 text-white hover:bg-rose-700"
+                      className="h-7 text-xs bg-destructive text-white hover:bg-destructive"
                     >
                       Update Vitals
                     </Button>
@@ -367,7 +367,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
           <Card className="border border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
-                <Bed className="h-4 w-4 text-emerald-500" />
+                <Bed className="h-4 w-4 text-success" />
                 Emergency Bay Matrix
               </CardTitle>
               <CardDescription className="text-xs">
@@ -392,8 +392,8 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                     onClick={() => handleAllocateBed(b.id)}
                     className={`h-7 text-[11px] font-bold ${
                       b.status === 'AVAILABLE'
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        : 'border-rose-500/40 text-rose-600 dark:text-rose-400'
+                        ? 'bg-success text-white hover:bg-success'
+                        : 'border-destructive/40 text-destructive dark:text-destructive'
                     }`}
                   >
                     {b.status}

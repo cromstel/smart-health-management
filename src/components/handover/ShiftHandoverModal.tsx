@@ -234,7 +234,7 @@ HIPAA Certified Electronic Handover Document
                   <Badge
                     className={`text-[10px] px-1.5 py-0 font-bold ${
                       t.priority === 'URGENT'
-                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                        ? 'bg-destructive/10 text-destructive dark:text-destructive border-destructive/20'
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
@@ -245,8 +245,8 @@ HIPAA Certified Electronic Handover Document
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-xs text-success dark:text-emerald-300 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-success dark:text-success" />
             <span>
               All handovers are encrypted and logged in compliance with HIPAA electronic record transmission standards.
             </span>

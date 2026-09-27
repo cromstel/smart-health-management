@@ -419,7 +419,7 @@ export default function PatientsPage() {
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 activeTab === 'vitals'
-                  ? 'bg-card text-rose-500 shadow-sm'
+                  ? 'bg-card text-destructive shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -436,11 +436,11 @@ export default function PatientsPage() {
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 activeTab === 'trends'
-                  ? 'bg-card text-blue-600 dark:text-blue-400 shadow-sm'
+                  ? 'bg-card text-accent dark:text-accent shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <BarChart2 className="h-3.5 w-3.5 text-blue-500" aria-hidden="true" />
+              <BarChart2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
               <span>Vitals Trends</span>
             </button>
             <button
@@ -453,11 +453,11 @@ export default function PatientsPage() {
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 activeTab === 'followup'
-                  ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  ? 'bg-card text-success dark:text-success shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <FileText className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+              <FileText className="h-3.5 w-3.5 text-success" aria-hidden="true" />
               <span>Follow-up</span>
             </button>
           </div>
@@ -746,7 +746,7 @@ export default function PatientsPage() {
                       <div>
                         <Label className="text-muted-foreground text-xs">Status</Label>
                         <div>
-                          <Badge className={`mt-1 ${viewingPatient.status === 'Active' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'}`} variant="default">
+                          <Badge className={`mt-1 ${viewingPatient.status === 'Active' ? 'bg-success hover:bg-success text-white' : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'}`} variant="default">
                             {viewingPatient.status}
                           </Badge>
                         </div>
@@ -881,14 +881,14 @@ export default function PatientsPage() {
                 )}
                 <Button
                   variant="outline"
-                  className="gap-2 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                  className="gap-2 border-accent/30 text-accent dark:text-accent hover:bg-accent/10"
                   onClick={() => {
                     setSelectedPatientForNotes(undefined);
                     setIsVoiceNotesOpen(true);
                   }}
                   title="Open Voice-to-Text Clinical Dictation"
                 >
-                  <Mic className="h-4 w-4 text-blue-500 animate-pulse" aria-hidden="true" />
+                  <Mic className="h-4 w-4 text-accent animate-pulse" aria-hidden="true" />
                   <span className="hidden sm:inline">Voice Notes</span>
                 </Button>
                 <Button variant="outline" size="icon" title="Filter list" aria-label="Filter list">
@@ -985,9 +985,9 @@ export default function PatientsPage() {
                                     setActiveTab('vitals');
                                     setSearchParams({ tab: 'vitals', patientId: patient.id });
                                   }}
-                                  className="text-rose-600 focus:text-rose-600 font-medium"
+                                  className="text-destructive focus:text-destructive font-medium"
                                 >
-                                  <Heart className="mr-2 h-4 w-4 text-rose-500" aria-hidden="true" />
+                                  <Heart className="mr-2 h-4 w-4 text-destructive" aria-hidden="true" />
                                   Track Vitals
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -995,9 +995,9 @@ export default function PatientsPage() {
                                     setSelectedPatientForNotes(patient.id);
                                     setIsVoiceNotesOpen(true);
                                   }}
-                                  className="text-blue-600 focus:text-blue-600 font-medium"
+                                  className="text-accent focus:text-accent font-medium"
                                 >
-                                  <Mic className="mr-2 h-4 w-4 text-blue-500" aria-hidden="true" />
+                                  <Mic className="mr-2 h-4 w-4 text-accent" aria-hidden="true" />
                                   Dictate Voice Notes
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleViewPatient(patient)}>

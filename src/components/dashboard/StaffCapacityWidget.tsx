@@ -424,7 +424,7 @@ export default function StaffCapacityWidget() {
               </Badge>
             )}
             {quotaExceededCount > 0 && (
-              <Badge variant="destructive" className="gap-1 bg-amber-600 dark:bg-amber-700 text-white shadow-sm">
+              <Badge variant="destructive" className="gap-1 bg-warning dark:bg-warning text-white shadow-sm">
                 <ShieldAlert className="h-3 w-3" />
                 {quotaExceededCount} Over Quota
               </Badge>
@@ -439,7 +439,7 @@ export default function StaffCapacityWidget() {
                 onClick={handleExportCSV}
                 title="Download CSV Report"
               >
-                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <FileSpreadsheet className="h-3.5 w-3.5 text-success dark:text-success" />
                 <span>Export CSV</span>
               </Button>
               <Button 
@@ -449,7 +449,7 @@ export default function StaffCapacityWidget() {
                 onClick={handleExportPDF}
                 title="Download PDF Summary"
               >
-                <Download className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                <Download className="h-3.5 w-3.5 text-accent dark:text-accent" />
                 <span>PDF</span>
               </Button>
             </div>
@@ -500,7 +500,7 @@ export default function StaffCapacityWidget() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5 text-purple-500 dark:text-purple-400" />
+              <Sparkles className="h-3.5 w-3.5 text-info dark:text-info" />
               <span>7-Day AI Forecast</span>
             </button>
           </div>
@@ -549,20 +549,20 @@ export default function StaffCapacityWidget() {
                 const percentage = Math.round((clinician.load / clinician.maxCapacity) * 100);
                 const isExpanded = !!expandedClinicianIds[clinician.id];
                 
-                let statusColor = "bg-emerald-500";
-                let textColor = "text-emerald-500 bg-emerald-500/10";
+                let statusColor = "bg-success";
+                let textColor = "text-success bg-success/10";
                 let cardBorder = "border-border";
                 let statusLabel = "Optimal";
 
                 if (percentage >= 100) {
-                  statusColor = "bg-rose-500";
-                  textColor = "text-rose-500 bg-rose-500/10 font-bold";
-                  cardBorder = "border-rose-300 dark:border-rose-900/80 bg-rose-500/[0.03] shadow-xs";
+                  statusColor = "bg-destructive";
+                  textColor = "text-destructive bg-destructive/10 font-bold";
+                  cardBorder = "border-destructive/30 dark:border-destructive/80 bg-destructive/[0.03] shadow-xs";
                   statusLabel = "CRITICAL / OVER THRESHOLD";
                 } else if (percentage >= 80) {
-                  statusColor = "bg-amber-500";
-                  textColor = "text-amber-500 bg-amber-500/10 font-semibold";
-                  cardBorder = "border-amber-300 dark:border-amber-950";
+                  statusColor = "bg-warning";
+                  textColor = "text-warning bg-warning/10 font-semibold";
+                  cardBorder = "border-warning/30 dark:border-warning";
                   statusLabel = "Nearing Limit";
                 }
 
@@ -573,7 +573,7 @@ export default function StaffCapacityWidget() {
                   >
                     {/* Visual Alert Pulse Line for Threshold Exceeded */}
                     {isExceededThreshold && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-rose-500 animate-pulse" />
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-destructive animate-pulse" />
                     )}
 
                     <div className="flex items-start justify-between gap-3">
@@ -582,11 +582,11 @@ export default function StaffCapacityWidget() {
                           {/* Pulsing Visual Status Alert Icon */}
                           {isExceededThreshold ? (
                             <div className="relative flex items-center justify-center shrink-0">
-                              <span className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-rose-400 opacity-75" />
-                              <AlertOctagon className="h-4 w-4 text-rose-600 dark:text-rose-400 relative z-10" />
+                              <span className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-destructive opacity-75" />
+                              <AlertOctagon className="h-4 w-4 text-destructive dark:text-destructive relative z-10" />
                             </div>
                           ) : (
-                            <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                            <div className="h-2 w-2 rounded-full bg-success shrink-0" />
                           )}
 
                           <h5 className="font-bold text-sm text-slate-900 dark:text-slate-50 flex items-center gap-1.5">
@@ -604,14 +604,14 @@ export default function StaffCapacityWidget() {
 
                           {/* Visual Alert Badge for Exceeded Threshold */}
                           {isExceededThreshold && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white shadow-xs animate-bounce">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive text-white shadow-xs animate-bounce">
                               <AlertTriangle className="h-2.5 w-2.5" />
                               DAILY THRESHOLD EXCEEDED ({clinician.load}/{clinician.maxCapacity})
                             </span>
                           )}
 
                           {isOverQuota && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-900">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning dark:bg-warning/60 dark:text-amber-300 border border-warning/30 dark:border-warning">
                               <ShieldAlert className="h-2.5 w-2.5" />
                               QUOTA OVERFLOW
                             </span>
@@ -643,10 +643,10 @@ export default function StaffCapacityWidget() {
                     <div className="space-y-1">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-muted-foreground">
-                          Patient Load: <span className={`font-mono font-bold ${isExceededThreshold ? 'text-rose-600 dark:text-rose-400 font-extrabold' : 'text-slate-800 dark:text-slate-200'}`}>{clinician.load} / {clinician.maxCapacity}</span>
+                          Patient Load: <span className={`font-mono font-bold ${isExceededThreshold ? 'text-destructive dark:text-destructive font-extrabold' : 'text-slate-800 dark:text-slate-200'}`}>{clinician.load} / {clinician.maxCapacity}</span>
                         </span>
                         <span className="text-muted-foreground">
-                          Weekly Appointments: <span className={`font-mono font-bold ${isOverQuota ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-200'}`}>{clinician.weeklyAppointments} / {clinician.weeklyQuota} quota</span>
+                          Weekly Appointments: <span className={`font-mono font-bold ${isOverQuota ? 'text-warning dark:text-warning' : 'text-slate-800 dark:text-slate-200'}`}>{clinician.weeklyAppointments} / {clinician.weeklyQuota} quota</span>
                         </span>
                       </div>
                       <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
@@ -727,8 +727,8 @@ export default function StaffCapacityWidget() {
         {/* TAB 2: 7-DAY AI FORECAST VIEW */}
         {activeTab === 'forecast' && (
           <div className="space-y-4 animate-in fade-in-50 duration-200">
-            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-xs space-y-1">
-              <div className="font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+            <div className="p-3 bg-info/10 border border-info/20 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-info dark:text-info flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4" />
                 AI Workload Prediction Engine (Next 7 Days)
               </div>
@@ -756,7 +756,7 @@ export default function StaffCapacityWidget() {
                       </div>
 
                       {highSurgeDays > 0 && (
-                        <Badge variant="outline" className="text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-900 bg-rose-500/10 text-[10px] font-bold">
+                        <Badge variant="outline" className="text-destructive dark:text-destructive border-destructive/30 dark:border-destructive bg-destructive/10 text-[10px] font-bold">
                           {highSurgeDays} High Surge Days Projected
                         </Badge>
                       )}
@@ -766,11 +766,11 @@ export default function StaffCapacityWidget() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
                       {clinician.forecast7Days.map((point, idx) => {
                         const isOver = point.predictedLoad >= point.capacity;
-                        let badgeColor = 'border-emerald-200 text-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30 dark:text-emerald-300';
+                        let badgeColor = 'border-success/20 text-success bg-success/50 dark:bg-success/30 dark:text-emerald-300';
                         if (point.surgeRisk === 'high') {
-                          badgeColor = 'border-rose-300 text-rose-700 bg-rose-50 dark:bg-rose-950/50 dark:text-rose-300 font-bold';
+                          badgeColor = 'border-destructive/30 text-destructive bg-destructive/5 dark:bg-destructive/50 dark:text-rose-300 font-bold';
                         } else if (point.surgeRisk === 'moderate') {
-                          badgeColor = 'border-amber-200 text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300';
+                          badgeColor = 'border-warning/20 text-warning bg-warning/5 dark:bg-warning/40 dark:text-amber-300';
                         }
 
                         return (
@@ -782,7 +782,7 @@ export default function StaffCapacityWidget() {
                               {point.predictedLoad} <span className="text-[10px] font-normal text-muted-foreground">/ {point.capacity}</span>
                             </div>
                             {isOver && (
-                              <div className="text-[9px] font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-tighter">
+                              <div className="text-[9px] font-extrabold text-destructive dark:text-destructive uppercase tracking-tighter">
                                 OVER CAPACITY
                               </div>
                             )}

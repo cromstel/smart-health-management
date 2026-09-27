@@ -165,7 +165,7 @@ export function WaitTimeMonitorWidget() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Clock className="h-5 w-5 text-amber-500 animate-pulse" />
+              <Clock className="h-5 w-5 text-warning animate-pulse" />
               Real-Time Department Wait Time Monitor
             </CardTitle>
             <CardDescription className="text-xs">
@@ -175,12 +175,12 @@ export function WaitTimeMonitorWidget() {
 
           <div className="flex items-center gap-2">
             {criticalCount > 0 && (
-              <Badge className="bg-rose-600 text-white font-bold animate-bounce text-[10px]">
+              <Badge className="bg-destructive text-white font-bold animate-bounce text-[10px]">
                 🔴 {criticalCount} CRITICAL DELAY
               </Badge>
             )}
             {warningCount > 0 && (
-              <Badge className="bg-amber-500 text-black font-bold text-[10px]">
+              <Badge className="bg-warning text-black font-bold text-[10px]">
                 🟡 {warningCount} DELAY WARNING
               </Badge>
             )}
@@ -196,9 +196,9 @@ export function WaitTimeMonitorWidget() {
               key={dept.id}
               className={`p-3.5 rounded-xl border transition-all ${
                 dept.status === 'CRITICAL'
-                  ? 'bg-rose-950/20 border-rose-500/50 shadow-rose-500/10'
+                  ? 'bg-destructive/20 border-destructive/50 shadow-destructive/10'
                   : dept.status === 'WARNING'
-                  ? 'bg-amber-950/20 border-amber-500/40'
+                  ? 'bg-warning/20 border-warning/40'
                   : 'bg-card border-border'
               }`}
             >
@@ -207,10 +207,10 @@ export function WaitTimeMonitorWidget() {
                 <Badge
                   className={`text-[9px] font-bold font-mono ${
                     dept.status === 'CRITICAL'
-                      ? 'bg-rose-600 text-white'
+                      ? 'bg-destructive text-white'
                       : dept.status === 'WARNING'
-                      ? 'bg-amber-500 text-black'
-                      : 'bg-emerald-600 text-white'
+                      ? 'bg-warning text-black'
+                      : 'bg-success text-white'
                   }`}
                 >
                   {dept.avgWaitMins} mins avg
@@ -250,7 +250,7 @@ export function WaitTimeMonitorWidget() {
               {dept.status !== 'NORMAL' && (
                 <Button
                   size="sm"
-                  className="w-full mt-3 h-7 text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white gap-1"
+                  className="w-full mt-3 h-7 text-[11px] font-bold bg-destructive hover:bg-destructive text-white gap-1"
                   onClick={() => {
                     setSelectedDeptForIntervention(dept);
                     setIsInterventionModalOpen(true);
@@ -270,7 +270,7 @@ export function WaitTimeMonitorWidget() {
         <Dialog open={isInterventionModalOpen} onOpenChange={setIsInterventionModalOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-base font-bold text-rose-500">
+              <DialogTitle className="flex items-center gap-2 text-base font-bold text-destructive">
                 <ShieldAlert className="h-5 w-5" />
                 Administrative Delay Intervention
               </DialogTitle>
@@ -280,8 +280,8 @@ export function WaitTimeMonitorWidget() {
             </DialogHeader>
 
             <div className="space-y-3 py-2 text-xs">
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 space-y-1">
-                <p className="font-bold text-rose-700 dark:text-rose-300">Longest Delayed Patient:</p>
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 space-y-1">
+                <p className="font-bold text-destructive dark:text-rose-300">Longest Delayed Patient:</p>
                 <p className="text-foreground font-semibold">
                   {selectedDeptForIntervention.longestWaitingPatient} — Waiting {selectedDeptForIntervention.longestWaitTimeMins} mins
                 </p>
@@ -291,7 +291,7 @@ export function WaitTimeMonitorWidget() {
                 <Button
                   onClick={() => handleReallocateStaff(selectedDeptForIntervention.id)}
                   disabled={isReallocating}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 gap-2"
+                  className="bg-info hover:bg-info text-white font-bold h-9 gap-2"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>Dispatch Floating Staff (+2 Clinicians)</span>
@@ -300,7 +300,7 @@ export function WaitTimeMonitorWidget() {
                 <Button
                   onClick={() => handleNotifyChargeNurse(selectedDeptForIntervention.department)}
                   variant="outline"
-                  className="font-semibold h-9 gap-2 border-rose-500/30 text-rose-600 dark:text-rose-400"
+                  className="font-semibold h-9 gap-2 border-destructive/30 text-destructive dark:text-destructive"
                 >
                   <Send className="h-4 w-4" />
                   <span>Send Urgent SMS to Charge Nurse</span>

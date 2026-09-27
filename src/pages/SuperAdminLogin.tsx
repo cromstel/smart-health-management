@@ -97,7 +97,7 @@ const SuperAdminLogin = React.memo(() => {
 
         {/* Security Warning Banner */}
         <motion.div
-          className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-500 flex items-center gap-2.5 text-xs"
+          className="p-3 rounded-xl bg-warning/10 border border-warning/25 text-warning flex items-center gap-2.5 text-xs"
           role="alert"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

@@ -162,35 +162,35 @@ export function VoiceNavigationButton() {
           aria-label={isListening ? 'Stop Voice Command Listener' : 'Start Voice Command Listener'}
           className={`relative h-10 w-10 rounded-full transition-all ${
             isListening
-              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-400 dark:border-rose-700 animate-pulse'
+              ? 'bg-destructive/15 text-destructive dark:text-destructive border border-destructive dark:border-destructive animate-pulse'
               : 'hover:bg-secondary text-foreground'
           }`}
           title="Voice Command Navigation (Alt+V)"
         >
           {isListening ? (
-            <Mic className="h-5 w-5 text-rose-600 dark:text-rose-400 animate-bounce" />
+            <Mic className="h-5 w-5 text-destructive dark:text-destructive animate-bounce" />
           ) : (
             <Mic className="h-5 w-5 text-muted-foreground" />
           )}
           {isListening && (
             <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-88 p-4 shadow-2xl border-rose-500/20">
+      <PopoverContent align="end" className="w-88 p-4 shadow-2xl border-destructive/20">
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b pb-2.5">
             <div className="flex items-center gap-2">
-              <div className={`p-2 rounded-lg ${isListening ? 'bg-rose-500/10 text-rose-600' : 'bg-primary/10 text-primary'}`}>
+              <div className={`p-2 rounded-lg ${isListening ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
                 <Navigation className="h-4 w-4" />
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                   Voice Command Listener
-                  {isListening && <Badge variant="destructive" className="text-[10px] h-4 px-1.5 bg-rose-600">LISTENING</Badge>}
+                  {isListening && <Badge variant="destructive" className="text-[10px] h-4 px-1.5 bg-destructive">LISTENING</Badge>}
                 </h4>
                 <p className="text-[11px] text-muted-foreground">
                   Speak to navigate instantly across hospital modules
@@ -230,7 +230,7 @@ export function VoiceNavigationButton() {
               {transcript ? `"${transcript}"` : isListening ? 'Listening for command... (e.g. "Go to patients")' : 'Click Listen or press Alt+V to start'}
             </p>
             {lastMatchedCommand && (
-              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 pt-1 border-t border-border/40">
+              <div className="text-[11px] text-success dark:text-success flex items-center gap-1 pt-1 border-t border-border/40">
                 <CheckCircle2 className="h-3 w-3 shrink-0" />
                 <span>Matched: <strong>{lastMatchedCommand}</strong></span>
               </div>
@@ -240,7 +240,7 @@ export function VoiceNavigationButton() {
           {/* Available Commands Grid */}
           <div className="space-y-1.5">
             <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500" />
+              <Sparkles className="h-3 w-3 text-warning" />
               Quick Command Phrase Shortcuts:
             </span>
             <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">

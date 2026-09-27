@@ -97,12 +97,12 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
           {/* Content */}
           <div className="relative z-10 max-w-2xl mt-12">
             <motion.div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-semibold mb-8 border border-emerald-500/30"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/20 text-success text-sm font-semibold mb-8 border border-success/30"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
               System Operational
             </motion.div>
 

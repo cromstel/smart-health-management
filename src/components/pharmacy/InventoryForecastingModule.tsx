@@ -227,19 +227,19 @@ export function InventoryForecastingModule() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="p-4 rounded-xl bg-primary border border-indigo-500/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border border-info/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
-            <Sparkles className="h-7 w-7 text-indigo-400 animate-pulse" />
+          <div className="p-3 rounded-xl bg-info/20 border border-info/30 text-indigo-300">
+            <Sparkles className="h-7 w-7 text-info animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold tracking-tight text-primary-foreground flex items-center gap-2">
                 Predictive AI Inventory Forecasting
               </h2>
-              <Badge className="bg-indigo-600 text-white font-mono text-[10px]">30-DAY BURN ENGINE</Badge>
+              <Badge className="bg-info text-white font-mono text-[10px]">30-DAY BURN ENGINE</Badge>
             </div>
-            <p className="text-xs text-indigo-200/80 mt-0.5">
+            <p className="text-xs text-info/80 mt-0.5">
               Analyzes historical consumption velocity to predict medication stockout dates and auto-generate restock purchase orders
             </p>
           </div>
@@ -248,7 +248,7 @@ export function InventoryForecastingModule() {
         <Button
           onClick={handleAutoGeneratePurchaseOrders}
           disabled={isGeneratingOrders || criticalCount + highCount === 0}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 shrink-0 border border-indigo-400/30"
+          className="bg-info hover:bg-info text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 shrink-0 border border-info/30"
         >
           <ShoppingCart className="h-4 w-4" />
           <span>Auto-Generate Restock Orders (${totalSuggestedCost.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>
@@ -257,43 +257,43 @@ export function InventoryForecastingModule() {
 
       {/* Analytics Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-rose-500/30 bg-rose-950/10">
+        <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-rose-500 uppercase tracking-wider">Critical Shortages (&lt;5 Days)</p>
-              <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{criticalCount} Medications</p>
+              <p className="text-[11px] font-semibold text-destructive uppercase tracking-wider">Critical Shortages (&lt;5 Days)</p>
+              <p className="text-2xl font-black text-destructive dark:text-destructive">{criticalCount} Medications</p>
             </div>
-            <AlertTriangle className="h-7 w-7 text-rose-500 animate-bounce" />
+            <AlertTriangle className="h-7 w-7 text-destructive animate-bounce" />
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/30 bg-amber-950/10">
+        <Card className="border-warning/30 bg-warning/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider">High Risk Stock (&lt;14 Days)</p>
-              <p className="text-2xl font-black text-amber-500">{highCount} Medications</p>
+              <p className="text-[11px] font-semibold text-warning uppercase tracking-wider">High Risk Stock (&lt;14 Days)</p>
+              <p className="text-2xl font-black text-warning">{highCount} Medications</p>
             </div>
-            <TrendingDown className="h-7 w-7 text-amber-500" />
+            <TrendingDown className="h-7 w-7 text-warning" />
           </CardContent>
         </Card>
 
-        <Card className="border-indigo-500/30 bg-indigo-950/10">
+        <Card className="border-info/30 bg-info/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Seasonal Demand Surge</p>
-              <p className="text-2xl font-black text-indigo-400">{(seasonalSurgeMultiplier * 100 - 100).toFixed(0)}% Surge</p>
+              <p className="text-[11px] font-semibold text-info uppercase tracking-wider">Seasonal Demand Surge</p>
+              <p className="text-2xl font-black text-info">{(seasonalSurgeMultiplier * 100 - 100).toFixed(0)}% Surge</p>
             </div>
-            <TrendingUp className="h-7 w-7 text-indigo-400" />
+            <TrendingUp className="h-7 w-7 text-info" />
           </CardContent>
         </Card>
 
-        <Card className="border-emerald-500/30 bg-emerald-950/10">
+        <Card className="border-success/30 bg-success/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-emerald-500 uppercase tracking-wider">Auto-Order Procurement</p>
-              <p className="text-2xl font-black text-emerald-500">${totalSuggestedCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+              <p className="text-[11px] font-semibold text-success uppercase tracking-wider">Auto-Order Procurement</p>
+              <p className="text-2xl font-black text-success">${totalSuggestedCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
             </div>
-            <PackageCheck className="h-7 w-7 text-emerald-500" />
+            <PackageCheck className="h-7 w-7 text-success" />
           </CardContent>
         </Card>
       </div>
@@ -307,7 +307,7 @@ export function InventoryForecastingModule() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <CardTitle className="text-base font-bold flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-indigo-500" />
+                    <Layers className="h-4 w-4 text-info" />
                     Medication Consumption & Shortage Predictions
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -342,7 +342,7 @@ export function InventoryForecastingModule() {
               </div>
 
               {/* Seasonal Factor Slider Controls */}
-              <div className="mt-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="mt-3 p-3 rounded-lg bg-info/10 border border-info/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div>
                   <span className="font-semibold text-foreground block">Seasonal Surge Factor Simulation</span>
                   <span className="text-muted-foreground text-[11px]">Simulate disease outbreak or emergency influx demand changes</span>
@@ -355,9 +355,9 @@ export function InventoryForecastingModule() {
                     max={2.0}
                     step={0.1}
                     onChange={(e) => setSeasonalSurgeMultiplier(parseFloat(e.target.value))}
-                    className="w-32 accent-indigo-600 h-2 bg-muted rounded-lg cursor-pointer"
+                    className="w-32 accent-info h-2 bg-muted rounded-lg cursor-pointer"
                   />
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 w-12 text-right">
+                  <span className="font-mono font-bold text-info dark:text-info w-12 text-right">
                     {seasonalSurgeMultiplier.toFixed(1)}x
                   </span>
                 </div>
@@ -382,7 +382,7 @@ export function InventoryForecastingModule() {
                       key={item.id}
                       onClick={() => setSelectedItemForChart(item)}
                       className={`cursor-pointer transition-colors ${
-                        selectedItemForChart.id === item.id ? 'bg-indigo-500/10' : ''
+                        selectedItemForChart.id === item.id ? 'bg-info/10' : ''
                       }`}
                     >
                       <TableCell>
@@ -406,10 +406,10 @@ export function InventoryForecastingModule() {
                         <Badge
                           className={`font-bold font-mono text-[10px] ${
                             item.riskLevel === 'CRITICAL'
-                              ? 'bg-rose-600 text-white animate-pulse'
+                              ? 'bg-destructive text-white animate-pulse'
                               : item.riskLevel === 'HIGH'
-                              ? 'bg-amber-500 text-black'
-                              : 'bg-emerald-600 text-white'
+                              ? 'bg-warning text-black'
+                              : 'bg-success text-white'
                           }`}
                         >
                           {item.daysOfSupply} Days
@@ -422,7 +422,7 @@ export function InventoryForecastingModule() {
 
                       <TableCell className="text-right font-mono text-xs">
                         {item.suggestedReorderQty > 0 ? (
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                          <span className="font-bold text-info dark:text-info">
                             +{item.suggestedReorderQty} units
                           </span>
                         ) : (
@@ -439,11 +439,11 @@ export function InventoryForecastingModule() {
 
         {/* Right 4 Cols: Trajectory Chart & Supplier Action Panel */}
         <div className="lg:col-span-4 space-y-4">
-          <Card className="border-indigo-500/30">
+          <Card className="border-info/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center justify-between">
                 <span>Depletion Trajectory</span>
-                <Badge variant="outline" className="text-[10px] border-indigo-400 text-indigo-400">
+                <Badge variant="outline" className="text-[10px] border-info text-info">
                   {selectedItemForChart.id}
                 </Badge>
               </CardTitle>
@@ -484,7 +484,7 @@ export function InventoryForecastingModule() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Recommended Order:</span>
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                  <span className="font-mono font-bold text-info dark:text-info">
                     {selectedItemForChart.suggestedReorderQty} units ($
                     {(selectedItemForChart.suggestedReorderQty * selectedItemForChart.unitPrice).toFixed(2)})
                   </span>
@@ -493,7 +493,7 @@ export function InventoryForecastingModule() {
 
               <Button
                 size="sm"
-                className="w-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                className="w-full text-xs font-bold bg-info hover:bg-info text-white gap-1.5"
                 onClick={() => {
                   toast.success(`Drafted order for ${selectedItemForChart.name} (${selectedItemForChart.suggestedReorderQty} units)`);
                 }}

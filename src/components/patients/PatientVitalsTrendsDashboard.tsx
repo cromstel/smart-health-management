@@ -88,7 +88,7 @@ export function PatientVitalsTrendsDashboard() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase">Heart Rate</p>
                 <h3 className="text-2xl font-bold mt-1 text-foreground">74 <span className="text-xs font-normal text-muted-foreground">bpm</span></h3>
-                <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">Normal Sinus Rhythm</span>
+                <span className="text-[11px] text-success font-medium flex items-center gap-1 mt-1">Normal Sinus Rhythm</span>
               </div>
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                 <Heart className="h-5 w-5" />
@@ -101,9 +101,9 @@ export function PatientVitalsTrendsDashboard() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase">Blood Pressure</p>
                 <h3 className="text-2xl font-bold mt-1 text-foreground">120/80 <span className="text-xs font-normal text-muted-foreground">mmHg</span></h3>
-                <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">Optimal Range</span>
+                <span className="text-[11px] text-success font-medium flex items-center gap-1 mt-1">Optimal Range</span>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+              <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
                 <Activity className="h-5 w-5" />
               </div>
             </CardContent>
@@ -114,9 +114,9 @@ export function PatientVitalsTrendsDashboard() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase">Blood Oxygen (SpO2)</p>
                 <h3 className="text-2xl font-bold mt-1 text-foreground">98%</h3>
-                <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">Fully Saturated</span>
+                <span className="text-[11px] text-success font-medium flex items-center gap-1 mt-1">Fully Saturated</span>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+              <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
                 <Wind className="h-5 w-5" />
               </div>
             </CardContent>
@@ -127,9 +127,9 @@ export function PatientVitalsTrendsDashboard() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase">Temperature</p>
                 <h3 className="text-2xl font-bold mt-1 text-foreground">98.6°F</h3>
-                <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">Afebrille</span>
+                <span className="text-[11px] text-success font-medium flex items-center gap-1 mt-1">Afebrille</span>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+              <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
                 <Thermometer className="h-5 w-5" />
               </div>
             </CardContent>
@@ -142,7 +142,7 @@ export function PatientVitalsTrendsDashboard() {
         <Card className="border-border bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Heart className="h-4 w-4 text-rose-500" />
+              <Heart className="h-4 w-4 text-destructive" />
               Heart Rate & Blood Pressure Trend
             </CardTitle>
           </CardHeader>
@@ -172,7 +172,7 @@ export function PatientVitalsTrendsDashboard() {
         <Card className="border-border bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Wind className="h-4 w-4 text-emerald-500" />
+              <Wind className="h-4 w-4 text-success" />
               Blood Oxygen & Temperature Trend
             </CardTitle>
           </CardHeader>

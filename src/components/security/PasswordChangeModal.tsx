@@ -115,11 +115,11 @@ export function PasswordChangeModal() {
                 Strength: {['Weak', 'Fair', 'Good', 'Strong', 'Excellent'][Math.max(0, strength.score - 1)]}
               </div>
               <div className="flex gap-2 mt-1">
-                <span className={strength.length ? 'text-green-600' : 'text-red-600'}>8+ chars</span>
-                <span className={strength.upper ? 'text-green-600' : 'text-red-600'}>A–Z</span>
-                <span className={strength.lower ? 'text-green-600' : 'text-red-600'}>a–z</span>
-                <span className={strength.number ? 'text-green-600' : 'text-red-600'}>0–9</span>
-                <span className={strength.special ? 'text-green-600' : 'text-red-600'}>symbol</span>
+                <span className={strength.length ? 'text-success' : 'text-destructive'}>8+ chars</span>
+                <span className={strength.upper ? 'text-success' : 'text-destructive'}>A–Z</span>
+                <span className={strength.lower ? 'text-success' : 'text-destructive'}>a–z</span>
+                <span className={strength.number ? 'text-success' : 'text-destructive'}>0–9</span>
+                <span className={strength.special ? 'text-success' : 'text-destructive'}>symbol</span>
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function PasswordChangeModal() {
           </div>
 
           {error && <div className="text-sm text-destructive">{error}</div>}
-          {success && <div className="text-sm text-green-600">{success}</div>}
+          {success && <div className="text-sm text-success">{success}</div>}
         </div>
 
         <DialogFooter>

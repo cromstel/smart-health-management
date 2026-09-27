@@ -150,19 +150,19 @@ export function DiagnosticHelperBanner({
 
   if (!latestVital || outliers.length === 0) {
     return (
-      <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 flex items-center justify-between text-xs">
+      <div className="p-3.5 rounded-xl border border-success/30 bg-success/10 dark:bg-success/20 text-success dark:text-emerald-300 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+          <div className="p-1.5 rounded-full bg-success/20 text-success dark:text-success">
             <CheckCircle2 className="h-4 w-4" />
           </div>
           <div>
             <span className="font-bold">Diagnostic Helper Check: Nominal Vitals</span>
-            <p className="text-[11px] text-emerald-700 dark:text-emerald-400 opacity-90">
+            <p className="text-[11px] text-success dark:text-success opacity-90">
               All biometrics (BP, Pulse, Temperature, SpO2) are within standard clinical physiological thresholds.
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-[10px]">
+        <Badge variant="outline" className="border-success/40 text-success dark:text-emerald-300 text-[10px]">
           No Outliers
         </Badge>
       </div>
@@ -178,20 +178,20 @@ export function DiagnosticHelperBanner({
   };
 
   return (
-    <Card className="border-2 border-rose-500/80 bg-rose-50/70 dark:bg-rose-950/40 shadow-sm overflow-hidden">
-      <div className="bg-rose-600 text-white px-4 py-2 flex items-center justify-between text-xs font-bold">
+    <Card className="border-2 border-destructive/80 bg-destructive/70 dark:bg-destructive/40 shadow-sm overflow-hidden">
+      <div className="bg-destructive text-white px-4 py-2 flex items-center justify-between text-xs font-bold">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 animate-bounce" />
           <span>DIAGNOSTIC HELPER: OUTLIER PARAMETER ALERT DETECTED ({outliers.length})</span>
         </div>
-        <Badge variant="secondary" className="bg-white text-rose-700 text-[10px] uppercase font-extrabold">
+        <Badge variant="secondary" className="bg-white text-destructive text-[10px] uppercase font-extrabold">
           Immediate Action Required
         </Badge>
       </div>
 
       <CardContent className="p-4 space-y-3">
-        <div className="text-xs text-rose-950 dark:text-rose-200">
-          <p className="font-semibold text-sm mb-1 text-rose-900 dark:text-rose-100">
+        <div className="text-xs text-destructive dark:text-rose-200">
+          <p className="font-semibold text-sm mb-1 text-destructive dark:text-rose-100">
             Outlier biometrics recorded for <span className="underline">{patientName}</span> ({patientId}) at{' '}
             <span className="font-mono">{latestVital.recordedAt}</span>:
           </p>
@@ -202,35 +202,35 @@ export function DiagnosticHelperBanner({
           {outliers.map((outlier) => (
             <div
               key={outlier.id}
-              className="p-3 rounded-lg border-2 border-rose-300 dark:border-rose-800 bg-white dark:bg-slate-900 shadow-sm space-y-1.5"
+              className="p-3 rounded-lg border-2 border-destructive/30 dark:border-destructive bg-white dark:bg-slate-900 shadow-sm space-y-1.5"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-destructive dark:text-destructive shrink-0" />
                   {outlier.metricLabel}
                 </span>
                 {/* Outlier value highlighted in bold red */}
-                <span className="font-mono font-extrabold text-sm text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/80 px-2 py-0.5 rounded border border-rose-300 dark:border-rose-800">
+                <span className="font-mono font-extrabold text-sm text-destructive dark:text-destructive bg-destructive/10 dark:bg-destructive/80 px-2 py-0.5 rounded border border-destructive/30 dark:border-destructive">
                   {outlier.value}
                 </span>
               </div>
 
-              <div className="text-[11px] text-rose-800 dark:text-rose-300 font-medium leading-tight">
+              <div className="text-[11px] text-destructive dark:text-rose-300 font-medium leading-tight">
                 {outlier.message}
               </div>
 
-              <div className="text-[10px] text-muted-foreground pt-1 border-t border-rose-100 dark:border-slate-800 flex justify-between">
+              <div className="text-[10px] text-muted-foreground pt-1 border-t border-destructive/10 dark:border-slate-800 flex justify-between">
                 <span>Normal Target: {outlier.normalRange}</span>
-                <span className="text-rose-600 font-semibold uppercase">{outlier.severity}</span>
+                <span className="text-destructive font-semibold uppercase">{outlier.severity}</span>
               </div>
             </div>
           ))}
         </div>
 
         {/* Action Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-rose-200 dark:border-rose-900/60 text-xs">
-          <div className="text-[11px] text-rose-800 dark:text-rose-300 italic flex items-center gap-1">
-            <Activity className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-destructive/20 dark:border-destructive/60 text-xs">
+          <div className="text-[11px] text-destructive dark:text-rose-300 italic flex items-center gap-1">
+            <Activity className="h-3.5 w-3.5 text-destructive shrink-0" />
             <span>Automatic diagnostic telemetry system flagged outlier bounds.</span>
           </div>
 
@@ -239,20 +239,20 @@ export function DiagnosticHelperBanner({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs border-rose-300 text-rose-800 hover:bg-rose-100 dark:text-rose-200 dark:hover:bg-rose-950"
+                className="h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 dark:text-rose-200 dark:hover:bg-destructive"
                 onClick={() => setAcknowledged(true)}
               >
                 Acknowledge Alert
               </Button>
             ) : (
-              <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+              <span className="text-[11px] text-success font-bold flex items-center gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Alert Acknowledged
               </span>
             )}
 
             <Button
               size="sm"
-              className="h-8 text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold gap-1.5 shadow-sm"
+              className="h-8 text-xs bg-destructive hover:bg-destructive text-white font-bold gap-1.5 shadow-sm"
               onClick={handleTriggerNotification}
               disabled={notified}
             >

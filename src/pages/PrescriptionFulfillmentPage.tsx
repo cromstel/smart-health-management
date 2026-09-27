@@ -270,7 +270,7 @@ export default function PrescriptionFulfillmentPage() {
                         key={p.id}
                         className={`p-4 rounded-lg border transition-all duration-200 ${
                           isNearingRefill
-                            ? 'border-rose-200 bg-rose-50/20 dark:border-rose-900/30 dark:bg-rose-950/10'
+                            ? 'border-destructive/20 bg-destructive/20 dark:border-destructive/30 dark:bg-destructive/10'
                             : 'border-border bg-card'
                         }`}
                       >
@@ -283,7 +283,7 @@ export default function PrescriptionFulfillmentPage() {
                                 {p.patientId}
                               </Badge>
                               {isNearingRefill && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 bg-rose-500 text-white font-semibold">
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 bg-destructive text-white font-semibold">
                                   <AlertCircle className="h-2.5 w-2.5 mr-1" aria-hidden="true" />
                                   Refill Nearing ({remainingDays}d left)
                                 </Badge>
@@ -304,11 +304,11 @@ export default function PrescriptionFulfillmentPage() {
                               <span className="flex items-center gap-1">
                                 Status: 
                                 {isOutOfStock ? (
-                                  <span className="text-rose-500 font-semibold">Out of Stock</span>
+                                  <span className="text-destructive font-semibold">Out of Stock</span>
                                 ) : stockLevel <= (dbMed?.low_stock_threshold || 10) ? (
-                                  <span className="text-amber-500 font-semibold">Low Stock ({stockLevel} left)</span>
+                                  <span className="text-warning font-semibold">Low Stock ({stockLevel} left)</span>
                                 ) : (
-                                  <span className="text-emerald-500 font-semibold">In Stock ({stockLevel} units)</span>
+                                  <span className="text-success font-semibold">In Stock ({stockLevel} units)</span>
                                 )}
                               </span>
                             </div>
@@ -325,10 +325,10 @@ export default function PrescriptionFulfillmentPage() {
                                 <div 
                                   className={`h-full transition-all duration-300 ${
                                     remainingDays <= 2
-                                      ? 'bg-rose-500'
+                                      ? 'bg-destructive'
                                       : remainingDays <= 5
-                                      ? 'bg-amber-500'
-                                      : 'bg-emerald-500'
+                                      ? 'bg-warning'
+                                      : 'bg-success'
                                   }`} 
                                   style={{ width: `${progressPercentage}%` }}
                                 />

@@ -278,10 +278,10 @@ export default function InventoryReportsPage() {
             onClick={handleExportPDF}
             title="Export report to PDF"
           >
-            <FileText className="h-4 w-4 text-red-500" aria-hidden="true" />
+            <FileText className="h-4 w-4 text-destructive" aria-hidden="true" />
             <span>Export PDF</span>
             {preferredFormat === 'PDF' && (
-              <span className="ml-1 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold">
+              <span className="ml-1 text-[10px] bg-destructive text-white rounded-full px-1.5 py-0.5 font-bold">
                 Pref
               </span>
             )}
@@ -296,10 +296,10 @@ export default function InventoryReportsPage() {
             onClick={exportCSV}
             title="Export report to CSV"
           >
-            <Download className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+            <Download className="h-4 w-4 text-success" aria-hidden="true" />
             <span>Export CSV</span>
             {preferredFormat === 'CSV' && (
-              <span className="ml-1 text-[10px] bg-emerald-500 text-white rounded-full px-1.5 py-0.5 font-bold">
+              <span className="ml-1 text-[10px] bg-success text-white rounded-full px-1.5 py-0.5 font-bold">
                 Pref
               </span>
             )}

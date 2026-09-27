@@ -195,7 +195,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
     });
 
     toast.info(`Dispatched wireless alert pager to ${administration.assignedStaff} regarding ${administration.patientName}'s ${administration.medicineName} dosage.`, {
-      icon: <Bell className="h-4 w-4 text-amber-500 animate-bounce" />
+      icon: <Bell className="h-4 w-4 text-warning animate-bounce" />
     });
   };
 
@@ -255,7 +255,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Scheduled</span>
               <p className="text-xl font-bold text-slate-900">{totalDoses}</p>
             </div>
-            <div className="p-2.5 rounded-lg bg-indigo-50 text-indigo-600">
+            <div className="p-2.5 rounded-lg bg-info/5 text-info">
               <Calendar className="w-5 h-5" />
             </div>
           </CardContent>
@@ -265,9 +265,9 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Doses Completed</span>
-              <p className="text-xl font-bold text-emerald-600">{completedDoses}</p>
+              <p className="text-xl font-bold text-success">{completedDoses}</p>
             </div>
-            <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-600">
+            <div className="p-2.5 rounded-lg bg-success/5 text-success">
               <CheckCircle className="w-5 h-5" />
             </div>
           </CardContent>
@@ -277,9 +277,9 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Pending Doses</span>
-              <p className="text-xl font-bold text-blue-600">{pendingDoses}</p>
+              <p className="text-xl font-bold text-accent">{pendingDoses}</p>
             </div>
-            <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
+            <div className="p-2.5 rounded-lg bg-accent/5 text-accent">
               <Clock className="w-5 h-5" />
             </div>
           </CardContent>
@@ -289,9 +289,9 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Overdue Alerts</span>
-              <p className="text-xl font-bold text-red-600 animate-pulse">{overdueDoses}</p>
+              <p className="text-xl font-bold text-destructive animate-pulse">{overdueDoses}</p>
             </div>
-            <div className="p-2.5 rounded-lg bg-red-50 text-red-600">
+            <div className="p-2.5 rounded-lg bg-destructive/5 text-destructive">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </CardContent>
@@ -338,7 +338,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                       </td>
                       <td className="p-3">
                         <div className="text-slate-900 dark:text-slate-200 flex items-center gap-1.5 font-bold">
-                          <Pill className="h-3 w-3 text-indigo-500 shrink-0" /> {admin.medicineName}
+                          <Pill className="h-3 w-3 text-info shrink-0" /> {admin.medicineName}
                         </div>
                         <div className="text-[10px] text-muted-foreground">Dosage: {admin.dosage}</div>
                       </td>
@@ -347,7 +347,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                           <Clock className="h-3.5 w-3.5 text-muted-foreground" /> {admin.scheduledTime}
                         </div>
                         {admin.administeredAt && (
-                          <div className="text-[9px] text-emerald-600 font-semibold mt-0.5">Given: {admin.administeredAt}</div>
+                          <div className="text-[9px] text-success font-semibold mt-0.5">Given: {admin.administeredAt}</div>
                         )}
                       </td>
                       <td className="p-3 text-muted-foreground">
@@ -357,9 +357,9 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                       </td>
                       <td className="p-3">
                         <Badge className={`text-[10px] font-bold py-0.5 px-2 capitalize shrink-0 ${
-                          admin.status === 'Administered' ? 'bg-emerald-50 hover:bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          admin.status === 'Overdue' ? 'bg-red-50 hover:bg-red-50 text-red-700 border-red-200 animate-pulse' :
-                          'bg-amber-50 hover:bg-amber-50 text-amber-700 border-amber-200'
+                          admin.status === 'Administered' ? 'bg-success/5 hover:bg-success/5 text-success border-success/20' :
+                          admin.status === 'Overdue' ? 'bg-destructive/5 hover:bg-destructive/5 text-destructive border-destructive/20 animate-pulse' :
+                          'bg-warning/5 hover:bg-warning/5 text-warning border-warning/20'
                         }`} variant="outline">
                           {admin.status}
                         </Badge>
@@ -373,7 +373,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                                   variant="outline"
                                   size="icon"
                                   onClick={() => handleNudgeStaff(admin.id)}
-                                  className="h-7 w-7 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 shrink-0"
+                                  className="h-7 w-7 text-warning hover:text-warning hover:bg-warning/5 border-warning/20 shrink-0"
                                   title="Broadcast Urgency Pager Alert"
                                 >
                                   <Bell className="h-3.5 w-3.5" />
@@ -382,14 +382,14 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                               <Button
                                 size="sm"
                                 onClick={() => handleAdminister(admin.id)}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] h-7 px-2 shrink-0 cursor-pointer"
+                                className="bg-success hover:bg-success text-white font-semibold text-[10px] h-7 px-2 shrink-0 cursor-pointer"
                               >
                                 Sign-off
                               </Button>
                             </>
                           )}
                           {admin.status === 'Administered' && (
-                            <span className="text-emerald-600 font-bold flex items-center gap-1 text-[10px] pr-1.5 py-1">
+                            <span className="text-success font-bold flex items-center gap-1 text-[10px] pr-1.5 py-1">
                               <CheckCircle className="h-3.5 w-3.5" /> Checked
                             </span>
                           )}
@@ -506,7 +506,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                     </Button>
                     <Button 
                       type="submit" 
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 font-semibold cursor-pointer"
+                      className="bg-info hover:bg-info text-white text-xs h-8 font-semibold cursor-pointer"
                     >
                       Confirm Schedule
                     </Button>
@@ -520,7 +520,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                 <CardTitle className="text-sm font-bold text-foreground">Clinical Quality Advisory</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-3.5 text-xs text-muted-foreground leading-relaxed">
-                <div className="flex gap-2 p-2.5 rounded bg-amber-50 dark:bg-amber-500/5 text-amber-800 dark:text-amber-400 border border-amber-200/50">
+                <div className="flex gap-2 p-2.5 rounded bg-warning/5 dark:bg-warning/5 text-warning dark:text-warning border border-warning/50">
                   <ShieldAlert className="h-4.5 w-4.5 shrink-0" />
                   <p className="text-[11px] leading-snug">
                     Overdue administrations represent a critical threat to patient stabilization. Dispatch pager prompts immediately when alarms trigger.

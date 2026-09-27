@@ -333,7 +333,7 @@ export default function LoginPage() {
               {import.meta.env.DEV && (
                 <div className="p-3 rounded-lg bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
                   <div className="font-semibold text-foreground flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                    <ShieldCheck className="h-3.5 w-3.5 text-success" aria-hidden="true" />
                     Standard Authenticator Configured
                   </div>
                   <p>

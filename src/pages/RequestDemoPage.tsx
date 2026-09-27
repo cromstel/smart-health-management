@@ -69,7 +69,7 @@ export default function RequestDemoPage() {
             <li className="flex gap-3"><Users className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Bring the right people.</strong><br />Invite clinical, operational, and IT stakeholders to the same session.</span></li>
             <li className="flex gap-3"><Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">A clear next step.</strong><br />You will receive a response through your preferred contact method.</span></li>
           </ul>
-          <p className="mt-10 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" /> Please do not include patient or other sensitive health information.</p>
+          <p className="mt-10 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" /> Please do not include patient or other sensitive health information.</p>
         </section>
 
         <Card className="border-border bg-card shadow-lg shadow-border/50">
@@ -80,7 +80,7 @@ export default function RequestDemoPage() {
           <CardContent className="pt-6">
             {submitted ? (
               <div className="space-y-5 py-10 text-center" role="status" aria-live="polite">
-                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600"><CheckCircle2 className="h-9 w-9" aria-hidden="true" /></span>
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-9 w-9" aria-hidden="true" /></span>
                 <div><h2 className="text-xl font-semibold text-foreground">Your request is on its way.</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">A Smart MediCare product specialist will contact you using your selected preference.</p></div>
                 <Button asChild><Link to="/">Return to home</Link></Button>
               </div>

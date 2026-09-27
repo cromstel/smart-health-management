@@ -208,10 +208,10 @@ export function DeviceSyncModule({
           <CardDescription id="device-sync-desc">Connect and sync patient biometrics directly from smartwatches and medical cuffs.</CardDescription>
         </div>
         <Badge className={`text-xs font-semibold px-2 py-0.5 capitalize ${
-          syncStatus === 'connected' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-          syncStatus === 'scanning' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-          syncStatus === 'syncing' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-          syncStatus === 'synced' ? 'bg-emerald-100 text-emerald-800' :
+          syncStatus === 'connected' ? 'bg-success/5 text-success border-success/20' :
+          syncStatus === 'scanning' ? 'bg-accent/5 text-accent border-accent/20' :
+          syncStatus === 'syncing' ? 'bg-warning/5 text-warning border-warning/20' :
+          syncStatus === 'synced' ? 'bg-success/10 text-success' :
           'bg-slate-100 text-slate-700'
         }`} variant="outline" id="sync-status-badge">
           {syncStatus}
@@ -281,10 +281,10 @@ export function DeviceSyncModule({
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3" id="active-connection-card">
               <div className="flex justify-between items-center" id="connection-meta-row">
                 <div className="flex items-center gap-2" id="connection-title">
-                  <Watch className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <Watch className="w-4 h-4 text-success animate-pulse" />
                   <span className="text-xs font-bold text-slate-700">{connectedDevice.name}</span>
                 </div>
-                <Button variant="ghost" className="text-[10px] text-red-500 hover:text-red-600 p-0 h-auto hover:bg-transparent" onClick={disconnectDevice} id="disconnect-btn">
+                <Button variant="ghost" className="text-[10px] text-destructive hover:text-destructive p-0 h-auto hover:bg-transparent" onClick={disconnectDevice} id="disconnect-btn">
                   Disconnect
                 </Button>
               </div>
@@ -297,7 +297,7 @@ export function DeviceSyncModule({
               <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-hr-gauge">
                 <div className="flex justify-between items-center" id="live-hr-header">
                   <span className="text-[10px] font-bold text-slate-500">PULSE RATE</span>
-                  <Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse" />
+                  <Heart className="w-4 h-4 text-destructive fill-destructive animate-pulse" />
                 </div>
                 <div className="mt-2" id="live-hr-value-block">
                   <span className="text-2xl font-black text-slate-950">{heartRate}</span>
@@ -309,7 +309,7 @@ export function DeviceSyncModule({
               <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-bp-gauge">
                 <div className="flex justify-between items-center" id="live-bp-header">
                   <span className="text-[10px] font-bold text-slate-500">BLOOD PRESSURE</span>
-                  <Gauge className="w-4 h-4 text-indigo-500" />
+                  <Gauge className="w-4 h-4 text-info" />
                 </div>
                 <div className="mt-2" id="live-bp-value-block">
                   <span className="text-2xl font-black text-slate-950">{systolicBp}/{diastolicBp}</span>
@@ -321,7 +321,7 @@ export function DeviceSyncModule({
               <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-spo2-gauge">
                 <div className="flex justify-between items-center" id="live-spo2-header">
                   <span className="text-[10px] font-bold text-slate-500">OXYGEN SAT</span>
-                  <Activity className="w-4 h-4 text-blue-500" />
+                  <Activity className="w-4 h-4 text-accent" />
                 </div>
                 <div className="mt-2" id="live-spo2-value-block">
                   <span className="text-2xl font-black text-slate-950">{oxygenSaturation}%</span>
@@ -332,7 +332,7 @@ export function DeviceSyncModule({
               <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-temp-gauge">
                 <div className="flex justify-between items-center" id="live-temp-header">
                   <span className="text-[10px] font-bold text-slate-500">CORE TEMP</span>
-                  <Thermometer className="w-4 h-4 text-amber-500 animate-bounce" />
+                  <Thermometer className="w-4 h-4 text-warning animate-bounce" />
                 </div>
                 <div className="mt-2" id="live-temp-value-block">
                   <span className="text-2xl font-black text-slate-950">{temperature}°C</span>
@@ -359,8 +359,8 @@ export function DeviceSyncModule({
 
             {syncStatus === 'synced' && (
               <div className="space-y-3" id="synced-success-panel">
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold" id="synced-success-alert">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div className="bg-success/5 border border-success/20 text-success p-3 rounded-xl flex items-center gap-2 text-xs font-semibold" id="synced-success-alert">
+                  <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
                   <span>Telemetry successfully saved to active health history ledger!</span>
                 </div>
                 <Button

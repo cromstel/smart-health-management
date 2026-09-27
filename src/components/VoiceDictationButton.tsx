@@ -166,7 +166,7 @@ export const VoiceDictationButton: React.FC<VoiceDictationButtonProps> = ({
         onClick={toggleListening}
         className={`h-9 w-9 rounded-full shrink-0 transition-all ${
           isListening 
-            ? "animate-pulse ring-2 ring-red-500 bg-red-600 text-white hover:bg-red-700" 
+            ? "animate-pulse ring-2 ring-destructive bg-destructive text-white hover:bg-destructive" 
             : "hover:bg-primary/10 border-border text-foreground hover:text-accent"
         }`}
         title={isListening ? "Stop hands-free dictation" : "Dictate clinical assessment hands-free"}
@@ -182,10 +182,10 @@ export const VoiceDictationButton: React.FC<VoiceDictationButtonProps> = ({
         <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 max-w-xs animate-fade-in no-print">
           {/* Dynamic Soundwave Waves */}
           <div className="flex items-end gap-0.5 h-3.5">
-            <div className="w-0.5 bg-red-500 rounded-full transition-all" style={{ height: `${audioLevel * 0.4}%` }} />
-            <div className="w-0.5 bg-red-500 rounded-full transition-all duration-75" style={{ height: `${audioLevel * 0.9}%` }} />
-            <div className="w-0.5 bg-red-500 rounded-full transition-all duration-100" style={{ height: `${audioLevel * 0.6}%` }} />
-            <div className="w-0.5 bg-red-500 rounded-full transition-all duration-150" style={{ height: `${audioLevel * 0.3}%` }} />
+            <div className="w-0.5 bg-destructive rounded-full transition-all" style={{ height: `${audioLevel * 0.4}%` }} />
+            <div className="w-0.5 bg-destructive rounded-full transition-all duration-75" style={{ height: `${audioLevel * 0.9}%` }} />
+            <div className="w-0.5 bg-destructive rounded-full transition-all duration-100" style={{ height: `${audioLevel * 0.6}%` }} />
+            <div className="w-0.5 bg-destructive rounded-full transition-all duration-150" style={{ height: `${audioLevel * 0.3}%` }} />
           </div>
           <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider animate-pulse">
             Dictating Hands-free...

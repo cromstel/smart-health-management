@@ -84,7 +84,7 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle className="flex items-center gap-2 text-lg font-bold">
-            <Heart className="h-5 w-5 text-rose-500 animate-pulse" />
+            <Heart className="h-5 w-5 text-destructive animate-pulse" />
             7-Day Patient Heart Rate & Blood Pressure Trends
           </CardTitle>
           <CardDescription>
@@ -109,37 +109,37 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/10">
+          <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/10">
             <div className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Average Heart Rate</span>
-              <Activity className="h-4 w-4 text-rose-500" />
+              <Activity className="h-4 w-4 text-destructive" />
             </div>
             <div className="text-2xl font-bold text-foreground mt-1">
               {stats.avgHR} <span className="text-xs font-normal text-muted-foreground">BPM</span>
             </div>
-            <div className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-1">
+            <div className="text-xs text-destructive font-medium flex items-center gap-1 mt-1">
               <TrendingUp className="h-3.5 w-3.5" /> Stable Rhythm
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+          <div className="p-3 rounded-xl bg-accent/5 border border-accent/10">
             <div className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Avg Blood Pressure</span>
-              <Heart className="h-4 w-4 text-blue-500" />
+              <Heart className="h-4 w-4 text-accent" />
             </div>
             <div className="text-2xl font-bold text-foreground mt-1">
               {stats.avgSys}/{stats.avgDia} <span className="text-xs font-normal text-muted-foreground">mmHg</span>
             </div>
-            <div className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+            <div className="text-xs text-success font-medium flex items-center gap-1 mt-1">
               <ArrowUpRight className="h-3.5 w-3.5" /> Optimal Range
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+          <div className="p-3 rounded-xl bg-success/5 border border-success/10">
             <div className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Telemetry Sync</span>
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
             </div>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">100%</div>
-            <div className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+            <div className="text-2xl font-bold text-success dark:text-success mt-1">100%</div>
+            <div className="text-xs text-success font-medium flex items-center gap-1 mt-1">
               Verified 7-Day Log
             </div>
           </div>
@@ -163,15 +163,15 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
                       return (
                         <div className="rounded-lg border bg-background p-3 shadow-md space-y-1 text-xs">
                           <div className="font-semibold text-foreground mb-1">{label} ({data.date})</div>
-                          <div className="flex items-center justify-between gap-4 text-rose-600 font-medium">
+                          <div className="flex items-center justify-between gap-4 text-destructive font-medium">
                             <span>Heart Rate:</span>
                             <span className="font-bold">{data.heartRate} BPM</span>
                           </div>
-                          <div className="flex items-center justify-between gap-4 text-blue-600 font-medium">
+                          <div className="flex items-center justify-between gap-4 text-accent font-medium">
                             <span>Blood Pressure:</span>
                             <span className="font-bold">{data.systolic}/{data.diastolic} mmHg</span>
                           </div>
-                          <div className="flex items-center justify-between gap-4 text-emerald-600 font-medium">
+                          <div className="flex items-center justify-between gap-4 text-success font-medium">
                             <span>SpO2 Oxygen:</span>
                             <span className="font-bold">{data.spO2}%</span>
                           </div>

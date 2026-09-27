@@ -152,7 +152,7 @@ export function VitalsQrCodeModal({
           {/* Patient Header Banner */}
           <div className="p-3 rounded-lg bg-slate-900 text-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-full bg-slate-800 text-sky-400">
+              <div className="p-2 rounded-full bg-slate-800 text-accent">
                 <User className="h-4 w-4" />
               </div>
               <div>
@@ -160,7 +160,7 @@ export function VitalsQrCodeModal({
                 <p className="text-[11px] text-slate-400 font-mono">ID: {patientId}</p>
               </div>
             </div>
-            <Badge variant="outline" className="border-sky-400/50 text-sky-300 text-[10px]">
+            <Badge variant="outline" className="border-accent/50 text-sky-300 text-[10px]">
               {triageClassification}
             </Badge>
           </div>
@@ -179,7 +179,7 @@ export function VitalsQrCodeModal({
               </div>
             )}
             <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+              <ShieldCheck className="h-3.5 w-3.5 text-success" />
               <span>Scannable by clinical triage scanners & handheld monitors</span>
             </div>
           </div>
@@ -215,7 +215,7 @@ export function VitalsQrCodeModal({
               className="flex-1 text-xs gap-1.5"
               onClick={handleCopyPayload}
             >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
               <span>{copied ? 'Copied' : 'Copy Data'}</span>
             </Button>
             <Button

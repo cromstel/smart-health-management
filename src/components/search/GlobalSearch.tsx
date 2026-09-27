@@ -247,14 +247,14 @@ export function GlobalSearch() {
   const renderCategoryIcon = (category: SearchResultItem['category']) => {
     switch (category) {
       case 'patient':
-        return <Users className="h-4 w-4 text-blue-400" />;
+        return <Users className="h-4 w-4 text-accent" />;
       case 'staff':
-        return <UserCheck className="h-4 w-4 text-emerald-400" />;
+        return <UserCheck className="h-4 w-4 text-success" />;
       case 'appointment':
-        return <Calendar className="h-4 w-4 text-amber-400" />;
+        return <Calendar className="h-4 w-4 text-warning" />;
       case 'navigation':
       default:
-        return <Layers className="h-4 w-4 text-sky-400" />;
+        return <Layers className="h-4 w-4 text-accent" />;
     }
   };
 
@@ -327,7 +327,7 @@ export function GlobalSearch() {
                 <div>
                   <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-blue-400" />
+                      <Users className="h-3.5 w-3.5 text-accent" />
                       Patients ({patientsList.length})
                     </span>
                   </div>
@@ -370,7 +370,7 @@ export function GlobalSearch() {
                 <div>
                   <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
-                      <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <UserCheck className="h-3.5 w-3.5 text-success" />
                       Staff ({staffList.length})
                     </span>
                   </div>
@@ -413,7 +413,7 @@ export function GlobalSearch() {
                 <div>
                   <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                      <Calendar className="h-3.5 w-3.5 text-warning" />
                       Appointments ({apptsList.length})
                     </span>
                   </div>
@@ -456,7 +456,7 @@ export function GlobalSearch() {
                 <div>
                   <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-sky-400" />
+                      <Layers className="h-3.5 w-3.5 text-accent" />
                       Quick Navigation
                     </span>
                   </div>

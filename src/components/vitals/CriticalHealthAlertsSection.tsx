@@ -73,12 +73,12 @@ export function CriticalHealthAlertsSection({
     return (
       <Card
         id={`patient-health-status-ok-${patientId}`}
-        className={`border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 ${className}`}
+        className={`border border-success/30 bg-success/5 dark:bg-success/20 ${className}`}
       >
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+              <div className="p-2 rounded-lg bg-success/20 text-success dark:text-success">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
@@ -88,7 +88,7 @@ export function CriticalHealthAlertsSection({
                   </h4>
                   <Badge
                     variant="outline"
-                    className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium"
+                    className="border-success/40 bg-success/10 text-success dark:text-emerald-300 text-[11px] font-medium"
                   >
                     Clinical Status: Normal
                   </Badge>
@@ -111,26 +111,26 @@ export function CriticalHealthAlertsSection({
           </div>
 
           {showGuidelines && (
-            <div className="mt-3 pt-3 border-t border-emerald-500/20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+            <div className="mt-3 pt-3 border-t border-success/20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
               <div className="p-2 rounded bg-card/80 border border-border space-y-0.5">
                 <span className="font-semibold text-foreground">Blood Pressure</span>
                 <p className="text-muted-foreground text-[11px]">Normal: &lt;120/80 mmHg</p>
-                <p className="text-amber-600 dark:text-amber-400 text-[11px]">Stage 2 Alert: ≥140/90 mmHg</p>
+                <p className="text-warning dark:text-warning text-[11px]">Stage 2 Alert: ≥140/90 mmHg</p>
               </div>
               <div className="p-2 rounded bg-card/80 border border-border space-y-0.5">
                 <span className="font-semibold text-foreground">Heart Rate</span>
                 <p className="text-muted-foreground text-[11px]">Normal: 60 - 100 bpm</p>
-                <p className="text-rose-600 dark:text-rose-400 text-[11px]">Critical: ≥125 bpm or &lt;50 bpm</p>
+                <p className="text-destructive dark:text-destructive text-[11px]">Critical: ≥125 bpm or &lt;50 bpm</p>
               </div>
               <div className="p-2 rounded bg-card/80 border border-border space-y-0.5">
                 <span className="font-semibold text-foreground">Temperature</span>
                 <p className="text-muted-foreground text-[11px]">Normal: 36.1 - 37.2 °C</p>
-                <p className="text-amber-600 dark:text-amber-400 text-[11px]">Fever Alert: ≥38.0 °C</p>
+                <p className="text-warning dark:text-warning text-[11px]">Fever Alert: ≥38.0 °C</p>
               </div>
               <div className="p-2 rounded bg-card/80 border border-border space-y-0.5">
                 <span className="font-semibold text-foreground">Oxygen Saturation</span>
                 <p className="text-muted-foreground text-[11px]">Optimal: ≥95 %</p>
-                <p className="text-rose-600 dark:text-rose-400 text-[11px]">Hypoxemia Alert: &lt;90 %</p>
+                <p className="text-destructive dark:text-destructive text-[11px]">Hypoxemia Alert: &lt;90 %</p>
               </div>
             </div>
           )}
@@ -145,8 +145,8 @@ export function CriticalHealthAlertsSection({
       <Card
         className={`border-2 shadow-sm ${
           hasCritical
-            ? 'border-red-600 bg-red-500/10 dark:bg-red-950/30'
-            : 'border-amber-500 bg-amber-500/10 dark:bg-amber-950/30'
+            ? 'border-destructive bg-destructive/10 dark:bg-destructive/30'
+            : 'border-warning bg-warning/10 dark:bg-warning/30'
         }`}
       >
         <CardContent className="p-4 sm:p-5">
@@ -155,7 +155,7 @@ export function CriticalHealthAlertsSection({
             <div className="flex items-center gap-3">
               <div
                 className={`p-2.5 rounded-lg flex items-center justify-center text-white ${
-                  hasCritical ? 'bg-red-600' : 'bg-amber-600'
+                  hasCritical ? 'bg-destructive' : 'bg-warning'
                 }`}
               >
                 {hasCritical ? (
@@ -173,8 +173,8 @@ export function CriticalHealthAlertsSection({
                     variant="destructive"
                     className={`text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 ${
                       hasCritical
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-amber-600 hover:bg-amber-700 text-white'
+                        ? 'bg-destructive hover:bg-destructive text-white'
+                        : 'bg-warning hover:bg-warning text-white'
                     }`}
                   >
                     {hasCritical ? '⚠️ HIGH PRIORITY CRISIS' : '⚠️ ABNORMAL VITALS DETECTED'}
@@ -197,8 +197,8 @@ export function CriticalHealthAlertsSection({
                   onClick={onOpenLogDialog}
                   className={`h-8 text-xs font-semibold gap-1.5 shadow-sm text-white ${
                     hasCritical
-                      ? 'bg-red-700 hover:bg-red-800'
-                      : 'bg-amber-700 hover:bg-amber-800'
+                      ? 'bg-destructive hover:bg-destructive'
+                      : 'bg-warning hover:bg-warning'
                   }`}
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -220,8 +220,8 @@ export function CriticalHealthAlertsSection({
                   id={`alert-card-${alert.id}`}
                   className={`p-3.5 rounded-lg border transition-all ${
                     isCritical
-                      ? 'border-red-500/60 bg-card text-foreground'
-                      : 'border-amber-500/60 bg-card text-foreground'
+                      ? 'border-destructive/60 bg-card text-foreground'
+                      : 'border-warning/60 bg-card text-foreground'
                   }`}
                 >
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
@@ -230,8 +230,8 @@ export function CriticalHealthAlertsSection({
                       <div
                         className={`p-2 rounded-md shrink-0 mt-0.5 ${
                           isCritical
-                            ? 'bg-red-500/20 text-red-600 dark:text-red-400'
-                            : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                            ? 'bg-destructive/20 text-destructive dark:text-destructive'
+                            : 'bg-warning/20 text-warning dark:text-warning'
                         }`}
                       >
                         {getCategoryIcon(alert.category)}
@@ -245,8 +245,8 @@ export function CriticalHealthAlertsSection({
                           <span
                             className={`font-mono text-sm font-extrabold px-2 py-0.5 rounded border ${
                               isCritical
-                                ? 'bg-red-500/15 border-red-500/40 text-red-700 dark:text-red-300'
-                                : 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300'
+                                ? 'bg-destructive/15 border-destructive/40 text-destructive dark:text-red-300'
+                                : 'bg-warning/15 border-warning/40 text-warning dark:text-amber-300'
                             }`}
                           >
                             {alert.metricValue}
@@ -303,7 +303,7 @@ export function CriticalHealthAlertsSection({
                         onClick={() => handleAcknowledge(alert.id, alert.title)}
                         className="h-7 text-[11px] px-2.5 gap-1"
                       >
-                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                        <CheckCircle2 className="h-3 w-3 text-success" />
                         <span>Acknowledge</span>
                       </Button>
                     </div>
@@ -314,7 +314,7 @@ export function CriticalHealthAlertsSection({
                     <div className="mt-3 pt-3 border-t border-border/80 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                       <div className="p-2.5 rounded bg-muted/40 border border-border space-y-1">
                         <span className="font-semibold text-foreground flex items-center gap-1.5">
-                          <Info className="h-3.5 w-3.5 text-blue-500" />
+                          <Info className="h-3.5 w-3.5 text-accent" />
                           Clinical Guideline
                         </span>
                         <p className="text-muted-foreground leading-relaxed">
@@ -324,7 +324,7 @@ export function CriticalHealthAlertsSection({
 
                       <div className="p-2.5 rounded bg-muted/40 border border-border space-y-1">
                         <span className="font-semibold text-foreground flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                           Recommended Clinical Action
                         </span>
                         <p className="text-foreground/90 font-medium leading-relaxed">

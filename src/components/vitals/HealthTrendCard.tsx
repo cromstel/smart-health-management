@@ -32,8 +32,8 @@ export function HealthTrendCard({ vitalsList, patientName }: HealthTrendCardProp
       return {
         trend: 'Stable' as HealthTrendType,
         score: 100,
-        badgeColor: 'border-sky-500/50 bg-sky-500/10 text-sky-600 dark:text-sky-400',
-        badgeBg: 'bg-sky-500',
+        badgeColor: 'border-accent/50 bg-accent/10 text-accent dark:text-accent',
+        badgeBg: 'bg-accent',
         drivers: ['Initial baseline recorded. Insufficient historical points for regression analysis.'],
         recommendation: 'Log subsequent biometric sessions to build longitudinal health trajectory model.',
       };
@@ -46,9 +46,9 @@ export function HealthTrendCard({ vitalsList, patientName }: HealthTrendCardProp
         trend: isNormal ? ('Stable' as HealthTrendType) : ('Concerning' as HealthTrendType),
         score: isNormal ? 95 : 65,
         badgeColor: isNormal
-          ? 'border-sky-500/50 bg-sky-500/10 text-sky-600 dark:text-sky-400'
-          : 'border-rose-500/50 bg-rose-500/10 text-rose-600 dark:text-rose-400',
-        badgeBg: isNormal ? 'bg-sky-500' : 'bg-rose-500',
+          ? 'border-accent/50 bg-accent/10 text-accent dark:text-accent'
+          : 'border-destructive/50 bg-destructive/10 text-destructive dark:text-destructive',
+        badgeBg: isNormal ? 'bg-accent' : 'bg-destructive',
         drivers: [
           `Single baseline session recorded at ${first.recordedAt}: Blood pressure ${first.systolicBp}/${first.diastolicBp} mmHg, Heart Rate ${first.heartRate} bpm.`,
         ],
@@ -117,21 +117,21 @@ export function HealthTrendCard({ vitalsList, patientName }: HealthTrendCardProp
     // Determine final trend
     let trend: HealthTrendType = 'Stable';
     let score = 88;
-    let badgeColor = 'border-sky-500/50 bg-sky-500/10 text-sky-600 dark:text-sky-400';
-    let badgeBg = 'bg-sky-500';
+    let badgeColor = 'border-accent/50 bg-accent/10 text-accent dark:text-accent';
+    let badgeBg = 'bg-accent';
     let recommendation = 'Maintain current therapeutic schedule and routine monitoring.';
 
     if (improvementPoints > concernPoints && concernPoints === 0) {
       trend = 'Improving';
       score = Math.min(98, 85 + improvementPoints * 4);
-      badgeColor = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
-      badgeBg = 'bg-emerald-500';
+      badgeColor = 'border-success/50 bg-success/10 text-success dark:text-success';
+      badgeBg = 'bg-success';
       recommendation = 'Patient response to treatment is positive. Continue current care plan.';
     } else if (concernPoints > improvementPoints || latestRec.status === 'high' || latestRec.status === 'critical') {
       trend = 'Concerning';
       score = Math.max(45, 75 - concernPoints * 10);
-      badgeColor = 'border-rose-500/50 bg-rose-500/10 text-rose-600 dark:text-rose-400';
-      badgeBg = 'bg-rose-500';
+      badgeColor = 'border-destructive/50 bg-destructive/10 text-destructive dark:text-destructive';
+      badgeBg = 'bg-destructive';
       recommendation = 'Escalate clinician evaluation. Adjust medication or schedule follow-up diagnostics.';
     }
 
@@ -148,12 +148,12 @@ export function HealthTrendCard({ vitalsList, patientName }: HealthTrendCardProp
   const renderTrendIcon = () => {
     switch (trendAnalysis.trend) {
       case 'Improving':
-        return <TrendingUp className="h-5 w-5 text-emerald-500" />;
+        return <TrendingUp className="h-5 w-5 text-success" />;
       case 'Concerning':
-        return <TrendingDown className="h-5 w-5 text-rose-500" />;
+        return <TrendingDown className="h-5 w-5 text-destructive" />;
       case 'Stable':
       default:
-        return <CheckCircle2 className="h-5 w-5 text-sky-500" />;
+        return <CheckCircle2 className="h-5 w-5 text-accent" />;
     }
   };
 
@@ -162,13 +162,13 @@ export function HealthTrendCard({ vitalsList, patientName }: HealthTrendCardProp
       <CardHeader className="pb-3 border-b border-border/60">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
+            <div className="p-2 rounded-lg bg-info/15 text-info dark:text-info">
               <Brain className="h-5 w-5" />
             </div>
             <div>
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <span>Health Trend Insight & Stability Score</span>
-                <Sparkles className="h-4 w-4 text-amber-500" />
+                <Sparkles className="h-4 w-4 text-warning" />
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
                 Longitudinal AI biometric regression model for {patientName}
@@ -243,10 +243,10 @@ export function HealthTrendCard({ vitalsList, patientName }: HealthTrendCardProp
         </div>
 
         {/* Clinical Guidance Box */}
-        <div className="p-3 rounded-lg border border-indigo-500/30 bg-indigo-500/10 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200 text-xs flex items-start gap-2.5">
-          <ShieldCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+        <div className="p-3 rounded-lg border border-info/30 bg-info/10 dark:bg-info/20 text-info dark:text-indigo-200 text-xs flex items-start gap-2.5">
+          <ShieldCheck className="h-4 w-4 text-info dark:text-info shrink-0 mt-0.5" />
           <div className="space-y-0.5">
-            <span className="font-bold text-[11px] uppercase tracking-wide block text-indigo-700 dark:text-indigo-300">
+            <span className="font-bold text-[11px] uppercase tracking-wide block text-info dark:text-indigo-300">
               Clinical Recommendation:
             </span>
             <p className="font-medium text-xs leading-relaxed">{trendAnalysis.recommendation}</p>

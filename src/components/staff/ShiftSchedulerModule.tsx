@@ -174,19 +174,19 @@ export function ShiftSchedulerModule() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Banner */}
-      <div className="p-4 rounded-xl bg-primary border border-sky-500/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-primary border border-accent/30 text-primary-foreground shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300">
-            <Sparkles className="h-7 w-7 text-sky-400 animate-pulse" />
+          <div className="p-3 rounded-xl bg-accent/20 border border-accent/30 text-sky-300">
+            <Sparkles className="h-7 w-7 text-accent animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold tracking-tight text-primary-foreground">
                 Algorithmic Shift Scheduler & Workload Balancer
               </h2>
-              <Badge className="bg-sky-600 text-white font-mono text-[10px]">AUTO-OPTIMIZER V2.4</Badge>
+              <Badge className="bg-accent text-white font-mono text-[10px]">AUTO-OPTIMIZER V2.4</Badge>
             </div>
-            <p className="text-xs text-sky-200/80 mt-0.5">
+            <p className="text-xs text-accent/80 mt-0.5">
               Auto-balances clinician shift assignments matching availability, fatigue prevention rules, and historical departmental workload curves
             </p>
           </div>
@@ -195,7 +195,7 @@ export function ShiftSchedulerModule() {
         <Button
           onClick={handleAutoBalanceAlgorithm}
           disabled={isAutoBalancing}
-          className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-sky-400/30 shrink-0"
+          className="bg-accent hover:bg-accent text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-accent/30 shrink-0"
         >
           <RefreshCw className={`h-4 w-4 ${isAutoBalancing ? 'animate-spin' : ''}`} />
           <span>Auto-Balance Shifts ({balanceScore}% Score)</span>
@@ -204,43 +204,43 @@ export function ShiftSchedulerModule() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-sky-500/30 bg-sky-950/10">
+        <Card className="border-accent/30 bg-accent/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-sky-500 uppercase tracking-wider">Schedule Balance Index</p>
-              <p className="text-2xl font-black text-sky-600 dark:text-sky-400">{balanceScore}% Optimal</p>
+              <p className="text-[11px] font-semibold text-accent uppercase tracking-wider">Schedule Balance Index</p>
+              <p className="text-2xl font-black text-accent dark:text-accent">{balanceScore}% Optimal</p>
             </div>
-            <ShieldCheck className="h-7 w-7 text-sky-500" />
+            <ShieldCheck className="h-7 w-7 text-accent" />
           </CardContent>
         </Card>
 
-        <Card className="border-emerald-500/30 bg-emerald-950/10">
+        <Card className="border-success/30 bg-success/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-emerald-500 uppercase tracking-wider">Shift Coverage Ratio</p>
-              <p className="text-2xl font-black text-emerald-500">100% Filled</p>
+              <p className="text-[11px] font-semibold text-success uppercase tracking-wider">Shift Coverage Ratio</p>
+              <p className="text-2xl font-black text-success">100% Filled</p>
             </div>
-            <UserCheck className="h-7 w-7 text-emerald-500" />
+            <UserCheck className="h-7 w-7 text-success" />
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/30 bg-amber-950/10">
+        <Card className="border-warning/30 bg-warning/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider">Overtime / Fatigue Warnings</p>
-              <p className="text-2xl font-black text-amber-500">{overtimeCount} Clinicians</p>
+              <p className="text-[11px] font-semibold text-warning uppercase tracking-wider">Overtime / Fatigue Warnings</p>
+              <p className="text-2xl font-black text-warning">{overtimeCount} Clinicians</p>
             </div>
-            <AlertTriangle className="h-7 w-7 text-amber-500" />
+            <AlertTriangle className="h-7 w-7 text-warning" />
           </CardContent>
         </Card>
 
-        <Card className="border-indigo-500/30 bg-indigo-950/10">
+        <Card className="border-info/30 bg-info/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Total Scheduled Hours</p>
-              <p className="text-2xl font-black text-indigo-400">{totalWeeklyHours} Hours/Wk</p>
+              <p className="text-[11px] font-semibold text-info uppercase tracking-wider">Total Scheduled Hours</p>
+              <p className="text-2xl font-black text-info">{totalWeeklyHours} Hours/Wk</p>
             </div>
-            <Clock className="h-7 w-7 text-indigo-400" />
+            <Clock className="h-7 w-7 text-info" />
           </CardContent>
         </Card>
       </div>
@@ -250,7 +250,7 @@ export function ShiftSchedulerModule() {
         <CardHeader className="pb-3 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-sky-500" />
+              <Calendar className="h-4 w-4 text-accent" />
               Weekly Department Shift Roster (Mon - Sun)
             </CardTitle>
             <CardDescription className="text-xs">
@@ -305,7 +305,7 @@ export function ShiftSchedulerModule() {
                       <div className="flex items-center gap-2">
                         <span>{day}</span>
                         {isPeakDay && (
-                          <Badge className="bg-rose-500 text-white text-[9px] px-1 py-0 font-mono">PEAK SURGE</Badge>
+                          <Badge className="bg-destructive text-white text-[9px] px-1 py-0 font-mono">PEAK SURGE</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -314,7 +314,7 @@ export function ShiftSchedulerModule() {
                     <TableCell className="align-top p-2">
                       {morningShifts.length > 0 ? (
                         morningShifts.map((s) => (
-                          <div key={s.id} className="p-2 rounded bg-sky-500/10 border border-sky-500/20 mb-1 text-xs space-y-0.5">
+                          <div key={s.id} className="p-2 rounded bg-accent/10 border border-accent/20 mb-1 text-xs space-y-0.5">
                             <span className="font-bold text-foreground block">{s.clinicianName}</span>
                             <span className="text-[10px] text-muted-foreground block">{s.role}</span>
                           </div>
@@ -328,7 +328,7 @@ export function ShiftSchedulerModule() {
                     <TableCell className="align-top p-2">
                       {eveningShifts.length > 0 ? (
                         eveningShifts.map((s) => (
-                          <div key={s.id} className="p-2 rounded bg-indigo-500/10 border border-indigo-500/20 mb-1 text-xs space-y-0.5">
+                          <div key={s.id} className="p-2 rounded bg-info/10 border border-info/20 mb-1 text-xs space-y-0.5">
                             <span className="font-bold text-foreground block">{s.clinicianName}</span>
                             <span className="text-[10px] text-muted-foreground block">{s.role}</span>
                           </div>
@@ -346,13 +346,13 @@ export function ShiftSchedulerModule() {
                             key={s.id}
                             className={`p-2 rounded border mb-1 text-xs space-y-0.5 ${
                               s.isOvertimeRisk
-                                ? 'bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-200'
-                                : 'bg-purple-500/10 border-purple-500/20'
+                                ? 'bg-warning/10 border-warning/40 text-warning dark:text-amber-200'
+                                : 'bg-info/10 border-info/20'
                             }`}
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-foreground">{s.clinicianName}</span>
-                              {s.isOvertimeRisk && <Badge className="bg-amber-500 text-black text-[8px]">OT RISK</Badge>}
+                              {s.isOvertimeRisk && <Badge className="bg-warning text-black text-[8px]">OT RISK</Badge>}
                             </div>
                             <span className="text-[10px] text-muted-foreground block">{s.role}</span>
                           </div>
@@ -374,7 +374,7 @@ export function ShiftSchedulerModule() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <ArrowRightLeft className="h-5 w-5 text-sky-500" />
+              <ArrowRightLeft className="h-5 w-5 text-accent" />
               Request Clinician Shift Swap
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -383,7 +383,7 @@ export function ShiftSchedulerModule() {
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-xs">
-            <div className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-800 dark:text-sky-200">
+            <div className="p-3 rounded-lg bg-accent/10 border border-accent/20 text-accent dark:text-sky-200">
               <p className="font-semibold">Swap Protocol:</p>
               <p className="mt-1">
                 Requested swaps will automatically adjust weekly hour tallies to avoid overtime fatigue violations.
@@ -391,7 +391,7 @@ export function ShiftSchedulerModule() {
             </div>
 
             <Button
-              className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold"
+              className="w-full bg-accent hover:bg-accent text-white font-bold"
               onClick={() => {
                 toast.success('Shift Swap Request submitted to Head Nurse for signoff');
                 setIsSwapDialogOpen(false);
