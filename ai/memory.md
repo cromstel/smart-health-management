@@ -2,6 +2,18 @@
 
 Project enforces strict adherence to **NO GRADIENTS**, **zero unresolved TypeScript errors**, and **mandatory documentation** (every feature, endpoint, or decision updates `docs/CHANGELOG.md` at minimum; convention changes update this file and `ai/agents.md`/`ai/skills.md`).
 
+## Design system foundation (2026-09-28) — commits e14642e, c17d139, e4374af, c6d23c2
+
+- **Typography did not exist before this.** No `font-family` was declared anywhere except two inline print blocks; everything inherited Tailwind's default system stack. Now self-hosted via `@fontsource` (OFL): `Newsreader` (`--font-display`), `IBM Plex Sans` (`--font-sans`), `IBM Plex Mono` (`--font-mono`). Served from app origin — a font CDN request is a HIPAA-scope problem, not just a perf one.
+- **Declare `@font-face` by hand**, not via `@fontsource/*/latin-N00.css`. The upstream stylesheet emits a `url(...woff)` fallback alongside the woff2; no browser in this app's support matrix fetches it, but vite-plugin-pwa precaches every emitted asset, so it added ~290 KB of dead weight to every install. Verified: 11 woff2, 0 woff.
+- **`@theme inline` + `var(--token)` indirection is what makes dark mode work.** `.text-success` compiles to `color: var(--success)`, not a literal, so `.dark { --success: … }` overrides at runtime. Do not "optimise" those tokens to literal hex.
+- **Tailwind v4 tree-shakes theme variables** — `--color-success` does not appear in the built CSS until some file actually uses `bg-success`. Verify token plumbing by applying it, not by grepping the stylesheet.
+- **Tailwind silently drops classes for nonexistent tokens.** No build error, the element just renders uncoloured. Always cross-check newly-introduced utilities against the built CSS. Verification gotcha: variant prefixes compile to `.hover\:bg-info\/30:hover`, so a naive `includes('.bg-info/30')` check produces false negatives. Escape `/` and `:` when matching.
+- **Palette migration (1,849 sites / 67 files).** The trap: much of the codebase expressed *tint* via the shade number, not an opacity modifier — `bg-rose-50` is a pale alert panel, `border-emerald-200` a soft border. Mapping `rose`→`destructive` and dropping the shade turns alert panels into saturated blocks and destroys the clinical signal. Correct mapping converts tints to explicit opacity modifiers (`bg-rose-50` → `bg-destructive/5`), resolved by `color-mix`.
+- **346 sites deliberately NOT migrated** — slate/zinc/neutral text and borders, plus light-shade text (`text-amber-200`, `text-rose-300`). These sit on dark panels; `text-slate-200` → `text-foreground` would be dark-on-dark in light mode, i.e. invisible. Not determinable from a class string — needs visual review. Do not let a regex "finish" these.
+- **Pre-existing e2e failures, not regressions.** Playwright: 47 failures, dominated by `toHaveURL`/`waitForURL` timeouts on login and API-backed flows (`Failed to fetch` on `/api/appointments`). Confirmed by stashing to the parent commit and re-running: `app-smoke` + `auth-pages` fail 20/44 on a clean tree. Landing checks pass at 375/768/1440px. When triaging e2e, always establish a baseline by stashing before attributing a failure to your change.
+- Landing hero: centred template layout → editorial spread. Depth via a hard *unblurred* offset block (flat second colour reads as printed matter; blurred shadow reads as generic elevation). Census figures are now labelled illustrative — the old hero presented invented numbers as fact.
+
 ## History split of combined commit (2026-09-25) — DONE, verified
 
 - Operator approved (AGENTS.md §8) the rewrite of pushed `main`: combined commit `656d70b` (rebrand + financial API bundled) was split into two content-identical commits:

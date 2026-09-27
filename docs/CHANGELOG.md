@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Unreleased] - 2026-09-28 (Design system: typography + semantic status tokens)
+
+### Added
+- **Self-hosted typography** — the design system previously declared no `font-family` at all; every surface inherited Tailwind's default system stack. Three families are now vendored via `@fontsource` (SIL OFL) and served from the app origin, so no third-party font CDN is contacted at runtime and every outbound request stays auditable for HIPAA scope:
+  - `Newsreader` (display) — editorial serif for structural breaks
+  - `IBM Plex Sans` (UI) — tuned for the 12–14px density of clinical tables and forms
+  - `IBM Plex Mono` (data) — tabular figures for patient IDs, dosages, vitals, lab values
+  - `@font-face` rules are declared by hand rather than imported from the upstream stylesheet: the stock CSS also references a legacy `.woff` fallback that no browser in this app's support matrix fetches, but which the PWA service worker would otherwise precache onto every device.
+- **Semantic status tokens** — `--success`, `--warning`, `--info` with light and dark pairs, plus `--navy-raised` for panels sitting on the navy field. These roles did not exist, which forced ~1,849 usages of raw Tailwind palette classes to express clinical status. Exposed to Tailwind as `--color-*` so tint, border, and text usage are all reachable from one token.
+
+### Changed
+- **Clinical status colours migrated to tokens** — 1,849 raw palette classes across 67 files replaced with semantic roles (`emerald/green`→`success`, `rose/red`→`destructive`, `amber/orange/yellow`→`warning`, `indigo/violet/purple`→`info`, `teal`→`chart-2`, `blue/sky/cyan`→`accent`). Pure class substitution: 769 insertions, 769 deletions, no structural change.
+  - Tints are preserved rather than flattened. A large share of the original usages expressed tint through the shade number instead of an opacity modifier (`bg-rose-50` is a pale alert panel, not a solid block), so those became explicit opacity modifiers (`bg-rose-50` → `bg-destructive/5`), which `color-mix` resolves against the token. Mapping the family alone would have turned alert panels into saturated blocks and lost the clinical signal.
+- **Type hierarchy applied** (30 files) — `Newsreader` carries an editorial voice at structural breaks only: the landing hero, section titles, the 21 product page titles that shared one identical `h1` pattern, and the auth/registration headings. Weight drops bold→semibold and `tracking-tight` is removed, since a high-contrast display serif set tight and bold reads as a compromise. UI-level headings stay in IBM Plex Sans so the serif retains meaning as a section marker. The codebase already used `font-mono` in 122 places for clinical data, so that convention now resolves to a real typeface; tabular figures are enabled on headline stat readouts.
+- **Landing hero rebuilt** as an editorial spread — left-aligned in a 7/5 grid instead of centred; `Newsreader` at 4.5rem/0.98 leading with an italic accent line; depth from a hard unblurred offset block rather than blurred shadow; square corners on the census rail against the rounded dashboard; column hairlines in place of a tinted field (a gradient mesh is the obvious way to texture it and rule 1 forbids it). The infinite floating-dot animation was removed. Census figures are now labelled illustrative — the previous hero presented invented numbers as fact.
+
+### Fixed
+- **Misleading CTA copy** — the landing secondary CTA read "Watch Demo" but routed to a request *form*, and there is no video. Now "Request a demo".
+- **Stale brand string** in `src/docs/package.json` (`Smart Health Manager` → `Smart MediCare`).
+
+### Known follow-ups
+- **346 palette sites intentionally not migrated** — slate/zinc/neutral text and borders, plus light-shade text (`text-amber-200`, `text-rose-300`). These sit on dark panels where collapsing onto a light-theme token can render text invisible, which cannot be determined from a class string alone and needs visual review.
+- **Playwright e2e has pre-existing failures** — 47 failures across the suite, dominated by `toHaveURL`/`waitForURL` timeouts on login and API-backed flows (`Failed to fetch` on `/api/appointments`). Confirmed unrelated to the design work: the same specs fail on a clean tree at the parent commit (20 of 44 in `app-smoke` + `auth-pages` alone). The affected flows appear to require a running backend. Landing-page checks pass at 375/768/1440px with no horizontal overflow.
+
+### Notes
+- Rule 1 (no gradients) held throughout. Zero `linear-gradient` / `radial-gradient` / `bg-gradient-*` declarations were introduced; gradient mentions in the diff are prose explaining their absence.
+- Print output is deliberately unchanged: `index.css` pins `@media print` to Times New Roman so clinical records never depend on webfont delivery. Two print-report headers (FinancialPage, SharedPatientSummaryPage) stay on the default stack for the same reason.
+
+---
+
 ## [Unreleased] - 2026-09-26 (Documentation Hardening — Dead Link Resolution)
 
 ### Fixed

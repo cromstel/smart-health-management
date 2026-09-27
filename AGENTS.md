@@ -11,7 +11,7 @@ Enterprise healthcare management platform: patient records, appointments, clinic
 - **Docs** — `README.md`, `DOCUMENTATION.md` (public); `docs/`, `src/docs/` (docs site), `ai/*.md` (AI memory), `.opencode/` (agents/skills/commands), and `scripts/` are **local-only** — kept out of the public repository by policy (2026-09-11).
 
 ## 2. Non-negotiable rules
-1. **NO GRADIENTS** — never introduce gradient UI (Tailwind `bg-gradient-*`, CSS `linear-gradient`/`radial-gradient`). Flat colors from design tokens in `src/index.css` only.
+1. **NO GRADIENTS** — never introduce gradient UI (Tailwind `bg-gradient-*`, CSS `linear-gradient`/`radial-gradient`/`conic-gradient`, or `bg-[linear-gradient(...)]`). Flat colors from design tokens in `src/index.css` only. Arbitrary hex values (`bg-[#001A33]`) are also a violation — declare a token instead. See §3 for the token contract.
 2. **ZERO unresolved TypeScript errors** — `npm run type-check` (root) and `cd server && npm run build` must pass. No `@ts-ignore` to dodge errors.
 3. **Mandatory documentation** — every feature/endpoint/decision gets a local doc update (`docs/CHANGELOG.md` at minimum, plus `ai/memory.md` for conventions). Note: `docs/`, `ai/`, `.opencode/`, and `scripts/` are local-only (gitignored) — documentation required by this rule is written to local files, never to public `README.md` unless it describes public-facing behavior.
 4. **No secrets in code or git** — credentials only via env. `.env.local` is NOT tracked (removed from index 2026-09-10). Never commit `.env*` files.
@@ -24,6 +24,12 @@ Enterprise healthcare management platform: patient records, appointments, clinic
 - Routes lazy-loaded in `src/App.tsx`. Auth via `contexts/AuthContext`; theme via `contexts/ThemeContext`.
 - Data access through `src/services/` and `src/api/`; dev mode uses `src/server/mockApi.ts` middleware mounted in `vite.config.ts`.
 - Design tokens: navy `#001F3F`, sea blue `#0284C7` (see `--sea-blue`), dark default theme.
+- **Typography** — three self-hosted families declared in `src/index.css` and served from the app origin via `@fontsource` (SIL OFL). No font CDN request is permitted at runtime: every outbound request has to stay auditable for HIPAA scope. Declare `@font-face` by hand against the `woff2` files, not via the upstream stylesheet, which also references a legacy `.woff` fallback the PWA service worker would otherwise precache.
+  - `--font-display` (`Newsreader`) — editorial voice at structural breaks only: page titles, section headings, the landing hero. Not for UI-level headings (h3 and below), which stay sans so the serif keeps meaning as a section marker.
+  - `--font-sans` (`IBM Plex Sans`) — all UI and body text. Default via Tailwind preflight, which resolves `--default-font-family` from `--font-sans`.
+  - `--font-mono` (`IBM Plex Mono`) — clinical data where alignment is load-bearing: patient IDs, dosages, vitals, lab values, timestamps, money. Pair with `tabular-nums` on readouts.
+  - Print output is pinned to Times New Roman by `@media print`; clinical records must not depend on webfont delivery. Leave print-report headers on the default stack.
+- **Colour** — consume the semantic layer, not raw palette classes. `--success` / `--warning` / `--info` carry clinical meaning (normal, abnormal-not-critical, secondary data) and pair with the existing `--destructive`. Use Tailwind opacity modifiers for tints (`bg-success/10`, `border-destructive/30`) rather than introducing shade-specific tokens. `--navy-raised` is the surface for panels sitting on the navy field. Both light and dark values must be declared for any new token so the dark theme keeps its contrast.
 
 ### Backend
 - Layered: `routes/` → `controllers/` (validation + orchestration) → `services/` (business logic) → `database/` (schema.sql, seed.sql).
