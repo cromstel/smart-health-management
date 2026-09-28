@@ -3,7 +3,21 @@ import path from 'path';
 import fs from 'fs';
 import https from 'https';
 
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+// Environment resolution, kept in the order AGENTS.md section 6 documents:
+//   .env      shared defaults
+//   .env.local  local overrides, and the file the setup instructions tell you
+//                to create, so it has to be loaded and has to win
+//
+// This used to load only ../.env, which meant following the documented setup
+// (cp .env.example .env.local) produced a root .env.local the server never
+// read. The API then started without DB_* or JWT_SECRET, never bound its port,
+// and every browser call to it failed with "Failed to fetch" -- which is what
+// the Playwright suite was reporting. config/database.ts already applied this
+// precedence for itself; the two files had drifted apart.
+const repoRootEnv = path.resolve(process.cwd(), '../.env');
+const repoRootLocalEnv = path.resolve(process.cwd(), '../.env.local');
+dotenv.config({ path: repoRootEnv });
+dotenv.config({ path: repoRootLocalEnv, override: true });
 
 import express from 'express';
 import { fileURLToPath } from 'url';
