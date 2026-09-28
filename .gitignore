@@ -56,6 +56,13 @@ docs/
 # AI operating memory — local-only agent tooling
 ai/
 
+# Agent operating rules and contributor guide. These were force-added in
+# a716cc7 / 08429ca / 330d9da and tracked despite the local-only policy in
+# AGENTS.md section 1, which is why they needed explicit rules rather than
+# relying on the directory entries above.
+AGENTS.md
+CONTRIBUTING.md
+
 # Local-only scripts (e.g., secret generator)
 scripts/
 
