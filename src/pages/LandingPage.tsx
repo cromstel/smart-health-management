@@ -348,7 +348,7 @@ function Hero() {
                   <dt className="font-mono text-sm text-primary-foreground/90 tabular-nums">
                     {value}
                   </dt>
-                  <dd className="mt-0.5 text-xs uppercase tracking-[0.14em] text-primary-foreground/50">
+                  <dd className="mt-0.5 text-xs uppercase tracking-[0.14em] text-primary-foreground/65">
                     {label}
                   </dd>
                 </div>
@@ -388,7 +388,7 @@ function Hero() {
                       <span className="font-mono text-lg text-primary-foreground tabular-nums">
                         {value}
                       </span>
-                      <span className="font-mono text-[11px] text-primary-foreground/45 tabular-nums">
+                      <span className="font-mono text-[11px] text-primary-foreground/65 tabular-nums">
                         {delta}
                       </span>
                     </dd>
@@ -396,7 +396,7 @@ function Hero() {
                 ))}
               </dl>
             </div>
-            <p className="mt-4 font-mono text-[11px] leading-relaxed text-primary-foreground/40">
+            <p className="mt-4 font-mono text-[11px] leading-relaxed text-primary-foreground/60">
               Figures are illustrative. Production census is scoped per
               hospital.
             </p>

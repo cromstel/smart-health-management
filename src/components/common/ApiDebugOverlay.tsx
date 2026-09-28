@@ -4,6 +4,19 @@ import { ShieldAlert, CheckCircle2, X, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function ApiDebugOverlay() {
+  // The telemetry is a development instrument, not product UI. It was mounted
+  // unconditionally, so every production user got a floating control reporting
+  // internal API latency and error rate, overlapping page content in the
+  // bottom-right corner. import.meta.env.DEV is substituted at build time, so
+  // this drops the component from the production bundle entirely.
+  //
+  // The guard sits outside the hooks rather than inside them: returning early
+  // before useEffect would violate rules-of-hooks.
+  if (!import.meta.env.DEV) return null;
+  return <ApiDebugOverlayInner />;
+}
+
+function ApiDebugOverlayInner() {
   const [isOpen, setIsOpen] = useState(false);
   const [metrics, setMetrics] = useState(getApiMetrics());
 
