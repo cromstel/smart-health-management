@@ -37,7 +37,11 @@ export function VitalsQrCodeModal({
 
   // Structured rapid intake payload
   const payload = {
-    app: 'SMART_HEALTH_MANAGER',
+    // Encoded into the QR payload. It is a wire identifier, so the rename
+    // changes it too: a scanner that validates `app` would reject codes issued
+    // before the rename, and accept them under the old string. Bump alongside
+    // any future change here.
+    app: 'SMART_MEDICARE',
     schema: 'RAPID_PATIENT_INTAKE_V1',
     patientId,
     patientName,

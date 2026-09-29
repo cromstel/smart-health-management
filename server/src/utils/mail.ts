@@ -1,4 +1,7 @@
 import nodemailer from 'nodemailer';
+// env.ts is imported first so process.env is populated before anything below
+// reads it; the old bare dotenv.config() here only ever saw the CWD.
+import '../config/env.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

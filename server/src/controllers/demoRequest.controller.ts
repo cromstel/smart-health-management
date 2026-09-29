@@ -41,6 +41,11 @@ export const submitDemoRequest = async (req: Request, res: Response): Promise<vo
     `<dt><strong>${escapeHtml(label)}</strong></dt><dd>${escapeHtml(value)}</dd>`
   )).join('')}</dl>`;
 
+  // Delivery is best-effort. The request has already been validated and is a
+  // sales lead, so losing it because outbound SMTP is misconfigured is the
+  // worst possible failure mode, and telling the prospect it failed invites
+  // them not to retry. Accept the submission, log the delivery failure loudly
+  // instead, and let the team follow up from the logs.
   try {
     await sendEmail({
       to: recipient,
@@ -48,8 +53,14 @@ export const submitDemoRequest = async (req: Request, res: Response): Promise<vo
       text,
       html,
     });
-    res.status(202).json({ message: 'Thanks for your interest. Our team will be in touch shortly.' });
-  } catch {
-    res.status(502).json({ error: 'We could not send your request right now. Please try again later.' });
+  } catch (error) {
+    console.error('[demo-request] email delivery failed; request was accepted but not delivered', {
+      name,
+      email,
+      organization,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
+
+  res.status(202).json({ message: 'Thanks for your interest. Our team will be in touch shortly.' });
 };

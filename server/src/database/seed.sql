@@ -1,7 +1,7 @@
 -- Smart MediCare Seeding Script for BIGINT Schema
 
 -- Use the correct database
-USE smart_health_manager;
+USE smart_medicare;
 
 -- Disable foreign key checks and truncate all tables to reset them
 SET FOREIGN_KEY_CHECKS = 0;
@@ -41,14 +41,7 @@ INSERT INTO roles (id, name, description) VALUES
 (5, 'nurse', 'Registered nurse with clinical care access'),
 (6, 'pharmacist', 'Pharmacist with medication-management access');
 
--- 2. Seed Users
-INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
-(1, 1, 'superadmin@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Super Admin', 'GEZDGNBVGY3TQOJQ', 1, NULL), -- password is 'password'; totp_secret is base32 of JBSWY3DPEHPK3PXP (demo seed)
-(2, 2, 'admin@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Admin User', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password is 'password'
-(3, 3, 'doctor@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password is 'password'
-(4, 4, 'patient@smarthealth.com', '$2b$10$E.hpsa45a/S3Y8ifp9Sgpeo2n.VLzN2a9g2aRtDI1o0p4v.B5R/cK', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL); -- password is 'password'
-
--- 3. Seed Permissions for Roles
+-- 2. Seed Permissions for Roles
 -- Super Admin permissions (role_id = 1)
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (1, 'all', 1, 1, 1, 1);
@@ -81,14 +74,39 @@ INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delet
 (6, 'pharmacy', 1, 1, 1, 0),
 (6, 'inventory', 1, 1, 1, 0);
 
--- 4. Seed Hospitals
+-- 3. Seed Hospitals
+-- Ordered by dependency: roles, then permissions, then hospitals and
+-- departments, then users. users.hospital_id and users.department_id both
+-- reference rows inserted after this point in the original ordering, which
+-- only worked because FOREIGN_KEY_CHECKS was disabled for the whole script.
+-- Seeding in dependency order is correct on its own terms rather than relying
+-- on a session setting that a strict SQL mode may reject.
 INSERT INTO hospitals (id, hospital_id, name, address, phone, email) VALUES
 (1, 'HOSP-001', 'General Hospital', '123 Main St, Anytown, USA', '555-1234', 'contact@generalhospital.com');
 
--- 5. Seed Departments
+-- 4. Seed Departments
 INSERT INTO departments (id, hospital_id, name, head_of_department) VALUES
 (1, 1, 'Cardiology', 'Dr. Heart'),
 (2, 1, 'Orthopedics', 'Dr. Bones');
+
+-- 5. Seed Users
+-- After hospitals and departments, because hospital_id and department_id are
+-- foreign keys into the two blocks above.
+--
+-- Password hashes are bcrypt (cost 10) over the demo credentials documented in
+-- README.md and DOCUMENTATION.md section 5. They previously all shared one hash
+-- that was commented "password is 'password'" but did not in fact verify against
+-- any known value, so none of the documented demo logins could succeed against a
+-- real database.
+--
+-- These are development-only accounts for a local seed. If this seed is ever
+-- applied anywhere reachable, rotate them before doing anything else.
+-- totp_secret is the base32 form of JBSWY3DPEHPK3PXP (demo seed).
+INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
+(1, 1, 'superadmin@smarthealth.com', '$2b$10$Pe2N6QgTLKg/tLgWsHY8B.GfFBeQTMs3XXxTLoT3YzcEbH9fNTF1.', 'Super Admin', 'GEZDGNBVGY3TQOJQ', 1, NULL), -- password: April--2024!!!!
+(2, 2, 'admin@smarthealth.com', '$2b$10$.YOxfK6xC5.qL.nhydYg6ewcMTa21QdjT0w4f7LR1VeXgSzG1fqtu', 'Admin User', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Pass@135709
+(3, 3, 'doctor@smarthealth.com', '$2b$10$anoAXsLwXJ4D1fUIiwQ0nOijk1vMIo9NITxEzqrqdLlNKAgLGyVUu', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Demo@135790
+(4, 4, 'patient@smarthealth.com', '$2b$10$cmFAQ0Oo1C6zXxB8htEJIOCiw6szAuZ8qbOZXUK83e74hSyiX0Iw2', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL); -- password: P@ssword135
 
 -- 6. Seed Staff
 INSERT INTO staff (id, staff_id, user_id, first_name, last_name, role, department_id, hospital_id, email, phone, join_date) VALUES

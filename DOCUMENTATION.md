@@ -253,7 +253,7 @@ For instant testing and evaluation without manual registration, use the pre-conf
    # Database
    DB_HOST=localhost
    DB_PORT=3306
-   DB_NAME=smart_health_manager
+   DB_NAME=smart_medicare
    DB_USER=root
    DB_PASSWORD=your_db_password
 

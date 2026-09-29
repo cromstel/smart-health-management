@@ -13,7 +13,7 @@ dotenv.config({ path: '../.env' });
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
     });
 
-    const dbName = process.env.DB_NAME || 'smart_health_manager';
+    const dbName = process.env.DB_NAME || 'smart_medicare';
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     console.log(`Database '${dbName}' created or already exists.`);
     await connection.end();

@@ -17,7 +17,7 @@ import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 const getDbConfig = (): { username: string; password: string; database: string; host: string; port: number } => ({
   username: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'smart_health_manager',
+  database: process.env.DB_NAME || 'smart_medicare',
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306', 10)
 });
@@ -70,12 +70,17 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
       'SELECT COUNT(*) as count FROM appointments'
     );
     
-    // Get database size
-    const [dbSize] = await connection.query<RowDataPacket[]>(
-      `SELECT 
+    // Get database size. The schema name is a bound parameter rather than
+    // string interpolation: it was previously hardcoded to the pre-rename
+    // `smart_health_manager`, so the health endpoint reported size for a
+    // database that no longer exists, and interpolating a value into SQL is a
+    // pattern worth not repeating even for an env-derived name.
+    const [dbSize] = await connection.execute<RowDataPacket[]>(
+      `SELECT
         ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
        FROM information_schema.tables
-       WHERE table_schema = 'smart_health_manager'`
+       WHERE table_schema = ?`,
+      [process.env.DB_NAME || 'smart_medicare']
     );
     
     connection.release();

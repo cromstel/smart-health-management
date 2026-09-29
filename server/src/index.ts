@@ -1,23 +1,11 @@
-import dotenv from 'dotenv';
+// Must stay the first import: it loads .env and .env.local. Every other import
+// is hoisted above any statement in this file, so loading env in the module
+// body (as this used to do) ran too late -- config/database.ts had already
+// built its connection pool from an empty process.env.
+import './config/env.js';
 import path from 'path';
 import fs from 'fs';
 import https from 'https';
-
-// Environment resolution, kept in the order AGENTS.md section 6 documents:
-//   .env      shared defaults
-//   .env.local  local overrides, and the file the setup instructions tell you
-//                to create, so it has to be loaded and has to win
-//
-// This used to load only ../.env, which meant following the documented setup
-// (cp .env.example .env.local) produced a root .env.local the server never
-// read. The API then started without DB_* or JWT_SECRET, never bound its port,
-// and every browser call to it failed with "Failed to fetch" -- which is what
-// the Playwright suite was reporting. config/database.ts already applied this
-// precedence for itself; the two files had drifted apart.
-const repoRootEnv = path.resolve(process.cwd(), '../.env');
-const repoRootLocalEnv = path.resolve(process.cwd(), '../.env.local');
-dotenv.config({ path: repoRootEnv });
-dotenv.config({ path: repoRootLocalEnv, override: true });
 
 import express from 'express';
 import { fileURLToPath } from 'url';
@@ -63,9 +51,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Rate limiting middleware
+//
+// This is the broad per-IP ceiling across all /api routes, and it is the limit
+// that actually bounded the Playwright suite: at 100 requests per 15 minutes a
+// single browser run exceeds it, after which auth tests fail with 429 for a
+// reason unrelated to the code under test. Overridable so a test run can raise
+// it, with the secure default preserved everywhere else.
+const apiLimitMax = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10);
+const apiLimitWindowMs = parseInt(
+  process.env.RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000),
+  10
+);
+
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: apiLimitWindowMs,
+  max: apiLimitMax,
   message: 'Too many requests from this IP, please try again after 15 minutes',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -75,7 +75,12 @@ const apiLimiter = rateLimit({
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  // Required for the app to read the CSRF token: response headers other than
+  // the safelisted ones are withheld from cross-origin scripts unless listed.
+  // Without this the X-XSRF-Token header is invisible to the client even though
+  // the server sends it.
+  exposedHeaders: ['X-XSRF-Token']
 }));
 app.use(express.json());
 app.use(morgan('dev'));
@@ -98,6 +103,14 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Issues a CSRF token for clients that cannot read the cookie, because the API
+// is on a different origin than the app. GET only, returns no data, and the
+// token is derived from the caller's own session, so this grants nothing that a
+// GET to any other endpoint would not already grant.
+app.get('/api/auth/csrf', (_req, res) => {
+  res.json({ ok: true });
 });
 
 app.post('/api/analytics/event', (_req, res) => {

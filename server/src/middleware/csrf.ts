@@ -15,6 +15,18 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
   }
   const token = crypto.createHash('sha1').update(req.session._csrfSecret).digest('base64');
   res.cookie('XSRF-TOKEN', token, { httpOnly: false, secure: process.env.NODE_ENV === 'production' });
+  // Also expose the token as a response header. The cookie alone is unusable
+  // for this client: the API runs on a different origin than the app (VITE_API_URL
+  // is :5000 while the app is :3000), so document.cookie on the app page cannot
+  // see a cookie scoped to :5000, and the double-submit check had nothing to
+  // compare against -- every unauthenticated POST returned 403.
+  //
+  // The header is only readable cross-origin if CORS exposes it, which
+  // index.ts now does via exposedHeaders. The cookie is kept for same-origin
+  // deployments and is not a second factor on its own: the value is derived
+  // from the server-side session secret, so a token is only obtainable from a
+  // response the server itself issued.
+  res.setHeader('X-XSRF-Token', token);
   next();
 };
 
@@ -32,7 +44,13 @@ export const validateCsrfToken = (req: Request, res: Response, next: NextFunctio
     return next();
   }
 
-  const clientToken = req.body._csrf || req.headers['x-xsrf-token'];
+  // req.body is undefined, not {}, when no body parser matched the request's
+  // Content-Type (express.json() only populates it for application/json). A
+  // POST with a missing or wrong Content-Type therefore threw
+  // "Cannot read properties of undefined (reading '_csrf')" and surfaced as a
+  // 500 instead of the 403 the check exists to return. Optional chaining keeps
+  // the unparseable-body case on the normal rejection path.
+  const clientToken = (req.body as Record<string, unknown> | undefined)?._csrf || req.headers['x-xsrf-token'];
   const sessionSecret = req.session._csrfSecret;
 
   if (!clientToken || !sessionSecret) {

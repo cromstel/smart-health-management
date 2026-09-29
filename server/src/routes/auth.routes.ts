@@ -7,10 +7,22 @@ import { rateLimit } from 'express-rate-limit';
 
 const router = Router();
 
-// Brute-force protection for login attempts
+// Brute-force protection for login attempts.
+//
+// The limits are a security control and should not be weakened casually, but
+// they are per-IP and the Playwright suite drives dozens of logins from one
+// address in parallel. With no way to raise them the suite could not run at
+// all: it hit 429 and every auth test failed for a reason unrelated to the
+// code under test.
+//
+// Overridable by environment, defaulting to the secure value so production is
+// unaffected. playwright.config.ts raises these for the test run only.
+const loginLimitMax = parseInt(process.env.LOGIN_RATE_LIMIT_MAX || '5', 10);
+const twoFactorLimitMax = parseInt(process.env.TWO_FACTOR_RATE_LIMIT_MAX || '5', 10);
+
 const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 5, // Limit each IP to 5 login requests per windowMs
+  max: loginLimitMax,
   message: 'Too many login attempts from this IP, please try again after 5 minutes',
   standardHeaders: true,
   legacyHeaders: false,
@@ -19,7 +31,7 @@ const loginLimiter = rateLimit({
 // Brute-force protection for TOTP code guessing (6-digit space is small)
 const twoFactorLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // Limit each IP to 10 TOTP attempts per windowMs
+  max: twoFactorLimitMax,
   message: 'Too many verification attempts from this IP, please try again after 5 minutes',
   standardHeaders: true,
   legacyHeaders: false,

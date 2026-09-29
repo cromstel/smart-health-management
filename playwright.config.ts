@@ -28,11 +28,21 @@ export default defineConfig({
     //
     // Start the API yourself before running the suite (npm run dev in server/),
     // then Playwright will reuse it. The backend in turn needs reachable MySQL
-    // credentials; a local server whose DB rejects the configured user will
-    // still fail these tests, and that is an environment problem rather than a
-    // code one.
+    // credentials and a seeded database, per AGENTS.md section 6.
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    env: {
+      // The API's rate limiters are per-IP and secure by default: 5 login and
+      // 10 TOTP attempts per 5 minutes, and 100 API calls per 15 minutes. A
+      // suite that performs dozens of logins and hundreds of requests from one
+      // address exceeds all three and then fails with 429 for reasons unrelated
+      // to the code. Raised for the test environment only -- start the API with
+      // the same values (see the comment above) to exercise the suite.
+      LOGIN_RATE_LIMIT_MAX: '1000',
+      TWO_FACTOR_RATE_LIMIT_MAX: '1000',
+      RATE_LIMIT_MAX_REQUESTS: '100000',
+      RATE_LIMIT_WINDOW_MS: '60000',
+    },
   },
 });

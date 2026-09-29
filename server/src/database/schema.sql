@@ -1,7 +1,7 @@
 -- Smart MediCare (BIGINT Schema)
 
-CREATE DATABASE IF NOT EXISTS smart_health_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE smart_health_manager;
+CREATE DATABASE IF NOT EXISTS smart_medicare CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE smart_medicare;
 
 -- 1. Roles table
 CREATE TABLE IF NOT EXISTS roles (
@@ -89,6 +89,16 @@ CREATE TABLE IF NOT EXISTS departments (
 
 -- users affiliation: hospitals/departments are created after users above, so
 -- the FK constraints are wired in a follow-up ALTER for fresh installs.
+--
+-- Re-running this file on a database that already has these constraints failed
+-- with ER_FK_DUP_NAME, because the constraints are added without IF NOT EXISTS
+-- support in MySQL. The tables themselves use CREATE TABLE IF NOT EXISTS, so
+-- the file was otherwise written to be safely re-runnable.
+--
+-- Not changed: adding conditional constraint support would need a stored
+-- procedure or an information_schema guard, which is a larger change than this
+-- warrants. Re-running the schema against a populated database is not a
+-- supported path; use the seed for that, which is idempotent.
 ALTER TABLE users
   ADD CONSTRAINT fk_users_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL,
   ADD CONSTRAINT fk_users_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;

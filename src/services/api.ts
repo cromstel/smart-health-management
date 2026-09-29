@@ -1,4 +1,4 @@
-﻿import type { User } from "@/contexts/AuthContext";
+import type { User } from "@/contexts/AuthContext";
 import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
@@ -105,6 +105,46 @@ class ApiService {
     return 'offline-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
   }
 
+  /**
+   * The CSRF token for unauthenticated state-changing requests.
+   *
+   * The server's double-submit check (server/src/middleware/csrf.ts) rejects
+   * any non-GET without a matching x-xsrf-token unless a Bearer credential is
+   * present, so login and the other pre-auth POSTs need one.
+   *
+   * It cannot come from document.cookie here: the API is a different origin
+   * (:5000) from the app (:3000), so the XSRF-TOKEN cookie is not visible to the
+   * app page at all. The server therefore also returns the token in the
+   * X-XSRF-Token response header, which CORS exposes. Cookie is kept as a
+   * fallback for same-origin deployments.
+   */
+  private csrfToken: string | null = null;
+
+  private async ensureCsrfToken(): Promise<void> {
+    if (this.csrfToken) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/csrf`, { credentials: 'include' });
+      const header = res.headers.get('x-xsrf-token');
+      if (header) {
+        this.csrfToken = header;
+        return;
+      }
+    } catch {
+      // fall through to the cookie path
+    }
+    if (typeof document !== 'undefined') {
+      const prefix = 'XSRF-TOKEN=';
+      for (const part of document.cookie.split(';')) {
+        const entry = part.trim();
+        if (entry.startsWith(prefix)) {
+          this.csrfToken = decodeURIComponent(entry.slice(prefix.length));
+          return;
+        }
+      }
+    }
+  }
+
   private getHeaders(includeAuth = true): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -115,6 +155,13 @@ class ApiService {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`; // Include auth header only if token exists
       }
+    }
+
+    // Only needed when there is no Bearer credential: the server skips the
+    // check for authenticated requests, since a header cannot ride along
+    // cross-origin on its own.
+    if (!localStorage.getItem('token') && this.csrfToken) {
+      headers['x-xsrf-token'] = this.csrfToken;
     }
 
     return headers;
@@ -130,8 +177,13 @@ class ApiService {
 
   // Auth endpoints
   async login(email: string, password: string) {
+    await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
+      // The API is a different origin from the app (VITE_API_URL is typically
+      // :5000 while the app is :3000), so the session cookie has to be replayed
+      // explicitly for the double-submit check to have a session to match.
+      credentials: 'include',
       headers: this.getHeaders(false),
       body: JSON.stringify({ email, password }),
     });
@@ -139,8 +191,10 @@ class ApiService {
   }
 
   async register(data: { email: string; password: string; name: string; roleId?: string; hospital?: string; department?: string }) {
+    await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
+      credentials: 'include',
       headers: this.getHeaders(false),
       body: JSON.stringify(data),
     });
@@ -148,17 +202,24 @@ class ApiService {
   }
 
   async requestDemo(data: DemoRequestPayload): Promise<{ message: string }> {
+    // /api/demo-requests is on the server's CSRF exemption list (it accepts
+    // anonymous submissions and has no session to protect), so no token is
+    // needed. credentials is still set for consistency with the other
+    // cross-origin calls.
     const response = await fetch(`${API_BASE_URL}/demo-requests`, {
       method: 'POST',
       headers: this.getHeaders(false),
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     return this.handleResponse(response);
   }
 
   async forgotPassword(email: string) {
+    await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
       method: 'POST',
+      credentials: 'include',
       headers: this.getHeaders(false),
       body: JSON.stringify({ email }),
     });
@@ -166,8 +227,10 @@ class ApiService {
   }
 
   async resetPassword(token: string, password: string) {
+    await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
       method: 'POST',
+      credentials: 'include',
       headers: this.getHeaders(false),
       body: JSON.stringify({ token, password }),
     });
@@ -176,15 +239,24 @@ class ApiService {
 
   async verifyTwoFactor(code: string, mfaToken?: string) {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    let hasBearer = false;
     if (mfaToken) {
       headers['Authorization'] = `Bearer ${mfaToken}`;
+      hasBearer = true;
     } else {
       const token = localStorage.getItem('token');
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        hasBearer = true;
+      }
     }
+    // The server exempts Bearer requests from the CSRF check. Without one it
+    // applies, so the token has to be present.
+    if (!hasBearer) await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
       method: 'POST',
-      headers,
+      credentials: 'include',
+      headers: hasBearer ? headers : { ...headers, 'x-xsrf-token': this.csrfToken ?? '' },
       body: JSON.stringify({ code }),
     });
     return this.handleResponse(response);
@@ -273,7 +345,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // â”€â”€ WebAuthn passkeys â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── WebAuthn passkeys ──────────────────────────────────────────────────────
   // Real browser attestation/assertion. The backend signs the ceremony
   // challenge into a short-lived token that is returned with the verify call.
 
@@ -298,8 +370,10 @@ class ApiService {
 
   /** Start a passkey login ceremony for the given account (public). */
   async webauthnLoginOptions(email: string): Promise<{ options: PublicKeyCredentialRequestOptionsJSON; challengeToken: string }> {
+    await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/webauthn/login/options`, {
       method: 'POST',
+      credentials: 'include',
       headers: this.getHeaders(false),
       body: JSON.stringify({ email }),
     });
@@ -309,15 +383,22 @@ class ApiService {
   /** Verify a passkey assertion and exchange it for a full session (mfa_pending token in header). */
   async webauthnLoginVerify(assertion: AuthenticationResponseJSON, challengeToken: string, mfaToken?: string) {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    let hasBearer = false;
     if (mfaToken) {
       headers['Authorization'] = `Bearer ${mfaToken}`;
+      hasBearer = true;
     } else {
       const token = localStorage.getItem('token');
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        hasBearer = true;
+      }
     }
+    if (!hasBearer) await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/webauthn/login/verify`, {
       method: 'POST',
-      headers,
+      credentials: 'include',
+      headers: hasBearer ? headers : { ...headers, 'x-xsrf-token': this.csrfToken ?? '' },
       body: JSON.stringify({ assertion, challengeToken }),
     });
     return this.handleResponse(response);
