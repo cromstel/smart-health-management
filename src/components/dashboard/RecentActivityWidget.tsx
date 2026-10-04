@@ -253,10 +253,14 @@ export default function RecentActivityWidget({ initialActivities = [], className
   return (
     <Card className={`border border-border ${className}`}>
       <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-accent" />
+        {/* min-w-0 on the row and its first column: CardHeader is a grid whose
+            auto track is floored at min-content, so the user-name badge
+            ("Dr. Michael Chen (Doctor)") set a 389px floor and the card
+            overflowed its 327px module, propagating to the document. */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Activity className="h-5 w-5 text-accent shrink-0" />
               <CardTitle className="text-lg font-semibold text-foreground">Recent Activity</CardTitle>
               {user && (
                 <Badge variant="secondary" className="text-xs font-medium">
@@ -293,7 +297,7 @@ export default function RecentActivityWidget({ initialActivities = [], className
         </div>
 
         {/* Search and Tabs row */}
-        <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-border mt-2">
+        <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-border mt-2 min-w-0">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setActiveTab('all')}

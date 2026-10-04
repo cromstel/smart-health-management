@@ -1,5 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Keep the app port configurable and, more importantly, verify it is actually
+// ours. Port 3000 was held on this machine by a WSL relay serving an unrelated
+// application; Vite silently fell back to the next port up while the suite kept
+// talking to 3000, so every run measured the wrong software. strictPort in
+// vite.config.ts stops the server side of that, and the content check below
+// stops the test side from ever trusting a port that is not this app.
+//
+// VITE_PORT rather than PORT, because PORT is the API server's port (5000).
+const PORT = Number(process.env.VITE_PORT || 5175);
+const BASE_URL = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,7 +19,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
     serviceWorkers: 'block',
   },
@@ -30,9 +41,10 @@ export default defineConfig({
     // then Playwright will reuse it. The backend in turn needs reachable MySQL
     // credentials and a seeded database, per AGENTS.md section 6.
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     env: {
+      VITE_PORT: String(PORT),
       // The API's rate limiters are per-IP and secure by default: 5 login and
       // 10 TOTP attempts per 5 minutes, and 100 API calls per 15 minutes. A
       // suite that performs dozens of logins and hundreds of requests from one
@@ -45,4 +57,8 @@ export default defineConfig({
       RATE_LIMIT_WINDOW_MS: '60000',
     },
   },
+  // Refuse to run against whatever happens to be answering on the port. Cheap
+  // insurance against repeating the "tested a different app" failure, which is
+  // easy to miss because the failures look plausible.
+  globalSetup: './e2e/global-setup.ts',
 });

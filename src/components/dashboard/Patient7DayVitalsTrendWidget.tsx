@@ -27,7 +27,12 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
         if (Array.isArray(pList)) {
           setPatients(pList);
           if (pList.length > 0 && selectedPatientId === 'all') {
-            setSelectedPatientId(pList[0].id || pList[0].patient_id || '1');
+            // Coerce to string: the API returns `id` as a number, and the trend
+            // effect calls selectedPatientId.split(), which threw
+            // "selectedPatientId.split is not a function" on every dashboard
+            // load and took the widget's tree down with it.
+            const first = pList[0].id ?? pList[0].patient_id ?? '1';
+            setSelectedPatientId(String(first));
           }
         }
       } catch (err) {
@@ -44,8 +49,10 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
     const now = new Date();
     const records: VitalsDayRecord[] = [];
 
-    // Seed pseudo-random generator deterministically based on patient ID string length/chars
-    const seed = selectedPatientId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 42);
+    // Seed pseudo-random generator deterministically based on patient ID string length/chars.
+    // String() guard: this runs before the load effect has necessarily
+    // normalised the selection to a string.
+    const seed = String(selectedPatientId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 42);
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 86400000);

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { startWebAuthnAuthentication } from '@/utils/webauthn';
+import { postAuthRoute } from '@/lib/postAuthRoute';
 
 const methods = [
   { id: 'totp' as const, label: 'Authenticator', icon: Lock },
@@ -70,10 +71,10 @@ export default function TwoFactorPage() {
         setError('Passkey verification cancelled.');
         return;
       }
-      await verifyMfaPasskey(assertion, challengeToken);
+      const verified = await verifyMfaPasskey(assertion, challengeToken);
       setSuccess(true);
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate(postAuthRoute(verified ?? mfaPendingUser));
       }, 1000);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Passkey credentials could not be validated.';
@@ -103,10 +104,10 @@ export default function TwoFactorPage() {
       }
       setLoading(true);
       try {
-        await verifyMfaRecovery(clean);
+        const verified = await verifyMfaRecovery(clean);
         setSuccess(true);
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate(postAuthRoute(verified ?? mfaPendingUser));
         }, 1000);
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : 'Verification failed. Check the code.';
@@ -124,10 +125,10 @@ export default function TwoFactorPage() {
 
     setLoading(true);
     try {
-      await verifyMfaTotp(code);
+      const verified = await verifyMfaTotp(code);
       setSuccess(true);
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate(postAuthRoute(verified ?? mfaPendingUser));
       }, 1000);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Verification failed. Please check the code.';

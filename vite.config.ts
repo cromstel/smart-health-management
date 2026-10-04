@@ -162,12 +162,22 @@ export default defineConfig({
   },
   server: {
     host: process.env.NODE_ENV === 'production' ? 'medicare.cromstelit.com' : '0.0.0.0',
-    port: 3000,
+    port: Number(process.env.VITE_PORT || 5175),
+    // VITE_PORT, not PORT: PORT already belongs to the API server
+    // (server/src/index.ts, .env.local sets PORT=5000). Sharing one variable
+    // would move both servers at once.
+    // Fail loudly instead of silently moving to the next free port. Without
+    // this, a foreign process already holding the port (a WSL relay held 3000
+    // here) made Vite bind the next one up while a test run kept talking to
+    // the squatter -- the suite reported failures from an entirely different
+    // application.
+    strictPort: true,
     allowedHosts: process.env.NODE_ENV === 'production' ? ['medicare.cromstelit.com'] : true,
   },
   preview: {
     host: process.env.NODE_ENV === 'production' ? 'medicare.cromstelit.com' : '0.0.0.0',
-    port: 3000,
+    port: Number(process.env.VITE_PORT || 5175),
+    strictPort: true,
     allowedHosts: process.env.NODE_ENV === 'production' ? ['medicare.cromstelit.com'] : true,
   },
 })

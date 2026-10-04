@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export type NotificationType =
@@ -426,7 +427,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  // Wait for a real session before polling. These two helpers hit authenticated
+  // endpoints (/api/appointments), and this provider wraps the whole app
+  // including the public landing and auth pages, so an unauthenticated visitor
+  // accumulated a 401 every 30 seconds -- logged to the console as a failed
+  // resource and visible to anyone with devtools open on a marketing page.
+  const { isAuthenticated, isAuthLoading } = useAuth();
+
   useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) return;
+
     // Initial fetch and check
     refreshNotifications();
     check15MinApproachingAppointments();
@@ -438,7 +448,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [refreshNotifications, check15MinApproachingAppointments]);
+  }, [refreshNotifications, check15MinApproachingAppointments, isAuthenticated, isAuthLoading]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications((prev) => {

@@ -25,9 +25,9 @@ interface AuthContextType {
   canActOnDepartment: (departmentId?: string) => boolean;
   mfaPending: boolean;
   mfaPendingUser: User | null;
-  verifyMfaTotp: (code: string) => Promise<boolean>;
-  verifyMfaRecovery: (code: string) => Promise<boolean>;
-  verifyMfaPasskey: (assertion: AuthenticationResponseJSON, challengeToken: string) => Promise<boolean>;
+  verifyMfaTotp: (code: string) => Promise<User | null>;
+  verifyMfaRecovery: (code: string) => Promise<User | null>;
+  verifyMfaPasskey: (assertion: AuthenticationResponseJSON, challengeToken: string) => Promise<User | null>;
   cancelMfa: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const verifyMfaTotp = async (totpCode: string): Promise<boolean> => {
+  const verifyMfaTotp = async (totpCode: string): Promise<User | null> => {
     if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
       throw new Error('No pending MFA session found. Please log in again.');
     }
@@ -108,15 +108,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Complete authentication with the verified full-token response
     localStorage.setItem('token', mfaResponse.token ?? '');
-    setUser(mfaResponse.user ?? mfaPendingUser);
+    const resolved: User = mfaResponse.user ?? mfaPendingUser;
+    setUser(resolved);
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
     setIsAuthLoading(false);
-    return true;
+    // Returned so the caller can pick the correct landing route. Reading the
+    // context value immediately after this await would return the pre-update
+    // value, because setUser has not rendered yet.
+    return resolved;
   };
 
-  const verifyMfaRecovery = async (recoveryCodeInput: string): Promise<boolean> => {
+  const verifyMfaRecovery = async (recoveryCodeInput: string): Promise<User | null> => {
     if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
       throw new Error('No pending MFA session found. Please log in again.');
     }
@@ -131,18 +135,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const mfaResponse = await api.verifyRecovery(cleanCode, mfaPendingToken) as { token?: string; user?: User };
 
     localStorage.setItem('token', mfaResponse.token ?? '');
-    setUser(mfaResponse.user ?? mfaPendingUser);
+    const resolved: User = mfaResponse.user ?? mfaPendingUser;
+    setUser(resolved);
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
     setIsAuthLoading(false);
-    return true;
+    return resolved;
   };
 
   const verifyMfaPasskey = async (
     assertion: AuthenticationResponseJSON,
     challengeToken: string
-  ): Promise<boolean> => {
+  ): Promise<User | null> => {
     if (!mfaPending || !mfaPendingUser || !mfaPendingToken) {
       throw new Error('No pending MFA session found. Please log in again.');
     }
@@ -152,12 +157,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const mfaResponse = await api.webauthnLoginVerify(assertion, challengeToken, mfaPendingToken) as { token?: string; user?: User };
 
     localStorage.setItem('token', mfaResponse.token ?? '');
-    setUser(mfaResponse.user ?? mfaPendingUser);
+    const resolved: User = mfaResponse.user ?? mfaPendingUser;
+    setUser(resolved);
     setMfaPending(false);
     setMfaPendingUser(null);
     setMfaPendingToken(null);
     setIsAuthLoading(false);
-    return true;
+    return resolved;
   };
 
   const cancelMfa = () => {
@@ -203,9 +209,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let es: EventSource | null = null;
     try {
-      if (typeof window !== 'undefined' && 'EventSource' in window) {
-        const token = localStorage.getItem('token');
-        const streamUrl = `${API_ORIGIN}/api/roles/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+      // Only open the role stream for a real session. Without a token the
+      // server answers 401, EventSource retries on an interval, and an
+      // unauthenticated visitor accumulated a stream of failed requests.
+      const streamToken = localStorage.getItem('token');
+      if (typeof window !== 'undefined' && 'EventSource' in window && streamToken) {
+        const streamUrl = `${API_ORIGIN}/api/roles/stream?token=${encodeURIComponent(streamToken)}`;
         es = new EventSource(streamUrl);
         es.onmessage = async (e) => {
           try {

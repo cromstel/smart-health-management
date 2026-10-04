@@ -27,6 +27,7 @@ import {
   Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { postAuthRoute } from '@/lib/postAuthRoute';
 
 const loginSchema = z.object({
   email: z
@@ -112,7 +113,7 @@ export default function LoginPage() {
         navigate('/two-factor');
       } else {
         toast.success('Successfully logged in!');
-        navigate('/dashboard');
+        navigate(postAuthRoute(res.user));
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
@@ -147,9 +148,9 @@ export default function LoginPage() {
     }
     setTotpLoading(true);
     try {
-      await verifyMfaTotp(totpCode);
+      const verified = await verifyMfaTotp(totpCode);
       toast.success('Authenticator MFA token verified successfully!');
-      navigate('/dashboard');
+      navigate(postAuthRoute(verified ?? mfaPendingUser));
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Invalid TOTP code. Please check your authenticator app.';
       setServerError(errMsg);

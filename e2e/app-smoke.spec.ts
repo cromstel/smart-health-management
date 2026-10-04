@@ -53,13 +53,38 @@ async function login(page: Page, email: string, password: string) {
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: /sign in|login/i }).first().click();
-  // Handle MFA gate (mock enforces TOTP by default; demo-fill button available)
-  const mfaButton = page.getByRole('button', { name: /quick test: fill demo totp/i });
-  if (await mfaButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await mfaButton.click();
-    await page.getByRole('button', { name: /verify code/i }).click();
+
+  // The seeded clinical accounts carry a TOTP secret, so login returns a
+  // short-lived temp token and the UI routes to /two-factor. Accounts without a
+  // secret (the super admin) go straight through.
+  //
+  // Wait for that navigation before probing for the two-factor controls: the
+  // quick-fill button lives on /two-factor, so checking for it while still on
+  // /login always missed and then timed out on the final URL wait.
+  //
+  // The button labels previously used here were written against the mock API and
+  // no longer matched the real page ("Quick Test: fill demo TOTP" / "Verify
+  // code"). Matched to the current page instead. The quick-fill sets the code
+  // asynchronously, so wait for the value rather than relying on click retry.
+  await page.waitForURL(/\/(two-factor|dashboard|super-admin)/, { timeout: 30000 });
+
+  if (page.url().includes('/two-factor')) {
+    const otpInput = page.getByLabel(/enter 6-digit authentication code/i);
+    await otpInput.waitFor({ state: 'visible', timeout: 15000 });
+    const quickFill = page.getByRole('button', { name: /quick test: fetch current demo totp token/i });
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await quickFill.click();
+      const filled = await otpInput
+        .inputValue()
+        .then((value) => /^\d{6}$/.test(value))
+        .catch(() => false);
+      if (filled) break;
+      await page.waitForTimeout(500);
+    }
+    await page.getByRole('button', { name: /confirm & proceed to dashboard/i }).click();
   }
-  await page.waitForURL(/\/(dashboard|super-admin)/, { timeout: 20000 });
+
+  await page.waitForURL(/\/(dashboard|super-admin)/, { timeout: 30000 });
 }
 
 test('login as admin', async ({ page }) => {

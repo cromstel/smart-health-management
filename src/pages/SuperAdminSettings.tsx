@@ -5,7 +5,213 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, CheckCircle, HardDriveUpload, HardDriveDownload, HeartPulse } from 'lucide-react';
+import { AlertCircle, CheckCircle, HardDriveUpload, HardDriveDownload, HeartPulse, ShieldCheck, Copy, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+/**
+ * Two-factor enrolment for the super admin's own account.
+ *
+ * The seed deliberately leaves totp_secret NULL for this account (see
+ * seed.sql), so the master session starts on credentials alone and the operator
+ * chooses when two-factor becomes mandatory. Without this panel there would be
+ * no way to turn it on: the enrolment endpoints exist and the staff settings
+ * page uses them, but the super-admin console had no entry point, so the seeded
+ * account would stay permanently unenrolled.
+ */
+function SuperAdminTwoFactor() {
+  const { user, refreshUser } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [secret, setSecret] = useState('');
+  const [pairing, setPairing] = useState(false);
+  const [confirmCode, setConfirmCode] = useState('');
+  const [disabling, setDisabling] = useState(false);
+  const [disableCode, setDisableCode] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
+
+  const enabled = Boolean(user?.totp_enabled);
+
+  const startEnrolment = async () => {
+    setBusy(true);
+    try {
+      const { secret: newSecret } = await api.totpEnroll();
+      setSecret(newSecret);
+      setPairing(true);
+      setDisabling(false);
+      toast.success('Secret generated. Add it to your authenticator app, then confirm a code.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not start two-factor setup.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmEnrolment = async () => {
+    const code = confirmCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      toast.error('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await api.totpConfirm(secret, code);
+      setPairing(false);
+      setConfirmCode('');
+      setSecret('');
+      setRecoveryCodes(result.recoveryCodes ?? []);
+      toast.success('Two-factor authentication enabled for this master account.');
+      await refreshUser();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Verification failed. Check the code.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = async () => {
+    const code = disableCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      toast.error('Enter a current 6-digit code from your authenticator app.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.totpDisable(code);
+      setDisabling(false);
+      setDisableCode('');
+      toast.success('Two-factor authentication disabled.');
+      await refreshUser();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not disable two-factor.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copySecret = async () => {
+    try {
+      await navigator.clipboard.writeText(secret);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy. Select the secret manually.');
+    }
+  };
+
+  return (
+    <Card className="border-border">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-foreground">
+          <ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />
+          Two-Factor Authentication
+        </CardTitle>
+        <CardDescription>
+          Protects the master session. Not enabled by default so a fresh
+          environment can be signed into; enable it once your authenticator app
+          is paired.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Status:{' '}
+          <span className={enabled ? 'font-semibold text-success' : 'font-semibold text-warning'}>
+            {enabled ? 'Enabled' : 'Not enabled'}
+          </span>
+        </p>
+
+        {recoveryCodes.length > 0 && (
+          <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-4">
+            <p className="text-sm font-semibold text-foreground">
+              Recovery codes — shown once
+            </p>
+            <ul className="grid grid-cols-2 gap-1 font-mono text-xs text-foreground">
+              {recoveryCodes.map((code) => (
+                <li key={code}>{code}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              Store these now. They are the only way back in if the authenticator
+              is lost.
+            </p>
+          </div>
+        )}
+
+        {pairing && secret && (
+          <div className="space-y-3 rounded-md border border-border bg-background p-4">
+            <Label htmlFor="superadmin-totp-secret">Authenticator secret</Label>
+            <div className="flex items-center gap-2">
+              <code
+                id="superadmin-totp-secret"
+                className="flex-1 rounded border border-border bg-card px-3 py-2 font-mono text-xs break-all text-foreground"
+              >
+                {secret}
+              </code>
+              <Button type="button" variant="outline" size="sm" onClick={copySecret}>
+                {copied ? (
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Copy className="h-4 w-4" aria-hidden="true" />
+                )}
+                <span className="sr-only">Copy secret</span>
+              </Button>
+            </div>
+            <Label htmlFor="superadmin-totp-confirm">6-digit code</Label>
+            <Input
+              id="superadmin-totp-confirm"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={confirmCode}
+              onChange={(e) => setConfirmCode(e.target.value)}
+              className="font-mono"
+            />
+            <Button onClick={confirmEnrolment} disabled={busy}>
+              {busy ? 'Verifying...' : 'Confirm and enable'}
+            </Button>
+          </div>
+        )}
+
+        {disabling && (
+          <div className="space-y-3 rounded-md border border-border bg-background p-4">
+            <Label htmlFor="superadmin-totp-disable">Current 6-digit code</Label>
+            <Input
+              id="superadmin-totp-disable"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value)}
+              className="font-mono"
+            />
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={disable} disabled={busy}>
+                {busy ? 'Disabling...' : 'Confirm disable'}
+              </Button>
+              <Button variant="outline" onClick={() => setDisabling(false)} disabled={busy}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!pairing && !disabling && (
+          <div className="flex flex-wrap gap-2">
+            {enabled ? (
+              <Button variant="outline" onClick={() => setDisabling(true)} disabled={busy}>
+                Disable two-factor
+              </Button>
+            ) : (
+              <Button onClick={startEnrolment} disabled={busy}>
+                {busy ? 'Working...' : 'Enable two-factor'}
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SuperAdminSettings() {
   const [settings, setSettings] = useState<SuperAdminSetting[]>([]);
@@ -193,6 +399,10 @@ export default function SuperAdminSettings() {
             </CardContent>
           </Card>
         ))}
+
+        {/* Two-factor for the master session. First, because it is the one
+            control here that affects who can reach the console at all. */}
+        <SuperAdminTwoFactor />
 
         {/* System Operations */}
         <Card className="bg-card border-border">

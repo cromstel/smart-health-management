@@ -74,7 +74,7 @@ git clone https://github.com/cromstelit/smart-health-management.git
 cd smart-health-management-system
 docker-compose up -d
 
-App should be available at: http://localhost:3000
+App should be available at: http://localhost:5175
 
 ---
 ## Option B: Manual Setup
@@ -85,7 +85,7 @@ Frontend Setup (Next.js + Vite)
        -   npm install
        -   npm run dev
 ---
-    -  Development server: http://localhost:3000
+    -  Development server: http://localhost:5175
     -  Production build: npm run build
     -  Start production server: npm run start
 

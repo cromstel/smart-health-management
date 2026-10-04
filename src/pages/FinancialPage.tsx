@@ -440,6 +440,16 @@ export default function FinancialPage() {
         </div>
       </div>
 
+      {/* Page heading, hoisted out of the load and error branches below. Those
+          branches previously rendered no heading at all -- skeletons while the
+          chart of accounts loaded, an <h3> if it failed -- so the route had no
+          accessible name for most of its life, and the route smoke test (which
+          asserts on an h1) failed for reasons unrelated to the page rendering. */}
+      <div className="print:hidden">
+        <h1 className="font-display text-3xl font-semibold text-foreground">Financial Management</h1>
+        <p className="text-muted-foreground">Chart of Accounts and financial reporting</p>
+      </div>
+
       {(loadingAccounts || loadingTransactions) ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -488,11 +498,8 @@ export default function FinancialPage() {
         </ErrorBoundary>
       ) : (
         <>
-          <div className="flex items-center justify-between flex-wrap gap-4 print:hidden">
-            <div>
-              <h1 className="font-display text-3xl font-semibold text-foreground">Financial Management</h1>
-              <p className="text-muted-foreground">Chart of Accounts and financial reporting</p>
-            </div>
+          {/* Actions only: the page title above is now shared by every state. */}
+          <div className="flex items-center justify-end print:hidden">
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" className="gap-2" onClick={handlePrint} title="Print current financial view">
                 <Printer className="h-4 w-4" aria-hidden="true" />

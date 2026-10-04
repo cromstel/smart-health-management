@@ -59,10 +59,14 @@ export function ApiHealthWidget() {
   return (
     <Card className="border border-border">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        {/* Wraps at narrow widths instead of overflowing. As a single
+            justify-between row the title, status badge and refresh control
+            together exceeded a 375px viewport, pushing the card 51px past the
+            edge and giving the document a 607px scroll width. */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <Server className="h-5 w-5 text-primary" />
-            VITE_API_BASE_URL Telemetry & Latency
+            API Telemetry &amp; Latency
           </CardTitle>
           <div className="flex items-center gap-2">
             {status === 'online' && (

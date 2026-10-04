@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ShieldAlert, Activity, FileText, CheckCircle2 } from 'lucide-react';
 import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AuditLogItem {
   id?: string;
@@ -19,8 +20,19 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'30d' | '14d' | '7d'>('30d');
 
+  // /api/super-admin/audit-logs requires the superAdmin permission, so every
+  // clinician dashboard load was firing a request that could only answer 403.
+  // Gate the call on the permission and fall back to the local/mock timeline
+  // without touching the network when it is not held.
+  const { user } = useAuth();
+  const canReadAuditLogs = !!user && (user.role === 'Super Admin' || user.role === 'super_admin');
+
   useEffect(() => {
     async function fetchLogs() {
+      if (!canReadAuditLogs) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const res = await api.getAuditLogs(100);
@@ -74,7 +86,7 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
       }
     }
     fetchLogs();
-  }, []);
+  }, [canReadAuditLogs]);
 
   const chartData = useMemo(() => {
     const daysCount = timeRange === '30d' ? 30 : timeRange === '14d' ? 14 : 7;

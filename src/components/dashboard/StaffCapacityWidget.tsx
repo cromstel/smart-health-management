@@ -404,9 +404,13 @@ export default function StaffCapacityWidget() {
 
   return (
     <Card className="border border-border bg-card">
-      <CardHeader className="pb-3 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div>
+      {/* min-w-0: CardHeader is a grid, and an auto-sized grid track is floored at
+            its content's min-content width. Without this the track resolved to
+            the widest row inside (346px), so the header overflowed its 325px
+            card and pushed the whole dashboard past the viewport. */}
+      <CardHeader className="pb-3 space-y-3 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 min-w-0">
+          <div className="min-w-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Users className="h-5 w-5 text-accent" />
               Staff Capacity & Load Balancer
@@ -416,7 +420,7 @@ export default function StaffCapacityWidget() {
             </CardDescription>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
             {exceededDailyThresholdCount > 0 && (
               <Badge variant="destructive" className="gap-1 animate-pulse shadow-sm">
                 <AlertOctagon className="h-3 w-3" />
@@ -457,7 +461,7 @@ export default function StaffCapacityWidget() {
         </div>
 
         {/* Controls Bar: Shift Filters & View Mode Tabs */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-border/60">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-border/60 min-w-0">
           {/* Shift Filter Buttons */}
           <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/80 overflow-x-auto text-xs">
             <span className="text-[11px] font-semibold text-muted-foreground px-2 flex items-center gap-1">
@@ -576,7 +580,11 @@ export default function StaffCapacityWidget() {
                       <div className="absolute top-0 left-0 right-0 h-1 bg-destructive animate-pulse" />
                     )}
 
-                    <div className="flex items-start justify-between gap-3">
+                    {/* Wraps at narrow widths. With the status pill and toggle pinned via
+            shrink-0, this row held a 165px "CRITICAL / OVER THRESHOLD" pill plus
+            a toggle at 247px of available width, overflowing the card and
+            pushing the dashboard 232px past a 375px viewport. */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="cursor-pointer select-none flex-1" onClick={() => toggleExpand(clinician.id)}>
                         <div className="flex flex-wrap items-center gap-2">
                           {/* Pulsing Visual Status Alert Icon */}
@@ -623,8 +631,8 @@ export default function StaffCapacityWidget() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-wide font-extrabold shrink-0 ${textColor}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-wide font-extrabold ${textColor}`}>
                           {statusLabel}
                         </span>
                         <Button 

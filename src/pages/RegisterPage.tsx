@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { postAuthRoute } from '@/lib/postAuthRoute';
 import {
   Activity,
   Eye,
@@ -110,8 +111,12 @@ export default function RegisterPage() {
 
       setTimeout(async () => {
         try {
-          await login(data.email, data.password);
-          navigate('/dashboard');
+          const res = await login(data.email, data.password);
+          if (res.requiresMfa) {
+            navigate('/two-factor');
+            return;
+          }
+          navigate(postAuthRoute(res.user));
         } catch {
           navigate('/login');
         }

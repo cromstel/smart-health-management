@@ -457,7 +457,12 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* min-w-0 on the grid, not just on each module: a grid item's
+            automatic minimum size is its content's min-content width, so a wide
+            child (the 760px appointment heat map) widens the whole track and the
+            overflow escapes to the document instead of being clipped by the
+            heat map's own overflow-x-auto wrapper. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         {modules.map((module) => {
           if (!module.visible && !isCustomizing) return null;
 
@@ -574,11 +579,14 @@ export default function DashboardPage() {
               break;
             case 'analytics':
               component = (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <Card className="border border-border">
+                // Same min-w-0 reasoning as the growth module below: the
+                // Recharts container established a min-content floor wider than
+                // its module and pushed the page sideways at 375px.
+                <div className="grid gap-6 md:grid-cols-2 min-w-0">
+                  <Card className="border border-border min-w-0">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-accent" aria-hidden="true" />
+                        <Activity className="h-5 w-5 text-accent shrink-0" aria-hidden="true" />
                         Patient Load Predictions
                       </CardTitle>
                     </CardHeader>
@@ -600,10 +608,10 @@ export default function DashboardPage() {
                       )}
                     </CardContent>
                   </Card>
-                  <Card className="border border-border">
+                  <Card className="border border-border min-w-0">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Hospital className="h-5 w-5 text-accent" aria-hidden="true" />
+                        <Hospital className="h-5 w-5 text-accent shrink-0" aria-hidden="true" />
                         Ghana Health Service Alerts
                       </CardTitle>
                     </CardHeader>
@@ -634,11 +642,15 @@ export default function DashboardPage() {
               break;
             case 'growth':
               component = (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <Card>
+                // min-w-0 on the grid and both cards: Recharts sizes its
+                // container from the parent's resolved width, and a grid track
+                // floored at min-content let the chart establish a 583px floor
+                // inside a 327px module, which propagated to the document.
+                <div className="grid gap-6 md:grid-cols-2 min-w-0">
+                  <Card className="min-w-0">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-accent" aria-hidden="true" />
+                        <Activity className="h-5 w-5 text-accent shrink-0" aria-hidden="true" />
                         Patient Growth
                       </CardTitle>
                     </CardHeader>
@@ -661,10 +673,10 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="min-w-0">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-accent" aria-hidden="true" />
+                        <Calendar className="h-5 w-5 text-accent shrink-0" aria-hidden="true" />
                         Weekly Appointments
                       </CardTitle>
                     </CardHeader>

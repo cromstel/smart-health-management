@@ -246,8 +246,8 @@ For instant testing and evaluation without manual registration, use the pre-conf
    PORT=5000
 
    # Frontend
-   VITE_BASE_URL=http://localhost:3000
-   FRONTEND_URL=http://localhost:3000
+   VITE_BASE_URL=http://localhost:5175
+   FRONTEND_URL=http://localhost:5175
    VITE_API_URL=http://localhost:5000/api
 
    # Database
@@ -273,7 +273,7 @@ For instant testing and evaluation without manual registration, use the pre-conf
 
 6. **Start the Development Server**:
    ```bash
-   npm run dev        # Frontend (Vite + mock API) at http://localhost:3000
+   npm run dev        # Frontend (Vite + mock API) at http://localhost:5175
    cd server
    npm run dev        # Backend API (tsx watch) at http://localhost:5000
    ```

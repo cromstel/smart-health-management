@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// The seeded demo clinician is named 'Dr. Smith' (see server/src/database/seed.sql).
+// These assertions previously looked for 'Dr. John Smith', which no fixture has
+// ever contained, so the row filter and status toggle could not be exercised.
 async function signInAsSuperAdmin(page: import('@playwright/test').Page) {
   await page.goto('/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
@@ -33,20 +36,20 @@ test.describe('Super-admin user management', () => {
 
     const search = page.getByPlaceholder('Search by name or email...');
     await search.fill('doctor@smarthealth.com');
-    await expect(page.getByRole('cell', { name: 'Dr. John Smith', exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Dr. Smith', exact: true })).toBeVisible();
     await expect(page.getByText('Admin User', { exact: true })).not.toBeVisible();
     await search.fill('');
 
     await page.getByRole('combobox', { name: 'Filter by role' }).click();
     await page.getByRole('option', { name: 'doctor', exact: true }).click();
-    await expect(page.getByRole('cell', { name: 'Dr. John Smith', exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Dr. Smith', exact: true })).toBeVisible();
     await page.getByRole('combobox', { name: 'Filter by role' }).click();
     await page.getByRole('option', { name: 'All Roles' }).click();
 
-    await page.getByRole('button', { name: 'Lock Dr. John Smith' }).click();
-    await expect(page.getByRole('button', { name: 'Unlock Dr. John Smith' })).toBeVisible();
-    await page.getByRole('button', { name: 'Unlock Dr. John Smith' }).click();
-    await expect(page.getByRole('button', { name: 'Deactivate Dr. John Smith' })).toBeVisible();
+    await page.getByRole('button', { name: 'Lock Dr. Smith' }).click();
+    await expect(page.getByRole('button', { name: 'Unlock Dr. Smith' })).toBeVisible();
+    await page.getByRole('button', { name: 'Unlock Dr. Smith' }).click();
+    await expect(page.getByRole('button', { name: 'Deactivate Dr. Smith' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Reset password for Admin User' }).click();
     await expect(page.getByRole('heading', { name: 'Reset password' })).toBeVisible();

@@ -967,11 +967,11 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
 
   // Document storage OAuth endpoints
   if (pathname === '/api/documents/onedrive/auth') {
-    sendJson(res, 200, { authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=mock-client-id&response_type=code&redirect_uri=http://localhost:3000/api/documents/onedrive/callback' });
+    sendJson(res, 200, { authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=mock-client-id&response_type=code&redirect_uri=http://localhost:5175/api/documents/onedrive/callback' });
     return true;
   }
   if (pathname === '/api/documents/googledrive/auth') {
-    sendJson(res, 200, { authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=mock-client-id&redirect_uri=http://localhost:3000/api/documents/googledrive/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file&access_type=offline&prompt=consent' });
+    sendJson(res, 200, { authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=mock-client-id&redirect_uri=http://localhost:5175/api/documents/googledrive/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file&access_type=offline&prompt=consent' });
     return true;
   }
   if (pathname === '/api/documents/onedrive/callback') {

@@ -30,6 +30,36 @@ export interface WebAuthnCredentialRecord {
   last_used_at: string | null;
 }
 
+/**
+ * Collection endpoints in this API answer with a named wrapper
+ * (`{ hospitals: [...] }`), not a bare array.
+ *
+ * handleResponse<T> is an unchecked assertion -- `response.json()` is typed
+ * `any` and cast to `T` -- so a wrapper where a bare array was declared
+ * passed type-check silently and only surfaced at runtime as
+ * "hospitals.map is not a function" behind the module error boundary. Every
+ * collection call site now unwraps through here, and a non-array payload is
+ * reported as such instead of crashing three components downstream.
+ */
+function unwrapCollection<T>(data: unknown, key: string): T[] {
+  if (Array.isArray(data)) return data as T[];
+  const wrapped = (data as Record<string, unknown> | null)?.[key];
+  if (Array.isArray(wrapped)) return wrapped as T[];
+  throw new Error(
+    `Expected an array or { ${key}: [] } from the API, received ${describe(data)}. ` +
+      'If this endpoint changed shape, update its client method and the matching page.'
+  );
+}
+
+function describe(data: unknown): string {
+  if (data === null || data === undefined) return String(data);
+  if (typeof data === 'object') {
+    const keys = Object.keys(data as object);
+    return keys.length ? `{ ${keys.slice(0, 5).join(', ')} }` : '{}';
+  }
+  return typeof data;
+}
+
 /** Super-admin hospital overview record (GET /super-admin/hospitals). */
 export interface SuperAdminHospital {
   id: string;
@@ -113,7 +143,7 @@ class ApiService {
    * present, so login and the other pre-auth POSTs need one.
    *
    * It cannot come from document.cookie here: the API is a different origin
-   * (:5000) from the app (:3000), so the XSRF-TOKEN cookie is not visible to the
+   * (:5000) from the app (:5175), so the XSRF-TOKEN cookie is not visible to the
    * app page at all. The server therefore also returns the token in the
    * X-XSRF-Token response header, which CORS exposes. Cookie is kept as a
    * fallback for same-origin deployments.
@@ -181,7 +211,7 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       // The API is a different origin from the app (VITE_API_URL is typically
-      // :5000 while the app is :3000), so the session cookie has to be replayed
+      // :5000 while the app is :5175), so the session cookie has to be replayed
       // explicitly for the double-submit check to have a session to match.
       credentials: 'include',
       headers: this.getHeaders(false),
@@ -625,7 +655,9 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/super-admin/backups`, {
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    // The API wraps collections in a named key; the caller wants the array.
+    const data = await this.handleResponse<{ backups?: SuperAdminBackup[] } | SuperAdminBackup[]>(response);
+    return unwrapCollection(data, 'backups');
   }
 
   async updateAppointment(id: string, data: any) {
@@ -1006,7 +1038,10 @@ class ApiService {
   }
 
   async getSystemStatus() {
-    const response = await fetch(`${API_BASE_URL}/super-admin/status`, {
+    // The route is /super-admin/system-status. This called /super-admin/status,
+    // which does not exist, so the console dashboard rendered
+    // "Error loading dashboard — Not found" for every super admin.
+    const response = await fetch(`${API_BASE_URL}/super-admin/system-status`, {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
@@ -1024,7 +1059,8 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/super-admin/hospitals`, {
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse<{ hospitals?: SuperAdminHospital[] } | SuperAdminHospital[]>(response);
+    return unwrapCollection(data, 'hospitals');
   }
 
   async triggerUpgrade(version?: string, description?: string) {
@@ -1040,7 +1076,8 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/super-admin/settings`, {
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse<{ settings?: SuperAdminSetting[] } | SuperAdminSetting[]>(response);
+    return unwrapCollection(data, 'settings');
   }
 
   async updateSystemSetting(settingIdOrData: string | any, value?: any) {
@@ -1059,12 +1096,16 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/super-admin/users`, {
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse<{ users?: SuperAdminUser[] } | SuperAdminUser[]>(response);
+    return unwrapCollection(data, 'users');
   }
 
   async updateUserStatus(id: string, status: string): Promise<void> {
+    // PATCH, matching router.patch('/users/:userId/status'). This sent PUT, which
+    // has no matching route, so every lock/unlock and activate/deactivate 404'd
+    // and the table never appeared to update.
     const response = await fetch(`${API_BASE_URL}/super-admin/users/${id}/status`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify({ status }),
     });

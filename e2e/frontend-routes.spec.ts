@@ -1,14 +1,40 @@
 import { test, expect, type Page } from '@playwright/test';
 
+/**
+ * Asserts the *document* does not scroll sideways.
+ *
+ * Elements inside a deliberate horizontal scroller are excluded: the dashboard
+ * appointment heat map is a 760px grid inside overflow-x-auto, so its cells sit
+ * past a 375px viewport by design. Counting them reported overflow where the
+ * page itself never scrolled.
+ */
 async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
+    const insideHorizontalScroller = (element: Element) => {
+      let node = element.parentElement;
+      while (node) {
+        const overflowX = getComputedStyle(node).overflowX;
+        if (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'hidden') return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
     return [...document.querySelectorAll<HTMLElement>('body *')]
-      .filter((element) => element.getBoundingClientRect().right > viewport + 1)
+      .filter(
+        (element) =>
+          element.getBoundingClientRect().right > viewport + 1 &&
+          !insideHorizontalScroller(element)
+      )
       .slice(0, 5)
       .map((element) => `${element.tagName.toLowerCase()}#${element.id}.${element.className}`);
   });
   expect(overflow).toEqual([]);
+  // The document itself must not have grown: this is what a user would
+  // actually experience as sideways scroll.
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1);
 }
 
 async function signInAsClinician(page: Page) {
@@ -18,6 +44,11 @@ async function signInAsClinician(page: Page) {
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
   await expect(page).toHaveURL(/\/two-factor$/);
   await page.getByRole('button', { name: 'Quick Test: Fetch Current Demo TOTP Token' }).click();
+  // Quick Test fills the code asynchronously (fetch, then setState), so the
+  // submit button is disabled until it lands. Clicking straight through relies
+  // on Playwright's actionability retry, which intermittently exhausted the
+  // beforeEach budget and timed the whole test out.
+  await expect(page.getByLabel('Enter 6-digit authentication code')).toHaveValue(/^\d{6}$/, { timeout: 15000 });
   await page.getByRole('button', { name: 'Confirm & Proceed to Dashboard' }).click();
   await page.waitForURL('**/dashboard');
 }
@@ -85,8 +116,11 @@ test.describe('Clinician route smoke checks', () => {
   for (const path of routes) {
     test(`${path} renders its workstation content`, async ({ page }) => {
       await page.goto(path);
-      await expect(page.locator('#main-content')).toBeVisible();
-      await expect(page.locator('#main-content').locator('h1:visible').first()).toBeVisible();
+      // Generous: these routes are lazy chunks and the dev server compiles them
+      // on first request. Measured 1.1-3.8s, which overruns Playwright's 5s
+      // default once several specs run in parallel and compete for the bundler.
+      await expect(page.locator('#main-content')).toBeVisible({ timeout: 30000 });
+      await expect(page.locator('#main-content').locator('h1:visible').first()).toBeVisible({ timeout: 30000 });
       await expectNoHorizontalOverflow(page);
     });
   }
@@ -102,7 +136,9 @@ test.describe('Clinician route smoke checks', () => {
   test('navigation remains usable on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/dashboard');
-    await expect(page.locator('#main-content')).toBeVisible();
+    // Lazy chunk again: a full navigation after the viewport change re-requests
+    // the dashboard module, and the default 5s was not always enough.
+    await expect(page.locator('#main-content')).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('button', { name: 'Toggle navigation menu' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
@@ -117,8 +153,9 @@ test.describe('Super-admin route smoke checks', () => {
   ]) {
     test(`${path} renders its console content`, async ({ page }) => {
       await page.goto(path);
-      await expect(page.locator('#super-admin-main')).toBeVisible();
-      await expect(page.locator('#super-admin-main').locator('h1').first()).toBeVisible();
+      // Same lazy-chunk reason as the clinician route loop below.
+      await expect(page.locator('#super-admin-main')).toBeVisible({ timeout: 30000 });
+      await expect(page.locator('#super-admin-main').locator('h1').first()).toBeVisible({ timeout: 30000 });
       await expectNoHorizontalOverflow(page);
     });
   }

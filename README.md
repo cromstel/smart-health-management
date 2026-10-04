@@ -110,12 +110,12 @@ Ensure the following keys are set:
 
 ```
 PORT=5000
-VITE_BASE_URL=http://localhost:3000
-FRONTEND_URL=http://localhost:3000
+VITE_BASE_URL=http://localhost:5175
+FRONTEND_URL=http://localhost:5175
 VITE_API_URL=http://localhost:5000/api
 ```
 
-> Dev note: in development, `/api` requests are served by the mock API middleware (`src/server/mockApi.ts`) on the Vite server itself, so the frontend runs standalone on `:3000` without the backend. Connect to the real API by pointing `VITE_API_URL` at the backend and disabling/changing the mock mount in `vite.config.ts`.
+> Dev note: in development, `/api` requests are served by the mock API middleware (`src/server/mockApi.ts`) on the Vite server itself, so the frontend runs standalone on `:5175` without the backend. Connect to the real API by pointing `VITE_API_URL` at the backend and disabling/changing the mock mount in `vite.config.ts`.
 
 The following environment variables are also required for certain features:
 
@@ -154,7 +154,7 @@ cd server
 npm run dev
 ```
 
-- Frontend: `http://localhost:3000`
+- Frontend: `http://localhost:5175`
 - Backend API: `http://localhost:5000` (unless `PORT` is overridden in `.env`)
 
 API calls to `/api` are proxied to the backend automatically during development.
