@@ -14,7 +14,17 @@ export interface AuthRequest extends Request {
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    // Header first. The query fallback exists because EventSource -- which
+    // backs the role/permission SSE stream -- cannot set request headers, so the
+    // browser can only pass the token as ?token=. Without this fallback that
+    // endpoint could only ever answer 401 and the client retried on an interval.
+    //
+    // Tradeoff: query strings are more likely to be captured in access logs and
+    // referrers than headers are. The token here is short-lived and the endpoint
+    // is same-origin; anything longer-lived should use fetch() plus streams.
+    const token =
+      req.headers.authorization?.split(' ')[1] ||
+      (typeof req.query?.token === 'string' ? req.query.token : undefined);
 
     if (!token) {
       res.status(401).json({ error: 'Authentication required' });
@@ -61,10 +71,8 @@ export const requirePermission = (module: string, action: 'view' | 'add' | 'edit
 
       const userId = req.user.id;
 
-      const departmentId = (req.query.department as string) || (req.query.departmentId as string) || (req.body?.departmentId as string) || (req.params?.departmentId as string) || null;
-
       const [userRows] = await pool.query('SELECT role_id FROM users WHERE id = ?', [userId]);
-      let roleId: any = (userRows as any[])[0]?.role_id;
+      const roleId: any = (userRows as any[])[0]?.role_id;
 
       const canAll = async (rid: any): Promise<boolean> => {
         const [rows] = await pool.query(
@@ -74,16 +82,19 @@ export const requirePermission = (module: string, action: 'view' | 'add' | 'edit
         return ((rows as any[])[0]?.allowed === 1);
       };
 
-      const canModule = async (rid: any, dept: any): Promise<boolean> => {
-        if (dept) {
-          const [rowsDept] = await pool.query(
-            `SELECT p.can_${action} as allowed FROM permissions p WHERE p.role_id = ? AND p.module = ? AND p.department_id = ?`,
-            [rid, module, dept]
-          );
-          if ((rowsDept as any[])[0]?.allowed === 1) return true;
-        }
+      const canModule = async (rid: any): Promise<boolean> => {
+        // No department predicate: the permissions table has no department_id
+        // column (see schema.sql). The old query filtered on
+        // p.department_id = ? / IS NULL, which threw ER_BAD_FIELD_ERROR for
+        // every user that has a role -- i.e. every real user -- so this
+        // middleware answered 500 "Permission check failed" for essentially
+        // every guarded request and the dashboard filled with errors.
+        //
+        // Department scoping, if it is ever wanted, belongs in a permissions
+        // column or a join table, not in a filter against a column that does
+        // not exist.
         const [rows] = await pool.query(
-          `SELECT p.can_${action} as allowed FROM permissions p WHERE p.role_id = ? AND p.module = ? AND p.department_id IS NULL`,
+          `SELECT p.can_${action} as allowed FROM permissions p WHERE p.role_id = ? AND p.module = ?`,
           [rid, module]
         );
         return ((rows as any[])[0]?.allowed === 1);
@@ -112,17 +123,15 @@ export const requirePermission = (module: string, action: 'view' | 'add' | 'edit
           allowed = (rows as any[])[0]?.allowed === 1;
         }
       } else {
-        while (roleId && !allowed) {
-          if (await canAll(roleId)) {
-            allowed = true;
-            break;
-          }
-          if (await canModule(roleId, departmentId)) {
-            allowed = true;
-            break;
-          }
-          const [parentRows] = await pool.query('SELECT parent_id FROM roles WHERE id = ?', [roleId]);
-          roleId = (parentRows as any[])[0]?.parent_id || null;
+        // No role hierarchy walk. It read roles.parent_id, which does not exist
+        // in schema.sql, so the query threw ER_BAD_FIELD_ERROR the moment
+        // canAll and canModule both missed -- which is precisely the case where
+        // the answer is a plain 403. That turned every genuinely
+        // permission-denied request into a 500 "Permission check failed".
+        if (await canAll(roleId)) {
+          allowed = true;
+        } else {
+          allowed = await canModule(roleId);
         }
       }
 
@@ -170,7 +179,12 @@ export const enforcePasswordChange = async (req: AuthRequest, res: Response, nex
       return;
     }
 
-    const [rows] = await pool.query('SELECT password_must_change, password_postpone_count, role FROM users WHERE id = ?', [req.user.id]);
+    // Only the enforcement flags are needed here. This previously also selected
+  // `role`, which does not exist on users -- the role name lives in the roles
+  // table and users carries role_id -- so the query always threw and every
+  // request through this middleware failed with
+  // 500 "Password enforcement failed", taking the dashboard down with it.
+  const [rows] = await pool.query('SELECT password_must_change, password_postpone_count FROM users WHERE id = ?', [req.user.id]);
     const userRow = (rows as any[])[0];
     const mustChange = !!userRow?.password_must_change;
     const postponeCount = Number(userRow?.password_postpone_count || 0);

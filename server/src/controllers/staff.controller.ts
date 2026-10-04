@@ -19,17 +19,21 @@ const decryptStaffData = (staffMember: Record<string, any>) => {
 export const getStaff = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { role, hospitalId } = req.query;
+    // No join to roles: the staff table stores the role name directly in its
+    // `role` column (see schema.sql) and has no role_id. Joining on
+    // s.role_id = r.id threw ER_BAD_FIELD_ERROR, so every read of /api/staff
+    // answered 500. s.* already carries the role, aliased below for the
+    // client-facing field name.
     let query = `
-      SELECT s.*, h.name as hospital_name, r.name as role_name
+      SELECT s.*, s.role as role_name, h.name as hospital_name
       FROM staff s
       LEFT JOIN hospitals h ON s.hospital_id = h.id
-      LEFT JOIN roles r ON s.role_id = r.id
       WHERE 1=1
     `;
     const params: any[] = [];
 
     if (role) {
-      query += ' AND r.name = ?';
+      query += ' AND s.role = ?';
       params.push(role);
     }
 
@@ -51,10 +55,9 @@ export const getStaffById = async (req: AuthRequest, res: Response): Promise<Res
   try {
     const { id } = req.params;
     const [staff] = await pool.query(
-      `SELECT s.*, h.name as hospital_name, r.name as role_name
+      `SELECT s.*, s.role as role_name, h.name as hospital_name
        FROM staff s
        LEFT JOIN hospitals h ON s.hospital_id = h.id
-       LEFT JOIN roles r ON s.role_id = r.id
        WHERE s.id = ?`,
       [id]
     );
@@ -83,10 +86,12 @@ export const createStaff = async (req: AuthRequest, res: Response): Promise<Resp
     email = encrypt(email) || email;
     phone = encrypt(phone) || phone;
 
+    // staff.role holds the role name (a string), not a foreign key. Writing
+    // role_id here would have thrown ER_BAD_FIELD_ERROR on staff creation.
     await pool.query(
-      `INSERT INTO staff (id, first_name, last_name, email, phone, role_id, hospital_id, department_id, status)
+      `INSERT INTO staff (id, first_name, last_name, email, phone, role, hospital_id, department_id, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, firstName, lastName, email, phone, roleId, hospitalId, departmentId, status]
+      [id, firstName, lastName, email, phone, roleId ?? req.body.role ?? null, hospitalId, departmentId, status]
     );
     res.status(201).json({ message: 'Staff created successfully', id });
   } catch (error) {

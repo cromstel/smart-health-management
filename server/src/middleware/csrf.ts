@@ -17,7 +17,7 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
   res.cookie('XSRF-TOKEN', token, { httpOnly: false, secure: process.env.NODE_ENV === 'production' });
   // Also expose the token as a response header. The cookie alone is unusable
   // for this client: the API runs on a different origin than the app (VITE_API_URL
-  // is :5000 while the app is :3000), so document.cookie on the app page cannot
+  // is :5000 while the app is :5175), so document.cookie on the app page cannot
   // see a cookie scoped to :5000, and the double-submit check had nothing to
   // compare against -- every unauthenticated POST returned 403.
   //

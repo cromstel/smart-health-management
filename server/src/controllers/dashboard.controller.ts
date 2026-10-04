@@ -85,15 +85,20 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response): Promi
   }
 };
 
-import { fetchGhanaHealthData, importGhanaPatients } from '../services/ghanaHealthService.service.js';
+import { fetchGhanaHealthData, importGhanaPatients, isGhanaHealthConfigured } from '../services/ghanaHealthService.service.js';
 
 export const getGhanaHealthData = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
+    // Optional external integration. When it is not configured the service
+    // returns an empty list, which is a valid state for the dashboard to
+    // render. Reporting 503 (rather than a generic 500) keeps "this optional
+    // integration is unavailable" distinguishable from "this endpoint is
+    // broken".
     const data = await fetchGhanaHealthData();
-    res.json({ ghanaHealthData: data });
+    res.json({ ghanaHealthData: data, configured: isGhanaHealthConfigured() });
   } catch (error) {
     console.error('Error fetching Ghana Health Service data:', error);
-    res.status(500).json({ error: 'Failed to fetch Ghana Health Service data' });
+    res.status(503).json({ error: 'Ghana Health Service integration unavailable', configured: true });
   }
 };
 

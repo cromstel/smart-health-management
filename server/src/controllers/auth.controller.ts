@@ -257,7 +257,11 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
     // Store reset token (you'd need a password_resets table in production)
     // For now, we'll just log it
     console.log(`Reset token for ${email}: ${resetToken}`);
-    console.log(`Reset link: http://localhost:5173/reset-password?token=${resetToken}`);
+    // Derived from FRONTEND_URL rather than hardcoded: this used to print
+    // localhost:5173, a port nothing in this project listens on, so the only
+    // way to get a working reset link was to edit source.
+    const frontendOrigin = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:5175';
+    console.log(`Reset link: ${frontendOrigin}/reset-password?token=${resetToken}`);
 
     // In production, send email here
     // await sendPasswordResetEmail(email, resetToken);
@@ -290,7 +294,16 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<R
       return res.status(400).json({ error: 'Current and new password are required' });
     }
 
-    const [rows] = await pool.query('SELECT id, password, role, password_must_change, password_postpone_count FROM users WHERE id = ?', [req.user.id]);
+    // users has no `role` column -- the role name lives in `roles`, joined via
+    // role_id. Selecting `role` here threw ER_BAD_FIELD_ERROR, so changing a
+    // password returned 500.
+    const [rows] = await pool.query(
+      `SELECT u.id, u.password, u.password_must_change, u.password_postpone_count, r.name AS role
+       FROM users u
+       LEFT JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ?`,
+      [req.user.id]
+    );
     const dbUser = (rows as any[])[0];
     if (!dbUser) {
       return res.status(404).json({ error: 'User not found' });
@@ -341,7 +354,15 @@ export const postponePasswordChange = async (req: AuthRequest, res: Response): P
     }
 
     const MAX_POSTPONES = parseInt(process.env.PASSWORD_MAX_POSTPONES || '3');
-    const [rows] = await pool.query('SELECT id, password_must_change, password_postpone_count, role FROM users WHERE id = ?', [req.user.id]);
+    // Same nonexistent `role` column as in changePassword: join roles for the
+    // name, since the super-admin check below needs it.
+    const [rows] = await pool.query(
+      `SELECT u.id, u.password_must_change, u.password_postpone_count, r.name AS role
+       FROM users u
+       LEFT JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ?`,
+      [req.user.id]
+    );
     const dbUser = (rows as any[])[0];
     if (!dbUser) {
       return res.status(404).json({ error: 'User not found' });

@@ -13,16 +13,28 @@ const dbConfig = {
   password: process.env.GHS_DB_PASSWORD || '',
 };
 
+/**
+ * True when the external Ghana Health Service database is configured.
+ *
+ * This is an optional integration: nothing in the shipped .env.example sets
+ * GHS_DB_*, and without them createConnection throws, which the dashboard
+ * surfaced as a 500 on every load.
+ */
+export const isGhanaHealthConfigured = (): boolean =>
+  Boolean(dbConfig.host && dbConfig.database && dbConfig.user);
+
 export const fetchGhanaHealthData = async (): Promise<any> => {
+  if (!isGhanaHealthConfigured()) {
+    // Not configured is a normal state, not a failure. Return nothing so the
+    // dashboard renders its "no advisories" panel instead of erroring.
+    return [];
+  }
   try {
     const connection = await mysql.createConnection(dbConfig);
-    console.log('Connected to Ghana Health Service database');
 
-    // Example query (replace with actual query)
     const [rows] = await connection.execute('SELECT * FROM patients LIMIT 10');
 
     await connection.end();
-    console.log('Disconnected from Ghana Health Service database');
 
     return rows;
   } catch (error) {

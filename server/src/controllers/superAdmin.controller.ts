@@ -208,7 +208,7 @@ export const triggerBackup = async (req: Request, res: Response): Promise<void> 
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
          VALUES (?, 'backup', 'system', ?, ?)`,
         [authReq.user.id, `System backup created: ${backupPath}`, req.ip]
       );
@@ -227,7 +227,7 @@ export const triggerBackup = async (req: Request, res: Response): Promise<void> 
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)` +
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)` +
         ` VALUES (?, ?, ?, ?, ?)`,
         [authReq.user.id, 'backup_failed', 'system', `System backup failed: ${(_error as Error).message}`, req.ip]
       );
@@ -296,7 +296,7 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
          VALUES (?, 'restore', 'system', ?, ?)`,
         [authReq.user.id, `System restored from backup: ${backupFileName}`, req.ip]
       );
@@ -336,7 +336,18 @@ export const getSystemHealth = async (_req: Request, res: Response): Promise<voi
 export const getBackups = async (_req: Request, res: Response): Promise<void> => {
   try {
     const backupDir = path.join(process.cwd(), 'backups');
-    const files = await fs.readdir(backupDir);
+
+    // A missing backup directory means no backups have been taken yet, which is
+    // a normal state for a fresh install -- not a failure. readdir threw ENOENT
+    // and the endpoint answered 500 on every load of the super-admin console.
+    // (fs here is fs/promises, so this is a try/catch rather than existsSync.)
+    let files: string[];
+    try {
+      files = await fs.readdir(backupDir);
+    } catch {
+      res.status(200).json({ backups: [] });
+      return;
+    }
     const backups = await Promise.all(
       files
         .filter(file => file.endsWith('.sql'))
@@ -344,7 +355,7 @@ export const getBackups = async (_req: Request, res: Response): Promise<void> =>
           const stats = await fs.stat(path.join(backupDir, file));
           return {
             name: file,
-            size: stats.size,
+            size: String(stats.size),
             createdAt: stats.birthtime,
           };
         })
@@ -373,7 +384,7 @@ export const triggerUpgrade = async (req: Request, res: Response): Promise<void>
     if (authReq.user) {
       const connection = await pool.getConnection();
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
          VALUES (?, 'upgrade', 'system', ?, ?)`,
         [
           authReq.user.id,
@@ -441,7 +452,7 @@ export const updateSystemSetting = async (req: AuthRequest, res: Response): Prom
     const authReq = req as AuthRequest;
     if (authReq.user) {
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
          VALUES (?, 'update', 'settings', ?, ?)`,
         [authReq.user.id, `Updated setting ${id} to ${setting_value}`, req.ip]
       );
@@ -488,8 +499,12 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
     // Log the action
     const authReq = req as AuthRequest;
     if (authReq.user) {
+      // audit_logs has no `details` column (see schema.sql); the free-text
+      // field is `new_value`. Inserting into `details` threw
+      // ER_BAD_FIELD_ERROR, so the status change rolled back with a 500 and the
+      // row never updated.
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
          VALUES (?, 'update', 'users', ?, ?)`,
         [authReq.user.id, `Updated user ${userId} status to ${status}`, req.ip]
       );
@@ -571,7 +586,7 @@ export const resetUserPassword = async (req: AuthRequest, res: Response): Promis
         );
       }
       await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, details, ip_address)
+        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
          VALUES (?, 'reset_password', 'users', ?, ?)`,
         [
           req.user.id,

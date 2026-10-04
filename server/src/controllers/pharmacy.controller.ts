@@ -98,7 +98,12 @@ export const deletePharmacyItem = async (req: AuthRequest, res: Response): Promi
 
 export const generatePharmacyReport = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    const { reportType } = req.query as any;
+    // Accept both spellings. The client and the mock API both send ?type=, while
+    // this handler only read ?reportType=, so every report request fell through
+    // to the default branch and answered 400 "Invalid report type".
+    const reportType = String(
+      (req.query as any).type ?? (req.query as any).reportType ?? ''
+    );
     const accept = String(req.headers?.['accept'] || '').toLowerCase()
     const queryFormat = String((req.query as any).format || '').toLowerCase()
     const format = accept.includes('application/pdf') ? 'pdf'

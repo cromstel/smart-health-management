@@ -46,15 +46,30 @@ INSERT INTO roles (id, name, description) VALUES
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (1, 'all', 1, 1, 1, 1);
 -- Admin permissions (role_id = 2)
+-- The role is described as "Administrator with full access", so it is granted
+-- every module the routes actually guard. The previous list covered 8 of them,
+-- which left /pharmacy, /documents, /purchase-orders, /staff and the dashboard
+-- answering 403 for an administrator.
+--
+-- Module names must match the strings passed to requirePermission: the routes
+-- use 'role' (singular), 'purchaseOrder' and 'financial'/'finance' alongside
+-- 'users', 'patients' and so on. Note 'role', not 'roles'.
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (2, 'users', 1, 1, 1, 1),
 (2, 'roles', 1, 1, 1, 1),
+(2, 'role', 1, 1, 1, 1),
 (2, 'hospitals', 1, 1, 1, 1),
 (2, 'patients', 1, 1, 1, 1),
 (2, 'appointments', 1, 1, 1, 1),
 (2, 'finance', 1, 1, 1, 1),
 (2, 'financial', 1, 1, 1, 1),
-(2, 'settings', 1, 1, 1, 1);
+(2, 'settings', 1, 1, 1, 1),
+(2, 'dashboard', 1, 1, 1, 1),
+(2, 'documents', 1, 1, 1, 1),
+(2, 'pharmacy', 1, 1, 1, 1),
+(2, 'purchaseOrder', 1, 1, 1, 1),
+(2, 'staff', 1, 1, 1, 1),
+(2, 'supplier', 1, 1, 1, 1);
 -- Doctor permissions (role_id = 3)
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (3, 'patients', 1, 1, 1, 0),
@@ -101,9 +116,18 @@ INSERT INTO departments (id, hospital_id, name, head_of_department) VALUES
 --
 -- These are development-only accounts for a local seed. If this seed is ever
 -- applied anywhere reachable, rotate them before doing anything else.
--- totp_secret is the base32 form of JBSWY3DPEHPK3PXP (demo seed).
+--
+-- totp_secret is base32 of JBSWY3DPEHPK3PXP (demo seed) for the clinical
+-- accounts, so their two-factor path is exercisable out of the box.
+--
+-- The super admin is seeded WITHOUT a totp_secret (NULL). A seeded secret forces
+-- a TOTP prompt on the master session, which locks a fresh checkout out of the
+-- super-admin console until someone has the seeded app's code. Instead the
+-- super admin signs in with credentials and enrols two-factor from the console
+-- at /super-admin/settings, which is where the setup belongs for a privileged
+-- account: the operator chooses the moment it becomes mandatory.
 INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
-(1, 1, 'superadmin@smarthealth.com', '$2b$10$Pe2N6QgTLKg/tLgWsHY8B.GfFBeQTMs3XXxTLoT3YzcEbH9fNTF1.', 'Super Admin', 'GEZDGNBVGY3TQOJQ', 1, NULL), -- password: April--2024!!!!
+(1, 1, 'superadmin@smarthealth.com', '$2b$10$Pe2N6QgTLKg/tLgWsHY8B.GfFBeQTMs3XXxTLoT3YzcEbH9fNTF1.', 'Super Admin', NULL, 1, NULL), -- password: April--2024!!!! ; two-factor NOT enrolled by default
 (2, 2, 'admin@smarthealth.com', '$2b$10$.YOxfK6xC5.qL.nhydYg6ewcMTa21QdjT0w4f7LR1VeXgSzG1fqtu', 'Admin User', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Pass@135709
 (3, 3, 'doctor@smarthealth.com', '$2b$10$anoAXsLwXJ4D1fUIiwQ0nOijk1vMIo9NITxEzqrqdLlNKAgLGyVUu', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Demo@135790
 (4, 4, 'patient@smarthealth.com', '$2b$10$cmFAQ0Oo1C6zXxB8htEJIOCiw6szAuZ8qbOZXUK83e74hSyiX0Iw2', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL); -- password: P@ssword135
