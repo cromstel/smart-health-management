@@ -162,7 +162,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
           <div className="lg:col-span-8 flex flex-col relative border-b lg:border-b-0 lg:border-r border-slate-900 bg-black overflow-hidden h-[500px]">
             {/* Study Overview Badge */}
             <div className="absolute top-4 left-4 z-10 bg-slate-950 backdrop-blur-md border border-slate-800 py-1.5 px-3 rounded-lg text-xs space-y-0.5">
-              <div className="font-bold text-accent text-[10px] uppercase tracking-wider">Active Patient Context</div>
+              <div className="font-bold text-sky-300 text-[10px] uppercase tracking-wider">Active Patient Context</div>
               <div className="font-semibold text-slate-200">{patientName}</div>
               <div className="text-[10px] text-slate-400 font-mono">ID: {patientId} • ACC: {selectedScan.accessionNumber}</div>
             </div>
@@ -272,7 +272,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                 <Button
                   variant="ghost"
                   onClick={resetAdjustments}
-                  className="h-6 text-[10px] text-accent hover:text-sky-300 p-0 hover:bg-transparent"
+                  className="h-6 text-[10px] text-sky-300 hover:text-sky-200 p-0 hover:bg-transparent"
                 >
                   Reset Default
                 </Button>

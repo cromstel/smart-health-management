@@ -4,6 +4,7 @@ import { patientService } from '@/api/services/patientService';
 import type { PatientApiResponse } from '@/api/schemas/patient';
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { Activity, Heart, Thermometer, Wind, Loader2 } from 'lucide-react';
+import { chartLegendContent } from '@/components/patients/ChartLegend';
 
 // Mock historical trend data for vitals over the last 7 checkups / timepoints
 const MOCK_VITALS_TRENDS = [
@@ -157,13 +158,13 @@ export function PatientVitalsTrendsDashboard() {
                     backgroundColor: 'hsl(var(--card))',
                     borderColor: 'hsl(var(--border))',
                     borderRadius: '8px',
-                    color: 'hsl(var(--foreground))',
+                    color: 'var(--foreground)',
                     fontSize: '12px',
                   }}
                 />
-                <Legend />
-                <Line type="monotone" dataKey="heartRate" name="Heart Rate (bpm)" stroke="#e11d48" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="bpSys" name="Systolic BP (mmHg)" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
+                <Legend content={chartLegendContent} />
+                <Line type="monotone" dataKey="heartRate" name="Heart Rate (bpm)" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="bpSys" name="Systolic BP (mmHg)" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -187,13 +188,13 @@ export function PatientVitalsTrendsDashboard() {
                     backgroundColor: 'hsl(var(--card))',
                     borderColor: 'hsl(var(--border))',
                     borderRadius: '8px',
-                    color: 'hsl(var(--foreground))',
+                    color: 'var(--foreground)',
                     fontSize: '12px',
                   }}
                 />
-                <Legend />
-                <Area type="monotone" dataKey="spo2" name="SpO2 (%)" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} />
-                <Area type="monotone" dataKey="temp" name="Temperature (°F)" stroke="#d97706" fill="#d97706" fillOpacity={0.1} strokeWidth={2} />
+                <Legend content={chartLegendContent} />
+                <Area type="monotone" dataKey="spo2" name="SpO2 (%)" stroke="var(--chart-5)" fill="var(--chart-5)" fillOpacity={0.15} strokeWidth={2} />
+                <Area type="monotone" dataKey="temp" name="Temperature (°F)" stroke="var(--chart-4)" fill="var(--chart-4)" fillOpacity={0.1} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>

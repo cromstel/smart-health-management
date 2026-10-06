@@ -1,0 +1,173 @@
+# Continuous integration for Smart MediCare.
+#
+# These jobs are the substrate for branch protection: protected branches
+# require these status checks to pass, so a change cannot land unless the
+# frontend and backend gates are green. Keeping the job names stable matters --
+# renaming one orphans the required check and silently stops it being enforced.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Cancel superseded runs on the same ref. A stale green run from last week is
+# not evidence about the commit in front of you.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: test
+  JWT_SECRET: ci-only-not-a-real-secret-value-0000000000000000
+  SESSION_SECRET: ci-only-not-a-real-secret-value-0000000000000000
+  # 32-byte key / 16-byte IV, hex encoded. CI-only; never a production value.
+  ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+  ENCRYPTION_IV: 00000000000000000000000000000000
+
+jobs:
+  frontend:
+    name: Frontend gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Unit tests
+        run: npm test -- --run
+
+      - name: Production build
+        run: npm run build
+
+  backend:
+    name: Backend gates
+    runs-on: ubuntu-latest
+
+    # Server tests need a real MySQL: the suite exercises the database layer
+    # rather than mocking it, and several cases auto-skip when the auth plugin
+    # is unavailable. A missing database would silently turn those into passes.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-password
+          MYSQL_DATABASE: shms_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_DIALECT: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      DB_NAME: shms_ci
+      DB_USER: root
+      DB_PASSWORD: ci-root-password
+      DB_SSL: "false"
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply schema
+        run: mysql --host=127.0.0.1 --port=3306 --user=root --password=ci-root-password shms_ci < src/database/schema.sql
+
+      - name: Seed data
+        run: mysql --host=127.0.0.1 --port=3306 --user=root --password=ci-root-password shms_ci < src/database/seed.sql
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test -- --run
+
+  secrets:
+    name: Secret and policy scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Rule 4 of the operating rules: credentials only via env, never in the
+      # repository. This is the automated half of that rule -- it fails the build
+      # rather than relying on a reviewer to notice.
+      - name: Fail if a tracked env file exists
+        run: |
+          if git ls-files --error-unmatch .env .env.local .env.production >/dev/null 2>&1; then
+            echo "::error::A tracked .env file is present. Credentials must come from the environment only."
+            git ls-files | grep -E '(^|/)\.env' || true
+            exit 1
+          fi
+          echo "No tracked .env files."
+
+      - name: Scan tracked files for credential-shaped assignments
+        run: |
+          # Deliberately narrow: looks for a key=value pair where the key names a
+          # secret and the value is a literal rather than a reference.
+          #
+          # Documentation legitimately shows placeholder assignments
+          # ("your_jwt_secret_here"), so obvious placeholders are discounted
+          # rather than excluding docs wholesale -- excluding them would also
+          # exclude a real leak pasted into a README.
+          hits=$(git grep -nEI \
+            '(JWT_SECRET|SESSION_SECRET|ENCRYPTION_KEY|ENCRYPTION_IV|GEMINI_API_KEY|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|TWILIO_AUTH_TOKEN|SMTP_PASS(WORD)?|GOOGLE_DRIVE_CLIENT_SECRET|ONEDRIVE_CLIENT_SECRET)[[:space:]]*=[[:space:]]*["'"'"']?[A-Za-z0-9/+_-]{16,}' \
+            -- ':!*.example' ':!package-lock.json' ':!server/package-lock.json' \
+            | grep -Eiv 'your[_-]|changeme|placeholder|replace[_-]?me|example|dummy|xxxx|<[^>]+>' \
+            || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Possible hardcoded credential in tracked files:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "No credential-shaped literals in tracked files."
+
+      - name: No gradients (operating rule 1)
+        run: |
+          # Rule 1 forbids gradient UI outright. Enforced here so it cannot
+          # reappear through a review that missed it.
+          hits=$(git grep -nEI \
+            'linear-gradient|radial-gradient|conic-gradient|bg-gradient-' \
+            -- 'src/**/*.tsx' 'src/**/*.ts' 'src/**/*.css' ':!*.test.*' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Gradient usage found. Rule 1 forbids gradients."
+            echo "$hits"
+            exit 1
+          fi
+          echo "No gradient usage in source."

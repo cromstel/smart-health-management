@@ -217,7 +217,7 @@ export function PostDischargeFollowupModule() {
               </h2>
               <Badge className="bg-success text-success-foreground font-mono text-[10px]">READMISSION PREVENTION</Badge>
             </div>
-            <p className="text-xs text-success/80 mt-0.5">
+            <p className="text-xs text-emerald-300/90 mt-0.5">
               Automatically schedules and assigns 4-phase nurse follow-up outreach calls to prevent 30-day hospital readmissions
             </p>
           </div>
@@ -268,7 +268,7 @@ export function PostDischargeFollowupModule() {
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-semibold text-info uppercase tracking-wider">Nursing Team Lead</p>
-              <p className="text-xl font-bold text-indigo-300">Nurse Amina Y.</p>
+              <p className="text-xl font-bold text-info">Nurse Amina Y.</p>
             </div>
             <UserCheck className="h-7 w-7 text-info" />
           </CardContent>
@@ -348,7 +348,7 @@ export function PostDischargeFollowupModule() {
                         t.readmissionRisk === 'HIGH'
                           ? 'bg-destructive text-destructive-foreground'
                           : t.readmissionRisk === 'MODERATE'
-                          ? 'bg-warning text-black'
+                          ? 'bg-warning text-warning-foreground'
                           : 'bg-success text-success-foreground'
                       }`}
                     >

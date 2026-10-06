@@ -390,8 +390,8 @@ export function PatientVitalsModule({
       y += 32;
 
       // --- PATIENT METADATA BLOCK ---
-      doc.setDrawColor(226, 232, 240); // border-slate-200
-      doc.setFillColor(248, 250, 252); // bg-slate-50
+      doc.setDrawColor(226, 232, 240); // border-border
+      doc.setFillColor(248, 250, 252); // bg-muted
       doc.rect(margin, y, contentWidth, 32, 'FD');
 
       doc.setTextColor(15, 23, 42);
@@ -404,7 +404,7 @@ export function PatientVitalsModule({
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(71, 85, 105); // text-slate-600
+      doc.setTextColor(71, 85, 105); // text-muted-foreground
 
       // Left Column
       doc.text(`Patient Name: ${currentPatient.name}`, margin + 5, y + 14);
@@ -527,7 +527,7 @@ export function PatientVitalsModule({
       y += 6;
 
       // Table Headers
-      doc.setFillColor(241, 245, 249); // bg-slate-100
+      doc.setFillColor(241, 245, 249); // bg-muted
       doc.rect(margin, y, contentWidth, 7, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
@@ -691,27 +691,27 @@ export function PatientVitalsModule({
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-9 text-xs gap-1.5 ${deviceSyncOpen ? 'bg-slate-100 border-slate-400' : ''}`}
+                className={`h-9 text-xs gap-1.5 ${deviceSyncOpen ? 'bg-muted border-slate-400' : ''}`}
                 onClick={() => setDeviceSyncOpen(!deviceSyncOpen)}
               >
-                <Bluetooth className={`h-3.5 w-3.5 ${deviceSyncOpen ? 'text-accent' : 'text-slate-500'}`} />
+                <Bluetooth className={`h-3.5 w-3.5 ${deviceSyncOpen ? 'text-accent' : 'text-muted-foreground'}`} />
                 <span>Sync Wearable</span>
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-9 text-xs gap-1.5 ${aiInsightsOpen ? 'bg-slate-100 border-slate-400' : ''}`}
+                className={`h-9 text-xs gap-1.5 ${aiInsightsOpen ? 'bg-muted border-slate-400' : ''}`}
                 onClick={() => setAiInsightsOpen(!aiInsightsOpen)}
               >
-                <Brain className={`h-3.5 w-3.5 ${aiInsightsOpen ? 'text-info' : 'text-slate-500'}`} />
+                <Brain className={`h-3.5 w-3.5 ${aiInsightsOpen ? 'text-info' : 'text-muted-foreground'}`} />
                 <span>AI Insights</span>
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 text-slate-700 hover:bg-slate-50 border-slate-200"
+                className="h-9 text-xs gap-1.5 text-foreground hover:bg-muted border-border"
                 onClick={handleGenerateShareLink}
                 disabled={generatingShareLink}
               >
@@ -743,7 +743,7 @@ export function PatientVitalsModule({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 text-slate-700 hover:bg-slate-50 border-slate-200"
+                className="h-9 text-xs gap-1.5 text-foreground hover:bg-muted border-border"
                 onClick={() => window.print()}
               >
                 <Printer className="h-3.5 w-3.5 text-accent animate-pulse" />
@@ -753,7 +753,7 @@ export function PatientVitalsModule({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 bg-info/10 text-info dark:text-indigo-300 hover:bg-info/20 border-info/20"
+                className="h-9 text-xs gap-1.5 bg-info/10 text-info dark:text-info hover:bg-info/20 border-info/20"
                 onClick={() => setQrModalOpen(true)}
               >
                 <QrCode className="h-3.5 w-3.5 text-info dark:text-info" />
@@ -798,17 +798,17 @@ export function PatientVitalsModule({
           <div className={`mb-4 p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${triageResult.levelColor}`}>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wide text-white ${triageResult.badgeColor}`}>
+                <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wide ${triageResult.badgeColor}`}>
                   {triageResult.classification}
                 </span>
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-90">
                   Automated Clinical Triage
                 </span>
               </div>
-              <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50 flex items-center gap-1.5">
+              <h4 className="text-lg font-bold tracking-tight text-foreground dark:text-slate-50 flex items-center gap-1.5">
                 Priority Score: <span className="font-mono text-xl">{triageResult.score}</span> / 10 — {triageResult.label}
               </h4>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-700 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground dark:text-muted-foreground">
                 <span className="font-semibold">Recommended Ward:</span>
                 <span className="px-2 py-0.5 bg-slate-900/10 rounded font-medium">{triageResult.recommendedWard}</span>
                 {appointmentCount > 0 && (
@@ -819,7 +819,7 @@ export function PatientVitalsModule({
               </div>
             </div>
             
-            <div className="w-full md:w-auto md:max-w-md bg-white/60 dark:bg-black/25 p-3 rounded-lg border border-white/40 dark:border-white/5 space-y-1 text-xs text-slate-800 dark:text-slate-200">
+            <div className="w-full md:w-auto md:max-w-md bg-card/60 dark:bg-black/25 p-3 rounded-lg border border-white/40 dark:border-white/5 space-y-1 text-xs text-foreground dark:text-slate-200">
               <div className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Clinical Trigger Signals</div>
               <ul className="space-y-1">
                 {triageResult.factors.map((factor, idx) => (
@@ -1506,10 +1506,10 @@ export function PatientVitalsModule({
 
       {/* Share Progress Temporary Link Dialog */}
       <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200" id="share-progress-dialog">
+        <DialogContent className="sm:max-w-md bg-card border border-border" id="share-progress-dialog">
           <DialogHeader id="share-progress-header">
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2" id="share-progress-title">
-              <Share2 className="w-4 h-4 text-slate-900" /> Secure Progress Sharing
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2" id="share-progress-title">
+              <Share2 className="w-4 h-4 text-foreground" /> Secure Progress Sharing
             </DialogTitle>
             <DialogDescription className="text-xs" id="share-progress-desc">
               Generate a secure, short-lived (15 minutes) digital ledger link that the patient or authorized caretakers can use to view recent progress.
@@ -1518,15 +1518,15 @@ export function PatientVitalsModule({
           <div className="space-y-4 py-2" id="share-progress-body">
             {shareUrl && (
               <div className="space-y-3" id="share-url-container">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2" id="share-link-input-wrapper">
+                <div className="p-3 bg-muted border border-border rounded-xl flex items-center justify-between gap-2" id="share-link-input-wrapper">
                   <div className="flex items-center gap-2 overflow-hidden" id="share-link-text">
-                    <Link2 className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="text-xs font-mono text-slate-600 truncate">{shareUrl}</span>
+                    <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs font-mono text-muted-foreground truncate">{shareUrl}</span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs shrink-0 border-slate-200"
+                    className="h-8 text-xs shrink-0 border-border"
                     onClick={() => {
                       navigator.clipboard.writeText(shareUrl);
                       setCopiedLink(true);
@@ -1534,7 +1534,7 @@ export function PatientVitalsModule({
                     }}
                     id="copy-share-link-btn"
                   >
-                    {copiedLink ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
                   </Button>
                 </div>
 

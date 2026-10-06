@@ -199,11 +199,11 @@ export function DeviceSyncModule({
   };
 
   return (
-    <Card className="border-slate-200 shadow-none bg-white" id="device-sync-module">
-      <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between" id="device-sync-header">
+    <Card className="border-border shadow-none bg-card" id="device-sync-module">
+      <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between" id="device-sync-header">
         <div id="device-sync-title-block">
-          <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2" id="device-sync-title">
-            <Bluetooth className="w-4 h-4 text-slate-900" /> Bluetooth Device Integration
+          <CardTitle className="text-base font-bold text-foreground flex items-center gap-2" id="device-sync-title">
+            <Bluetooth className="w-4 h-4 text-foreground" /> Bluetooth Device Integration
           </CardTitle>
           <CardDescription id="device-sync-desc">Connect and sync patient biometrics directly from smartwatches and medical cuffs.</CardDescription>
         </div>
@@ -212,7 +212,7 @@ export function DeviceSyncModule({
           syncStatus === 'scanning' ? 'bg-accent/5 text-accent border-accent/20' :
           syncStatus === 'syncing' ? 'bg-warning/5 text-warning border-warning/20' :
           syncStatus === 'synced' ? 'bg-success/10 text-success' :
-          'bg-slate-100 text-slate-700'
+          'bg-muted text-foreground'
         }`} variant="outline" id="sync-status-badge">
           {syncStatus}
         </Badge>
@@ -221,8 +221,8 @@ export function DeviceSyncModule({
       <CardContent className="p-4 space-y-4" id="device-sync-content">
         {syncStatus === 'idle' && availableDevices.length === 0 && (
           <div className="text-center py-6 space-y-3" id="sync-idle-panel">
-            <Bluetooth className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="text-sm text-slate-500">No telemetry monitoring active. Connect a medical device to capture high-resolution stream.</p>
+            <Bluetooth className="w-10 h-10 text-muted-foreground mx-auto" />
+            <p className="text-sm text-muted-foreground">No telemetry monitoring active. Connect a medical device to capture high-resolution stream.</p>
             <Button
               className="bg-slate-950 hover:bg-slate-850 text-white font-medium text-xs px-4"
               onClick={startBluetoothScan}
@@ -235,8 +235,8 @@ export function DeviceSyncModule({
 
         {syncStatus === 'scanning' && (
           <div className="text-center py-8 space-y-2" id="sync-scanning-panel">
-            <Loader2 className="w-8 h-8 text-slate-900 animate-spin mx-auto" />
-            <p className="text-xs text-slate-500">Scanning frequency band... Establishing local secure RF connection...</p>
+            <Loader2 className="w-8 h-8 text-foreground animate-spin mx-auto" />
+            <p className="text-xs text-muted-foreground">Scanning frequency band... Establishing local secure RF connection...</p>
           </div>
         )}
 
@@ -244,8 +244,8 @@ export function DeviceSyncModule({
         {syncStatus === 'idle' && availableDevices.length > 0 && (
           <div className="space-y-3" id="available-devices-panel">
             <div className="flex justify-between items-center" id="scan-results-header">
-              <p className="text-xs font-bold text-slate-500">DISCOVERED BLE PERIPHERALS</p>
-              <Button variant="ghost" className="text-[10px] text-slate-500 p-0 h-auto flex items-center gap-1 hover:bg-transparent" onClick={startBluetoothScan} id="rescan-btn">
+              <p className="text-xs font-bold text-muted-foreground">DISCOVERED BLE PERIPHERALS</p>
+              <Button variant="ghost" className="text-[10px] text-muted-foreground p-0 h-auto flex items-center gap-1 hover:bg-transparent" onClick={startBluetoothScan} id="rescan-btn">
                 <RefreshCw className="w-3 h-3" /> Re-scan
               </Button>
             </div>
@@ -253,20 +253,20 @@ export function DeviceSyncModule({
               {availableDevices.map((device) => (
                 <div
                   key={device.id}
-                  className="p-3 border border-slate-100 rounded-lg flex items-center justify-between hover:border-slate-300 cursor-pointer transition-colors"
+                  className="p-3 border border-border rounded-lg flex items-center justify-between hover:border-border cursor-pointer transition-colors"
                   onClick={() => connectDevice(device)}
                   id={`device-row-${device.id}`}
                 >
                   <div className="flex items-center gap-3" id={`device-meta-${device.id}`}>
-                    <div className="p-2 bg-slate-50 text-slate-700 rounded-lg" id={`device-icon-wrapper-${device.id}`}>
+                    <div className="p-2 bg-muted text-foreground rounded-lg" id={`device-icon-wrapper-${device.id}`}>
                       {device.type === 'Smartwatch' ? <Watch className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
                     </div>
                     <div id={`device-names-${device.id}`}>
-                      <p className="text-xs font-bold text-slate-800">{device.name}</p>
-                      <p className="text-[10px] text-slate-400">{device.manufacturer} • RSSI: {device.rssi} dBm</p>
+                      <p className="text-xs font-bold text-foreground">{device.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{device.manufacturer} • RSSI: {device.rssi} dBm</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" className="text-[10px] h-7 px-2 border-slate-200 text-slate-800" id={`connect-btn-${device.id}`}>
+                  <Button size="sm" variant="outline" className="text-[10px] h-7 px-2 border-border text-foreground" id={`connect-btn-${device.id}`}>
                     Connect
                   </Button>
                 </div>
@@ -278,49 +278,49 @@ export function DeviceSyncModule({
         {/* Connected Streaming Monitor */}
         {(syncStatus === 'connected' || syncStatus === 'syncing' || syncStatus === 'synced') && connectedDevice && (
           <div className="space-y-4" id="streaming-monitor-panel">
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3" id="active-connection-card">
+            <div className="bg-muted border border-border rounded-xl p-3" id="active-connection-card">
               <div className="flex justify-between items-center" id="connection-meta-row">
                 <div className="flex items-center gap-2" id="connection-title">
                   <Watch className="w-4 h-4 text-success animate-pulse" />
-                  <span className="text-xs font-bold text-slate-700">{connectedDevice.name}</span>
+                  <span className="text-xs font-bold text-foreground">{connectedDevice.name}</span>
                 </div>
                 <Button variant="ghost" className="text-[10px] text-destructive hover:text-destructive p-0 h-auto hover:bg-transparent" onClick={disconnectDevice} id="disconnect-btn">
                   Disconnect
                 </Button>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">Continuous secure telemetry streaming via BLE GATT server.</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Continuous secure telemetry streaming via BLE GATT server.</p>
             </div>
 
             {/* Live Visual Gauges */}
             <div className="grid grid-cols-2 gap-3" id="live-gauges-grid">
               {/* Heart Rate */}
-              <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-hr-gauge">
+              <div className="border border-border p-3 rounded-xl bg-muted/50 flex flex-col justify-between" id="live-hr-gauge">
                 <div className="flex justify-between items-center" id="live-hr-header">
-                  <span className="text-[10px] font-bold text-slate-500">PULSE RATE</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">PULSE RATE</span>
                   <Heart className="w-4 h-4 text-destructive fill-destructive animate-pulse" />
                 </div>
                 <div className="mt-2" id="live-hr-value-block">
                   <span className="text-2xl font-black text-slate-950">{heartRate}</span>
-                  <span className="text-[10px] text-slate-500 ml-1">bpm</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">bpm</span>
                 </div>
               </div>
 
               {/* Blood Pressure Estimation */}
-              <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-bp-gauge">
+              <div className="border border-border p-3 rounded-xl bg-muted/50 flex flex-col justify-between" id="live-bp-gauge">
                 <div className="flex justify-between items-center" id="live-bp-header">
-                  <span className="text-[10px] font-bold text-slate-500">BLOOD PRESSURE</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">BLOOD PRESSURE</span>
                   <Gauge className="w-4 h-4 text-info" />
                 </div>
                 <div className="mt-2" id="live-bp-value-block">
                   <span className="text-2xl font-black text-slate-950">{systolicBp}/{diastolicBp}</span>
-                  <span className="text-[10px] text-slate-500 ml-1">mmHg</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">mmHg</span>
                 </div>
               </div>
 
               {/* SpO2 */}
-              <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-spo2-gauge">
+              <div className="border border-border p-3 rounded-xl bg-muted/50 flex flex-col justify-between" id="live-spo2-gauge">
                 <div className="flex justify-between items-center" id="live-spo2-header">
-                  <span className="text-[10px] font-bold text-slate-500">OXYGEN SAT</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">OXYGEN SAT</span>
                   <Activity className="w-4 h-4 text-accent" />
                 </div>
                 <div className="mt-2" id="live-spo2-value-block">
@@ -329,9 +329,9 @@ export function DeviceSyncModule({
               </div>
 
               {/* Temp */}
-              <div className="border border-slate-100 p-3 rounded-xl bg-slate-50/50 flex flex-col justify-between" id="live-temp-gauge">
+              <div className="border border-border p-3 rounded-xl bg-muted/50 flex flex-col justify-between" id="live-temp-gauge">
                 <div className="flex justify-between items-center" id="live-temp-header">
-                  <span className="text-[10px] font-bold text-slate-500">CORE TEMP</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">CORE TEMP</span>
                   <Thermometer className="w-4 h-4 text-warning animate-bounce" />
                 </div>
                 <div className="mt-2" id="live-temp-value-block">
@@ -365,7 +365,7 @@ export function DeviceSyncModule({
                 </div>
                 <Button
                   variant="outline"
-                  className="w-full border-slate-200 text-slate-800 font-semibold text-xs py-2 flex items-center justify-center gap-1"
+                  className="w-full border-border text-foreground font-semibold text-xs py-2 flex items-center justify-center gap-1"
                   onClick={() => {
                     setSyncStatus('connected');
                     startBiometricsStream();

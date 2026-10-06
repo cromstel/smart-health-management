@@ -17,7 +17,14 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          // The hovered surface must stay a SOLID accent fill. It was
+          // dark:hover:bg-accent/50, a 50% tint, while the label carried
+          // text-accent-foreground -- the companion to a solid fill -- which
+          // measured 1.11:1 on that wash. Adding dark:hover:text-accent did not
+          // help: both hover rules carry equal specificity, so the winner is
+          // whatever Tailwind emits last. Keeping the fill solid makes the
+          // existing foreground correct in both themes, order-independently.
+          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

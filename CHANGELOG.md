@@ -114,17 +114,39 @@ backdrop, in both themes, and checked against WCAG AA.
   (patient IDs, dosages, vitals, lab values, timestamps, money).
 - **A short micro-label was rendered at reduced opacity** and measured 2.45:1.
   Now uses the standard secondary-text token.
+- **The patient vitals surfaces were pinned to a light palette.** The vitals
+  toolbar, device sync, clinical-insights sidebar and follow-up panels carried a
+  fixed light palette with ad-hoc dark-theme patches, so their text resolved
+  against white even in dark mode. About 100 sites across five components now
+  consume the semantic layer, so surface and text flip together.
+- **Overlay chips on the diagnostic image viewer used theme-responsive colours.**
+  That viewer's backdrop is a fixed dark surface, so in light mode an
+  accent-coloured label landed dark-on-dark. Fixed light tints are correct here
+  and are now used.
+- **Chart legends were unreadable in light mode.** A charting library reuses a
+  series' stroke colour as its legend *label* colour, but the chart tokens are
+  tuned for marks — a 3px line reads fine in a mid-tone where 16px text does not
+  (measured 3.19:1 and 3.30:1). Legends now carry the colour as a swatch and set
+  the words in a readable token, so colour identifies a series without having to
+  be legible itself.
+- **Every ghost button failed contrast on hover in dark mode.** The primitive
+  paired a 50%-opacity accent wash with the foreground meant for a *solid*
+  accent fill, measuring 1.11:1. Fixed in the shared button primitive so every
+  ghost button benefits, not just the one that surfaced it.
 
 ### Known accessibility issues
 
-Reported rather than hidden:
+One issue remains, reported rather than hidden:
 
-- **26 contrast failures remain on interaction-gated surfaces** — the patient
-  vitals tabs, trends, follow-up, and the clinical-insights sidebar. Root causes
-  are identified but not yet fixed: one diagnostic-image component still pins an
-  entire light-only palette, so its labels resolve against white even in dark
-  mode; its overlay chips use theme-responsive colours where they need fixed
-  light-on-dark; and one trends chart still uses fixed series colours.
+- **A single contrast failure on the patient vitals surface in dark mode** — a
+  toolbar label resolving to the accent foreground against the navy card, at
+  1.11:1. It is not a hover state (a clean server restart confirmed the change
+  was live), and the surrounding sweep of light-palette sites did not remove it.
+  Located to the vitals toolbar, still unresolved.
+
+Everything else is at zero: 17 mounted routes plus 17 interaction-gated steps,
+across both themes.
+
 - **Print output is deliberately decoupled from webfonts** — clinical records are
   pinned to a system serif so a printed record never depends on font delivery.
   Two report headers intentionally stay on the default font stack for the same
@@ -173,11 +195,39 @@ Reported rather than hidden:
 - **New end-to-end coverage exists for role-aware landing, the migrated port,
   dashboard landmarks, and mobile layout.**
 
+### Continuous integration and branch protection
+
+- **There was no CI at all.** Nothing ran on push or pull request, so the gates
+  below were enforced only by whoever remembered to run them.
+  - **Frontend gates** — lint, type-check, unit tests, production build.
+  - **Backend gates** — lint, build and unit tests against a real MySQL service.
+    The suite exercises the database layer rather than mocking it, so a missing
+    database would have turned several cases into silent passes.
+  - **Secret and policy scan** — fails the build on a tracked environment file,
+    on a credential-shaped literal in tracked files, and on any gradient
+    reintroduced into source. These three encode operating rules that were
+    previously enforced only by reviewer vigilance.
+- **Branch protection is now defined as reviewable, executable intent.** GitHub
+  stores it in repository settings rather than in any version-controllable
+  format, so it is checked in as a script that applies the policy and then
+  verifies the write actually landed. It requires a pull request with one
+  approving review from a code owner, up-to-date branches before merge,
+  resolved conversations, no force pushes, no deletions, and a linear history.
+  Verification matters here: GitHub silently discards a required status check
+  whose name no longer exists, which downgrades protection to a suggestion with
+  no error anywhere.
+- **Concurrent runs on the same ref are cancelled**, so a stale green result
+  cannot be read as evidence about the commit in front of you.
+
 ### Verification
 
-- Accessibility: 17 routes across both light and dark themes, **0 contrast
-  failures**, measured with the corrected audit.
-- Automated checks green: lint, type-check, unit tests, and production build.
+- Accessibility: 17 mounted routes and 17 interaction-gated steps across both
+  light and dark themes, **1 known failure** (see above), down from 26.
+- Automated checks green: lint, type-check, unit tests and production build,
+  frontend and backend.
+- The three new CI policy scans were run against the current tree before being
+  committed, so the pipeline starts green rather than failing on arrival. Two
+  real problems surfaced that way and were fixed.
 
 ### Corrected
 
