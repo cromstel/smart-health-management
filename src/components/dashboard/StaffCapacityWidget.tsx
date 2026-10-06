@@ -428,7 +428,7 @@ export default function StaffCapacityWidget() {
               </Badge>
             )}
             {quotaExceededCount > 0 && (
-              <Badge variant="destructive" className="gap-1 bg-warning dark:bg-warning text-white shadow-sm">
+              <Badge variant="destructive" className="gap-1 bg-warning dark:bg-warning text-warning-foreground shadow-sm">
                 <ShieldAlert className="h-3 w-3" />
                 {quotaExceededCount} Over Quota
               </Badge>
@@ -612,7 +612,7 @@ export default function StaffCapacityWidget() {
 
                           {/* Visual Alert Badge for Exceeded Threshold */}
                           {isExceededThreshold && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive text-white shadow-xs animate-bounce">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive text-destructive-foreground shadow-xs animate-bounce">
                               <AlertTriangle className="h-2.5 w-2.5" />
                               DAILY THRESHOLD EXCEEDED ({clinician.load}/{clinician.maxCapacity})
                             </span>

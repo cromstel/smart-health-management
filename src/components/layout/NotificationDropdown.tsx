@@ -87,7 +87,7 @@ export function NotificationDropdown() {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white shadow-sm">
+            <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground shadow-sm">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -239,7 +239,7 @@ export function NotificationDropdown() {
                         {isPending && (
                           <Button
                             size="sm"
-                            className="h-6 text-[11px] px-2.5 bg-success hover:bg-success text-white font-medium"
+                            className="h-6 text-[11px] px-2.5 bg-success hover:bg-success text-success-foreground font-medium"
                             onClick={() => confirmAppointment(n.id, n.appointmentId)}
                           >
                             <Check className="h-3 w-3 mr-1" />

@@ -182,7 +182,7 @@ export default function UpcomingAppointmentsAlertWidget({
                     {isPending ? (
                       <Button
                         size="sm"
-                        className="h-7 text-xs px-3 bg-success hover:bg-success text-white font-medium gap-1"
+                        className="h-7 text-xs px-3 bg-success hover:bg-success text-success-foreground font-medium gap-1"
                         onClick={() => confirmAppointment(alert.id, alert.appointmentId)}
                       >
                         <Check className="h-3.5 w-3.5" />

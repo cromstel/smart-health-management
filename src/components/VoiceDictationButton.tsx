@@ -166,7 +166,7 @@ export const VoiceDictationButton: React.FC<VoiceDictationButtonProps> = ({
         onClick={toggleListening}
         className={`h-9 w-9 rounded-full shrink-0 transition-all ${
           isListening 
-            ? "animate-pulse ring-2 ring-destructive bg-destructive text-white hover:bg-destructive" 
+            ? "animate-pulse ring-2 ring-destructive bg-destructive text-destructive-foreground hover:bg-destructive" 
             : "hover:bg-primary/10 border-border text-foreground hover:text-accent"
         }`}
         title={isListening ? "Stop hands-free dictation" : "Dictate clinical assessment hands-free"}

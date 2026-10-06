@@ -821,7 +821,10 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Scheduled</span>
-                      <span className="font-medium text-primary">
+                      {/* text-primary is navy, which measured 1.05:1 on the navy card: */}
+                      {/* navy on navy. The adjacent counts use status tokens; this one */}
+                      {/* is a tally, so foreground is the honest colour. */}
+                      <span className="font-medium text-foreground">
                         {appointments.filter((a) => a.status === 'Scheduled').length}
                       </span>
                     </div>

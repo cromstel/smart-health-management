@@ -283,7 +283,7 @@ export default function PrescriptionFulfillmentPage() {
                                 {p.patientId}
                               </Badge>
                               {isNearingRefill && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 bg-destructive text-white font-semibold">
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 bg-destructive text-destructive-foreground font-semibold">
                                   <AlertCircle className="h-2.5 w-2.5 mr-1" aria-hidden="true" />
                                   Refill Nearing ({remainingDays}d left)
                                 </Badge>

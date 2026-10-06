@@ -101,8 +101,8 @@ export default function AppointmentDensityHeatMap() {
     if (count === 0) return 'bg-slate-50 dark:bg-slate-900/40 border-slate-100 dark:border-slate-800/80 hover:bg-slate-100 hover:dark:bg-slate-800';
     if (count <= 2) return 'bg-info/5 dark:bg-info/20 text-info dark:text-info border-info/10 dark:border-info/40 hover:bg-info/80';
     if (count <= 5) return 'bg-info/20 dark:bg-info/50 text-info dark:text-indigo-200 border-info/50 dark:border-info/80 hover:bg-info/30 dark:hover:bg-info';
-    if (count <= 8) return 'bg-info dark:bg-info text-white border-info hover:bg-info';
-    return 'bg-info dark:bg-info text-white border-info hover:bg-info';
+    if (count <= 8) return 'bg-info dark:bg-info text-info-foreground border-info hover:bg-info';
+    return 'bg-info dark:bg-info text-info-foreground border-info hover:bg-info';
   };
 
   const selectedCellData = selectedCell ? getCellData(selectedCell.day, selectedCell.hour) : null;

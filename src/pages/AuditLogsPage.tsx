@@ -303,7 +303,7 @@ export default function AuditLogsPage() {
                       Automate compliant delivery of audit ledger reports.
                     </CardDescription>
                   </div>
-                  <Badge className={scheduleEnabled ? "bg-success text-white font-extrabold text-[9px]" : "bg-muted text-muted-foreground font-extrabold text-[9px]"}>{scheduleEnabled ? 'SCHEDULER ACTIVE' : 'OFFLINE'}</Badge>
+                  <Badge className={scheduleEnabled ? "bg-success text-success-foreground font-extrabold text-[9px]" : "bg-muted text-muted-foreground font-extrabold text-[9px]"}>{scheduleEnabled ? 'SCHEDULER ACTIVE' : 'OFFLINE'}</Badge>
                 </div>
               </CardHeader>
 

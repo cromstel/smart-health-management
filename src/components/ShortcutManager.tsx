@@ -86,7 +86,7 @@ export const ShortcutManager: React.FC = () => {
       <button
         id="shortcuts-cheatsheet-trigger"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-40 flex h-9 items-center gap-1.5 rounded-full bg-slate-900 border border-slate-700 px-3 text-[11px] font-bold text-white shadow-xl hover:bg-slate-850 hover:border-slate-500 transition-all no-print"
+        className="fixed bottom-4 right-4 z-40 flex h-9 items-center gap-1.5 rounded-full bg-primary border border-border px-3 text-[11px] font-bold text-primary-foreground shadow-xl hover:bg-primary/90 transition-all no-print"
         title="Show global keyboard shortcuts (?)"
       >
         <Keyboard className="h-4 w-4 text-accent animate-pulse" />

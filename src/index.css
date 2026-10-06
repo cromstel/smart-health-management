@@ -124,6 +124,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -170,10 +171,21 @@
   --secondary: #F1F5F9;
   --secondary-foreground: #0F172A;
   --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #0284C7;
+  /* Was #64748B: 4.76:1 on white but only 4.4:1 on --muted, which is the
+     background of every secondary label (kbd hints, badges, helper text) and
+     fails AA at the 10-12px sizes those use. Darkened so both surfaces pass. */
+  --muted-foreground: #5B6B84;
+  /* #0284C7 is 4.0:1 on white, just under AA for body text, and it is the
+     accent role so it is used for links and labels. #0369A1 keeps the hue and
+     reaches 5.3:1 on white. */
+  --accent: #0369A1;
   --accent-foreground: #FFFFFF;
-  --destructive: #EF4444;
+  --destructive: #B91C1C;
+  /* Destructive had no foreground companion, so callers reached for text-white:
+     3.0:1 against the old #EF4444, failing AA at every size. The darker red
+     gives 6.5:1 with white and 6.5:1 as text on a light surface, so one value
+     serves both directions. */
+  --destructive-foreground: #FFFFFF;
 
   /* Clinical status roles. These carry meaning, not decoration: success marks
      a normal or passing result, warning an abnormal-but-not-critical one, and
@@ -226,7 +238,12 @@
   --muted-foreground: #8892b0;
   --accent: #00BFFF;
   --accent-foreground: #0A192F;
-  --destructive: #ef4444;
+  /* Dark-mode status surfaces are light, so their foreground is dark. The dark
+     red was #ef4444, which is only 3.3:1 against this navy field -- too dim for
+     an alert colour on the app's default theme. #f87171 keeps the hue and
+     reaches 6.1:1. */
+  --destructive: #f87171;
+  --destructive-foreground: #450A0A;
 
   --success: #34D399;
   --success-foreground: #042F2E;

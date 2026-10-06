@@ -567,7 +567,7 @@ export default function SettingsPage() {
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Label className="font-semibold text-base">Enable Multi-Factor Authentication</Label>
-                    <Badge variant={totpEnabled ? 'default' : 'outline'} className={totpEnabled ? 'bg-success text-white' : ''}>
+                    <Badge variant={totpEnabled ? 'default' : 'outline'} className={totpEnabled ? 'bg-success text-success-foreground' : ''}>
                       {totpEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
                     </Badge>
                   </div>
@@ -738,7 +738,7 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-accent" />
                         <h4 className="text-sm font-semibold">Authenticator App (TOTP)</h4>
-                        <Badge variant="default" className="text-[10px] bg-success text-white font-semibold ml-auto">ENFORCED</Badge>
+                        <Badge variant="default" className="text-[10px] bg-success text-success-foreground font-semibold ml-auto">ENFORCED</Badge>
                       </div>
 
                       <p className="text-xs text-muted-foreground">

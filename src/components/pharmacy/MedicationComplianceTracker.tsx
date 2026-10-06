@@ -382,7 +382,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                               <Button
                                 size="sm"
                                 onClick={() => handleAdminister(admin.id)}
-                                className="bg-success hover:bg-success text-white font-semibold text-[10px] h-7 px-2 shrink-0 cursor-pointer"
+                                className="bg-success hover:bg-success text-success-foreground font-semibold text-[10px] h-7 px-2 shrink-0 cursor-pointer"
                               >
                                 Sign-off
                               </Button>
@@ -506,7 +506,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                     </Button>
                     <Button 
                       type="submit" 
-                      className="bg-info hover:bg-info text-white text-xs h-8 font-semibold cursor-pointer"
+                      className="bg-info hover:bg-info text-info-foreground text-xs h-8 font-semibold cursor-pointer"
                     >
                       Confirm Schedule
                     </Button>

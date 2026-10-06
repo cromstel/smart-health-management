@@ -281,7 +281,7 @@ export default function InventoryReportsPage() {
             <FileText className="h-4 w-4 text-destructive" aria-hidden="true" />
             <span>Export PDF</span>
             {preferredFormat === 'PDF' && (
-              <span className="ml-1 text-[10px] bg-destructive text-white rounded-full px-1.5 py-0.5 font-bold">
+              <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 font-bold">
                 Pref
               </span>
             )}
@@ -299,7 +299,7 @@ export default function InventoryReportsPage() {
             <Download className="h-4 w-4 text-success" aria-hidden="true" />
             <span>Export CSV</span>
             {preferredFormat === 'CSV' && (
-              <span className="ml-1 text-[10px] bg-success text-white rounded-full px-1.5 py-0.5 font-bold">
+              <span className="ml-1 text-[10px] bg-success text-success-foreground rounded-full px-1.5 py-0.5 font-bold">
                 Pref
               </span>
             )}

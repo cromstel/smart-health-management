@@ -97,8 +97,8 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
                     variant="destructive"
                     className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 ${
                       criticalCount > 0
-                        ? 'bg-destructive text-white'
-                        : 'bg-warning text-white'
+                        ? 'bg-destructive text-destructive-foreground'
+                        : 'bg-warning text-warning-foreground'
                     }`}
                   >
                     {criticalCount > 0 ? `${criticalCount} Crisis` : `${warningCount} Abnormal`}
@@ -208,8 +208,8 @@ export function CriticalVitalsAlertWidget({ className = '' }: { className?: stri
                     variant={isCritical ? 'destructive' : 'default'}
                     className={`h-7 text-xs font-semibold shrink-0 gap-1 ${
                       isCritical
-                        ? 'bg-destructive hover:bg-destructive text-white'
-                        : 'bg-warning hover:bg-warning text-white'
+                        ? 'bg-destructive hover:bg-destructive text-destructive-foreground'
+                        : 'bg-warning hover:bg-warning text-warning-foreground'
                     }`}
                     onClick={() =>
                       navigate(

@@ -179,7 +179,7 @@ export function DiagnosticHelperBanner({
 
   return (
     <Card className="border-2 border-destructive/80 bg-destructive/70 dark:bg-destructive/40 shadow-sm overflow-hidden">
-      <div className="bg-destructive text-white px-4 py-2 flex items-center justify-between text-xs font-bold">
+      <div className="bg-destructive text-destructive-foreground px-4 py-2 flex items-center justify-between text-xs font-bold">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 animate-bounce" />
           <span>DIAGNOSTIC HELPER: OUTLIER PARAMETER ALERT DETECTED ({outliers.length})</span>
@@ -252,7 +252,7 @@ export function DiagnosticHelperBanner({
 
             <Button
               size="sm"
-              className="h-8 text-xs bg-destructive hover:bg-destructive text-white font-bold gap-1.5 shadow-sm"
+              className="h-8 text-xs bg-destructive hover:bg-destructive text-destructive-foreground font-bold gap-1.5 shadow-sm"
               onClick={handleTriggerNotification}
               disabled={notified}
             >

@@ -93,7 +93,9 @@ export function CompanyStaffDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-primary text-primary-foreground p-6 rounded-2xl shadow-xl">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Badge className="bg-accent/20 text-accent border-accent/30 px-3 py-1 font-semibold text-xs">
+            {/* text-accent on the navy primary banner measured 2.8:1. The tint
+                background needs a light foreground, not the accent hue. */}
+            <Badge className="bg-accent/20 text-primary-foreground border-accent/30 px-3 py-1 font-semibold text-xs">
               Company Staff Management Portal
             </Badge>
             <Badge className="bg-success/20 text-emerald-300 border-success/30 px-2.5 py-0.5 text-[11px]">

@@ -350,7 +350,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <h1 className="font-display text-3xl font-semibold text-foreground">Dashboard</h1>
             {isEmergencyMode && (
-              <Badge className="bg-destructive text-white font-bold animate-pulse gap-1">
+              <Badge className="bg-destructive text-destructive-foreground font-bold animate-pulse gap-1">
                 <Siren className="h-3.5 w-3.5" aria-hidden="true" /> Emergency Mode
               </Badge>
             )}

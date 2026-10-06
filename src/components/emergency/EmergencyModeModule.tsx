@@ -154,7 +154,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
               <h2 className="text-xl font-extrabold tracking-tight uppercase flex items-center gap-2 text-rose-100">
                 STAT Emergency Triage View
               </h2>
-              <Badge className="bg-destructive text-white font-bold border-destructive animate-pulse">
+              <Badge className="bg-destructive text-destructive-foreground font-bold border-destructive animate-pulse">
                 HIGH PRESSURE MODE ACTIVE
               </Badge>
             </div>
@@ -171,7 +171,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
             size="sm"
             onClick={handleCodeBlueBroadcast}
             disabled={statActionRunning === 'code_blue'}
-            className="h-9 px-3 text-xs font-bold bg-destructive hover:bg-destructive text-white border border-destructive shadow-md gap-1.5 animate-bounce"
+            className="h-9 px-3 text-xs font-bold bg-destructive hover:bg-destructive text-destructive-foreground border border-destructive shadow-md gap-1.5 animate-bounce"
           >
             <Zap className="h-4 w-4 fill-amber-300 text-amber-300" />
             <span>Broadcast CODE BLUE</span>
@@ -190,7 +190,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
             variant="outline"
             size="sm"
             onClick={onOpenHandover}
-            className="h-9 px-3 text-xs font-bold border-destructive text-white hover:bg-destructive/50 gap-1.5"
+            className="h-9 px-3 text-xs font-bold border-destructive text-destructive-foreground hover:bg-destructive/50 gap-1.5"
           >
             <FileText className="h-4 w-4 text-rose-300" />
             <span>Shift Handover</span>
@@ -285,7 +285,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                       <Badge
                         className={`text-xs font-bold ${
                           p.triageLevel === 'RED'
-                            ? 'bg-destructive text-white animate-pulse'
+                            ? 'bg-destructive text-destructive-foreground animate-pulse'
                             : 'bg-warning text-black'
                         }`}
                       >
@@ -351,7 +351,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                     <Button
                       size="sm"
                       onClick={onOpenLogVitals}
-                      className="h-7 text-xs bg-destructive text-white hover:bg-destructive"
+                      className="h-7 text-xs bg-destructive text-destructive-foreground hover:bg-destructive"
                     >
                       Update Vitals
                     </Button>
@@ -392,7 +392,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                     onClick={() => handleAllocateBed(b.id)}
                     className={`h-7 text-[11px] font-bold ${
                       b.status === 'AVAILABLE'
-                        ? 'bg-success text-white hover:bg-success'
+                        ? 'bg-success text-success-foreground hover:bg-success'
                         : 'border-destructive/40 text-destructive dark:text-destructive'
                     }`}
                   >

@@ -215,7 +215,7 @@ export function PostDischargeFollowupModule() {
               <h2 className="text-xl font-bold tracking-tight text-primary-foreground">
                 Automated Post-Discharge Outreach & Task Center
               </h2>
-              <Badge className="bg-success text-white font-mono text-[10px]">READMISSION PREVENTION</Badge>
+              <Badge className="bg-success text-success-foreground font-mono text-[10px]">READMISSION PREVENTION</Badge>
             </div>
             <p className="text-xs text-success/80 mt-0.5">
               Automatically schedules and assigns 4-phase nurse follow-up outreach calls to prevent 30-day hospital readmissions
@@ -225,7 +225,7 @@ export function PostDischargeFollowupModule() {
 
         <Button
           onClick={() => setIsEnrollModalOpen(true)}
-          className="bg-success hover:bg-success text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-success/30 shrink-0"
+          className="bg-success hover:bg-success text-success-foreground font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-success/30 shrink-0"
         >
           <Plus className="h-4 w-4" />
           <span>Schedule Post-Discharge Plan</span>
@@ -346,10 +346,10 @@ export function PostDischargeFollowupModule() {
                     <Badge
                       className={`text-[9px] font-bold font-mono ${
                         t.readmissionRisk === 'HIGH'
-                          ? 'bg-destructive text-white'
+                          ? 'bg-destructive text-destructive-foreground'
                           : t.readmissionRisk === 'MODERATE'
                           ? 'bg-warning text-black'
-                          : 'bg-success text-white'
+                          : 'bg-success text-success-foreground'
                       }`}
                     >
                       {t.readmissionRisk} RISK
@@ -374,17 +374,17 @@ export function PostDischargeFollowupModule() {
 
                   <TableCell className="text-right">
                     {t.status === 'COMPLETED' ? (
-                      <Badge className="bg-success text-white text-[10px] gap-1">
+                      <Badge className="bg-success text-success-foreground text-[10px] gap-1">
                         <CheckCircle2 className="h-3 w-3" /> Done
                       </Badge>
                     ) : t.status === 'ESCALATED' ? (
-                      <Badge className="bg-destructive text-white text-[10px] gap-1">
+                      <Badge className="bg-destructive text-destructive-foreground text-[10px] gap-1">
                         <ShieldAlert className="h-3 w-3" /> Escalated
                       </Badge>
                     ) : (
                       <Button
                         size="sm"
-                        className="h-7 text-[11px] font-bold bg-success hover:bg-success text-white gap-1"
+                        className="h-7 text-[11px] font-bold bg-success hover:bg-success text-success-foreground gap-1"
                         onClick={() => handleOpenCallModal(t)}
                       >
                         <PhoneCall className="h-3 w-3" />
@@ -492,7 +492,7 @@ export function PostDischargeFollowupModule() {
 
                 <Button
                   size="sm"
-                  className="bg-success hover:bg-success text-white font-bold gap-1 text-xs"
+                  className="bg-success hover:bg-success text-success-foreground font-bold gap-1 text-xs"
                   onClick={() => handleSaveCallOutcome(false)}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" /> Complete Outreach
@@ -569,7 +569,7 @@ export function PostDischargeFollowupModule() {
             </div>
 
             <Button
-              className="w-full bg-success hover:bg-success text-white font-bold h-9 mt-2"
+              className="w-full bg-success hover:bg-success text-success-foreground font-bold h-9 mt-2"
               onClick={handleEnrollPatient}
             >
               Generate 4-Phase Outreach Plan

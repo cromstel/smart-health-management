@@ -437,7 +437,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                               </Button>
                               <Button
                                 size="sm"
-                                className="h-7 text-[11px] font-bold bg-success hover:bg-success text-white"
+                                className="h-7 text-[11px] font-bold bg-success hover:bg-success text-success-foreground"
                                 onClick={() => {
                                   setActivePatientName(patient.name);
                                   setActivePatientId(patient.id);
@@ -609,7 +609,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 <Button 
                   onClick={handleSaveNotes} 
                   disabled={isNotesSaved}
-                  className="w-full bg-success hover:bg-success text-white gap-1.5 h-8 text-xs font-bold"
+                  className="w-full bg-success hover:bg-success text-success-foreground gap-1.5 h-8 text-xs font-bold"
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
                   <span>{isNotesSaved ? 'Saved to Patient File' : 'Save & Attach to EHR'}</span>

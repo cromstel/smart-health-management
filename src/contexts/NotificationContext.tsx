@@ -365,13 +365,20 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           }
         }
 
-        // Fallback: If no exact date string match, check relative strings or simulate 15-min check for today's active items
+        // If the date does not parse, fall back to matching an explicit relative
+        // time string. There is deliberately no random "simulated" case here.
         const isApproaching = apptTimestamp
           ? (apptTimestamp - now > 0 && apptTimestamp - now <= fifteenMinsMs)
           : (a.appointment_time?.toLowerCase().includes('15') || a.appointment_time?.toLowerCase().includes('soon'));
 
-        // Alert staff member if appointment is within 15 minutes (or simulated approaching appointment)
-        if (isApproaching || (!apptTimestamp && Math.random() < 0.05)) {
+        // Alert only on a genuinely approaching appointment.
+        //
+        // This previously fired for 5% of appointments that were NOT within 15
+        // minutes, purely at random. A time-critical clinical alert that appears
+        // without cause trains staff to dismiss the real ones, and invites acting on
+        // a fabricated one. If the appointment time cannot be parsed there is no
+        // basis to claim it is approaching.
+        if (isApproaching) {
           const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
           const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
           const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || '15 mins from now'}`;

@@ -35,43 +35,20 @@ interface SeriesToggle {
   enabled: boolean;
 }
 
-// Generate realistic mock daily historical vitals data
-function generateHistoricalVitals(daysCount: number): VitalDataPoint[] {
-  const points: VitalDataPoint[] = [];
-  const now = new Date();
-
-  // Baseline metrics with slight random walk
-  let sys = 120;
-  let dia = 80;
-  let hr = 72;
-  let o2 = 98;
-  let temp = 36.6;
-
-  for (let i = daysCount; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-
-    // Random walk fluctuations within realistic medical bounds
-    sys = Math.min(145, Math.max(108, sys + (Math.random() - 0.49) * 3));
-    dia = Math.min(95, Math.max(68, dia + (Math.random() - 0.49) * 2));
-    hr = Math.min(105, Math.max(58, hr + (Math.random() - 0.48) * 3));
-    o2 = Math.min(100, Math.max(93, o2 + (Math.random() - 0.45) * 0.8));
-    temp = Math.min(38.2, Math.max(36.1, temp + (Math.random() - 0.49) * 0.2));
-
-    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-    points.push({
-      date: d,
-      dateStr,
-      systolic: Math.round(sys),
-      diastolic: Math.round(dia),
-      heartRate: Math.round(hr),
-      spO2: Number(o2.toFixed(1)),
-      temperature: Number(temp.toFixed(1)),
-    });
-  }
-
-  return points;
+/**
+ * Historical vitals for the selected window.
+ *
+ * This used to synthesise a plausible random walk (blood pressure, heart rate,
+ * SpO2, temperature) and render it as a real longitudinal record. There is no
+ * vitals endpoint behind this chart, so every reading it showed was invented
+ * and labelled with averages and a "Live D3 Engine" badge, i.e. fabricated
+ * clinical data presented as a patient's actual history.
+ *
+ * Returns nothing until a real source exists. The component renders an explicit
+ * no-data state; it must not invent readings. See docs/CHANGELOG.md.
+ */
+function historicalVitals(_daysCount: number): VitalDataPoint[] {
+  return [];
 }
 
 export function D3PatientVitalsTrendChart() {
@@ -82,7 +59,7 @@ export function D3PatientVitalsTrendChart() {
   const [hoveredPoint, setHoveredPoint] = useState<VitalDataPoint | null>(null);
 
   const [seriesToggles, setSeriesToggles] = useState<SeriesToggle[]>([
-    { key: 'bp', label: 'Blood Pressure (Systolic/Diastolic)', color: '#3b82f6', unit: 'mmHg', enabled: true },
+    { key: 'bp', label: 'Blood Pressure (Systolic/Diastolic)', color: 'var(--chart-1)', unit: 'mmHg', enabled: true },
     { key: 'heartRate', label: 'Heart Rate', color: '#ef4444', unit: 'BPM', enabled: true },
     { key: 'spO2', label: 'Oxygen Saturation (SpO2)', color: '#10b981', unit: '%', enabled: true },
     { key: 'temperature', label: 'Body Temperature', color: '#f59e0b', unit: '°C', enabled: false },
@@ -96,7 +73,7 @@ export function D3PatientVitalsTrendChart() {
       '180d': 180,
       '365d': 365,
     };
-    return generateHistoricalVitals(daysCountMap[timeRange]);
+    return historicalVitals(daysCountMap[timeRange]);
   }, [timeRange]);
 
   // Statistical calculations using D3
@@ -472,9 +449,9 @@ export function D3PatientVitalsTrendChart() {
           <div>
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
               <Activity className="h-5 w-5 text-accent animate-pulse" />
-              <span>D3.js Patient Health Vitals Trend Analytics</span>
-              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider text-accent bg-accent/5 dark:bg-accent/50">
-                Live D3 Engine
+              <span>Patient Health Vitals Trend Analytics</span>
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider text-accent bg-accent/10 text-accent">
+                Pending data
               </Badge>
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
@@ -608,9 +585,24 @@ export function D3PatientVitalsTrendChart() {
         </div>
 
         {/* D3 Render Container */}
-        <div ref={containerRef} className="w-full relative min-h-[340px]">
-          <svg ref={svgRef} className="w-full h-[360px] overflow-visible" />
-        </div>
+        {fullData.length === 0 ? (
+          <div
+            ref={containerRef}
+            className="flex flex-col items-center justify-center gap-2 w-full min-h-[340px] rounded-lg border border-dashed border-border bg-muted/20 text-center px-6"
+          >
+            <Activity className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm font-medium text-foreground">No recorded vitals</p>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              This panel charts a patient&apos;s recorded history. Nothing has been
+              charted yet, so there is nothing to display here. Readings appear once
+              they are captured from a patient record.
+            </p>
+          </div>
+        ) : (
+          <div ref={containerRef} className="w-full relative min-h-[340px]">
+            <svg ref={svgRef} className="w-full h-[360px] overflow-visible" />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -464,7 +464,7 @@ export default function AiAssistantPage() {
                       <div className={`p-4 rounded-xl border text-xs leading-relaxed whitespace-pre-wrap ${
                         isAi
                           ? 'bg-card border-border text-foreground shadow-sm'
-                          : 'bg-info text-white border-info'
+                          : 'bg-info text-info-foreground border-info'
                       }`}>
                         {m.content}
                       </div>
@@ -608,7 +608,7 @@ export default function AiAssistantPage() {
               <Button
                 type="submit"
                 disabled={sending || !inputValue.trim()}
-                className="h-9 w-9 p-0 bg-info hover:bg-info text-white shrink-0"
+                className="h-9 w-9 p-0 bg-info hover:bg-info text-info-foreground shrink-0"
                 aria-label="Send message"
               >
                 <Send className="h-4 w-4" aria-hidden="true" />

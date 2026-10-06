@@ -41,46 +41,21 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
         } else if (res && Array.isArray((res as any).logs)) {
           setLogs((res as any).logs);
         } else {
-          // Fallback to localStorage or mock audit logs
+          // Locally-recorded audit entries only.
+          //
+          // This previously invented 60 audit records here and again in the
+          // catch below, with plausible actions, users and timestamps. An audit
+          // trail is a security record: fabricating entries makes the panel
+          // indistinguishable from real activity, which is worse than showing
+          // nothing. No source means no chart.
           const local = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-          if (local.length > 0) {
-            setLogs(local);
-          } else {
-            // Generate realistic 30-day mock audit logs
-            const mockGenerated: AuditLogItem[] = [];
-            const actions = ['LOGIN', 'UPDATE_PATIENT', 'CREATE_APPOINTMENT', 'PRESCRIPTION', 'SECURITY_ALERT', 'DISCHARGE_PATIENT'];
-            const users = ['admin@smarthealth.com', 'doctor@smarthealth.com', 'nurse@smarthealth.com', 'superadmin@smarthealth.com'];
-            
-            const now = Date.now();
-            for (let i = 0; i < 60; i++) {
-              const daysAgo = Math.floor(Math.random() * 30);
-              const ts = new Date(now - daysAgo * 86400000 - Math.random() * 3600000 * 12).toISOString();
-              mockGenerated.push({
-                id: `gen-${i}`,
-                action: actions[Math.floor(Math.random() * actions.length)],
-                user: users[Math.floor(Math.random() * users.length)],
-                timestamp: ts,
-                details: 'Automated system operation recorded',
-              });
-            }
-            setLogs(mockGenerated);
-          }
+          setLogs(Array.isArray(local) ? local : []);
         }
       } catch (err) {
-        console.warn('Failed to load audit logs for chart, using mock timeline', err);
-        // Fallback mock logs
-        const fallback: AuditLogItem[] = [];
-        const actions = ['LOGIN', 'UPDATE_PATIENT', 'CREATE_APPOINTMENT', 'PRESCRIPTION', 'SECURITY_ALERT'];
-        const now = Date.now();
-        for (let i = 0; i < 45; i++) {
-          const daysAgo = Math.floor(Math.random() * 30);
-          fallback.push({
-            id: `fb-${i}`,
-            action: actions[Math.floor(Math.random() * actions.length)],
-            timestamp: new Date(now - daysAgo * 86400000).toISOString(),
-          });
-        }
-        setLogs(fallback);
+        console.warn('Failed to load audit logs for chart', err);
+        // A failed audit fetch leaves the panel empty on purpose. See the note
+        // in the success branch: invented security records are worse than none.
+        setLogs([]);
       } finally {
         setLoading(false);
       }
@@ -218,7 +193,7 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
                           <div className="font-semibold text-xs text-muted-foreground mb-1">{label}</div>
                           <div className="space-y-1 text-xs">
                             <div className="flex items-center justify-between gap-4">
-                              <span className="font-medium text-primary">Total Operations:</span>
+                              <span className="font-medium text-foreground">Total Operations:</span>
                               <span className="font-bold">{payload[0]?.value}</span>
                             </div>
                             <div className="flex items-center justify-between gap-4">

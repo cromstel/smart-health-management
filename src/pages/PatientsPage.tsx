@@ -746,7 +746,7 @@ export default function PatientsPage() {
                       <div>
                         <Label className="text-muted-foreground text-xs">Status</Label>
                         <div>
-                          <Badge className={`mt-1 ${viewingPatient.status === 'Active' ? 'bg-success hover:bg-success text-white' : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'}`} variant="default">
+                          <Badge className={`mt-1 ${viewingPatient.status === 'Active' ? 'bg-success hover:bg-success text-success-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'}`} variant="default">
                             {viewingPatient.status}
                           </Badge>
                         </div>

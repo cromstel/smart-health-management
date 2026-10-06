@@ -334,9 +334,9 @@ export function AlertsSummary({
   const getBadgeStyle = (severity: 'critical' | 'high' | 'elevated' | 'hypo') => {
     switch (severity) {
       case 'critical':
-        return 'bg-destructive text-white border-destructive hover:bg-destructive font-semibold';
+        return 'bg-destructive text-destructive-foreground border-destructive hover:bg-destructive font-semibold';
       case 'high':
-        return 'bg-destructive text-white border-destructive hover:bg-destructive font-medium';
+        return 'bg-destructive text-destructive-foreground border-destructive hover:bg-destructive font-medium';
       case 'elevated':
         return 'border-warning/50 bg-warning/10 text-warning dark:text-warning font-medium';
       case 'hypo':

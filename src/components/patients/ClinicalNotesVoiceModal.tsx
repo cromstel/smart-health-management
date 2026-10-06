@@ -345,7 +345,7 @@ export function ClinicalNotesVoiceModal({
                 onClick={toggleListening}
                 className={`h-12 px-5 gap-2.5 font-bold transition-all shadow-md ${
                   isListening
-                    ? 'bg-destructive hover:bg-destructive text-white animate-pulse'
+                    ? 'bg-destructive hover:bg-destructive text-destructive-foreground animate-pulse'
                     : 'bg-accent hover:bg-accent text-white'
                 }`}
               >

@@ -110,7 +110,7 @@ export function OfflineStatusBadge() {
             </div>
             <Badge
               variant={!effectiveOnline ? 'destructive' : 'default'}
-              className={!effectiveOnline ? 'bg-warning text-white' : 'bg-success text-white'}
+              className={!effectiveOnline ? 'bg-warning text-warning-foreground' : 'bg-success text-success-foreground'}
             >
               {!effectiveOnline ? 'OFFLINE' : 'ONLINE'}
             </Badge>

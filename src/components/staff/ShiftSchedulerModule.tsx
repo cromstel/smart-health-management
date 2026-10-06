@@ -305,7 +305,7 @@ export function ShiftSchedulerModule() {
                       <div className="flex items-center gap-2">
                         <span>{day}</span>
                         {isPeakDay && (
-                          <Badge className="bg-destructive text-white text-[9px] px-1 py-0 font-mono">PEAK SURGE</Badge>
+                          <Badge className="bg-destructive text-destructive-foreground text-[9px] px-1 py-0 font-mono">PEAK SURGE</Badge>
                         )}
                       </div>
                     </TableCell>

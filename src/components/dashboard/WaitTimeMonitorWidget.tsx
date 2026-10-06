@@ -175,12 +175,12 @@ export function WaitTimeMonitorWidget() {
 
           <div className="flex items-center gap-2">
             {criticalCount > 0 && (
-              <Badge className="bg-destructive text-white font-bold animate-bounce text-[10px]">
+              <Badge className="bg-destructive text-destructive-foreground font-bold animate-bounce text-[10px]">
                 🔴 {criticalCount} CRITICAL DELAY
               </Badge>
             )}
             {warningCount > 0 && (
-              <Badge className="bg-warning text-black font-bold text-[10px]">
+              <Badge className="bg-warning text-warning-foreground font-bold text-[10px]">
                 🟡 {warningCount} DELAY WARNING
               </Badge>
             )}
@@ -207,10 +207,10 @@ export function WaitTimeMonitorWidget() {
                 <Badge
                   className={`text-[9px] font-bold font-mono ${
                     dept.status === 'CRITICAL'
-                      ? 'bg-destructive text-white'
+                      ? 'bg-destructive text-destructive-foreground'
                       : dept.status === 'WARNING'
-                      ? 'bg-warning text-black'
-                      : 'bg-success text-white'
+                      ? 'bg-warning text-warning-foreground'
+                      : 'bg-success text-success-foreground'
                   }`}
                 >
                   {dept.avgWaitMins} mins avg
@@ -250,7 +250,7 @@ export function WaitTimeMonitorWidget() {
               {dept.status !== 'NORMAL' && (
                 <Button
                   size="sm"
-                  className="w-full mt-3 h-7 text-[11px] font-bold bg-destructive hover:bg-destructive text-white gap-1"
+                  className="w-full mt-3 h-7 text-[11px] font-bold bg-destructive hover:bg-destructive text-destructive-foreground gap-1"
                   onClick={() => {
                     setSelectedDeptForIntervention(dept);
                     setIsInterventionModalOpen(true);
@@ -291,7 +291,7 @@ export function WaitTimeMonitorWidget() {
                 <Button
                   onClick={() => handleReallocateStaff(selectedDeptForIntervention.id)}
                   disabled={isReallocating}
-                  className="bg-info hover:bg-info text-white font-bold h-9 gap-2"
+                  className="bg-info hover:bg-info text-info-foreground font-bold h-9 gap-2"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>Dispatch Floating Staff (+2 Clinicians)</span>

@@ -237,7 +237,7 @@ export function InventoryForecastingModule() {
               <h2 className="text-xl font-bold tracking-tight text-primary-foreground flex items-center gap-2">
                 Predictive AI Inventory Forecasting
               </h2>
-              <Badge className="bg-info text-white font-mono text-[10px]">30-DAY BURN ENGINE</Badge>
+              <Badge className="bg-info text-info-foreground font-mono text-[10px]">30-DAY BURN ENGINE</Badge>
             </div>
             <p className="text-xs text-info/80 mt-0.5">
               Analyzes historical consumption velocity to predict medication stockout dates and auto-generate restock purchase orders
@@ -248,7 +248,7 @@ export function InventoryForecastingModule() {
         <Button
           onClick={handleAutoGeneratePurchaseOrders}
           disabled={isGeneratingOrders || criticalCount + highCount === 0}
-          className="bg-info hover:bg-info text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 shrink-0 border border-info/30"
+          className="bg-info hover:bg-info text-info-foreground font-bold text-xs h-10 px-4 shadow-lg gap-2 shrink-0 border border-info/30"
         >
           <ShoppingCart className="h-4 w-4" />
           <span>Auto-Generate Restock Orders (${totalSuggestedCost.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>
@@ -406,10 +406,10 @@ export function InventoryForecastingModule() {
                         <Badge
                           className={`font-bold font-mono text-[10px] ${
                             item.riskLevel === 'CRITICAL'
-                              ? 'bg-destructive text-white animate-pulse'
+                              ? 'bg-destructive text-destructive-foreground animate-pulse'
                               : item.riskLevel === 'HIGH'
                               ? 'bg-warning text-black'
-                              : 'bg-success text-white'
+                              : 'bg-success text-success-foreground'
                           }`}
                         >
                           {item.daysOfSupply} Days
@@ -493,7 +493,7 @@ export function InventoryForecastingModule() {
 
               <Button
                 size="sm"
-                className="w-full text-xs font-bold bg-info hover:bg-info text-white gap-1.5"
+                className="w-full text-xs font-bold bg-info hover:bg-info text-info-foreground gap-1.5"
                 onClick={() => {
                   toast.success(`Drafted order for ${selectedItemForChart.name} (${selectedItemForChart.suggestedReorderQty} units)`);
                 }}

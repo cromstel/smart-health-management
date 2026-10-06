@@ -303,7 +303,7 @@ export default function RecentActivityWidget({ initialActivities = [], className
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeTab === 'all'
-                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  ? 'bg-accent text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
@@ -313,7 +313,7 @@ export default function RecentActivityWidget({ initialActivities = [], className
               onClick={() => setActiveTab('appointments')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeTab === 'appointments'
-                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  ? 'bg-accent text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
@@ -323,7 +323,7 @@ export default function RecentActivityWidget({ initialActivities = [], className
               onClick={() => setActiveTab('alerts')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeTab === 'alerts'
-                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  ? 'bg-accent text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
@@ -333,7 +333,7 @@ export default function RecentActivityWidget({ initialActivities = [], className
               onClick={() => setActiveTab('updates')}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeTab === 'updates'
-                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  ? 'bg-accent text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >

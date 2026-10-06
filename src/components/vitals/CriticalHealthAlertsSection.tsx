@@ -173,8 +173,8 @@ export function CriticalHealthAlertsSection({
                     variant="destructive"
                     className={`text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 ${
                       hasCritical
-                        ? 'bg-destructive hover:bg-destructive text-white'
-                        : 'bg-warning hover:bg-warning text-white'
+                        ? 'bg-destructive hover:bg-destructive text-destructive-foreground'
+                        : 'bg-warning hover:bg-warning text-warning-foreground'
                     }`}
                   >
                     {hasCritical ? '⚠️ HIGH PRIORITY CRISIS' : '⚠️ ABNORMAL VITALS DETECTED'}

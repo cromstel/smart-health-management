@@ -143,13 +143,13 @@ export function evaluateTriagePriority(
   if (score >= 8.5) {
     classification = 'ESI-1';
     levelColor = 'bg-destructive/10 text-destructive border-destructive/20 dark:bg-destructive/40 dark:text-rose-300 dark:border-destructive';
-    badgeColor = 'bg-destructive text-white';
+    badgeColor = 'bg-destructive text-destructive-foreground';
     label = 'Immediate (Resuscitation)';
     recommendedWard = 'ICU / Trauma Resuscitation Bay A';
   } else if (score >= 6.0) {
     classification = 'ESI-2';
     levelColor = 'bg-warning/10 text-warning border-warning/20 dark:bg-warning/40 dark:text-orange-300 dark:border-warning';
-    badgeColor = 'bg-warning text-white';
+    badgeColor = 'bg-warning text-warning-foreground';
     label = 'Emergent (High Risk)';
     recommendedWard = 'ED Bed Area / Cardiac Step-down';
   } else if (score >= 4.0) {
@@ -167,7 +167,7 @@ export function evaluateTriagePriority(
   } else {
     classification = 'ESI-5';
     levelColor = 'bg-success/10 text-success border-success/20 dark:bg-success/40 dark:text-emerald-300 dark:border-success';
-    badgeColor = 'bg-success text-white';
+    badgeColor = 'bg-success text-success-foreground';
     label = 'Non-Urgent';
     recommendedWard = 'Outpatient Clinic / Primary Care';
   }
