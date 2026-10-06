@@ -190,7 +190,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
             variant="outline"
             size="sm"
             onClick={onOpenHandover}
-            className="h-9 px-3 text-xs font-bold border-destructive text-destructive-foreground hover:bg-destructive/50 gap-1.5"
+            className="h-9 px-3 text-xs font-bold border-destructive text-destructive hover:bg-destructive/50 gap-1.5"
           >
             <FileText className="h-4 w-4 text-rose-300" />
             <span>Shift Handover</span>

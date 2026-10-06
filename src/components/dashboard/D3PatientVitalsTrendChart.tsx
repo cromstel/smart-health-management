@@ -11,8 +11,6 @@ import {
   Calendar, 
   Info, 
   Sliders, 
-  Eye, 
-  EyeOff 
 } from 'lucide-react';
 
 interface VitalDataPoint {
@@ -548,14 +546,21 @@ export function D3PatientVitalsTrendChart() {
                 onClick={() => toggleSeries(series.key)}
                 className={`h-7 text-xs font-semibold gap-1.5 px-2.5 transition-all ${
                   series.enabled
-                    ? 'border-transparent text-white shadow-xs'
+                    ? 'border-border bg-card text-foreground shadow-xs'
                     : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted'
                 }`}
-                style={{
-                  backgroundColor: series.enabled ? series.color : undefined,
-                }}
               >
-                {series.enabled ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {/* The series colour rides on a swatch, never as the button's
+                    own background. Filling the button forced a hardcoded
+                    text-white over a data-driven surface, which measured 2.1:1
+                    -- white on white whenever the series colour resolved light. */}
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-border"
+                  style={{
+                    backgroundColor: series.color,
+                    opacity: series.enabled ? 1 : 0.35,
+                  }}
+                />
                 <span>{series.label}</span>
               </Button>
             ))}

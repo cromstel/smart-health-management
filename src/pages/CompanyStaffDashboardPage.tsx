@@ -267,10 +267,10 @@ export function CompanyStaffDashboardPage() {
                         variant="outline"
                         className={`text-[10px] font-bold px-2.5 py-0.5 ${
                           dept.status === 'Critical'
-                            ? 'bg-destructive/5 text-destructive border-destructive/30 dark:bg-destructive dark:text-rose-300'
+                            ? 'bg-destructive/5 text-destructive border-destructive/30 dark:bg-destructive dark:text-destructive-foreground'
                             : dept.status === 'High Load'
-                            ? 'bg-warning/5 text-warning border-warning/30 dark:bg-warning dark:text-amber-300'
-                            : 'bg-success/5 text-success border-success/30 dark:bg-success dark:text-emerald-300'
+                            ? 'bg-warning/5 text-warning border-warning/30 dark:bg-warning dark:text-warning-foreground'
+                            : 'bg-success/5 text-success border-success/30 dark:bg-success dark:text-success-foreground'
                         }`}
                       >
                         {dept.status}
@@ -339,7 +339,7 @@ export function CompanyStaffDashboardPage() {
                         <td className="p-3 text-muted-foreground">{r.department}</td>
                         <td className="p-3 font-semibold">{r.count} staff</td>
                         <td className="p-3">
-                          <Badge variant="secondary" className="bg-success/5 text-success dark:bg-success font-semibold">
+                          <Badge variant="secondary" className="bg-success/5 text-success dark:bg-success dark:text-success-foreground font-semibold">
                             {r.onDuty} Active
                           </Badge>
                         </td>

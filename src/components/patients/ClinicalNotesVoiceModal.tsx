@@ -278,7 +278,7 @@ export function ClinicalNotesVoiceModal({
               <div>
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                   Voice-to-Text Clinical Dictation
-                  <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent dark:bg-accent font-semibold">
+                  <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent dark:bg-accent dark:text-accent-foreground font-semibold">
                     Web Speech API
                   </Badge>
                 </DialogTitle>

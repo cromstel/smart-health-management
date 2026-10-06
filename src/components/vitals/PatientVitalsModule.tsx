@@ -732,7 +732,7 @@ export function PatientVitalsModule({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 border-accent text-accent-foreground hover:bg-accent/10"
+                className="h-9 text-xs gap-1.5 border-accent text-accent hover:bg-accent/10"
                 onClick={handleExportPDF}
                 disabled={exportingPdf}
               >

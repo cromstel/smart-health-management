@@ -189,9 +189,9 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-                <Line type="monotone" dataKey="heartRate" name="Heart Rate (BPM)" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4, fill: '#ef4444' }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="systolic" name="Systolic BP (mmHg)" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4, fill: '#3b82f6' }} />
-                <Line type="monotone" dataKey="diastolic" name="Diastolic BP (mmHg)" stroke="#06b6d4" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: '#06b6d4' }} />
+                <Line type="monotone" dataKey="heartRate" name="Heart Rate (BPM)" stroke="var(--chart-3)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-3)' }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="systolic" name="Systolic BP (mmHg)" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-1)' }} />
+                <Line type="monotone" dataKey="diastolic" name="Diastolic BP (mmHg)" stroke="var(--chart-4)" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: 'var(--chart-4)' }} />
               </LineChart>
             </ResponsiveContainer>
           )}

@@ -420,7 +420,7 @@ export default function DashboardPage() {
       </div>
 
       {isCustomizing && (
-        <div className="p-3 bg-accent/10 border border-accent/30 text-accent-foreground text-xs rounded-xl flex items-center gap-2" role="status" aria-live="polite">
+        <div className="p-3 bg-accent/10 border border-accent/30 text-accent text-xs rounded-xl flex items-center gap-2" role="status" aria-live="polite">
           <Sparkles className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
           <span>
             <strong>Workspace Customization Mode:</strong> Drag modules by their handle to reorder, or use action controls to hide/show and resize (Half-width vs Full-width) key dashboard modules.

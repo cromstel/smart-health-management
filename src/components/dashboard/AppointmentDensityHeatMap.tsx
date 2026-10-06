@@ -170,7 +170,7 @@ export default function AppointmentDensityHeatMap() {
                   {day.substring(0, 3)}
                 </div>
               ))}
-              <div className="col-span-2 text-right text-[10px] uppercase tracking-wider text-muted-foreground/60 flex items-center justify-end">
+              <div className="col-span-2 text-right text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-end">
                 Daily Load
               </div>
             </div>

@@ -122,7 +122,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-slate-900 text-white font-bold text-[10px]">DICOM COMPATIBLE</Badge>
+              <Badge className="bg-slate-950 text-white font-bold text-[10px]">DICOM COMPATIBLE</Badge>
               <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-1.5">
                 <Grid className="h-4.5 w-4.5 text-slate-600" />
                 Diagnostic Image Study Gallery
@@ -161,14 +161,14 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
           {/* Main PACS Monitor Display Screen */}
           <div className="lg:col-span-8 flex flex-col relative border-b lg:border-b-0 lg:border-r border-slate-900 bg-black overflow-hidden h-[500px]">
             {/* Study Overview Badge */}
-            <div className="absolute top-4 left-4 z-10 bg-slate-950/80 backdrop-blur-md border border-slate-800 py-1.5 px-3 rounded-lg text-xs space-y-0.5">
+            <div className="absolute top-4 left-4 z-10 bg-slate-950 backdrop-blur-md border border-slate-800 py-1.5 px-3 rounded-lg text-xs space-y-0.5">
               <div className="font-bold text-accent text-[10px] uppercase tracking-wider">Active Patient Context</div>
               <div className="font-semibold text-slate-200">{patientName}</div>
               <div className="text-[10px] text-slate-400 font-mono">ID: {patientId} • ACC: {selectedScan.accessionNumber}</div>
             </div>
 
             {/* Calibration details */}
-            <div className="absolute bottom-4 left-4 z-10 bg-slate-950/80 backdrop-blur-md border border-slate-800 py-1.5 px-3 rounded-lg text-[10px] font-mono text-slate-400 space-y-0.5">
+            <div className="absolute bottom-4 left-4 z-10 bg-slate-950 backdrop-blur-md border border-slate-800 py-1.5 px-3 rounded-lg text-[10px] font-mono text-slate-400 space-y-0.5">
               <div>Modality: {selectedScan.modality}</div>
               <div>Slice: {selectedScan.sliceThickness}</div>
               <div>KVp: {selectedScan.kvp}</div>
@@ -181,7 +181,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                 variant="outline"
                 size="icon"
                 onClick={handlePrevScan}
-                className="h-8 w-8 rounded-full bg-slate-900/80 hover:bg-slate-800 text-white border-slate-850 hover:text-white"
+                className="h-8 w-8 rounded-full bg-slate-950 hover:bg-slate-800 text-white border-slate-850 hover:text-white"
               >
                 <ChevronLeft className="h-4.5 w-4.5" />
               </Button>
@@ -191,7 +191,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                 variant="outline"
                 size="icon"
                 onClick={handleNextScan}
-                className="h-8 w-8 rounded-full bg-slate-900/80 hover:bg-slate-800 text-white border-slate-850 hover:text-white"
+                className="h-8 w-8 rounded-full bg-slate-950 hover:bg-slate-800 text-white border-slate-850 hover:text-white"
               >
                 <ChevronRight className="h-4.5 w-4.5" />
               </Button>
@@ -255,7 +255,7 @@ export const DicomGallery: React.FC<DicomGalleryProps> = ({ patientId, patientNa
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-white bg-slate-950/80 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-bold text-white bg-slate-950 px-1.5 py-0.5 rounded">
                           {scan.modality}
                         </span>
                       </div>
