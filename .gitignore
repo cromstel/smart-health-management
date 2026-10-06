@@ -93,10 +93,11 @@ todo-plan.md
 plan.md
 dependabot-alerts.md
 
-# Local-only markdown documentation — never commit (except README files)
+# Local-only markdown documentation — never commit (except public docs)
 *.md
 !README.md
 !DOCUMENTATION.md
+!CHANGELOG.md
 !src/docs/README.md
 !.github/**/*.md
 

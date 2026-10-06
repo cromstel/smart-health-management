@@ -43,7 +43,8 @@ interface SeriesToggle {
  * clinical data presented as a patient's actual history.
  *
  * Returns nothing until a real source exists. The component renders an explicit
- * no-data state; it must not invent readings. See docs/CHANGELOG.md.
+ * no-data state; it must not invent readings. Never synthesise clinical data as
+ * a fallback: a visible empty state is honest, a plausible invention is not.
  */
 function historicalVitals(_daysCount: number): VitalDataPoint[] {
   return [];

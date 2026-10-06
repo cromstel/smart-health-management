@@ -197,7 +197,7 @@ smart-health-management/
 - ✅ Frontend UI: Complete (React 19 + TypeScript + Vite + Tailwind v4, refactored for best UI/UX)
 - ✅ Backend API: Complete (Express 5 + MySQL2, all modules implemented and building with zero TS errors)
 - ✅ Testing: Vitest suites green (frontend + backend); Playwright e2e available in `e2e/` (local-only)
-- ✅ Dependency Hygiene: All packages on latest stable versions; residual advisories tracked in local `docs/CHANGELOG.md`
+- ✅ Dependency Hygiene: All packages on latest stable versions; residual advisories tracked in [CHANGELOG.md](CHANGELOG.md)
 - 🟡 Deployment: Configured per environment — see **[DOCUMENTATION.md §7 Developer Setup & Environment Guide](DOCUMENTATION.md#7-developer-setup--environment-guide)** (requires operator-provided credentials/DB)
 
 > **Note:** `docs/`, `ai/`, `.opencode/`, and `scripts/` are local-only (kept out of this public repository). Detailed guides referenced below are available in the full internal checkout.

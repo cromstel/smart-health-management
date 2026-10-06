@@ -16,7 +16,7 @@ Local-only developer notes (implementation checklists, completion summaries, and
 
 - **Project Status**: See the [Master Documentation](../../DOCUMENTATION.md) for the current feature set and status
 - **Getting Started**: Follow [README.md](../../README.md) installation instructions
-- **Known Issues**: Tracked in the local-only implementation checklist and `docs/CHANGELOG.md` in the internal checkout
+- **Known Issues**: Tracked in the local-only implementation checklist and `docs/IMPLEMENTATION_LOG.md` in the internal checkout; user-facing outcomes are published in the repository root `CHANGELOG.md`.
 
 ## 🎯 Project Overview
 
