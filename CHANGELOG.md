@@ -207,17 +207,44 @@ across both themes.
     on a credential-shaped literal in tracked files, and on any gradient
     reintroduced into source. These three encode operating rules that were
     previously enforced only by reviewer vigilance.
-- **Branch protection is now defined as reviewable, executable intent.** GitHub
-  stores it in repository settings rather than in any version-controllable
-  format, so it is checked in as a script that applies the policy and then
-  verifies the write actually landed. It requires a pull request with one
-  approving review from a code owner, up-to-date branches before merge,
-  resolved conversations, no force pushes, no deletions, and a linear history.
-  Verification matters here: GitHub silently discards a required status check
-  whose name no longer exists, which downgrades protection to a suggestion with
-  no error anywhere.
+- **`main` is protected.** Direct pushes are refused; changes must arrive
+  through a pull request with all three status checks green, a branch up to date
+  with its base, resolved conversations, no force pushes, no deletions, and a
+  linear history. The rule applies to administrators too, so there is no
+  privileged bypass. Enforcement was confirmed by attempting a direct push and
+  watching it be declined.
+- **No approving review is required, and that is deliberate.** A pull request
+  cannot be approved by whoever pushed its last commit, and this repository has
+  a single maintainer — so a one-review requirement cannot be satisfied by
+  anyone, ever. Protection that blocks every merge does not survive contact
+  with a real deadline; it gets switched off. Review remains enforced by the
+  human running the project rather than by a rule that cannot be met.
+- **Verification matters here.** GitHub silently discards a required status
+  check whose name no longer exists, which downgrades protection to a suggestion
+  with no error anywhere — so the policy is checked in as a script that applies
+  it and then re-reads it to confirm the write landed.
+- **The pipeline was run before it was trusted.** The first run on `main`
+  failed both gates. Both causes were environmental rather than product defects,
+  and neither could be caught by the local checks, which run against an
+  existing dependency tree and never reinstall: one gate depended on a runtime
+  newer than the one CI was pinned to, and one depended on a tool declared
+  outside the package it was invoked from. Both are fixed and green.
 - **Concurrent runs on the same ref are cancelled**, so a stale green result
   cannot be read as evidence about the commit in front of you.
+
+### Repository consolidated onto one branch
+
+- **All development branches were merged into `main` and retired.** Three
+  feature branches and one pre-split backup branch are gone; `main` is now the
+  only long-lived branch. Content already present in `main` was recorded as
+  contained rather than re-merged, so consolidating changed no files.
+- **Two merges needed conflict resolution.** Both were conflicts between
+  equivalent versions of the same fix arriving by different routes — one page
+  test and one server test — not disagreements about intent. In each case the
+  version carrying the explanatory comment was kept.
+- **`main` is now protected** (see above). As a direct consequence, work must
+  land through a pull request; a direct push was attempted during this change
+  and was refused by the protection rule.
 
 ### Verification
 
