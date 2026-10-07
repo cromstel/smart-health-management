@@ -97,9 +97,19 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: server/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
 
-      - name: Install dependencies
+      - name: Install dependencies (root)
+        # The server lint script runs `eslint .`, and eslint is declared at
+        # the repository root, not in server/. npm finds it by walking up
+        # ancestor node_modules/.bin, so a server-only install passes
+        # locally and fails in CI with `eslint: not found` (127).
+        run: npm ci
+        working-directory: .
+
+      - name: Install dependencies (server)
         run: npm ci
 
       - name: Apply schema
