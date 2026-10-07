@@ -76,7 +76,6 @@ e2e/
 # Editor directories and files
 .vscode/*
 .opencode/
-opencode/
 .trae/
 !.vscode/extensions.json
 .idea
