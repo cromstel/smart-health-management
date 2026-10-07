@@ -46,29 +46,27 @@ describe('PurchaseOrdersPage', () => {
   it('opens the create order dialog and creates an order', async () => {
     render(<PurchaseOrdersPage />);
     fireEvent.click(screen.getByText('New Order'));
-    
+
     await waitFor(() => {
-        expect(screen.getByText('Create Purchase Order')).toBeInTheDocument();
+      expect(screen.getByText('Create Purchase Order')).toBeInTheDocument();
     });
 
-    // Find dialog - native <select> elements
     const dialog = screen.getByRole('dialog');
-    
-    // Select Supplier - native select (first select in dialog)
-    const supplierSelect = within(dialog).getByRole('combobox');
+
+    // Select Supplier (first combobox) - native select uses fireEvent.change
+    const supplierSelect = within(dialog).getAllByRole('combobox')[0];
     fireEvent.change(supplierSelect, { target: { value: '1' } });
 
     // Order Date input
     const dateInputs = dialog.querySelectorAll('input[type="date"]');
-    const orderDateInput = dateInputs[0];
-    fireEvent.change(orderDateInput, { target: { value: '2025-01-05' } });
+    fireEvent.change(dateInputs[0], { target: { value: '2025-01-05' } });
 
     fireEvent.click(screen.getByText('Add Item'));
-    
+
     await waitFor(() => {
-        // Select Medicine - native select (second select after Add Item)
-        const medicineSelect = within(dialog).getAllByRole('combobox')[1];
-        fireEvent.change(medicineSelect, { target: { value: '1' } });
+      // Select Medicine (second combobox after Add Item)
+      const medicineSelect = within(dialog).getAllByRole('combobox')[1];
+      fireEvent.change(medicineSelect, { target: { value: '1' } });
     });
 
     fireEvent.click(screen.getByText('Create'));

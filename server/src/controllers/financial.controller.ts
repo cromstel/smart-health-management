@@ -64,10 +64,21 @@ export const updateAccount = async (req: AuthRequest, res: Response): Promise<Re
   try {
     const { id } = req.params;
     const updates = req.body;
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), id];
-  await pool.query(`UPDATE accounts SET ${fields} WHERE id = ?`, values);
-    await logAudit((req.user as any)?.id, 'UPDATE', 'financial', id, updates);
+    // Whitelist allowed columns to prevent mass-assignment / SQL injection via column names
+    const allowedColumns = ['name', 'type', 'parent_id', 'level', 'balance'];
+    const filteredUpdates: Record<string, any> = {};
+    for (const key of Object.keys(updates)) {
+      if (allowedColumns.includes(key)) {
+        filteredUpdates[key] = updates[key];
+      }
+    }
+    if (Object.keys(filteredUpdates).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    const fields = Object.keys(filteredUpdates).map(key => `${key} = ?`).join(', ');
+    const values = [...Object.values(filteredUpdates), id];
+    await pool.query(`UPDATE accounts SET ${fields} WHERE id = ?`, values);
+    await logAudit((req.user as any)?.id, 'UPDATE', 'financial', id, filteredUpdates);
     res.json({ message: 'Account updated successfully' });
   } catch (_error) {
     res.status(500).json({ error: 'Failed to update account' });
@@ -159,9 +170,21 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
   try {
     const { id } = req.params;
     const updates = req.body;
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), id];
+    // Whitelist allowed columns to prevent mass-assignment / SQL injection via column names
+    const allowedColumns = ['date', 'description', 'debit', 'credit', 'reference'];
+    const filteredUpdates: Record<string, any> = {};
+    for (const key of Object.keys(updates)) {
+      if (allowedColumns.includes(key)) {
+        filteredUpdates[key] = updates[key];
+      }
+    }
+    if (Object.keys(filteredUpdates).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    const fields = Object.keys(filteredUpdates).map(key => `${key} = ?`).join(', ');
+    const values = [...Object.values(filteredUpdates), id];
     await pool.query(`UPDATE transactions SET ${fields} WHERE id = ?`, values);
+    await logAudit((req.user as any)?.id, 'UPDATE', 'financial', id, filteredUpdates);
     res.json({ message: 'Transaction updated successfully' });
   } catch (_error) {
     res.status(500).json({ error: 'Failed to update transaction' });
