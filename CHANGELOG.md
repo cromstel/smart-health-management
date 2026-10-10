@@ -246,6 +246,26 @@ across both themes.
   land through a pull request; a direct push was attempted during this change
   and was refused by the protection rule.
 
+### Dependencies and security posture
+
+- **A series of automated dependency updates was merged** across the three
+  dependency trees in the project (web application, API, documentation site),
+  each arriving through the protected pull-request flow with all three status
+  checks green before merging.
+- **Open advisories on the default branch dropped from 6 to 2, and all three
+  critical ones are now closed.** Both remaining advisories are medium
+  severity.
+- **Two dependency updates are deliberately not merged, and are recorded rather
+  than papered over:**
+  - A patched release exists, but the only available update path today would
+    force a downgrade of the documentation site's typography package (from
+    0.5.19 to 0.5.4). Resolving this properly means bumping that package
+    first — a deliberate change to the documentation build, not a rubber
+    stamp.
+  - One advisory has **no patched release at all** (a denial-of-service
+    exposure in a formatting helper). There is nothing to update to, so the
+    options are a vendor-side mitigation or removing the dependency entirely.
+
 ### Verification
 
 - Accessibility: 17 mounted routes and 17 interaction-gated steps across both
