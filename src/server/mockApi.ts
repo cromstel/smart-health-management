@@ -87,12 +87,12 @@ const transactions = [
 ];
 
 const roles = [
-  { id: '1', name: 'super_admin', description: 'Super Administrator with ultimate control', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'] },
-  { id: '2', name: 'admin', description: 'Administrator with full access', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'] },
-  { id: '3', name: 'doctor', description: 'Medical doctor with access to patient data', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit'] },
-  { id: '4', name: 'nurse', description: 'Nurse with care management access', permissions: ['patients:view', 'appointments:view'] },
-  { id: '5', name: 'patient', description: 'Patient with self-service access', permissions: ['appointments:view', 'appointments:add'] },
-  { id: '6', name: 'pharmacist', description: 'Pharmacist with medication-management access', permissions: ['pharmacy:view', 'pharmacy:add', 'pharmacy:edit'] },
+  { id: '1', name: 'super_admin', description: 'Site Owner - System-wide administrator with ultimate control over all hospitals', scope: 'global', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'] },
+  { id: '2', name: 'admin', description: 'Hospital Administrator - RBAC-scoped to assigned hospital only', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view', 'add', 'edit', 'delete'] },
+  { id: '3', name: 'doctor', description: 'Medical doctor with access to patient data within assigned hospital', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view', 'add', 'edit'] },
+  { id: '4', name: 'nurse', description: 'Nurse with care management access within assigned hospital', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view'] },
+  { id: '5', name: 'patient', description: 'Patient with self-service access to own records', scope: 'self', permissions_format: '{patient_id}:{action}', permissions: ['view', 'add'] },
+  { id: '6', name: 'pharmacist', description: 'Pharmacist with medication-management access within assigned hospital', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view', 'add', 'edit'] },
 ];
 
 const documents = [

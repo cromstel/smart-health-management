@@ -90,16 +90,16 @@ function AppRoutes() {
         <Route path="/request-demo" element={<RequestDemoPage />} />
 
         {/* Public Auth Routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/signup" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/two-factor" element={<TwoFactorPage />} />
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/signup" element={<RegisterPage />} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/two-factor" element={<TwoFactorPage />} />
         <Route path="/shared/patient-summary/:token" element={<SharedPatientSummaryPage />} />
         
-        {/* Super Admin Routes */}
-        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+        {/* Site Super Admin Auth Routes — site owner only (global scope) */}
+        <Route path="/auth/super-admin/login" element={<SuperAdminLogin />} />
         <Route
           path="/super-admin"
           element={

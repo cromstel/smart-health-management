@@ -63,7 +63,7 @@ describe('useSessionTimeout', () => {
     });
 
     expect(logout).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith('/login', {
+    expect(navigate).toHaveBeenCalledWith('/auth/login', {
       state: { message: 'Session expired due to inactivity' },
     });
   });

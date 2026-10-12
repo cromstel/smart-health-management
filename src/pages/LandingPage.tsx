@@ -184,10 +184,10 @@ function Navbar() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">Sign In</Link>
+            <Link to="/auth/login">Sign In</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link to="/signup" className="gap-1.5">
+            <Link to="/auth/signup" className="gap-1.5">
               Get Started
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
@@ -227,10 +227,10 @@ function Navbar() {
             ))}
             <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border">
               <Button variant="ghost" size="sm" asChild className="justify-start">
-                <Link to="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
+                <Link to="/auth/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/signup" onClick={() => setMobileOpen(false)} className="gap-1.5">
+                <Link to="/auth/signup" onClick={() => setMobileOpen(false)} className="gap-1.5">
                   Get Started
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
@@ -815,7 +815,7 @@ function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <Link
-              to="/super-admin/login"
+              to="/auth/admin/login"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
               <Lock className="h-3 w-3" aria-hidden="true" />
@@ -823,7 +823,7 @@ function Footer() {
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link
-              to="/login"
+              to="/auth/login"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
               <Zap className="h-3 w-3" aria-hidden="true" />

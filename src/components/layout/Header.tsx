@@ -26,7 +26,7 @@ export function Header() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/auth/login');
   };
 
   return (

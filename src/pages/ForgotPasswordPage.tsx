@@ -110,7 +110,7 @@ export default function ForgotPasswordPage() {
               </CardDescription>
             </CardHeader>
             <CardFooter className="pt-2">
-              <Button onClick={() => navigate('/super-admin/login')} className="w-full bg-accent text-accent-foreground">
+              <Button onClick={() => navigate('/auth/admin/login')} className="w-full bg-accent text-accent-foreground">
                 Return to Super Admin Portal
               </Button>
             </CardFooter>
@@ -193,7 +193,7 @@ export default function ForgotPasswordPage() {
                 >
                   Use different email
                 </button>
-                <Link to="/login" className="text-accent hover:underline font-medium flex items-center gap-1">
+                <Link to="/auth/login" className="text-accent hover:underline font-medium flex items-center gap-1">
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Sign In
                 </Link>
               </CardFooter>
@@ -257,7 +257,7 @@ export default function ForgotPasswordPage() {
               </CardContent>
 
               <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-                <Link to="/login" className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors">
+                <Link to="/auth/login" className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors">
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Return to Sign In</span>
                 </Link>

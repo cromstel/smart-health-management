@@ -54,7 +54,7 @@ export default function RequestDemoPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary"><Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" /></span>
             <span className="text-lg font-bold text-foreground">Smart <span className="text-accent">MediCare</span></span>
           </Link>
-          <Button variant="ghost" size="sm" asChild><Link to="/login">Staff sign in</Link></Button>
+          <Button variant="ghost" size="sm" asChild><Link to="/auth/login">Staff sign in</Link></Button>
         </div>
       </header>
 

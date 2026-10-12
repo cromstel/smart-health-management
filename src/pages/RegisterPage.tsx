@@ -113,12 +113,12 @@ export default function RegisterPage() {
         try {
           const res = await login(data.email, data.password);
           if (res.requiresMfa) {
-            navigate('/two-factor');
+            navigate('/auth/two-factor');
             return;
           }
           navigate(postAuthRoute(res.user));
         } catch {
-          navigate('/login');
+          navigate('/auth/login');
         }
       }, 1500);
     } catch (err: unknown) {
@@ -481,7 +481,7 @@ export default function RegisterPage() {
 
           <CardFooter className="flex flex-col sm:flex-row items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground gap-2">
             <span>Already registered with the hospital?</span>
-            <Link to="/login" className="text-accent hover:text-accent/80 hover:underline font-medium transition-colors">
+            <Link to="/auth/login" className="text-accent hover:text-accent/80 hover:underline font-medium transition-colors">
               Back to Sign In
             </Link>
           </CardFooter>

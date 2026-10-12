@@ -43,21 +43,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (perm: string) => {
     if (!user) return false;
-    if (user.permissions.includes('all:all') || user.permissions.includes(perm)) return true;
-    if (!perm.includes(':')) return user.permissions.includes(perm);
-    const [module, action] = perm.split(':');
-    return user.permissions.includes(`all:${action}`) || user.permissions.includes(`${module}:${action}`);
+    // Global super admin: can do anything (only this role holds 'all:*')
+    if (user.role === 'super_admin' || user.role === 'Super Admin') return true;
+    // Hospital-scoped admin/doctor/nurse/pharmacist: must have hospital assignment
+    if (user.scope === 'hospital' || (user.hospital_id && user.permissions.some((p) => !p.startsWith('all:')))) {
+      const hospPrefix = user.hospital_id || '';
+      if (!hospPrefix) return false;
+      // Check module-level permission within hospital
+      return user.permissions.includes(`${hospPrefix}:${perm}`) || false;
+    }
+    return false;
   };
 
   const canActOnHospital = (hospitalId?: string) => {
     if (!user) return false;
-    if (!hospitalId) return !!user.hospital_id;
-    return user.permissions.includes('all:view') || user.hospital_id === hospitalId;
+    // Super admin (global) — can access any hospital
+    if (user.role === 'super_admin' || user.role === 'Super Admin') return true;
+    // Hospital-scoped — must match assigned hospital
+    return !!user.hospital_id && (!hospitalId || user.hospital_id === hospitalId);
   };
 
   const canActOnDepartment = (_departmentId?: string) => {
     if (!user) return false;
-    return user.permissions.includes('all:view');
+    // Only super admin can act globally; hospital-scoped must match
+    if (user.role === 'super_admin' || user.role === 'Super Admin') return true;
+    return !!user.hospital_id;
   };
 
   const login = async (email: string, password: string): Promise<{ requiresMfa: boolean; user: User | null }> => {

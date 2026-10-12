@@ -46,7 +46,7 @@ const SuperAdminLogin = React.memo(() => {
       if (res.requiresMfa) {
         // The pending MFA session is now active in AuthContext; the standard
         // workstation sign-in page renders the TOTP step to complete it.
-        navigate('/login');
+        navigate('/auth/login');
         return;
       }
 
@@ -243,7 +243,7 @@ const SuperAdminLogin = React.memo(() => {
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
             <Link
-              to="/login"
+              to="/auth/login"
               className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-medium transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />

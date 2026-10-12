@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
       await api.resetPassword(effectiveToken, password);
       setSuccess(true);
       setTimeout(() => {
-        navigate('/login');
+        navigate('/auth/login');
       }, 2500);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Password reset failed. The token may be expired.';
@@ -162,7 +162,7 @@ export default function ResetPasswordPage() {
                 type="button"
                 variant="outline"
                 className="w-full text-xs border-border focus-visible:ring-accent"
-                onClick={() => navigate('/forgot-password')}
+                onClick={() => navigate('/auth/forgot-password')}
               >
                 Request New Reset Link
               </Button>
@@ -189,7 +189,7 @@ export default function ResetPasswordPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <Button onClick={() => navigate('/login')} className="w-full gap-2 bg-accent text-accent-foreground">
+              <Button onClick={() => navigate('/auth/login')} className="w-full gap-2 bg-accent text-accent-foreground">
                 Sign In Now <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </CardContent>
@@ -298,7 +298,7 @@ export default function ResetPasswordPage() {
           </CardContent>
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-            <Link to="/login" className="text-accent hover:text-accent/80 transition-colors">
+            <Link to="/auth/login" className="text-accent hover:text-accent/80 transition-colors">
               Cancel & Return to Sign In
             </Link>
           </CardFooter>

@@ -110,7 +110,7 @@ export default function LoginPage() {
       }
       const res = await login(data.email, data.password);
       if (res.requiresMfa) {
-        navigate('/two-factor');
+        navigate('/auth/two-factor');
       } else {
         toast.success('Successfully logged in!');
         navigate(postAuthRoute(res.user));
