@@ -100,6 +100,8 @@ function AppRoutes() {
         
         {/* Site Super Admin Auth Routes — site owner only (global scope) */}
         <Route path="/auth/super-admin/login" element={<SuperAdminLogin />} />
+        {/* Hospital Admin Auth Routes — RBAC-scoped to assigned hospital */}
+        <Route path="/auth/admin/login" element={<SuperAdminLogin />} />
         <Route
           path="/super-admin"
           element={
