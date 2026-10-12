@@ -13,7 +13,16 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          // Same trap as the ghost variant below: on hover the label takes
+          // text-accent-foreground (the companion to a solid accent fill) while
+          // the dark hover wash (input/50) outranks the accent fill, leaving a
+          // dark-navy label on a near-navy surface (measured 1.11:1 on the
+          // vitals toolbar in dark mode). A dark:hover:text-* override is not a
+          // fix: the dark variant is :where()-scoped, so both hover rules tie
+          // on specificity and the winner is emission order. Keeping the dark
+          // hover fill solid accent makes the foreground correct
+          // order-independently, matching the ghost fix.
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-accent",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
