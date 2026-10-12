@@ -133,19 +133,26 @@ backdrop, in both themes, and checked against WCAG AA.
   paired a 50%-opacity accent wash with the foreground meant for a *solid*
   accent fill, measuring 1.11:1. Fixed in the shared button primitive so every
   ghost button benefits, not just the one that surfaced it.
+- **Every outline button failed contrast on hover in dark mode, for the same
+  reason as the ghost variant** — a translucent hover wash sat beneath the
+  foreground meant for a solid accent fill, leaving a dark-navy label on a
+  near-navy surface (measured 1.11:1 on the patient vitals toolbar). Fixed in
+  the shared button primitive, so every outline control benefits. This closed
+  the last item previously listed under "Known accessibility issues".
+- **The dashboard's seven-day vitals chart legend failed contrast in light
+  mode** — the same charting-library behaviour as above (a series' stroke
+  colour reused as its legend label colour) on a widget that had kept the
+  default legend, measuring 3.19:1 and 4.10:1 against a 4.5:1 requirement. It
+  now uses the shared readable legend, in both themes.
 
 ### Known accessibility issues
 
-One issue remains, reported rather than hidden:
+None. The last outstanding failure — a toolbar label on the patient vitals
+surface in dark mode at 1.11:1 — was the outline-button hover defect described
+above and is now closed in the shared primitive.
 
-- **A single contrast failure on the patient vitals surface in dark mode** — a
-  toolbar label resolving to the accent foreground against the navy card, at
-  1.11:1. It is not a hover state (a clean server restart confirmed the change
-  was live), and the surrounding sweep of light-palette sites did not remove it.
-  Located to the vitals toolbar, still unresolved.
-
-Everything else is at zero: 17 mounted routes plus 17 interaction-gated steps,
-across both themes.
+Everything measured is at zero: 17 mounted routes plus 17 interaction-gated
+steps, across both themes.
 
 - **Print output is deliberately decoupled from webfonts** — clinical records are
   pinned to a system serif so a printed record never depends on font delivery.
@@ -252,24 +259,28 @@ across both themes.
   dependency trees in the project (web application, API, documentation site),
   each arriving through the protected pull-request flow with all three status
   checks green before merging.
-- **Open advisories on the default branch dropped from 6 to 2, and all three
-  critical ones are now closed.** Both remaining advisories are medium
-  severity.
-- **Two dependency updates are deliberately not merged, and are recorded rather
-  than papered over:**
-  - A patched release exists, but the only available update path today would
-    force a downgrade of the documentation site's typography package (from
-    0.5.19 to 0.5.4). Resolving this properly means bumping that package
-    first — a deliberate change to the documentation build, not a rubber
-    stamp.
-  - One advisory has **no patched release at all** (a denial-of-service
-    exposure in a formatting helper). There is nothing to update to, so the
-    options are a vendor-side mitigation or removing the dependency entirely.
+- **Open advisories on the default branch dropped from 6 to 0, and all three
+  critical ones are now closed.**
+- **The two medium-severity advisories recorded as "deliberately not merged"
+  have both been resolved:**
+  - The CSS selector-parsing advisory is fixed by pinning the parser to its
+    patched line in the documentation build, which avoided the forced downgrade
+    of the typography package entirely. The documentation stylesheet build was
+    verified to produce identical output before and after, so this is a
+    supply-chain fix with no visual or behavioural change.
+  - The formatting-helper advisory is fixed by removing an unused test-runner
+    dependency that pulled it in. All of this project's suites run on a single
+    test runner; the second runner was dead weight declared but never invoked,
+    and removing it took the advisory's whole dependency chain with it. No
+    runtime dependency changed, and the lockfile diff is purely subtractive.
 
 ### Verification
 
 - Accessibility: 17 mounted routes and 17 interaction-gated steps across both
-  light and dark themes, **1 known failure** (see above), down from 26.
+  light and dark themes, **zero contrast failures** (previously: 1 known
+  failure), down from 26 originally.
+- Dependency posture: **zero open advisories** on the default branch, verified
+  against the repository's advisory list rather than a local scan alone.
 - Automated checks green: lint, type-check, unit tests and production build,
   frontend and backend.
 - The three new CI policy scans were run against the current tree before being

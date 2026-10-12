@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { Activity, Heart, ArrowUpRight, TrendingUp } from 'lucide-react';
 import { api } from '@/services/api';
+import { chartLegendContent } from '@/components/patients/ChartLegend';
 
 interface VitalsDayRecord {
   day: string;
@@ -188,7 +189,12 @@ export function Patient7DayVitalsTrendWidget({ className = '' }: { className?: s
                     return null;
                   }}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+                {/* content={chartLegendContent}: the default Recharts legend
+                    paints each label in its series stroke colour, and
+                    --chart-1/--chart-4 measure 4.1:1 and 3.19:1 on the light
+                    card at 12px (AA needs 4.5:1). Same fix as the patients
+                    trend charts — the swatch keeps series identity. */}
+                <Legend content={chartLegendContent} />
                 <Line type="monotone" dataKey="heartRate" name="Heart Rate (BPM)" stroke="var(--chart-3)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-3)' }} activeDot={{ r: 6 }} />
                 <Line type="monotone" dataKey="systolic" name="Systolic BP (mmHg)" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--chart-1)' }} />
                 <Line type="monotone" dataKey="diastolic" name="Diastolic BP (mmHg)" stroke="var(--chart-4)" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: 'var(--chart-4)' }} />
