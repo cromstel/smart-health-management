@@ -53,7 +53,8 @@ const FinancialPage = timedLazy('financial', () => import('./pages/FinancialPage
 const RolesPage = timedLazy('roles', () => import('./pages/RolesPage'));
 const SettingsPage = timedLazy('settings', () => import('./pages/SettingsPage'));
 const AuditLogsPage = timedLazy('audit-logs', () => import('./pages/AuditLogsPage'));
-const SuperAdminLogin = timedLazy('super-admin-login', () => import('./pages/SuperAdminLogin'));
+const SiteSuperAdminLogin = timedLazy('super-admin-login', () => import('./pages/SiteSuperAdminLogin'));
+const HospitalAdminLogin = timedLazy('admin-login', () => import('./pages/HospitalAdminLogin'));
 const SuperAdminDashboard = timedLazy('super-admin-dashboard', () => import('./pages/SuperAdminDashboard'));
 const SuperAdminUsers = timedLazy('super-admin-users', () => import('./pages/SuperAdminUsers'));
 const SuperAdminHospitals = timedLazy('super-admin-hospitals', () => import('./pages/SuperAdminHospitals'));
@@ -99,9 +100,9 @@ function AppRoutes() {
         <Route path="/shared/patient-summary/:token" element={<SharedPatientSummaryPage />} />
         
         {/* Site Super Admin Auth Routes — site owner only (global scope) */}
-        <Route path="/auth/super-admin/login" element={<SuperAdminLogin />} />
+        <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
         {/* Hospital Admin Auth Routes — RBAC-scoped to assigned hospital */}
-        <Route path="/auth/admin/login" element={<SuperAdminLogin />} />
+        <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
         <Route
           path="/super-admin"
           element={
