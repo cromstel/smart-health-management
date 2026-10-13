@@ -7,12 +7,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { AuthLayout, OtpHero } from '@/components/auth';
+import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  Activity,
   Lock,
   Mail,
   Eye,
@@ -180,15 +180,8 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="flex items-center gap-3 mb-6">
-            <motion.div
-              className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-            </motion.div>
-            <h1 className="font-display text-2xl font-semibold text-foreground">Smart MediCare</h1>
+          <div className="mb-6">
+            <Logo size="md" />
           </div>
 
           <AnimatePresence mode="wait">

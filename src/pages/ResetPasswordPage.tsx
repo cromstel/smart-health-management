@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
 import {
-  Activity,
   CheckCircle2,
   AlertCircle,
   Lock,
@@ -19,6 +18,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { AuthLayout, PasswordStrength, computePasswordStrength } from '@/components/auth';
+import Logo from '@/components/Logo';
 import { api } from '@/services/api';
 
 export default function ResetPasswordPage() {
@@ -52,16 +52,7 @@ export default function ResetPasswordPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <motion.div
-          className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-        </motion.div>
-        <h1 className="font-display text-2xl font-semibold text-foreground">Smart MediCare</h1>
-      </div>
+      <Logo size="md" className="mb-4" />
       <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Set New Password</h2>
       <p className="text-sm text-muted-foreground">Create new workstation credentials</p>
     </motion.div>

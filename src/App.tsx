@@ -31,6 +31,7 @@ function timedLazy(name: string, load: () => Promise<{ default: ComponentType }>
 }
 
 const LandingPage = timedLazy('landing', () => import('./pages/LandingPage'));
+const AboutUsPage = timedLazy('about-us', () => import('./pages/AboutUsPage'));
 const RequestDemoPage = timedLazy('request-demo', () => import('./pages/RequestDemoPage'));
 const LoginPage = timedLazy('login', () => import('./pages/LoginPage'));
 const RegisterPage = timedLazy('register', () => import('./pages/RegisterPage'));
@@ -88,6 +89,7 @@ function AppRoutes() {
         {/* Public Landing Page */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/about-us/" element={<AboutUsPage />} />
         <Route path="/request-demo" element={<RequestDemoPage />} />
 
         {/* Public Auth Routes */}

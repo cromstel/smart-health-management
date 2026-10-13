@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthLayout, OtpHero } from '@/components/auth';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardFooter } from '@/components/ui/card';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  Activity,
   ShieldCheck,
   Smartphone,
   Key,
@@ -166,11 +166,8 @@ export default function TwoFactorPage() {
       <AuthLayout showBranding={false}>
         <div className="space-y-6">
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-              </div>
-              <h1 className="font-display text-2xl font-semibold text-foreground">Smart MediCare</h1>
+            <div className="mb-4">
+              <Logo size="md" />
             </div>
           </div>
 
@@ -216,16 +213,7 @@ export default function TwoFactorPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="flex items-center gap-3 mb-4">
-            <motion.div
-              className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-            </motion.div>
-            <h1 className="font-display text-2xl font-semibold text-foreground">Smart MediCare</h1>
-          </div>
+          <Logo size="md" className="mb-4" />
           <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Two-Factor Authentication</h2>
           <p className="text-sm text-muted-foreground">Multi-factor identity verification</p>
         </motion.div>

@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthLayout } from '@/components/auth';
+// AuthLayout not used in industrial design (direct div layout)
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Shield, AlertCircle, Lock, Mail, Eye, EyeOff, ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Shield, AlertCircle, KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
+import SystemAuthorBadge from '@/components/auth/SystemAuthorBadge';
 
 const DEMO_EMAIL = 'admin@smarthealth.com';
 const DEMO_PASSWORD = 'Pass@135709';
 
-const SiteSuperAdminLogin = React.memo(() => {
+function SiteSuperAdminLogin() {
   const [email, setEmail] = useState(() => (import.meta.env.DEV ? DEMO_EMAIL : ''));
   const [password, setPassword] = useState(() => (import.meta.env.DEV ? DEMO_PASSWORD : ''));
   const [showPassword, setShowPassword] = useState(false);
@@ -142,16 +142,15 @@ const SiteSuperAdminLogin = React.memo(() => {
             <div className="flex items-center gap-4">
               <Link to="/auth/admin/login" className="hover:text-[#EAEAEA] transition-colors">Hospital Admin Portal</Link>
               <span>·</span>
-              <Link to="/" className="hover:text-[#EAEAEA] transition-colors">Public Site</Link>
+              <Link to="/auth/login" className="hover:text-[#EAEAEA] transition-colors">Public Sign In</Link>
             </div>
-            <p>Restricted to site owner and developer. Hospital administrators redirect automatically.</p>
+            <SystemAuthorBadge />
           </CardFooter>
         </Card>
       </div>
     </div>
   );
-});
+}
 
 SiteSuperAdminLogin.displayName = 'SiteSuperAdminLogin';
-
-export default SiteSuperAdminLogin;
+export default React.memo(SiteSuperAdminLogin);

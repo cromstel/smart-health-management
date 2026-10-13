@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Activity, ArrowLeft, CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Users } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Users } from 'lucide-react';
 import { api } from '@/services/api';
+import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,8 +52,7 @@ export default function RequestDemoPage() {
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5" aria-label="Smart Health home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary"><Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" /></span>
-            <span className="text-lg font-bold text-foreground">Smart <span className="text-accent">MediCare</span></span>
+            <Logo size="sm" />
           </Link>
           <Button variant="ghost" size="sm" asChild><Link to="/auth/login">Staff sign in</Link></Button>
         </div>

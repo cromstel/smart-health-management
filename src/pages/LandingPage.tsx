@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/Logo';
 import {
   Activity,
   ArrowRight,
@@ -146,6 +147,7 @@ const navLinks = [
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Testimonials', href: '#testimonials' },
+  { label: 'About Us', href: '/about-us/' },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -160,12 +162,7 @@ function Navbar() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" aria-label="Smart Health — Home">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm">
-            <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">
-            Smart <span className="text-accent">MediCare</span>
-          </span>
+          <Logo size="sm" />
         </Link>
 
         {/* Desktop Nav */}
@@ -739,7 +736,7 @@ function Footer() {
     {
       title: 'Company',
       links: [
-        { label: 'About Us', href: '#hero' },
+        { label: 'About Us', href: '/about-us/' },
         { label: 'Careers', href: '#hero' },
         { label: 'Contact', href: '#hero' },
         { label: 'Blog', href: '#hero' },
@@ -772,12 +769,7 @@ function Footer() {
           {/* Brand column */}
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-4" aria-label="Smart Health — Home">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-              </div>
-              <span className="text-lg font-bold tracking-tight text-foreground">
-                Smart <span className="text-accent">MediCare</span>
-              </span>
+              <Logo size="sm" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-6">
               Enterprise healthcare management platform for hospitals, clinics, and healthcare networks.

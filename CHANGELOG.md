@@ -23,6 +23,40 @@ implementation reasoning behind each entry here.
 
 ## [Unreleased]
 
+### Added
+
+- **Public About Us experience.** Visitors can now learn the platform’s purpose,
+  design principles, and care-team commitments through a dedicated, responsive
+  page. It is available from the public navigation on desktop and mobile.
+  The experience follows the existing accessible navigation, keyboard focus,
+  semantic heading, and reduced-motion-friendly interaction patterns. No
+  clinical or personal data is displayed or collected by this page.
+- **Expanded company story.** The public company page now includes an Our Team
+  section describing the disciplines that shape the product, plus a branded
+  visual hero and purposeful entrance and hover effects. These additions do not
+  collect, display, or transmit clinical or personal data.
+- **Supplied company hero artwork.** The public company page now uses a
+  bandwidth-efficient WebP healthcare-team visual with accessible descriptive
+  text. This presentation-only change does not process clinical or personal
+  data.
+- **Separate privileged sign-in experiences.** Hospital administration and
+  platform-wide super-administration now have distinct, clearly named sign-in
+  portals, each with its own route, visual identity, and role-scoped guidance.
+  Clinical staff use the hospital portal; platform operators use the super-admin
+  portal. The scope of a privilege — hospital-scoped versus global — is explicit
+  in each flow, and each portal carries the system-author attribution. This is a
+  presentation and routing change; it does not alter the credential or
+  permission models.
+- **Single platform identity.** One canonical logo now appears consistently
+  across the public site, the workstation shell, and every sign-in experience,
+  replacing the previous icon-and-text marks. The change is visual only; no
+  licensing or data-processing implications.
+- **Redesigned hospital admin sign-in.** The portal presents a full-height split
+  layout with the sign-in form beside editorial photography of hospital
+  clinicians, using a translucency treatment so the form and imagery remain
+  legible in both themes. Presentation-only; no data is processed by this
+  change. Imagery is stock photography used under a free commercial licence.
+
 ### Data integrity — fabricated clinical data removed
 
 These were integrity defects, not cosmetic ones, and are the most important

@@ -7,6 +7,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  scope?: 'global' | 'hospital' | 'self';
   permissions: string[];
   hospital_id?: string;
   totp_enabled?: boolean;
