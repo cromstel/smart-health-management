@@ -542,7 +542,7 @@ export default function LoginPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
         >
           New staff member?{' '}
-          <Link to="/signup" className="font-semibold text-accent hover:text-accent/80 transition-colors">
+          <Link to="/auth/signup" className="font-semibold text-accent hover:text-accent/80 transition-colors">
             Register here
           </Link>
         </motion.p>

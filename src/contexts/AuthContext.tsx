@@ -50,8 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user.scope === 'hospital' || (user.hospital_id && user.permissions.some((p) => !p.startsWith('all:')))) {
       const hospPrefix = user.hospital_id || '';
       if (!hospPrefix) return false;
-      // Check module-level permission within hospital
-      return user.permissions.includes(`${hospPrefix}:${perm}`) || false;
+      // Canonical module-scoped grant: HOSP-001:patients:view
+      if (user.permissions.includes(`${hospPrefix}:${perm}`)) return true;
+      // Module-agnostic hospital grant (admin-style): HOSP-001:view
+      const action = perm.includes(':') ? perm.slice(perm.lastIndexOf(':') + 1) : perm;
+      if (user.permissions.includes(`${hospPrefix}:${action}`)) return true;
+      // Legacy global action grant (all:view) — tolerated during migration
+      return user.permissions.includes(`all:${action}`);
     }
     return false;
   };

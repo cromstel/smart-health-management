@@ -10,8 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Shield, AlertCircle, KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
 import SystemAuthorBadge from '@/components/auth/SystemAuthorBadge';
 
-const DEMO_EMAIL = 'admin@smarthealth.com';
-const DEMO_PASSWORD = 'Pass@135709';
+const DEMO_EMAIL = 'superadmin@smarthealth.com';
+const DEMO_PASSWORD = 'April--2024!!!!';
 
 function SiteSuperAdminLogin() {
   const [email, setEmail] = useState(() => (import.meta.env.DEV ? DEMO_EMAIL : ''));
@@ -20,7 +20,7 @@ function SiteSuperAdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +33,9 @@ function SiteSuperAdminLogin() {
         return;
       }
       if (res.user && res.user.role !== 'super_admin' && res.user.role !== 'Super Admin') {
+        // Do not leave a denied account authenticated — clear the session
+        // the provider just committed before surfacing the error.
+        logout();
         setError('Access denied. Site super-admin privileges required.');
         setLoading(false);
         return;

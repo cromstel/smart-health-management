@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
               </CardDescription>
             </CardHeader>
             <CardFooter className="pt-2">
-              <Button onClick={() => navigate('/auth/admin/login')} className="w-full bg-accent text-accent-foreground">
+              <Button onClick={() => navigate('/auth/super-admin/login')} className="w-full bg-accent text-accent-foreground">
                 Return to Super Admin Portal
               </Button>
             </CardFooter>

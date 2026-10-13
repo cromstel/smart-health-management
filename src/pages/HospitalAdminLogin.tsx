@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
+import { postAuthRoute } from '@/lib/postAuthRoute';
 import Logo from '@/components/Logo';
 import SystemAuthorBadge from '@/components/auth/SystemAuthorBadge';
 import { Button } from '@/components/ui/button';
@@ -21,19 +22,18 @@ import {
   Server,
   Fingerprint,
   ShieldCheck,
-  Database,
   Building2,
   Loader2,
 } from 'lucide-react';
 
-const DEMO_EMAIL = 'superadmin@smarthealth.com';
-const DEMO_PASSWORD = 'April--2024!!!!';
+const DEMO_EMAIL = 'admin@smarthealth.com';
+const DEMO_PASSWORD = 'Pass@135709';
 
 const accessProtocol = [
   { icon: Fingerprint, label: 'Multi-factor enforced (TOTP required)' },
-  { icon: ShieldCheck, label: 'RBAC scoped to each hospital facility' },
-  { icon: FileCheck, label: 'Immutable audit trail on every command' },
-  { icon: Database, label: 'Master database & infrastructure provisioning' },
+  { icon: ShieldCheck, label: 'RBAC scoped to your assigned hospital' },
+  { icon: FileCheck, label: 'Immutable audit trail on every action' },
+  { icon: Building2, label: 'Hospital operations & staff provisioning' },
 ];
 
 function HospitalAdminLogin() {
@@ -43,7 +43,7 @@ function HospitalAdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,15 +60,20 @@ function HospitalAdminLogin() {
         return;
       }
 
-      if (res.user && res.user.role !== 'super_admin' && res.user.role !== 'Super Admin') {
-        setError('Access denied. Privileged Super Administrator credentials required.');
+      const role = res.user?.role;
+      const allowed = role === 'admin' || role === 'super_admin' || role === 'Super Admin';
+      if (res.user && !allowed) {
+        // Do not leave a denied account authenticated — clear the session
+        // the mock/real provider just committed before surfacing the error.
+        logout();
+        setError('Access denied. Hospital administrator credentials required.');
         setLoading(false);
         return;
       }
 
-      navigate('/super-admin/dashboard');
+      navigate(postAuthRoute(res.user));
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Invalid Super Admin credentials';
+      const errMsg = err instanceof Error ? err.message : 'Invalid hospital administrator credentials';
       setError(errMsg);
     } finally {
       setLoading(false);
@@ -95,7 +100,7 @@ function HospitalAdminLogin() {
           >
             <Logo size="md" className="mb-4" />
             <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Hospital Admin Portal</h2>
-            <p className="text-sm text-muted-foreground">Multi-hospital governance & database provisioning</p>
+            <p className="text-sm text-muted-foreground">Authorised hospital administration & operations</p>
           </motion.div>
 
           {/* Security Warning Banner */}
@@ -107,7 +112,7 @@ function HospitalAdminLogin() {
             transition={{ duration: 0.3, delay: 0.1 }}
           >
             <Shield className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-            <span className="font-medium">Restricted Terminal: Privileged Infrastructure Access</span>
+            <span className="font-medium">Restricted Portal: Privileged Hospital Administration</span>
           </motion.div>
 
           <Card className="border border-border bg-card shadow-lg shadow-border/50">
@@ -125,13 +130,13 @@ function HospitalAdminLogin() {
 
               <div>
                 <div className="flex items-center justify-center gap-2">
-                  <CardTitle className="text-xl font-bold tracking-tight text-foreground">Root Access</CardTitle>
+                  <CardTitle className="text-xl font-bold tracking-tight text-foreground">Hospital Admin Access</CardTitle>
                   <Badge variant="outline" className="text-[10px] border-accent/40 text-accent font-semibold">
-                    ROOT
+                    ADMIN
                   </Badge>
                 </div>
                 <CardDescription className="text-xs text-muted-foreground mt-1">
-                  Master database & infrastructure control panel
+                  Run your hospital facility within your RBAC scope
                 </CardDescription>
               </div>
             </CardHeader>
@@ -158,12 +163,12 @@ function HospitalAdminLogin() {
                 <div className="space-y-2">
                   <Label htmlFor="admin-email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                    Super Admin Email
+                    Hospital Admin Email
                   </Label>
                   <Input
                     id="admin-email"
                     type="email"
-                    placeholder="superadmin@smarthealth.com"
+                    placeholder="admin@smarthealth.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -175,13 +180,13 @@ function HospitalAdminLogin() {
                 <div className="space-y-2">
                   <Label htmlFor="admin-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                     <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                    Master Password
+                    Hospital Password
                   </Label>
                   <div className="relative">
                     <Input
                       id="admin-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter master password"
+                      placeholder="Enter hospital administrator password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -211,7 +216,7 @@ function HospitalAdminLogin() {
                       Verifying Privileges...
                     </span>
                   ) : (
-                    'Authenticate Master Session'
+                    'Authenticate Hospital Session'
                   )}
                 </Button>
               </form>
@@ -227,7 +232,7 @@ function HospitalAdminLogin() {
                     className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                    <span>Autofill Super Admin Demo Credentials</span>
+                    <span>Autofill Hospital Admin Demo Credentials</span>
                   </Button>
                 </div>
               )}
@@ -240,7 +245,7 @@ function HospitalAdminLogin() {
                 transition={{ duration: 0.3, delay: 0.3 }}
               >
                 <FileCheck className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <span>All authentication transactions and root-level commands are cryptographically signed and stored in immutable audit logs.</span>
+                <span>All authentication transactions and administrative actions are cryptographically signed and stored in immutable audit logs.</span>
               </motion.div>
             </CardContent>
 
@@ -279,10 +284,10 @@ function HospitalAdminLogin() {
           <div className="max-w-xl space-y-8">
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Building2 className="h-4 w-4" aria-hidden="true" />
-              <span className="font-mono uppercase tracking-[0.2em] text-xs">Multi-hospital governance</span>
+              <span className="font-mono uppercase tracking-[0.2em] text-xs">Hospital administration</span>
             </div>
             <h2 className="font-display text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.1]">
-              One secure command surface for every hospital you run.
+              One secure portal for every part of your hospital.
             </h2>
             <ul className="space-y-3">
               {accessProtocol.map((item) => (

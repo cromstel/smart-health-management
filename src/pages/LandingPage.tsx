@@ -313,7 +313,7 @@ function Hero() {
                 className="h-12 px-7 text-sm font-semibold tracking-wide bg-accent text-accent-foreground hover:bg-accent/90"
                 asChild
               >
-                <Link to="/signup" className="gap-2">
+                <Link to="/auth/signup" className="gap-2">
                   Start free trial
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
@@ -695,7 +695,7 @@ function CtaBanner() {
               className="h-12 px-8 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20 transition-all duration-200"
               asChild
             >
-              <Link to="/signup" className="gap-2">
+              <Link to="/auth/signup" className="gap-2">
                 Get Started — Free
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
@@ -738,7 +738,7 @@ function Footer() {
       links: [
         { label: 'About Us', href: '/about-us/' },
         { label: 'Careers', href: '#hero' },
-        { label: 'Contact', href: '#hero' },
+        { label: 'Contact', href: '/contact-us' },
         { label: 'Blog', href: '#hero' },
       ],
     },
@@ -807,7 +807,7 @@ function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <Link
-              to="/auth/admin/login"
+              to="/auth/super-admin/login"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
               <Lock className="h-3 w-3" aria-hidden="true" />

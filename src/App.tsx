@@ -96,6 +96,8 @@ function AppRoutes() {
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/signup" element={<RegisterPage />} />
+        {/* Legacy registration entrypoint kept so existing CTAs/deep links still reach the page */}
+        <Route path="/signup" element={<RegisterPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/two-factor" element={<TwoFactorPage />} />

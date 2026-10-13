@@ -299,6 +299,17 @@
   }
 }
 
+/* Accessibility: honour reduced-motion preferences for every CSS-driven
+   transition/animation site-wide (hover transforms, pulses, spinners).
+   Rich JS-driven animations are additionally gated per-component. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Specialized CSS Print Stylesheet for Patient Summaries & Vital Records */
 @media print {
   body, html {

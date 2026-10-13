@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion, useInView } from 'motion/react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useRef, type ReactNode } from 'react';
 import {
   ArrowRight,
@@ -47,6 +47,16 @@ const teamDisciplines = [
 function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; delay?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const reduce = useReducedMotion();
+
+  // Reduced motion: render content fully visible, no entrance animation.
+  if (reduce) {
+    return (
+      <div ref={ref} className={className}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -62,6 +72,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; 
 }
 
 export default function AboutUsPage() {
+  const reduce = useReducedMotion();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">
@@ -74,7 +86,7 @@ export default function AboutUsPage() {
           <motion.img
             src="/images/medicare-about-us-hero-banner.webp"
             alt="A diverse healthcare team standing together in a bright clinical setting"
-            initial={{ opacity: 0, scale: 1.06 }}
+            initial={reduce ? false : { opacity: 0, scale: 1.06 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 -z-20 h-full w-full select-none object-cover object-[62%_center] sm:object-[58%_center]"
@@ -86,15 +98,15 @@ export default function AboutUsPage() {
             </div>
           </div>
           <div className="relative mx-auto w-full max-w-7xl px-4 text-left sm:px-6 lg:px-8">
-            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mb-6 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
+            <motion.p initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mb-6 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
               Our purpose
             </motion.p>
-            <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="max-w-2xl">
+            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="max-w-2xl">
               <div className="border-y border-primary-foreground/30 py-8 sm:py-10">
                 <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-tight text-primary-foreground sm:text-6xl lg:text-7xl">Better systems make room for better care.</h1>
                 <p className="mt-7 max-w-xl text-lg leading-relaxed text-primary-foreground/90">Smart MediCare helps healthcare teams coordinate the work behind every meaningful patient moment.</p>
-                <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.6 }} className="mt-8 flex items-center gap-3 border-l-2 border-accent pl-4 text-sm text-primary-foreground/85">
+                <motion.div initial={reduce ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.6 }} className="mt-8 flex items-center gap-3 border-l-2 border-accent pl-4 text-sm text-primary-foreground/85">
                   <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
                   Built around the people doing the work
                 </motion.div>
@@ -138,10 +150,15 @@ export default function AboutUsPage() {
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {teamDisciplines.map((discipline, index) => (
                 <Reveal key={discipline.title} delay={index * 0.08}>
-                  <article className="group relative min-h-72 overflow-hidden border border-border bg-background p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/50 hover:shadow-lg hover:shadow-primary/10">
-                    <motion.div whileHover={{ rotate: -5, scale: 1.04 }} transition={{ type: 'spring', stiffness: 280, damping: 18 }} className="flex h-16 w-16 items-center justify-center rounded-full border border-accent/25 bg-accent/10 font-mono text-lg font-semibold text-accent">{discipline.initials}</motion.div>
-                    <div className="absolute right-5 top-5 font-mono text-xs tabular-nums text-muted-foreground">{discipline.number}</div>
-                    <div className="absolute bottom-6 left-6 right-6"><h3 className="text-xl font-semibold tracking-tight">{discipline.title}</h3><p className="mt-3 leading-relaxed text-muted-foreground">{discipline.description}</p></div>
+                  <article className="group flex min-h-72 flex-col justify-between gap-6 border border-border bg-background p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/50 hover:shadow-lg hover:shadow-primary/10">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-accent/25 bg-accent/10 font-mono text-lg font-semibold text-accent">{discipline.initials}</div>
+                      <div className="font-mono text-xs tabular-nums text-muted-foreground">{discipline.number}</div>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold tracking-tight">{discipline.title}</h3>
+                      <p className="mt-3 leading-relaxed text-muted-foreground">{discipline.description}</p>
+                    </div>
                   </article>
                 </Reveal>
               ))}
