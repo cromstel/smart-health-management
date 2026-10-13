@@ -90,6 +90,16 @@ implementation reasoning behind each entry here.
   image, replacing the earlier portrait photograph that had to be heavily cropped
   to fill the panel. Large displays now get a purpose-framed image with less data
   transferred. Presentation-only; no data-processing change.
+- **One-click demo-credential filler removed from the hospital sign-in form.** The
+  privileged sign-in form no longer renders a shortcut control that populated
+  demonstration credentials. Local development still pre-fills the sample account
+  for convenience, and demonstration accounts remain documented in
+  `DOCUMENTATION.md`. No authentication behaviour, credential handling, or
+  production flow is affected.
+- **Decorative frame removed from the brand mark in the sign-in footer.** The
+  brand mark now sits directly on the panel with no surrounding tint, border, or
+  rounded container, so it reads as part of the composition rather than as a
+  badge. Presentation-only.
 
 ### Data integrity — fabricated clinical data removed
 

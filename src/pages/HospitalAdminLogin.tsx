@@ -19,7 +19,6 @@ import {
   EyeOff,
   KeyRound,
   FileCheck,
-  Server,
   Fingerprint,
   ShieldCheck,
   Building2,
@@ -78,12 +77,6 @@ function HospitalAdminLogin() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickFill = () => {
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
-    setError('');
   };
 
   return (
@@ -221,22 +214,6 @@ function HospitalAdminLogin() {
                 </Button>
               </form>
 
-              {/* Quick Demo Helper (development only) */}
-              {import.meta.env.DEV && (
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleQuickFill}
-                    className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                    <span>Autofill Hospital Admin Demo Credentials</span>
-                  </Button>
-                </div>
-              )}
-
               {/* Audit Advisory */}
               <motion.div
                 className="p-3 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground flex items-start gap-2"
@@ -306,7 +283,7 @@ function HospitalAdminLogin() {
             <img
               src="/medicare-logo.webp"
               alt="Smart MediCare"
-              className="h-20 w-28 rounded-xl object-contain border border-primary-foreground/20 bg-primary-foreground/10"
+              className="h-20 w-28 object-contain"
             />
             <div className="text-sm">
               <p className="font-semibold">Your clinical team, empowered.</p>
