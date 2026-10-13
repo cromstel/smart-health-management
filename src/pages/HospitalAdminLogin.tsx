@@ -82,8 +82,8 @@ function HospitalAdminLogin() {
   return (
     <div className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,30%)_minmax(0,70%)]">
       {/* ── Left column: 30% form panel ─────────────────────────────────── */}
-      <div className="relative flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-12">
-        <div className="w-full max-w-md mx-auto space-y-6">
+      <div className="relative flex flex-col justify-center px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-6 xl:px-8 xl:py-8 2xl:px-10 [@media(max-height:860px)]:py-4">
+        <div className="w-full max-w-md mx-auto space-y-4 sm:space-y-5 [@media(max-height:860px)]:space-y-3">
           {/* Header */}
           <motion.div
             className="flex flex-col items-center lg:items-start text-center lg:text-left"
@@ -91,7 +91,7 @@ function HospitalAdminLogin() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Logo size="md" className="mb-4" />
+            <Logo size="md" className="mb-4 [@media(max-height:860px)]:mb-2" />
             <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Hospital Admin Portal</h2>
             <p className="text-sm text-muted-foreground">Authorised hospital administration & operations</p>
           </motion.div>
@@ -109,21 +109,21 @@ function HospitalAdminLogin() {
           </motion.div>
 
           <Card className="border border-border bg-card shadow-lg shadow-border/50">
-            <CardHeader className="space-y-4 text-center pb-4 border-b border-border">
+            <CardHeader className="space-y-3 sm:space-y-4 text-center pb-4 border-b border-border">
               <motion.div
                 className="flex justify-center"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
               >
-                <div className="h-16 w-16 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shadow-inner">
-                  <KeyRound className="h-8 w-8 text-accent" aria-hidden="true" />
+                <div className="h-14 w-14 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shadow-inner sm:h-16 sm:w-16 [@media(max-height:860px)]:h-12 [@media(max-height:860px)]:w-12">
+                  <KeyRound className="h-7 w-7 text-accent sm:h-8 sm:w-8 [@media(max-height:860px)]:h-6 [@media(max-height:860px)]:w-6" aria-hidden="true" />
                 </div>
               </motion.div>
 
               <div>
-                <div className="flex items-center justify-center gap-2">
-                  <CardTitle className="text-xl font-bold tracking-tight text-foreground">Hospital Admin Access</CardTitle>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <CardTitle className="text-lg font-bold tracking-tight text-foreground sm:text-xl">Hospital Admin Access</CardTitle>
                   <Badge variant="outline" className="text-[10px] border-accent/40 text-accent font-semibold">
                     ADMIN
                   </Badge>
@@ -134,7 +134,7 @@ function HospitalAdminLogin() {
               </div>
             </CardHeader>
 
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-4 sm:pt-6 space-y-4 [@media(max-height:860px)]:space-y-3">
               {/* Error Alert */}
               <AnimatePresence>
                 {error && (
@@ -152,7 +152,7 @@ function HospitalAdminLogin() {
                 )}
               </AnimatePresence>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4 [@media(max-height:860px)]:space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="admin-email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
@@ -189,7 +189,7 @@ function HospitalAdminLogin() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
                       title={showPassword ? 'Hide password' : 'Show password'}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
@@ -200,7 +200,7 @@ function HospitalAdminLogin() {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
+                  className="w-full h-11 px-3 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                   disabled={loading}
                 >
                   {loading ? (
@@ -227,7 +227,7 @@ function HospitalAdminLogin() {
             </CardContent>
 
             <CardFooter className="flex-col gap-3 border-t border-border pt-4 text-xs text-muted-foreground font-mono">
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center">
                 <Link to="/auth/admin/login" className="hover:text-foreground">Hospital Portal</Link>
                 <span>·</span>
                 <Link to="/auth/login" className="hover:text-foreground">Public Sign In</Link>
@@ -248,7 +248,7 @@ function HospitalAdminLogin() {
         {/* Transparency overlay keeps text readable over the photograph */}
         <div className="absolute inset-0 bg-primary/60" aria-hidden="true" />
 
-        <div className="absolute inset-0 z-10 flex flex-col justify-between p-12 xl:p-16 text-primary-foreground">
+        <div className="absolute inset-0 z-10 flex flex-col justify-between gap-6 overflow-y-auto p-8 lg:p-10 xl:p-12 2xl:p-16 text-primary-foreground">
           {/* Status pill */}
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-success/20 border border-success/30 px-3 py-1.5 text-sm font-semibold">
@@ -258,15 +258,15 @@ function HospitalAdminLogin() {
           </div>
 
           {/* Value proposition */}
-          <div className="max-w-xl space-y-8">
+          <div className="max-w-xl space-y-6 xl:space-y-8">
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Building2 className="h-4 w-4" aria-hidden="true" />
               <span className="font-mono uppercase tracking-[0.2em] text-xs">Hospital administration</span>
             </div>
-            <h2 className="font-display text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.1]">
+            <h2 className="font-display text-3xl lg:text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.1]">
               One secure portal for every part of your hospital.
             </h2>
-            <ul className="space-y-3">
+            <ul className="space-y-2.5 xl:space-y-3">
               {accessProtocol.map((item) => (
                 <li key={item.label} className="flex items-center gap-3 text-sm text-primary-foreground/90">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-foreground/10 border border-primary-foreground/20">
