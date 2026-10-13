@@ -264,9 +264,9 @@ function HospitalAdminLogin() {
       {/* ── Right column: 70% image panel (desktop only) ────────────────── */}
       <div className="relative hidden lg:block min-h-screen overflow-hidden">
         <img
-          src="/images/admin-login-african-doctor.jpg"
-          alt="African hospital clinicians at work"
-          className="absolute inset-0 h-full w-full object-cover"
+          src="/images/admin-login-hospital.webp"
+          alt="Front view of a modern African medical facility"
+          className="absolute inset-0 h-full w-full object-cover object-center"
         />
         {/* Transparency overlay keeps text readable over the photograph */}
         <div className="absolute inset-0 bg-primary/60" aria-hidden="true" />
@@ -304,9 +304,9 @@ function HospitalAdminLogin() {
           {/* Team strip + copyright */}
           <div className="flex items-center gap-4">
             <img
-              src="/images/admin-login-medical-team.jpg"
-              alt="Hospital clinical team"
-              className="h-20 w-28 rounded-xl object-cover border border-primary-foreground/20"
+              src="/medicare-logo.webp"
+              alt="Smart MediCare"
+              className="h-20 w-28 rounded-xl object-contain border border-primary-foreground/20 bg-primary-foreground/10"
             />
             <div className="text-sm">
               <p className="font-semibold">Your clinical team, empowered.</p>

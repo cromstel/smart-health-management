@@ -53,7 +53,7 @@ export default function Logo({
         className={cn(box, 'rounded-lg object-contain')}
       />
       {showText && (
-        <span className={cn('font-display font-semibold tracking-tight', text, TEXT_COLORS[variant])}>
+        <span className={cn('font-display font-semibold tracking-tight uppercase', text, TEXT_COLORS[variant])}>
           Smart <span className="text-accent">MediCare</span>
         </span>
       )}
