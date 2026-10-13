@@ -33,13 +33,14 @@ export default async function globalSetup(config: FullConfig) {
   try {
     response = await fetch(BASE_URL, { redirect: 'follow' });
   } catch (error) {
-    throw new Error(
+    const err = new Error(
       `Nothing is answering ${BASE_URL}.\n` +
         'Start the app first: `npm run dev` (VITE_PORT to change the port), ' +
         'or let the Playwright webServer start it. Refusing to run: asserting ' +
         'against an unknown server is how this suite ends up testing the wrong software.',
-      { cause: error },
     );
+    (err as any).cause = error;
+    throw err;
   }
 
   if (!response.ok) {
