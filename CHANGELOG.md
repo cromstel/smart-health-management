@@ -70,10 +70,26 @@ implementation reasoning behind each entry here.
   replacing the previous icon-and-text marks. The change is visual only; no
   licensing or data-processing implications.
 - **Redesigned hospital admin sign-in.** The portal presents a full-height split
-  layout with the sign-in form beside editorial photography of hospital
-  clinicians, using a translucency treatment so the form and imagery remain
-  legible in both themes. Presentation-only; no data is processed by this
-  change. Imagery is stock photography used under a free commercial licence.
+  layout with the sign-in form beside an editorial landscape photograph of a
+  modern hospital facility, using a translucency treatment so the form and
+  imagery remain legible in both themes while the image fills the panel at every
+  desktop size. Presentation-only; no data is processed by this change. Imagery
+  is stock photography used under a free commercial licence.
+
+### Changed
+
+- **Upper-case brand lockup, and the brand mark now sits in the admin portal
+  footer.** The platform name shown beside the logo renders in upper case for a
+  stronger, more consistent lockup across the public site, the workstation shell,
+  and every sign-in experience. The hospital portal's footer panel now presents
+  the brand mark itself in place of a secondary clinical-team photograph, so the
+  identity appears once and in the same form everywhere. Visual only; no
+  data-processing change.
+- **The sign-in background is now a landscape, bandwidth-efficient image.** The
+  privileged sign-in panel uses a wide hospital-building view served as a WebP
+  image, replacing the earlier portrait photograph that had to be heavily cropped
+  to fill the panel. Large displays now get a purpose-framed image with less data
+  transferred. Presentation-only; no data-processing change.
 
 ### Data integrity — fabricated clinical data removed
 
