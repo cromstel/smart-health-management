@@ -60,5 +60,5 @@ export default defineConfig({
   // Refuse to run against whatever happens to be answering on the port. Cheap
   // insurance against repeating the "tested a different app" failure, which is
   // easy to miss because the failures look plausible.
-  globalSetup: './e2e/global-setup.ts',
+  globalSetup: './src/e2e/global-setup.ts',
 });

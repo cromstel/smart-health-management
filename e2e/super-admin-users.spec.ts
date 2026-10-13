@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { backendReachable, DB_SKIP_MESSAGE } from './helpers/backend';
+import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
 
 /**
  * User management for the site owner.

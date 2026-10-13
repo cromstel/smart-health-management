@@ -18,5 +18,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["e2e"]
+  "include": ["e2e", "src/e2e"]
 }
