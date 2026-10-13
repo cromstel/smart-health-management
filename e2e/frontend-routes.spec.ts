@@ -1,4 +1,16 @@
 import { test, expect, type Page } from '@playwright/test';
+import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
+
+/**
+ * Route-level checks.
+ *
+ * The public block needs nothing but the dev server and always runs (that is
+ * what CI gates on). The clinician and super-admin blocks sign in and assert on
+ * data that only the real API + seeded MySQL provide, so they are tagged `@db`
+ * and skip themselves when the API is not running -- otherwise the mock answers
+ * 403 and the run reports failures that are missing infrastructure, not
+ * regressions. See e2e/helpers/backend.ts.
+ */
 
 /**
  * Asserts the *document* does not scroll sideways.
@@ -38,11 +50,11 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function signInAsClinician(page: Page) {
-  await page.goto('/login');
+  await page.goto('/auth/login');
   await page.locator('#email').fill('doctor@smarthealth.com');
   await page.locator('#password').fill('Demo@135790');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-  await expect(page).toHaveURL(/\/two-factor$/);
+  await expect(page).toHaveURL(/\/auth\/two-factor$/);
   await page.getByRole('button', { name: 'Quick Test: Fetch Current Demo TOTP Token' }).click();
   // Quick Test fills the code asynchronously (fetch, then setState), so the
   // submit button is disabled until it lands. Clicking straight through relies
@@ -54,7 +66,7 @@ async function signInAsClinician(page: Page) {
 }
 
 async function signInAsSuperAdmin(page: Page) {
-  await page.goto('/super-admin/login');
+  await page.goto('/auth/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
   await page.locator('#admin-password').fill('April--2024!!!!');
   await page.getByRole('button', { name: 'Authenticate Master Session' }).click();
@@ -88,11 +100,11 @@ test.describe('Public routes', () => {
   });
 
   test('password recovery, reset and invalid shared-summary states are clear', async ({ page }) => {
-    await page.goto('/forgot-password');
+    await page.goto('/auth/forgot-password');
     await expect(page.getByRole('heading', { name: 'Password Recovery' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    await page.goto('/reset-password');
+    await page.goto('/auth/reset-password');
     await expect(page.getByRole('heading', { name: 'Set New Password' })).toBeVisible();
     await expect(page.getByText('No active password reset token was detected in your browser URL.')).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -104,7 +116,11 @@ test.describe('Public routes', () => {
   });
 });
 
-test.describe('Clinician route smoke checks', () => {
+test.describe('Clinician route smoke checks', { tag: '@db' }, () => {
+  test.beforeEach(async () => {
+    test.skip(!(await backendReachable()), DB_SKIP_MESSAGE);
+  });
+
   test.beforeEach(async ({ page }) => signInAsClinician(page));
 
   const routes = [
@@ -144,7 +160,11 @@ test.describe('Clinician route smoke checks', () => {
   });
 });
 
-test.describe('Super-admin route smoke checks', () => {
+test.describe('Super-admin route smoke checks', { tag: '@db' }, () => {
+  test.beforeEach(async () => {
+    test.skip(!(await backendReachable()), DB_SKIP_MESSAGE);
+  });
+
   test.beforeEach(async ({ page }) => signInAsSuperAdmin(page));
 
   for (const path of [

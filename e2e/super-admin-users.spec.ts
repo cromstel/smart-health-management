@@ -1,4 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
+
+/**
+ * User management for the site owner.
+ *
+ * Every assertion here depends on rows that exist only in the real API + seeded
+ * MySQL (the seeded "Dr. Smith" clinician, password resets against the real
+ * users table). Tagged `@db` and self-skipping: against the Vite-only mock the
+ * whole flow would fail on infrastructure, not on behaviour. See
+ * e2e/helpers/backend.ts.
+ */
+test.beforeEach(async () => {
+  test.skip(!(await backendReachable()), DB_SKIP_MESSAGE);
+});
 
 /**
  * Signs in through the two-factor step using the seeded demo TOTP.
@@ -6,12 +20,12 @@ import { test, expect } from '@playwright/test';
  * a short-lived temp token and the UI routes to /two-factor.
  */
 async function signInWithTotp(page: import('@playwright/test').Page, email: string, password: string) {
-  await page.goto('/login');
+  await page.goto('/auth/login');
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-  await page.waitForURL(/\/(two-factor|dashboard)/, { timeout: 30000 });
-  if (!page.url().includes('/two-factor')) return;
+  await page.waitForURL(/\/auth\/two-factor|\/(two-factor|dashboard)/, { timeout: 30000 });
+  if (!page.url().includes('/auth/two-factor')) return;
 
   const otp = page.getByLabel('Enter 6-digit authentication code');
   await otp.waitFor({ state: 'visible', timeout: 15000 });
@@ -31,7 +45,7 @@ async function signInWithTotp(page: import('@playwright/test').Page, email: stri
 // These assertions previously looked for 'Dr. John Smith', which no fixture has
 // ever contained, so the row filter and status toggle could not be exercised.
 async function signInAsSuperAdmin(page: import('@playwright/test').Page) {
-  await page.goto('/super-admin/login');
+  await page.goto('/auth/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
   await page.locator('#admin-password').fill('April--2024!!!!');
   await page.getByRole('button', { name: 'Authenticate Master Session' }).click();
@@ -41,7 +55,7 @@ async function signInAsSuperAdmin(page: import('@playwright/test').Page) {
 test.describe('Super-admin user management', () => {
   test('protects direct access for unauthenticated users', async ({ page }) => {
     await page.goto('/super-admin/users');
-    await expect(page).toHaveURL(/\/super-admin\/login$/);
+    await expect(page).toHaveURL(/\/auth\/super-admin\/login$/);
   });
 
   test('lists, filters, updates status, resets a password, and survives refresh', async ({ page, browser }) => {

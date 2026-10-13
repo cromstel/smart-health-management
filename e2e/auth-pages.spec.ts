@@ -2,11 +2,12 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Login Page', () => {
   test('loads and displays all form elements', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
-    // Brand header
-    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
+    // Brand header. The shared Logo renders as role="img" with an accessible
+    // name, not a text heading, so assert the accessible name instead.
+    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
 
     // Page title and subtitle
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
@@ -43,7 +44,7 @@ test.describe('Login Page', () => {
 
   test('branding panel is visible on desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('text=Secure, intelligent healthcare management.')).toBeVisible();
@@ -53,7 +54,7 @@ test.describe('Login Page', () => {
   });
 
   test('can toggle password visibility', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     const passwordInput = page.locator('#password');
@@ -67,7 +68,7 @@ test.describe('Login Page', () => {
   });
 
   test('shows validation errors for empty submission', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     await page.locator('#login-submit-btn').click();
@@ -77,7 +78,7 @@ test.describe('Login Page', () => {
   });
 
   test('can type in email and password fields', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     await page.locator('#email').fill('doctor@smarthealth.com');
@@ -88,7 +89,7 @@ test.describe('Login Page', () => {
   });
 
   test('forgot password mode toggle works', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     // Click forgot password
@@ -107,11 +108,11 @@ test.describe('Login Page', () => {
 
 test.describe('Register Page', () => {
   test('loads and displays all form elements', async ({ page }) => {
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     // Brand header
-    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
 
     // Page title
     await expect(page.getByRole('heading', { name: 'Staff Registration' })).toBeVisible();
@@ -138,7 +139,7 @@ test.describe('Register Page', () => {
   });
 
   test('shows password strength meter when typing', async ({ page }) => {
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     // Password strength should not be visible initially
@@ -155,7 +156,7 @@ test.describe('Register Page', () => {
   });
 
   test('can fill out the registration form', async ({ page }) => {
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     await page.locator('#name').fill('Dr. Test User');
@@ -172,7 +173,7 @@ test.describe('Register Page', () => {
   });
 
   test('can toggle password visibility', async ({ page }) => {
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     const passwordInput = page.locator('#password');
@@ -185,7 +186,7 @@ test.describe('Register Page', () => {
   });
 
   test('shows validation errors for empty submission', async ({ page }) => {
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     await page.locator('text=Complete Staff Registration').click();
@@ -197,10 +198,10 @@ test.describe('Register Page', () => {
 
 test.describe('Two-Factor Page', () => {
   test('shows the safe recovery state without a pending MFA session', async ({ page }) => {
-    await page.goto('/two-factor');
+    await page.goto('/auth/two-factor');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'No Verification Session' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Return to Login' })).toBeVisible();
     await expect(page.locator('[aria-label^="Digit "]')).toHaveCount(0);
@@ -209,41 +210,50 @@ test.describe('Two-Factor Page', () => {
 
 test.describe('Super Admin Login Page', () => {
   test('loads and displays all elements', async ({ page }) => {
-    await page.goto('/super-admin/login');
+    await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
-    // Brand header
-    await expect(page.getByRole('heading', { name: 'Smart MediCare' })).toBeVisible();
+    // Brand header. This portal deliberately does NOT use the shared Logo
+    // component (it keeps its own industrial identity), so assert its own
+    // marker rather than the site-wide img role.
+    await expect(page.getByText('Site Owner Portal', { exact: true })).toBeVisible();
 
-    // Page title
-    await expect(page.getByRole('heading', { name: 'Super Admin Portal' })).toBeVisible();
-    await expect(page.locator('text=Multi-hospital governance & database provisioning')).toBeVisible();
+    // Page title. This portal's own identity copy is "Root Access." — it is not
+    // the "Super Admin Portal" wording the old (pre-rewrite) spec asserted.
+    await expect(page.getByRole('heading', { name: /Root Access/i })).toBeVisible();
+    await expect(page.locator('text=Multi-hospital governance')).toBeVisible();
 
-    // Security warning banner
-    await expect(page.locator('text=Restricted Terminal: Privileged Infrastructure Access')).toBeVisible();
+    // Restricted-terminal marker in the header strip
+    await expect(page.getByText(/RESTRICTED TERMINAL/)).toBeVisible();
 
-    // ROOT badge
-    await expect(page.getByText('ROOT', { exact: true })).toBeVisible();
+    // Access protocol list
+    await expect(page.getByText('Access Protocol', { exact: true })).toBeVisible();
+    await expect(page.locator('text=Multi-factor enforced')).toBeVisible();
 
     // Form fields
     await expect(page.locator('#admin-email')).toBeVisible();
     await expect(page.locator('#admin-password')).toBeVisible();
+    await expect(page.getByLabel('Super Admin Email')).toBeVisible();
+    await expect(page.getByLabel('Master Password')).toBeVisible();
 
-    // Submit button
-    await expect(page.locator('text=Authenticate Master Session')).toBeVisible();
+    // Scope guidance: this portal is for the site owner, not hospital staff.
+    await expect(page.locator('text=Site super-admin credentials. Not for hospital staff.')).toBeVisible();
 
-    // Quick fill button
-    await expect(page.locator('text=Autofill Super Admin Demo Credentials')).toBeVisible();
+    // Submit button (matched by role so it does not collide with the card title
+    // that repeats the same words)
+    await expect(page.getByRole('button', { name: 'Authenticate Master Session' })).toBeVisible();
 
     // Audit advisory
     await expect(page.locator('text=cryptographically signed')).toBeVisible();
 
-    // Back to login link
-    await expect(page.locator('text=Return to Standard Staff Login')).toBeVisible();
+    // Cross-portal links. The site-owner portal has no autofill control and no
+    // dedicated "return" link; it offers the hospital portal and public sign-in.
+    await expect(page.getByRole('link', { name: 'Hospital Admin Portal' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Public Sign In' })).toBeVisible();
   });
 
   test('has pre-filled demo credentials', async ({ page }) => {
-    await page.goto('/super-admin/login');
+    await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('#admin-email')).toHaveValue('superadmin@smarthealth.com');
@@ -251,37 +261,32 @@ test.describe('Super Admin Login Page', () => {
   });
 
   test('can toggle password visibility', async ({ page }) => {
-    await page.goto('/super-admin/login');
+    await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
     const passwordInput = page.locator('#admin-password');
     await expect(passwordInput).toHaveAttribute('type', 'password');
 
-    await page.locator('button[title="Show password"]').click();
+    await page.locator('button[aria-label="Toggle password"]').click();
     await expect(passwordInput).toHaveAttribute('type', 'text');
 
-    await page.locator('button[title="Hide password"]').click();
+    await page.locator('button[aria-label="Toggle password"]').click();
     await expect(passwordInput).toHaveAttribute('type', 'password');
   });
 
-  test('quick fill resets credentials', async ({ page }) => {
-    await page.goto('/super-admin/login');
+  test('does not expose a demo-credential autofill control', async ({ page }) => {
+    await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
-    // Clear and change values
-    await page.locator('#admin-email').fill('wrong@email.com');
-    await page.locator('#admin-password').fill('wrongpass');
-
-    // Quick fill should reset
-    await page.locator('text=Autofill Super Admin Demo Credentials').click();
-    await expect(page.locator('#admin-email')).toHaveValue('superadmin@smarthealth.com');
-    await expect(page.locator('#admin-password')).toHaveValue('April--2024!!!!');
+    // The hospital portal's one-click autofill was removed; the site-owner
+    // portal must not reintroduce an equivalent shortcut.
+    await expect(page.getByRole('button', { name: /autofill/i })).toHaveCount(0);
   });
 });
 
 test.describe('Navigation between auth pages', () => {
   test('can navigate from login to register', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     await page.locator('text=Register here').click();
@@ -290,14 +295,14 @@ test.describe('Navigation between auth pages', () => {
   });
 
   test('starts and cancels the MFA flow after clinician login', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     await page.locator('#email').fill('doctor@smarthealth.com');
     await page.locator('#password').fill('Demo@135790');
     await page.locator('#login-submit-btn').click();
 
-    await expect(page).toHaveURL('/two-factor');
+    await expect(page).toHaveURL('/auth/two-factor');
     await expect(page.getByRole('heading', { name: 'Two-Factor Authentication' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Quick Test: Fetch Current Demo TOTP Token' })).toBeVisible();
     await page.getByRole('link', { name: 'Cancel & Return to Login' }).click();
@@ -305,29 +310,31 @@ test.describe('Navigation between auth pages', () => {
   });
 
   test('can navigate from register back to login', async ({ page }) => {
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     await page.locator('text=Back to Sign In').click();
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL('/auth/login');
     await expect(page.locator('text=Welcome back')).toBeVisible();
   });
 
   test('can navigate from the guarded two-factor page back to login', async ({ page }) => {
-    await page.goto('/two-factor');
+    await page.goto('/auth/two-factor');
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('link', { name: 'Return to Login' }).click();
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL('/auth/login');
     await expect(page.locator('text=Welcome back')).toBeVisible();
   });
 
-  test('can navigate from super-admin back to login', async ({ page }) => {
-    await page.goto('/super-admin/login');
+  test('can navigate from super-admin back to public sign-in', async ({ page }) => {
+    await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('text=Return to Standard Staff Login').click();
-    await expect(page).toHaveURL('/login');
+    // The site-owner portal offers a "Public Sign In" footer link (there is no
+    // separate "return to standard staff login" control).
+    await page.getByRole('link', { name: 'Public Sign In' }).click();
+    await expect(page).toHaveURL('/auth/login');
     await expect(page.locator('text=Welcome back')).toBeVisible();
   });
 });
@@ -335,7 +342,7 @@ test.describe('Navigation between auth pages', () => {
 test.describe('Responsive design', () => {
   test('login page is responsive on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
     // Form should be visible
@@ -349,7 +356,7 @@ test.describe('Responsive design', () => {
 
   test('register page is responsive on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
     // Form should be visible
@@ -360,7 +367,7 @@ test.describe('Responsive design', () => {
 
   test('two-factor recovery state is responsive on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/two-factor');
+    await page.goto('/auth/two-factor');
     await page.waitForLoadState('networkidle');
 
     await expect(page.getByRole('heading', { name: 'No Verification Session' })).toBeVisible();
@@ -369,12 +376,12 @@ test.describe('Responsive design', () => {
 
   test('super-admin page is responsive on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/super-admin/login');
+    await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
     // Form should be visible
     await expect(page.locator('#admin-email')).toBeVisible();
     await expect(page.locator('#admin-password')).toBeVisible();
-    await expect(page.locator('text=Authenticate Master Session')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Authenticate Master Session' })).toBeVisible();
   });
 });

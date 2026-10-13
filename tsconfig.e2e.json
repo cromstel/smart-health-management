@@ -1,0 +1,22 @@
+{
+  // Type-check configuration for the Playwright end-to-end suite.
+  //
+  // The spec files are Node code (they import Playwright, use process.env and
+  // fs-style helpers) but every `page.evaluate()` callback is compiled into the
+  // *browser*, so DOM types are required as well. Hence ES2022 + DOM.
+  //
+  // These files were outside every tsconfig's `include`, which is precisely how
+  // the suite rotted: nothing type-checked it, so a rename that broke every
+  // route in every spec compiled cleanly and only failed at runtime - in CI,
+  // which did not run Playwright at all.
+  //
+  // Run via `npm run type-check` (wired to check this project too).
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["e2e", "src/e2e"]
+}
