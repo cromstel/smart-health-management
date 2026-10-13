@@ -80,10 +80,10 @@ function HospitalAdminLogin() {
   };
 
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,30%)_minmax(0,70%)]">
-      {/* ── Left column: 30% form panel ─────────────────────────────────── */}
+    <div className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,40%)_minmax(0,60%)] xl:grid-cols-[minmax(0,42%)_minmax(0,58%)] 2xl:grid-cols-[minmax(0,45%)_minmax(0,55%)]">
+      {/* ── Left column: form panel (40% → 45% as the window grows) ─────── */}
       <div className="relative flex flex-col justify-center px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-6 xl:px-8 xl:py-8 2xl:px-10 [@media(max-height:860px)]:py-4">
-        <div className="w-full max-w-md mx-auto space-y-4 sm:space-y-5 [@media(max-height:860px)]:space-y-3">
+        <div className="w-full max-w-md mx-auto space-y-4 sm:space-y-5 [@media(max-height:860px)]:space-y-3 xl:max-w-lg">
           {/* Header */}
           <motion.div
             className="flex flex-col items-center lg:items-start text-center lg:text-left"
