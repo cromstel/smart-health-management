@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import Logo from '@/components/Logo';
 import {
   Sidebar,
   SidebarContent,
@@ -91,8 +92,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
       <SidebarHeader className="border-b border-sidebar-border p-4 transition-all duration-300">
         <div className="flex items-center gap-2">
-          <Activity className="h-6 w-6 text-sidebar-primary" aria-hidden="true" />
-          <span className="text-lg font-bold text-sidebar-foreground">Smart MediCare</span>
+          <Logo variant="sidebar" size="xs" />
         </div>
       </SidebarHeader>
       <SidebarContent>

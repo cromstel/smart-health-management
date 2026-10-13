@@ -23,6 +23,58 @@ implementation reasoning behind each entry here.
 
 ## [Unreleased]
 
+### Added
+
+- **Public Contact experience.** Visitors can now choose an appropriate route
+  for sales, partnership, or existing-customer conversations from a dedicated,
+  responsive contact page. The page makes the public-contact boundary explicit:
+  it directs visitors not to include patient or other sensitive health
+  information, and routes existing customers back to their authenticated
+  workspace. It follows the established keyboard navigation, semantic heading,
+  focus, and motion-accessibility patterns. The optional contact intake has
+  client- and server-side validation, clear pending and result states, and an
+  explicit warning not to submit clinical or sensitive health information.
+- **Public About Us experience.** Visitors can now learn the platform’s purpose,
+  design principles, and care-team commitments through a dedicated, responsive
+  page. It is available from the public navigation on desktop and mobile.
+  The experience follows the existing accessible navigation, keyboard focus,
+  semantic heading, and reduced-motion-friendly interaction patterns. No
+  clinical or personal data is displayed or collected by this page.
+- **Expanded company story.** The public company page now includes an Our Team
+  section describing the disciplines that shape the product, plus a branded
+  visual hero and purposeful entrance and hover effects. These additions do not
+  collect, display, or transmit clinical or personal data.
+- **Supplied company hero artwork.** The public company page now uses a
+  bandwidth-efficient WebP healthcare-team visual with accessible descriptive
+  text. This presentation-only change does not process clinical or personal
+  data.
+- **Accessibility refinements on the public company page.** Entrance animations
+  and decorative effects now honour the visitor's reduced-motion preference, and
+  team cards render their text in normal document flow so content never clips at
+  large zoom or font sizes. Presentation-only; no data-processing change.
+- **Separate privileged sign-in experiences.** Hospital administration and
+  platform-wide super-administration now have distinct, clearly named sign-in
+  portals, each with its own route, visual identity, and role-scoped guidance.
+  Clinical staff use the hospital portal; platform operators use the super-admin
+  portal. The scope of a privilege — hospital-scoped versus global — is explicit
+  in each flow, and each portal carries the system-author attribution. Portal
+  ownership now matches each privilege's scope: the hospital portal accepts
+  hospital-administrator credentials, while the super-admin portal accepts
+  site-owner credentials; neither leaves a rejected account signed in.
+- **Site-wide navigation to the privileged portals corrected.** Public links,
+  self-service recovery exits, and access-route guards now agree on which portal
+  serves each privilege, and the former registration entrypoint keeps working for
+  existing call-to-action links.
+- **Single platform identity.** One canonical logo now appears consistently
+  across the public site, the workstation shell, and every sign-in experience,
+  replacing the previous icon-and-text marks. The change is visual only; no
+  licensing or data-processing implications.
+- **Redesigned hospital admin sign-in.** The portal presents a full-height split
+  layout with the sign-in form beside editorial photography of hospital
+  clinicians, using a translucency treatment so the form and imagery remain
+  legible in both themes. Presentation-only; no data is processed by this
+  change. Imagery is stock photography used under a free commercial licence.
+
 ### Data integrity — fabricated clinical data removed
 
 These were integrity defects, not cosmetic ones, and are the most important

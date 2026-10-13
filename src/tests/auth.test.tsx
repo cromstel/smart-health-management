@@ -53,13 +53,13 @@ const TestApp = () => {
 
   useEffect(() => {
     if (location.pathname === '/dashboard' && !isAuthenticated) {
-      navigate('/login');
+      navigate('/auth/login');
     }
   }, [isAuthenticated, location.pathname, navigate]);
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/dashboard" element={
         isAuthenticated ? (
           <div data-testid="dashboard-page">
@@ -87,7 +87,7 @@ describe('Authentication Integration Tests', () => {
     mockApi.login.mockResolvedValue({ user: { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'front_desk', permissions: [], hospital_id: 'h1' }, token: 'test_token' });
 
     render(
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter initialEntries={['/auth/login']}>
         <AuthProvider>
           <TestApp />
         </AuthProvider>
@@ -114,7 +114,7 @@ describe('Authentication Integration Tests', () => {
     mockApi.login.mockRejectedValue(new Error('Invalid credentials'));
 
     render(
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter initialEntries={['/auth/login']}>
         <AuthProvider>
           <TestApp />
         </AuthProvider>

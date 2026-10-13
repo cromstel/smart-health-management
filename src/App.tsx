@@ -31,6 +31,7 @@ function timedLazy(name: string, load: () => Promise<{ default: ComponentType }>
 }
 
 const LandingPage = timedLazy('landing', () => import('./pages/LandingPage'));
+const AboutUsPage = timedLazy('about-us', () => import('./pages/AboutUsPage'));
 const RequestDemoPage = timedLazy('request-demo', () => import('./pages/RequestDemoPage'));
 const LoginPage = timedLazy('login', () => import('./pages/LoginPage'));
 const RegisterPage = timedLazy('register', () => import('./pages/RegisterPage'));
@@ -53,7 +54,8 @@ const FinancialPage = timedLazy('financial', () => import('./pages/FinancialPage
 const RolesPage = timedLazy('roles', () => import('./pages/RolesPage'));
 const SettingsPage = timedLazy('settings', () => import('./pages/SettingsPage'));
 const AuditLogsPage = timedLazy('audit-logs', () => import('./pages/AuditLogsPage'));
-const SuperAdminLogin = timedLazy('super-admin-login', () => import('./pages/SuperAdminLogin'));
+const SiteSuperAdminLogin = timedLazy('super-admin-login', () => import('./pages/SiteSuperAdminLogin'));
+const HospitalAdminLogin = timedLazy('admin-login', () => import('./pages/HospitalAdminLogin'));
 const SuperAdminDashboard = timedLazy('super-admin-dashboard', () => import('./pages/SuperAdminDashboard'));
 const SuperAdminUsers = timedLazy('super-admin-users', () => import('./pages/SuperAdminUsers'));
 const SuperAdminHospitals = timedLazy('super-admin-hospitals', () => import('./pages/SuperAdminHospitals'));
@@ -87,19 +89,24 @@ function AppRoutes() {
         {/* Public Landing Page */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/about-us/" element={<AboutUsPage />} />
         <Route path="/request-demo" element={<RequestDemoPage />} />
 
         {/* Public Auth Routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/signup" element={<RegisterPage />} />
+        {/* Legacy registration entrypoint kept so existing CTAs/deep links still reach the page */}
         <Route path="/signup" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/two-factor" element={<TwoFactorPage />} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/two-factor" element={<TwoFactorPage />} />
         <Route path="/shared/patient-summary/:token" element={<SharedPatientSummaryPage />} />
         
-        {/* Super Admin Routes */}
-        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+        {/* Site Super Admin Auth Routes — site owner only (global scope) */}
+        <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
+        {/* Hospital Admin Auth Routes — RBAC-scoped to assigned hospital */}
+        <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
         <Route
           path="/super-admin"
           element={

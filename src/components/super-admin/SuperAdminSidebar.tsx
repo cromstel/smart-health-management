@@ -39,7 +39,7 @@ export function SuperAdminSidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/super-admin/login');
+    navigate('/auth/super-admin/login');
   };
 
   const isActive = (to: string) =>

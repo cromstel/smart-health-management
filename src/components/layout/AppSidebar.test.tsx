@@ -49,7 +49,7 @@ describe('AppSidebar', () => {
 
   test('renders the sidebar header and footer', () => {
     render(<TestWrapper />);
-    expect(screen.getByText('Smart MediCare')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Smart MediCare' })).toBeInTheDocument();
     expect(screen.getByText('© 2024 Smart MediCare')).toBeInTheDocument();
   });
 

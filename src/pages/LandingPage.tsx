@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/Logo';
 import {
   Activity,
   ArrowRight,
@@ -146,6 +147,7 @@ const navLinks = [
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Testimonials', href: '#testimonials' },
+  { label: 'About Us', href: '/about-us/' },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -160,12 +162,7 @@ function Navbar() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" aria-label="Smart Health — Home">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm">
-            <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">
-            Smart <span className="text-accent">MediCare</span>
-          </span>
+          <Logo size="sm" />
         </Link>
 
         {/* Desktop Nav */}
@@ -184,10 +181,10 @@ function Navbar() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">Sign In</Link>
+            <Link to="/auth/login">Sign In</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link to="/signup" className="gap-1.5">
+            <Link to="/auth/signup" className="gap-1.5">
               Get Started
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
@@ -227,10 +224,10 @@ function Navbar() {
             ))}
             <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border">
               <Button variant="ghost" size="sm" asChild className="justify-start">
-                <Link to="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
+                <Link to="/auth/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/signup" onClick={() => setMobileOpen(false)} className="gap-1.5">
+                <Link to="/auth/signup" onClick={() => setMobileOpen(false)} className="gap-1.5">
                   Get Started
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
@@ -316,7 +313,7 @@ function Hero() {
                 className="h-12 px-7 text-sm font-semibold tracking-wide bg-accent text-accent-foreground hover:bg-accent/90"
                 asChild
               >
-                <Link to="/signup" className="gap-2">
+                <Link to="/auth/signup" className="gap-2">
                   Start free trial
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
@@ -698,7 +695,7 @@ function CtaBanner() {
               className="h-12 px-8 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20 transition-all duration-200"
               asChild
             >
-              <Link to="/signup" className="gap-2">
+              <Link to="/auth/signup" className="gap-2">
                 Get Started — Free
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
@@ -739,9 +736,9 @@ function Footer() {
     {
       title: 'Company',
       links: [
-        { label: 'About Us', href: '#hero' },
+        { label: 'About Us', href: '/about-us/' },
         { label: 'Careers', href: '#hero' },
-        { label: 'Contact', href: '#hero' },
+        { label: 'Contact', href: '/contact-us' },
         { label: 'Blog', href: '#hero' },
       ],
     },
@@ -772,12 +769,7 @@ function Footer() {
           {/* Brand column */}
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-4" aria-label="Smart Health — Home">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Activity className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-              </div>
-              <span className="text-lg font-bold tracking-tight text-foreground">
-                Smart <span className="text-accent">MediCare</span>
-              </span>
+              <Logo size="sm" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-6">
               Enterprise healthcare management platform for hospitals, clinics, and healthcare networks.
@@ -815,7 +807,7 @@ function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <Link
-              to="/super-admin/login"
+              to="/auth/super-admin/login"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
               <Lock className="h-3 w-3" aria-hidden="true" />
@@ -823,7 +815,7 @@ function Footer() {
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link
-              to="/login"
+              to="/auth/login"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
               <Zap className="h-3 w-3" aria-hidden="true" />

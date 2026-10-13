@@ -21,11 +21,16 @@ export function SuperAdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/super-admin/login" replace />;
+    return <Navigate to="/auth/super-admin/login" replace />;
   }
 
-  if (user?.role !== 'Super Admin' && user?.role !== 'super_admin') {
-    return <Navigate to="/dashboard" replace />;
+  if (user?.role !== 'super_admin' && user?.role !== 'Super Admin') {
+    return <Navigate to="/auth/admin/login" replace />;
+  }
+  
+  // Site super admin (global scope) — allowed. Hospital admins (scope: hospital) — blocked from super-console.
+  if (user?.scope === 'hospital' && (user?.role !== 'super_admin' && user?.role !== 'Super Admin')) {
+    return <Navigate to="/auth/admin/login" replace />;
   }
 
   return <>{children}</>;

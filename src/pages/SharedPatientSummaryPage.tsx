@@ -138,7 +138,7 @@ export default function SharedPatientSummaryPage() {
               {error || 'This temporary secure health summary link is invalid, revoked, or has expired. Please contact your clinical coordinator to generate a new active token.'}
             </p>
             <div className="pt-4" id="error-action-wrapper">
-              <Link to="/login">
+              <Link to="/auth/login">
                 <Button className="w-full bg-slate-950 hover:bg-slate-850 text-white" id="error-login-button">
                   Access Portal Login
                 </Button>

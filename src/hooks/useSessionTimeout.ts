@@ -32,7 +32,7 @@ export function useSessionTimeout() {
     // Set logout timer
     timeoutRef.current = window.setTimeout(() => {
       logout();
-      navigate('/login', { state: { message: 'Session expired due to inactivity' } });
+      navigate('/auth/login', { state: { message: 'Session expired due to inactivity' } });
     }, TIMEOUT_DURATION);
   }, [isAuthenticated, logout, navigate]);
 

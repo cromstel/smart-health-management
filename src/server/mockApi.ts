@@ -4,9 +4,9 @@ import { GoogleGenAI } from '@google/genai';
 // Initial data seeded from seed.sql and demo records
 const users: Array<{ id: string; role_id: number; email: string; password?: string; name: string; role: string; permissions: string[]; hospital_id?: string; status?: string }> = [
   { id: '1', role_id: 1, email: 'superadmin@smarthealth.com', password: 'April--2024!!!!', name: 'Super Admin', role: 'super_admin', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'], hospital_id: 'HOSP-001', status: 'active' },
-  { id: '2', role_id: 2, email: 'admin@smarthealth.com', password: 'Pass@135709', name: 'Admin User', role: 'admin', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'], hospital_id: 'HOSP-001', status: 'active' },
-  { id: '3', role_id: 3, email: 'doctor@smarthealth.com', password: 'Demo@135790', name: 'Dr. John Smith', role: 'doctor', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit', 'medical_history:view', 'medical_history:add', 'medical_history:edit'], hospital_id: 'HOSP-001', status: 'active' },
-  { id: '4', role_id: 4, email: 'patient@smarthealth.com', password: 'P@ssword135', name: 'John Doe', role: 'patient', permissions: ['appointments:view', 'appointments:add', 'medical_history:view'], hospital_id: 'HOSP-001', status: 'active' },
+  { id: '2', role_id: 2, email: 'admin@smarthealth.com', password: 'Pass@135709', name: 'Admin User', role: 'admin', permissions: ['HOSP-001:view', 'HOSP-001:add', 'HOSP-001:edit', 'HOSP-001:delete'], hospital_id: 'HOSP-001', status: 'active' },
+  { id: '3', role_id: 3, email: 'doctor@smarthealth.com', password: 'Demo@135790', name: 'Dr. John Smith', role: 'doctor', permissions: ['HOSP-001:patients:view', 'HOSP-001:patients:add', 'HOSP-001:patients:edit', 'HOSP-001:appointments:view', 'HOSP-001:appointments:add', 'HOSP-001:appointments:edit', 'HOSP-001:medical_history:view', 'HOSP-001:medical_history:add', 'HOSP-001:medical_history:edit'], hospital_id: 'HOSP-001', status: 'active' },
+  { id: '4', role_id: 4, email: 'patient@smarthealth.com', password: 'P@ssword135', name: 'John Doe', role: 'patient', permissions: ['HOSP-001:appointments:view', 'HOSP-001:appointments:add', 'HOSP-001:medical_history:view'], hospital_id: 'HOSP-001', status: 'active' },
 ];
 
 // In-memory store for secure temporary view-only patient summary links
@@ -87,12 +87,12 @@ const transactions = [
 ];
 
 const roles = [
-  { id: '1', name: 'super_admin', description: 'Super Administrator with ultimate control', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'] },
-  { id: '2', name: 'admin', description: 'Administrator with full access', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'] },
-  { id: '3', name: 'doctor', description: 'Medical doctor with access to patient data', permissions: ['patients:view', 'patients:add', 'patients:edit', 'appointments:view', 'appointments:add', 'appointments:edit'] },
-  { id: '4', name: 'nurse', description: 'Nurse with care management access', permissions: ['patients:view', 'appointments:view'] },
-  { id: '5', name: 'patient', description: 'Patient with self-service access', permissions: ['appointments:view', 'appointments:add'] },
-  { id: '6', name: 'pharmacist', description: 'Pharmacist with medication-management access', permissions: ['pharmacy:view', 'pharmacy:add', 'pharmacy:edit'] },
+  { id: '1', name: 'super_admin', description: 'Site Owner - System-wide administrator with ultimate control over all hospitals', scope: 'global', permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'] },
+  { id: '2', name: 'admin', description: 'Hospital Administrator - RBAC-scoped to assigned hospital only', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view', 'add', 'edit', 'delete'] },
+  { id: '3', name: 'doctor', description: 'Medical doctor with access to patient data within assigned hospital', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view', 'add', 'edit'] },
+  { id: '4', name: 'nurse', description: 'Nurse with care management access within assigned hospital', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view'] },
+  { id: '5', name: 'patient', description: 'Patient with self-service access to own records', scope: 'self', permissions_format: '{patient_id}:{action}', permissions: ['view', 'add'] },
+  { id: '6', name: 'pharmacist', description: 'Pharmacist with medication-management access within assigned hospital', scope: 'hospital', permissions_format: '{hospital_id}:{action}', permissions: ['view', 'add', 'edit'] },
 ];
 
 const documents = [
@@ -268,7 +268,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         name: email.split('@')[0] || 'Admin User',
         email: email || 'admin@smarthealth.com',
         role: 'admin',
-        permissions: ['all:view', 'all:add', 'all:edit', 'all:delete'],
+        permissions: ['HOSP-001:view', 'HOSP-001:add', 'HOSP-001:edit', 'HOSP-001:delete'],
         hospital_id: 'HOSP-001',
       };
       const isMfaDemoUser = user.email.toLowerCase() === MFA_DEMO_EMAIL;
@@ -335,7 +335,7 @@ export function handleMockApi(req: IncomingMessage, res: ServerResponse): boolea
         password: body.password || 'Default123!',
         name: body.name || 'New User',
         role: selectedRole.name,
-        permissions: ['all:view', 'all:add', 'all:edit'],
+        permissions: ['HOSP-001:view', 'HOSP-001:add', 'HOSP-001:edit'],
         hospital_id: 'HOSP-001',
         status: 'active',
       };

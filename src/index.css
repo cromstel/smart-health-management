@@ -133,6 +133,7 @@
   --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-navy-raised: var(--navy-raised);
+  --color-hero-overlay: var(--hero-overlay);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -157,6 +158,9 @@
   /* A raised surface sitting on the navy field, for panels that need to read
      as a layer above it. Declared as a token so rule 1 stays intact. */
   --navy-raised: #001A33;
+  /* A neutral scrim for photography-led public heroes. It is a semantic token
+     so imagery can retain consistent contrast without arbitrary colours. */
+  --hero-overlay: #000000;
   --dark-bg: #F8FAFC;
   --light-text: #0F172A;
 
@@ -221,6 +225,7 @@
   --navy-blue: #001F3F;
   --sea-blue: #00BFFF;
   --navy-raised: #0C2A4A;
+  --hero-overlay: #000000;
   --dark-bg: #0A192F;
   --light-text: #EAEAEA;
 
@@ -291,6 +296,17 @@
 @media (min-width: 1024px) {
   .auth-branding-panel {
     display: flex;
+  }
+}
+
+/* Accessibility: honour reduced-motion preferences for every CSS-driven
+   transition/animation site-wide (hover transforms, pulses, spinners).
+   Rich JS-driven animations are additionally gated per-component. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
