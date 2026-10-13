@@ -116,7 +116,7 @@ export default function AboutUsPage() {
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
-          <Reveal className="lg:col-span-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Why we exist</p><h2 className="mt-4 font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">Healthcare is already complex enough.</h2></Reveal>
+          <Reveal className="lg:col-span-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Why we exist</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Healthcare is already complex enough.</h2></Reveal>
           <Reveal delay={0.12} className="space-y-6 text-lg leading-relaxed text-muted-foreground lg:col-span-7 lg:col-start-6">
             <p>Every day, care teams reconcile appointments, records, inventory, compliance, and the needs of real people. When those systems are disconnected, the cost is felt in every handoff.</p>
             <p>We are building a calmer operational foundation: a secure, connected workspace where clinical insight and practical coordination can live side by side.</p>
@@ -126,7 +126,7 @@ export default function AboutUsPage() {
 
         <section className="border-y border-border bg-muted/45 py-20 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="mb-12 max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">The way we work</p><h2 className="mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl">Principles that guide every decision.</h2></Reveal>
+            <Reveal className="mb-12 max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">The way we work</p><h2 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl">Principles that guide every decision.</h2></Reveal>
             <div className="grid gap-5 md:grid-cols-3 lg:gap-7">
               {principles.map(({ icon: Icon, title, description }, index) => (
                 <Reveal key={title} delay={index * 0.1} className="group relative min-h-72 border border-border bg-background p-8 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:bg-card hover:shadow-lg hover:shadow-primary/10 sm:p-9">
@@ -146,7 +146,7 @@ export default function AboutUsPage() {
 
         <section className="overflow-hidden border-y border-border bg-card py-20 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="grid gap-8 lg:grid-cols-12 lg:items-end"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Our team</p><h2 className="mt-4 font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">Different disciplines. One care-minded standard.</h2></div><p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">Our work brings clinical, operational, technical, and safety perspectives into the same room—because good healthcare software is a team sport.</p></Reveal>
+            <Reveal className="grid gap-8 lg:grid-cols-12 lg:items-end"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Our team</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Different disciplines. One care-minded standard.</h2></div><p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">Our work brings clinical, operational, technical, and safety perspectives into the same room—because good healthcare software is a team sport.</p></Reveal>
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {teamDisciplines.map((discipline, index) => (
                 <Reveal key={discipline.title} delay={index * 0.08}>
@@ -168,7 +168,7 @@ export default function AboutUsPage() {
         </section>
 
         <section className="border-t border-border bg-primary py-20 text-center sm:py-24">
-          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-4xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-5xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">See how Smart MediCare can support your hospital, clinic, or care network.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90" asChild><Link to="/request-demo">Request a demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore the platform</Link></Button></div></Reveal>
+          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-3xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-4xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">See how Smart MediCare can support your hospital, clinic, or care network.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 hover:text-accent-foreground" asChild><Link to="/request-demo">Request a demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore the platform</Link></Button></div></Reveal>
         </section>
       </main>
     </div>
