@@ -85,7 +85,9 @@ export default function FaqPage() {
   )), [category, normalizedQuery]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url('/images/medicare-faq-hero-banner.avif')` }} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">Skip to main content</a>
       <main id="main-content">
         <section className="border-b border-primary-foreground/15 bg-primary py-16 text-primary-foreground sm:py-24">
