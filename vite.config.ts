@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import path from "path"
 import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
-import { handleMockApi } from './src/server/mockApi.ts'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -12,25 +11,6 @@ export default defineConfig({
     // Lightning CSS minifier sees the stylesheet.
     tailwindcss(),
     react(),
-    {
-      name: 'mock-api-middleware',
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          if (handleMockApi(req, res)) {
-            return;
-          }
-          next();
-        });
-      },
-      configurePreviewServer(server) {
-        server.middlewares.use((req, res, next) => {
-          if (handleMockApi(req, res)) {
-            return;
-          }
-          next();
-        });
-      },
-    },
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],

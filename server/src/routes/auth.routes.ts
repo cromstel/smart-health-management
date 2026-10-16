@@ -168,12 +168,6 @@ router.post(
   authController.totpDisable
 );
 
-// DEV-ONLY: current demo TOTP code for the auto-fill buttons. Never exposed
-// in production.
-if (process.env.NODE_ENV !== 'production') {
-  router.get('/dev-totp-current', authController.devCurrentTotp);
-}
-
 router.get('/me', authenticate, authController.getMe);
 router.get('/mfa-events', authenticate, authController.getMfaEvents);
 

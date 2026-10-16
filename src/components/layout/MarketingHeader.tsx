@@ -37,6 +37,12 @@ export function MarketingHeader() {
           <Link to="/about-us/" aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
             About Us
           </Link>
+          <Link to="/contact-us" aria-current={pathname === '/contact-us' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
+            Contact
+          </Link>
+          <Link to="/faq" aria-current={pathname === '/faq' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
+            FAQ
+          </Link>
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -59,6 +65,12 @@ export function MarketingHeader() {
             ))}
             <Link to="/about-us/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
               About Us
+            </Link>
+            <Link to="/contact-us" onClick={() => setMobileOpen(false)} aria-current={pathname === '/contact-us' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
+              Contact
+            </Link>
+            <Link to="/faq" onClick={() => setMobileOpen(false)} aria-current={pathname === '/faq' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
+              FAQ
             </Link>
             <div className="mt-2 flex flex-col gap-2 border-t border-border pt-2">
               <Button variant="ghost" size="sm" asChild className="justify-start"><Link to="/auth/login" onClick={() => setMobileOpen(false)}>Sign In</Link></Button>

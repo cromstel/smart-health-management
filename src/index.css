@@ -153,6 +153,13 @@
 
 :root {
   --radius: 0.625rem;
+  --navy-deepest: #0A0E14;
+  --navy-dark-card: #0D1117;
+  --navy-dark-border: #23262F;
+  --navy-dark-form-field: #161B22;
+  --industrial-text: #EAEAEA;
+  --industrial-muted: #8892B0;
+  --industrial-subtle: #5B6B84;
   --navy-blue: #001F3F;
   --sea-blue: #0284C7;
   /* A raised surface sitting on the navy field, for panels that need to read

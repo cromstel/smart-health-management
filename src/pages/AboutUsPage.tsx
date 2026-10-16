@@ -11,7 +11,6 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MarketingHeader } from '@/components/layout/MarketingHeader';
 
 const principles = [
   {
@@ -79,8 +78,6 @@ export default function AboutUsPage() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">
         Skip to main content
       </a>
-      <MarketingHeader />
-
       <main id="main-content">
         <section className="relative isolate min-h-[40rem] overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 sm:py-24 lg:flex lg:min-h-[43rem] lg:items-center lg:py-28">
           <motion.img
@@ -168,7 +165,7 @@ export default function AboutUsPage() {
         </section>
 
         <section className="border-t border-border bg-primary py-20 text-center sm:py-24">
-          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-3xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-4xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">See how Smart MediCare can support your hospital, clinic, or care network.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 hover:text-accent-foreground" asChild><Link to="/request-demo">Request a demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore the platform</Link></Button></div></Reveal>
+          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-3xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-4xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">See how Smart MediCare can support your hospital, clinic, or care network.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground uppercase tracking-[0.12em] hover:bg-accent/90 hover:text-accent-foreground" asChild><Link to="/auth/request-demo">Request Demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground uppercase tracking-[0.12em] hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore Platform</Link></Button></div></Reveal>
         </section>
       </main>
     </div>

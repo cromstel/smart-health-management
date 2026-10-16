@@ -13,8 +13,8 @@ vi.mock('react-router-dom', () => ({
   useNavigate: vi.fn(),
 }));
 
-const mockUseAuth = useAuth as jest.Mock;
-const mockUseNavigate = useNavigate as jest.Mock;
+const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
+const mockUseNavigate = useNavigate as ReturnType<typeof vi.fn>;
 
 describe('useSessionTimeout', () => {
   const logout = vi.fn();

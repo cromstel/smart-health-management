@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
-import { verifyToken, currentToken, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
+import { verifyToken, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
 
 const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret'); // Hard-fails in production when unset
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -546,21 +546,6 @@ export const verifyRecovery = async (req: AuthRequest, res: Response): Promise<R
   } catch (error) {
     console.error('Recovery code verification error:', error);
     res.status(500).json({ error: 'Failed to verify recovery code' });
-  }
-};
-
-/**
- * DEV-ONLY helper used by the demo auto-fill buttons on the login and 2FA
- * pages. Returns the *currently valid* TOTP code for the seeded demo user so
- * the demo stays one-click without weakening the real verification path.
- * The route guard lives in auth.routes.ts (never mounted in production).
- */
-export const devCurrentTotp = async (_req: Request, res: Response): Promise<Response | void> => {
-  try {
-    res.json({ code: currentToken('GEZDGNBVGY3TQOJQ') });
-  } catch (error) {
-    console.error('dev-totp-current error:', error);
-    res.status(500).json({ error: 'Failed to compute demo code' });
   }
 };
 

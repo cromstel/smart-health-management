@@ -192,12 +192,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <CardHeader className="space-y-1 pb-4 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-bold text-foreground">Request Reset Link</CardTitle>
-                  <Badge variant="outline" className="text-xs border-accent/40 text-accent font-medium">
-                    TLS 1.2+
-                  </Badge>
-                </div>
+                <CardTitle className="text-xl font-bold text-foreground">Request Reset Link</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
                   Enter your verified staff email to receive password reset authorization
                 </CardDescription>
@@ -235,7 +230,7 @@ export default function ForgotPasswordPage() {
                     className="w-full h-11 text-sm font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                     disabled={loading}
                   >
-                    {loading ? 'Transmitting Token...' : 'Send Recovery Authorization'}
+                    {loading ? 'Transmitting Token...' : 'Send Request'}
                   </Button>
                 </form>
 

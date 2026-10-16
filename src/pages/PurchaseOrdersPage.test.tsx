@@ -1,17 +1,57 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import PurchaseOrdersPage from './PurchaseOrdersPage';
+import { vi } from 'vitest';
+
+// Mock the API
+vi.mock('@/services/api', () => {
+  const mockApi = {
+    getPurchaseOrders: vi.fn(),
+    getSuppliers: vi.fn(),
+    getMedicines: vi.fn(),
+    getAccounts: vi.fn(),
+    createPurchaseOrder: vi.fn(),
+    updatePurchaseOrder: vi.fn(),
+    createTransaction: vi.fn(),
+  };
+  return { api: mockApi };
+});
+
+// Mock AuthContext
+vi.mock('@/contexts/AuthContext', () => {
+  const mockUseAuth = vi.fn(() => ({
+    user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'admin', permissions: ['all:*'] },
+    login: vi.fn(),
+    logout: vi.fn(),
+    isAuthenticated: true,
+    isAuthLoading: false,
+    hasPermission: vi.fn(() => true),
+    canActOnHospital: vi.fn(() => true),
+    canActOnDepartment: vi.fn(() => true),
+    mfaPending: false,
+    mfaPendingUser: null,
+    verifyMfaTotp: vi.fn(),
+    verifyMfaRecovery: vi.fn(),
+    verifyMfaPasskey: vi.fn(),
+    cancelMfa: vi.fn(),
+    refreshUser: vi.fn(),
+  }));
+  return { useAuth: mockUseAuth };
+});
+
+// Mock AuditContext
+vi.mock('@/contexts/AuditContext', () => {
+  const mockUseAudit = vi.fn(() => ({ logAction: vi.fn() }));
+  return { useAudit: mockUseAudit };
+});
+
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
-import { vi } from 'vitest';
 
-vi.mock('@/services/api');
-vi.mock('@/contexts/AuthContext');
-vi.mock('@/contexts/AuditContext');
-
-const mockApi = api as jest.Mocked<typeof api>;
-const mockUseAuth = useAuth as jest.Mock;
-const mockUseAudit = useAudit as jest.Mock;
+// Get the mocked functions for test manipulation
+const mockApi = vi.mocked(api);
+const mockUseAuth = vi.mocked(useAuth);
+const mockUseAudit = vi.mocked(useAudit);
 
 const mockOrders = [
   { id: 1, order_id: 'PO123', supplier_id: 1, order_date: '2025-01-01', expected_delivery_date: '2025-01-10', status: 'Pending', total_amount: 100 },
@@ -22,7 +62,23 @@ const mockAccounts = [{ id: 1, name: 'Inventory' }];
 
 describe('PurchaseOrdersPage', () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({ hasPermission: () => true });
+    mockUseAuth.mockReturnValue({
+      user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'admin', permissions: ['all:*'] },
+      login: vi.fn(),
+      logout: vi.fn(),
+      isAuthenticated: true,
+      isAuthLoading: false,
+      hasPermission: vi.fn(() => true),
+      canActOnHospital: vi.fn(() => true),
+      canActOnDepartment: vi.fn(() => true),
+      mfaPending: false,
+      mfaPendingUser: null,
+      verifyMfaTotp: vi.fn(),
+      verifyMfaRecovery: vi.fn(),
+      verifyMfaPasskey: vi.fn(),
+      cancelMfa: vi.fn(),
+      refreshUser: vi.fn(),
+    });
     mockUseAudit.mockReturnValue({ logAction: vi.fn() });
 
     mockApi.getPurchaseOrders.mockResolvedValue(mockOrders);
@@ -95,7 +151,23 @@ describe('PurchaseOrdersPage', () => {
   });
 
   it('disables New Order button without permission', () => {
-    mockUseAuth.mockReturnValue({ hasPermission: () => false });
+    mockUseAuth.mockReturnValue({
+      user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'admin', permissions: ['all:*'] },
+      login: vi.fn(),
+      logout: vi.fn(),
+      isAuthenticated: true,
+      isAuthLoading: false,
+      hasPermission: vi.fn(() => false),
+      canActOnHospital: vi.fn(() => true),
+      canActOnDepartment: vi.fn(() => true),
+      mfaPending: false,
+      mfaPendingUser: null,
+      verifyMfaTotp: vi.fn(),
+      verifyMfaRecovery: vi.fn(),
+      verifyMfaPasskey: vi.fn(),
+      cancelMfa: vi.fn(),
+      refreshUser: vi.fn(),
+    });
     render(<PurchaseOrdersPage />);
     expect(screen.getByText('New Order')).toBeDisabled();
   });
