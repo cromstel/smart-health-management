@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import Logo from '@/components/Logo';
+
 import {
   Activity,
   ArrowRight,

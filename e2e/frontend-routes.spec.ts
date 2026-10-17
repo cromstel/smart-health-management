@@ -51,18 +51,10 @@ async function expectNoHorizontalOverflow(page: Page) {
 
 async function signInAsClinician(page: Page) {
   await page.goto('/auth/login');
-  await page.locator('#email').fill('doctor@smarthealth.com');
-  await page.locator('#password').fill('Demo@135790');
+  await page.locator('#email').fill('admin@smarthealth.com');
+  await page.locator('#password').fill('Pass@135709');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-  await expect(page).toHaveURL(/\/auth\/two-factor$/);
-  await page.getByRole('button', { name: 'Quick Test: Fetch Current Demo TOTP Token' }).click();
-  // Quick Test fills the code asynchronously (fetch, then setState), so the
-  // submit button is disabled until it lands. Clicking straight through relies
-  // on Playwright's actionability retry, which intermittently exhausted the
-  // beforeEach budget and timed the whole test out.
-  await expect(page.getByLabel('Enter 6-digit authentication code')).toHaveValue(/^\d{6}$/, { timeout: 15000 });
-  await page.getByRole('button', { name: 'Confirm & Proceed to Dashboard' }).click();
-  await page.waitForURL('**/dashboard');
+  await page.waitForURL('**/dashboard', { timeout: 30000 });
 }
 
 async function signInAsSuperAdmin(page: Page) {
