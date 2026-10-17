@@ -393,6 +393,15 @@ backdrop, in both themes, and checked against WCAG AA.
   colour reused as its legend label colour) on a widget that had kept the
   default legend, measuring 3.19:1 and 4.10:1 against a 4.5:1 requirement. It
   now uses the shared readable legend, in both themes.
+- **The hospital administrator sign-in became cramped and clipped on smaller
+  screens.** The form column is only 30% of the window on laptops and tablets,
+  but its spacing was sized as though it were the whole page, so the sign-in card
+  narrowed to roughly 207px at a 1024-wide window and its primary action was cut
+  off. Spacing, padding, and type now scale to the space available, and the
+  editorial panel steps down on shorter screens; the form presents without any
+  clipped content from 360-wide phones through 3440-wide desktops. The password
+  reveal control is now a full-size touch target rather than a bare icon.
+  Presentation-only; authentication behaviour is unchanged.
 
 ### Known accessibility issues
 
