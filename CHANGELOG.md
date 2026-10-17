@@ -252,6 +252,13 @@ implementation reasoning behind each entry here.
   clinicians, using a translucency treatment so the form and imagery remain
   legible in both themes. Presentation-only; no data is processed by this
   change. Imagery is stock photography used under a free commercial licence.
+- **Scroll-to-top control on public pages.** Visitor-facing pages now offer a
+  floating control that returns the reader to the top once they have scrolled
+  down, so long pages such as the FAQ no longer require scrolling back up by
+  hand. It appears only after the page has actually been scrolled, is legible in
+  both themes, respects reduced-motion preferences, and is reachable and
+  operable by keyboard. It covers the public site and the account-entry pages,
+  and is not shown inside the signed-in workspace.
 
 ### Data integrity — fabricated clinical data removed
 

@@ -87,6 +87,24 @@ test.describe('Public routes', () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test('scroll-to-top control appears on public pages and returns the visitor to the top', async ({ page }) => {
+    const scrollToTop = page.getByRole('button', { name: 'Scroll to top' });
+    await page.goto('/faq');
+    await expect(page.getByRole('heading', { name: 'Questions, answered with care.' })).toBeVisible();
+
+    // Nothing to offer until there is somewhere to scroll back to.
+    await expect(scrollToTop).toBeHidden();
+
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(scrollToTop).toBeVisible();
+
+    await scrollToTop.click();
+
+    // The scroll is animated, so poll for the resting position.
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBe(0);
+    await expect(scrollToTop).toBeHidden();
+  });
+
   test('password recovery, reset and invalid shared-summary states are clear', async ({ page }) => {
     await page.goto('/forgot-password');
     await expect(page.getByRole('heading', { name: 'Password Recovery' })).toBeVisible();
@@ -101,6 +119,25 @@ test.describe('Public routes', () => {
     await expect(page.getByText('Access Denied')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Access Portal Login' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
+  });
+});
+
+test.describe('Scroll-to-top visibility boundary', () => {
+  test('the control is absent once a session is authenticated', async ({ page }) => {
+    // The seeded administrator has no two-factor enrolment, so this signs in
+    // through the real form. The old clinician helper cannot be reused: it
+    // depends on the dev-only "fetch current demo TOTP" affordance that was
+    // deliberately removed from sign-in surfaces.
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('admin@smarthealth.com');
+    await page.locator('#password').fill('Pass@135709');
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    await expect(page.locator('#main-content')).toBeVisible({ timeout: 30000 });
+
+    await page.goto('/patients');
+    await expect(page.locator('#main-content')).toBeVisible({ timeout: 30000 });
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(page.getByRole('button', { name: 'Scroll to top' })).toHaveCount(0);
   });
 });
 

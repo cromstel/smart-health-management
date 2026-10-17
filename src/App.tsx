@@ -11,6 +11,7 @@ import { PublicLayout } from './components/layout/PublicLayout';
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminRoute } from './components/SuperAdminRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ScrollToTopButton } from './components/common/ScrollToTopButton';
 import { ShortcutManager } from './components/ShortcutManager';
 import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
@@ -173,6 +174,9 @@ function App() {
               <ErrorBoundary>
                 <AppRoutes />
               </ErrorBoundary>
+              {/* One mount covers every public surface; the button withdraws for
+                  authenticated sessions. */}
+              <ScrollToTopButton />
               <ApiDebugOverlay />
             </NotificationProvider>
           </AuditProvider>
