@@ -120,15 +120,16 @@ INSERT INTO departments (id, hospital_id, name, head_of_department) VALUES
 -- totp_secret is base32 of JBSWY3DPEHPK3PXP (demo seed) for the clinical
 -- accounts, so their two-factor path is exercisable out of the box.
 --
--- The super admin is seeded WITHOUT a totp_secret (NULL). A seeded secret forces
--- a TOTP prompt on the master session, which locks a fresh checkout out of the
--- super-admin console until someone has the seeded app's code. Instead the
--- super admin signs in with credentials and enrols two-factor from the console
--- at /super-admin/settings, which is where the setup belongs for a privileged
--- account: the operator chooses the moment it becomes mandatory.
+-- The super admin AND the hospital admin are seeded WITHOUT a totp_secret
+-- (NULL). A seeded secret forces a TOTP prompt on sign-in, which locks a fresh
+-- checkout out of both privileged consoles until someone has the seeded app's
+-- code. Instead both sign in with credentials and enrol two-factor themselves
+-- from their own settings surfaces (/super-admin/settings and /settings), which
+-- is where the setup belongs for a privileged account: the operator chooses the
+-- moment it becomes mandatory.
 INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
 (1, 1, 'superadmin@smarthealth.com', '$2b$10$Pe2N6QgTLKg/tLgWsHY8B.GfFBeQTMs3XXxTLoT3YzcEbH9fNTF1.', 'Super Admin', NULL, 1, NULL), -- password: April--2024!!!! ; two-factor NOT enrolled by default
-(2, 2, 'admin@smarthealth.com', '$2b$10$.YOxfK6xC5.qL.nhydYg6ewcMTa21QdjT0w4f7LR1VeXgSzG1fqtu', 'Admin User', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Pass@135709
+(2, 2, 'admin@smarthealth.com', '$2b$10$.YOxfK6xC5.qL.nhydYg6ewcMTa21QdjT0w4f7LR1VeXgSzG1fqtu', 'Admin User', NULL, 1, 1), -- password: Pass@135709 ; two-factor NOT enrolled by default
 (3, 3, 'doctor@smarthealth.com', '$2b$10$anoAXsLwXJ4D1fUIiwQ0nOijk1vMIo9NITxEzqrqdLlNKAgLGyVUu', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Demo@135790
 (4, 4, 'patient@smarthealth.com', '$2b$10$cmFAQ0Oo1C6zXxB8htEJIOCiw6szAuZ8qbOZXUK83e74hSyiX0Iw2', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL); -- password: P@ssword135
 

@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ArrowLeft, CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Users } from 'lucide-react';
 import { api } from '@/services/api';
-import Logo from '@/components/Logo';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,17 +48,8 @@ export default function RequestDemoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5" aria-label="Smart Health home">
-            <Logo size="sm" />
-          </Link>
-          <Button variant="ghost" size="sm" asChild><Link to="/auth/login">Staff sign in</Link></Button>
-        </div>
-      </header>
-
-      <main className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
+    <div className="min-h-screen bg-background bg-[url('/images/medicare-login-hero-banner.webp')] bg-cover bg-center bg-no-repeat">
+      <main className="mx-auto my-6 grid max-w-6xl gap-10 rounded-3xl bg-background/85 px-4 py-12 sm:my-10 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
         <section className="lg:pt-8">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
           <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-accent">Personalised platform tour</p>
@@ -95,14 +86,14 @@ export default function RequestDemoPage() {
                   <Field id="demo-role" label="Your role" error={errors.role?.message}><Input id="demo-role" autoComplete="organization-title" {...register('role')} aria-invalid={!!errors.role} /></Field>
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field id="demo-organization-size" label="Organisation size" error={errors.organizationSize?.message}><select id="demo-organization-size" className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]" {...register('organizationSize')} aria-invalid={!!errors.organizationSize}><option value="">Select size</option><option value="1-50">1–50 people</option><option value="51-250">51–250 people</option><option value="251-1000">251–1,000 people</option><option value="1000+">1,000+ people</option></select></Field>
-                  <Field id="demo-preferred-contact" label="Preferred contact" error={errors.preferredContact?.message}><select id="demo-preferred-contact" className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]" {...register('preferredContact')}><option value="email">Email</option><option value="phone">Phone</option></select></Field>
+                  <Field id="demo-organization-size" label="Organisation size" error={errors.organizationSize?.message}><select id="demo-organization-size" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] [&>option]:bg-background [&>option]:text-foreground" {...register('organizationSize')} aria-invalid={!!errors.organizationSize}><option value="">Select size</option><option value="1-50">1–50 people</option><option value="51-250">51–250 people</option><option value="251-1000">251–1,000 people</option><option value="1000+">1,000+ people</option></select></Field>
+                  <Field id="demo-preferred-contact" label="Preferred contact" error={errors.preferredContact?.message}><select id="demo-preferred-contact" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] [&>option]:bg-background [&>option]:text-foreground" {...register('preferredContact')}><option value="email">Email</option><option value="phone">Phone</option></select></Field>
                 </div>
                 <Field id="demo-phone" label="Phone (required when phone is selected)" error={errors.phone?.message}><Input id="demo-phone" type="tel" autoComplete="tel" {...register('phone')} aria-invalid={!!errors.phone} /></Field>
                 <Field id="demo-message" label="What would you like to explore? (optional)" error={errors.message?.message}><Textarea id="demo-message" className="min-h-28 resize-y" {...register('message')} aria-invalid={!!errors.message} /></Field>
                 <div className="hidden" aria-hidden="true"><Label htmlFor="website">Website</Label><Input id="website" tabIndex={-1} autoComplete="off" {...register('website')} /></div>
                 {serverError && <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{serverError}</p>}
-                <Button type="submit" className="h-11 w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>{isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Sending request…</> : <><Mail className="h-4 w-4" aria-hidden="true" /> Request my demo</>}</Button>
+                <Button type="submit" className="h-11 w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>{isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Sending request…</> : <><Mail className="h-4 w-4" aria-hidden="true" /> SEND REQUEST</>}</Button>
               </form>
             )}
           </CardContent>

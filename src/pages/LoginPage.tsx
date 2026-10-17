@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { AuthLayout, OtpHero } from '@/components/auth';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
   Lock,
   Mail,
@@ -22,13 +23,12 @@ import {
   Loader2,
   ArrowLeft,
   Smartphone,
-  CheckCircle2,
   KeyRound,
   Send,
+  ArrowUpRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { postAuthRoute } from '@/lib/postAuthRoute';
-
 const loginSchema = z.object({
   email: z
     .string()
@@ -39,17 +39,14 @@ const loginSchema = z.object({
     .min(8, 'Password must be at least 8 characters'),
   rememberMe: z.boolean(),
 });
-
 const forgotSchema = z.object({
   email: z
     .string()
     .min(1, 'Email address is required')
     .email('Please enter a valid work email address'),
 });
-
 type LoginFormValues = z.infer<typeof loginSchema>;
 type ForgotFormValues = z.infer<typeof forgotSchema>;
-
 export default function LoginPage() {
   const [formMode, setFormMode] = useState<'login' | 'forgot'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,13 +54,11 @@ export default function LoginPage() {
   const [serverError, setServerError] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [totpLoading, setTotpLoading] = useState(false);
-
   const { login, mfaPending, mfaPendingUser, verifyMfaTotp, cancelMfa } = useAuth();
   const navigate = useNavigate();
-
+  const reduceMotion = useReducedMotion();
   const savedEmail = localStorage.getItem('remember_email') || '';
   const initialRemember = !!savedEmail;
-
   const {
     register,
     handleSubmit,
@@ -78,7 +73,6 @@ export default function LoginPage() {
       rememberMe: initialRemember,
     },
   });
-
   const {
     register: registerForgot,
     handleSubmit: handleSubmitForgot,
@@ -91,14 +85,12 @@ export default function LoginPage() {
       email: '',
     },
   });
-
   useEffect(() => {
     if (savedEmail) {
       setValue('email', savedEmail);
       setValue('rememberMe', true);
     }
   }, [savedEmail, setValue]);
-
   const onSubmit = async (data: LoginFormValues) => {
     setServerError('');
     setLoading(true);
@@ -122,7 +114,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
   const onForgotSubmit = async (data: ForgotFormValues) => {
     setServerError('');
     setLoading(true);
@@ -138,7 +129,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
   const handleVerifyTotpSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setServerError('');
@@ -158,50 +148,50 @@ export default function LoginPage() {
       setTotpLoading(false);
     }
   };
-
   const getPageTitle = () => {
     if (mfaPending) return 'Two-Factor Verification';
     if (formMode === 'forgot') return 'Reset Password';
     return 'Welcome back';
   };
-
   const getPageDescription = () => {
     if (mfaPending) return 'Enter the 6-digit code from your authenticator app (TOTP standard)';
     if (formMode === 'forgot') return 'Provide your work email address to receive password reset instructions';
-    return 'Sign in to your clinical workstation';
+    return 'Sign in to your clinical portal';
   };
-
   return (
-    <AuthLayout>
-      <div className="space-y-8">
+    <AuthLayout
+      showBranding={false}
+      formPanelClassName="bg-transparent"
+      contentClassName="w-full max-w-md mx-auto my-auto"
+    >
+      <Card className="w-full border border-border bg-card p-6 shadow-xl shadow-primary/5 sm:p-8">
+        <div className="space-y-7">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="mb-6">
+          <div className="mb-8 flex items-center">
             <Logo size="md" />
           </div>
-
           <AnimatePresence mode="wait">
             <motion.div
               key={getPageTitle()}
-              initial={{ opacity: 0, x: -10 }}
+              initial={reduceMotion ? false : { opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
+              exit={reduceMotion ? undefined : { opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
             >
-              <h2 className="text-3xl font-bold tracking-tight text-foreground mb-2">
+              <h1 className="mb-2 font-display text-3xl font-medium leading-tight tracking-tight text-foreground sm:text-[2rem]">
                 {getPageTitle()}
-              </h2>
-              <p className="text-sm text-muted-foreground">
+              </h1>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
                 {getPageDescription()}
               </p>
             </motion.div>
           </AnimatePresence>
         </motion.div>
-
         {/* Error Alert */}
         <AnimatePresence>
           {serverError && (
@@ -219,15 +209,14 @@ export default function LoginPage() {
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* Form Content */}
         <AnimatePresence mode="wait">
           {mfaPending ? (
             <motion.div
               key="mfa"
-              initial={{ opacity: 0, y: 20 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
               className="space-y-6"
               id="mfa-verification-container"
@@ -248,7 +237,6 @@ export default function LoginPage() {
                   {mfaPendingUser?.email}
                 </div>
               </div>
-
               <form onSubmit={handleVerifyTotpSubmit} className="space-y-6" id="mfa-form">
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -270,7 +258,6 @@ export default function LoginPage() {
                     Open Google Authenticator, Authy, or 1Password to view your 6-digit token.
                   </p>
                 </div>
-
                 <div className="space-y-3">
                   <Button
                     type="submit"
@@ -287,30 +274,6 @@ export default function LoginPage() {
                       'Verify Code & Access Workstation'
                     )}
                   </Button>
-
-                  {import.meta.env.DEV && (
-                    <Button
-                      type="button"
-                      id="fill-demo-totp-btn"
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          const { code } = await api.devCurrentTotp();
-                          setTotpCode(code);
-                          setServerError('');
-                        } catch (err) {
-                          setServerError(
-                            err instanceof Error ? err.message : 'Could not fetch the demo code. Is the API running?'
-                          );
-                        }
-                      }}
-                      className="w-full text-xs h-9 border-dashed border-accent/40 text-accent hover:bg-accent/5 transition-colors"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                      Quick Test: Fetch Current Demo TOTP Token
-                    </Button>
-                  )}
-
                   <Button
                     type="button"
                     id="cancel-mfa-btn"
@@ -323,7 +286,6 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </form>
-
               {import.meta.env.DEV && (
                 <div className="p-3 rounded-lg bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
                   <div className="font-semibold text-foreground flex items-center gap-1.5">
@@ -340,9 +302,9 @@ export default function LoginPage() {
           ) : formMode === 'forgot' ? (
             <motion.form
               key="forgot"
-              initial={{ opacity: 0, x: 20 }}
+              initial={reduceMotion ? false : { opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={reduceMotion ? undefined : { opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
               onSubmit={handleSubmitForgot(onForgotSubmit)}
               className="space-y-5"
@@ -377,7 +339,6 @@ export default function LoginPage() {
                   </p>
                 )}
               </div>
-
               <div className="space-y-3 pt-2">
                 <Button
                   type="submit"
@@ -397,7 +358,6 @@ export default function LoginPage() {
                     </>
                   )}
                 </Button>
-
                 <Button
                   type="button"
                   variant="ghost"
@@ -415,9 +375,9 @@ export default function LoginPage() {
           ) : (
             <motion.form
               key="login"
-              initial={{ opacity: 0, x: -20 }}
+              initial={reduceMotion ? false : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              exit={reduceMotion ? undefined : { opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
               onSubmit={handleSubmit(onSubmit)}
               className="space-y-5"
@@ -425,7 +385,7 @@ export default function LoginPage() {
               id="login-form"
             >
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold text-foreground">
+                <Label htmlFor="email" className="sr-only">
                   Email address
                 </Label>
                 <div className="relative">
@@ -451,24 +411,7 @@ export default function LoginPage() {
                     <span>{errors.email.message}</span>
                   </p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-semibold text-foreground">
-                    Password
-                  </Label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormMode('forgot');
-                      setServerError('');
-                    }}
-                    className="text-sm font-medium text-accent hover:text-accent/80 transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+              </div>              <div className="space-y-2"><Label htmlFor="password" className="sr-only">Password</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -476,7 +419,7 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder="Password"
                     autoComplete="current-password"
                     {...register('password')}
                     className={`pl-10 pr-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
@@ -502,19 +445,29 @@ export default function LoginPage() {
                   </p>
                 )}
               </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  id="remember"
-                  type="checkbox"
-                  {...register('rememberMe')}
-                  className="h-4 w-4 rounded border-border text-accent focus:ring-accent bg-background cursor-pointer transition-colors"
-                />
-                <Label htmlFor="remember" className="text-sm font-medium text-foreground cursor-pointer">
-                  Remember me
-                </Label>
+              <div className="flex items-center justify-between gap-2 max-[300px]:flex-col max-[300px]:items-start max-[300px]:gap-1.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="remember"
+                    type="checkbox"
+                    {...register('rememberMe')}
+                    className="h-4 w-4 rounded border-border text-accent focus:ring-accent bg-background cursor-pointer transition-colors"
+                  />
+                  <Label htmlFor="remember" className="text-sm font-medium text-foreground cursor-pointer whitespace-nowrap">
+                    Remember me
+                  </Label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormMode('forgot');
+                    setServerError('');
+                  }}
+                  className="text-sm font-medium text-accent hover:text-accent/80 transition-colors whitespace-nowrap"
+                >
+                  Forgot password?
+                </button>
               </div>
-
               <Button
                 type="submit"
                 id="login-submit-btn"
@@ -527,15 +480,17 @@ export default function LoginPage() {
                     Signing in...
                   </>
                 ) : (
-                  'Sign In'
+                  <span className="flex items-center gap-2">
+                    Sign In
+                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  </span>
                 )}
               </Button>
             </motion.form>
           )}
         </AnimatePresence>
-
-        {/* Footer */}
-        <motion.p
+        <div className="border-t border-border pt-5">
+          <motion.p
           className="text-center text-sm text-muted-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -545,8 +500,10 @@ export default function LoginPage() {
           <Link to="/auth/signup" className="font-semibold text-accent hover:text-accent/80 transition-colors">
             Register here
           </Link>
-        </motion.p>
-      </div>
+          </motion.p>
+        </div>
+        </div>
+      </Card>
     </AuthLayout>
   );
 }

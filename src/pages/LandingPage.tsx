@@ -1,27 +1,23 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import Logo from '@/components/Logo';
+
 import {
   Activity,
   ArrowRight,
   Heart,
   Hospital,
-  Lock,
   Pill,
   Shield,
   ShieldCheck,
   Stethoscope,
   Users,
-  Zap,
   Calendar,
   FileText,
   BarChart3,
   Brain,
   Star,
-  Menu,
-  X,
 } from 'lucide-react';
 
 /* -------------------------------------------------------------------------- */
@@ -143,103 +139,6 @@ const testimonials = [
   },
 ];
 
-const navLinks = [
-  { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Testimonials', href: '#testimonials' },
-  { label: 'About Us', href: '/about-us/' },
-];
-
-/* -------------------------------------------------------------------------- */
-/*                                 Navbar                                     */
-/* -------------------------------------------------------------------------- */
-
-function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md" role="banner">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group" aria-label="Smart Health — Home">
-          <Logo size="sm" />
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted/60"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-
-        {/* Desktop CTAs */}
-        <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/auth/login">Sign In</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to="/auth/signup" className="gap-1.5">
-              Get Started
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          </Button>
-        </div>
-
-        {/* Mobile Menu Toggle */}
-        <button
-          type="button"
-          className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-expanded={mobileOpen}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </nav>
-
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="md:hidden border-t border-border bg-background px-4 pb-4"
-        >
-          <div className="flex flex-col gap-1 pt-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted/60"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border">
-              <Button variant="ghost" size="sm" asChild className="justify-start">
-                <Link to="/auth/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link to="/auth/signup" onClick={() => setMobileOpen(false)} className="gap-1.5">
-                  Get Started
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </header>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /*                                Hero                                        */
 /* -------------------------------------------------------------------------- */
@@ -324,7 +223,7 @@ function Hero() {
                 className="h-12 px-7 text-sm font-semibold tracking-wide border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/50"
                 asChild
               >
-                <Link to="/request-demo" className="gap-2">
+                <Link to="/auth/request-demo" className="gap-2">
                   Request a demo
                 </Link>
               </Button>
@@ -526,7 +425,7 @@ function Features() {
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Platform Features</p>
-          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl mb-4">
+          <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl mb-4">
             Everything your healthcare team needs
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -570,7 +469,7 @@ function HowItWorks() {
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">How It Works</p>
-          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl mb-4">
+          <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl mb-4">
             Up and running in three steps
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -620,7 +519,7 @@ function Testimonials() {
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Testimonials</p>
-          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl mb-4">
+          <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl mb-4">
             Trusted by healthcare leaders
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -681,7 +580,7 @@ function CtaBanner() {
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="font-display text-3xl font-semibold text-primary-foreground sm:text-4xl mb-4">
+          <h2 className="font-display text-2xl font-semibold text-primary-foreground sm:text-3xl lg:text-4xl mb-4">
             Ready to modernize your healthcare operations?
           </h2>
           <p className="text-lg text-primary-foreground/60 max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -703,10 +602,10 @@ function CtaBanner() {
             <Button
               variant="outline"
               size="lg"
-              className="h-12 px-8 text-base font-semibold border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-200"
+              className="h-12 px-8 text-base font-semibold border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground transition-all duration-200"
               asChild
             >
-              <Link to="/request-demo" className="gap-2">
+              <Link to="/auth/request-demo" className="gap-2">
                 <Stethoscope className="h-4 w-4" aria-hidden="true" />
                 Request a Demo
               </Link>
@@ -715,116 +614,6 @@ function CtaBanner() {
         </motion.div>
       </div>
     </AnimatedSection>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                                Footer                                      */
-/* -------------------------------------------------------------------------- */
-
-function Footer() {
-  const footerSections = [
-    {
-      title: 'Platform',
-      links: [
-        { label: 'Patient Records', href: '#features' },
-        { label: 'Smart Scheduling', href: '#features' },
-        { label: 'Clinical AI', href: '#features' },
-        { label: 'Pharmacy & Inventory', href: '#features' },
-      ],
-    },
-    {
-      title: 'Company',
-      links: [
-        { label: 'About Us', href: '/about-us/' },
-        { label: 'Careers', href: '#hero' },
-        { label: 'Contact', href: '/contact-us' },
-        { label: 'Blog', href: '#hero' },
-      ],
-    },
-    {
-      title: 'Resources',
-      links: [
-        { label: 'Documentation', href: '#hero' },
-        { label: 'API Reference', href: '#hero' },
-        { label: 'Security', href: '#hero' },
-        { label: 'Status', href: '#hero' },
-      ],
-    },
-    {
-      title: 'Legal',
-      links: [
-        { label: 'Privacy Policy', href: '#hero' },
-        { label: 'Terms of Service', href: '#hero' },
-        { label: 'HIPAA Compliance', href: '#hero' },
-        { label: 'Cookie Policy', href: '#hero' },
-      ],
-    },
-  ];
-
-  return (
-    <footer className="border-t border-border bg-background" role="contentinfo">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
-          {/* Brand column */}
-          <div className="col-span-2">
-            <Link to="/" className="flex items-center gap-2.5 mb-4" aria-label="Smart Health — Home">
-              <Logo size="sm" />
-            </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-6">
-              Enterprise healthcare management platform for hospitals, clinics, and healthcare networks.
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" />
-              <span>HIPAA Compliant &middot; SOC 2 Certified</span>
-            </div>
-          </div>
-
-          {/* Link columns */}
-          {footerSections.map((section) => (
-            <div key={section.title}>
-              <h3 className="text-sm font-semibold text-foreground mb-4">{section.title}</h3>
-              <ul className="space-y-2.5">
-                {section.links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom bar */}
-        <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Smart MediCare. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/auth/super-admin/login"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-            >
-              <Lock className="h-3 w-3" aria-hidden="true" />
-              Super Admin
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link
-              to="/auth/login"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-            >
-              <Zap className="h-3 w-3" aria-hidden="true" />
-              Staff Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 }
 
@@ -842,8 +631,6 @@ export default function LandingPage() {
         Skip to main content
       </a>
 
-      <Navbar />
-
       <main id="main-content">
         <Hero />
         <StatsBar />
@@ -852,8 +639,6 @@ export default function LandingPage() {
         <Testimonials />
         <CtaBanner />
       </main>
-
-      <Footer />
     </div>
   );
 }

@@ -292,12 +292,6 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  /** DEV-only: current valid TOTP code for the seeded demo user (auto-fill button). */
-  async devCurrentTotp(): Promise<{ code: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/dev-totp-current`);
-    return this.handleResponse(response);
-  }
-
   /** Verify a single-use offline recovery code issued at TOTP setup (backup login). */
   async verifyRecovery(code: string, mfaToken?: string) {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };

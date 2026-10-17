@@ -138,16 +138,6 @@ export default function TwoFactorPage() {
     }
   };
 
-  const handleQuickFill = async () => {
-    try {
-      const { code: demoCode } = await api.devCurrentTotp();
-      setCode(demoCode);
-      setError('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not fetch the demo code. Is the API running?');
-    }
-  };
-
   const handleResend = () => {
     if (cooldown > 0) return;
     setCooldown(30);
@@ -412,19 +402,6 @@ export default function TwoFactorPage() {
 
             {/* Helper Buttons */}
             <div className="space-y-2 pt-1">
-              {import.meta.env.DEV && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleQuickFill}
-                  className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                  <span>Quick Test: Fetch Current Demo TOTP Token</span>
-                </Button>
-              )}
-
               {method === 'sms' && (
                 <Button
                   type="button"

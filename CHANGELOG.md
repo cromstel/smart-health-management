@@ -25,6 +25,184 @@ implementation reasoning behind each entry here.
 
 ### Added
 
+- **Unified authentication backdrops.** Every sign-in and account-recovery page
+  now shares the same crisp photographic backdrop as the privileged consoles:
+  the background photograph renders at full sharpness with no translucent wash,
+  sitting behind translucent panels so the image reads through while form content
+  stays legible. This covers the patient sign-in, registration/sign-up,
+  self-service recovery, password reset, two-factor, and demo-request pages, and
+  keeps the existing light/dark theming intact.
+
+- **Patient sign-in: unbroken backdrop and a carded form.** On the patient
+  sign-in page the backdrop photograph now spans the entire layout as a single,
+  unbroken image rather than being divided by two differently-tinted panels, and
+  the credential form now sits in the same solid card as every other
+  authentication form, so it stays readable against the bright photograph. The
+  desktop marketing side panel is no longer shown on this page.
+
+- **Registration / sign-up: unbroken backdrop and a carded header.** The
+  registration page now shares that treatment: the backdrop photograph spans the
+  entire layout as a single, unbroken image, and the page heading now sits inside
+  the same solid card as the enrolment form so it stays readable against the
+  bright photograph. The desktop marketing side panel is no longer shown on this
+  page either.
+
+- **Registration form: split identity, confirmed email, and placeholder-led
+  fields.** Enrolment now collects a **first name and last name** as separate
+  fields presented side by side, and asks for the **work email twice** — the
+  second entry must match the first (case-insensitively, surrounding whitespace
+  ignored) before the step advances, so a mistyped address is caught at enrolment
+  rather than after the verification mail is sent. Field labels are no longer
+  displayed; each field is now identified by its placeholder text, while the
+  labels remain in the accessibility tree so screen-reader and voice-control
+  users still hear an unambiguous field name. Facility and department selection
+  likewise start from an explicit prompt and must be chosen before the step can
+  be completed. The redundant step caption and the "Protected" status chip in the
+  step header were removed, the step heading is now presented in uppercase, and
+  the first-step action reads "Proceed to organization". The account created is
+  unchanged: the two name parts are combined into the single display name the
+  platform stores.
+
+- **Registration form: uniform field geometry and a readable consent
+  statement.** Every text field and dropdown across the enrolment steps now
+  shares one control height and one set of internal paddings, so text sits the
+  same distance from each edge and dropdowns no longer sit misaligned against the
+  fields beside them; the fields also match the height already used on the
+  sign-in page. The second step's action reads "Proceed to account security". The
+  eligibility acknowledgement now renders as a single flowing sentence that wraps
+  normally and lines up with its checkbox, with a visible keyboard focus ring on
+  the checkbox; previously the sentence and its embedded privacy link were laid
+  out as separate side-by-side blocks, which broke the sentence apart mid-line.
+
+- **Hospital administration console aligned to the privileged-console design.**
+  The hospital administrator sign-in now presents the same translucent credential
+  panel, blue primary action, and layout as the site-owner console, on a
+  hospital-specific backdrop, replacing the previous split marketing layout. The
+  backdrop photograph renders unsoftened for a crisp image, with contrast carried
+  by the panel surface. The hospital-specific journey is unchanged:
+  assigned-administrator credential checks, remember-me, self-service recovery,
+  role-based landing, and multi-factor handoff all behave as before, the recovery
+  link's hover state is now legible on the dark panel, and the panel stays centred
+  and free of horizontal overflow at every width.
+
+- **Privileged console panel refinement.** The site-owner sign-in panel now
+  carries a translucent surface so the photographic backdrop reads through it,
+  and the panel is centred vertically on every viewport — and horizontally
+  centred on handheld and tablet sizes while keeping its established desktop
+  position. The credential subtitle now reads "Central hospital management
+  console", and the primary action is presented in uppercase as "AUTHENTICATE".
+  The backdrop photograph renders at full sharpness with no translucent wash
+  over it, so the image stays crisp on both privileged consoles. All existing
+  credential, multi-factor, role-based, and error behaviour is unchanged, and the
+  layout remains free of horizontal overflow at every width.
+
+- **Privileged console headline and action refinement.** The site-owner sign-in
+  now opens directly on the credential panel: the standalone access heading was
+  removed, and the panel carries a clear welcome title that scales with the
+  viewport. The secondary key icon was removed from the panel header, and the
+  credential subtitle was brought up to the standard secondary-text tone so
+  every line on the panel stays legible against its surface. The primary action
+  is now a short, direct "Authenticate". The photographic backdrop, the blue
+  primary action, and all existing credential, multi-factor, role-based, and
+  error behaviour are unchanged, and no panel text is clipped at any viewport
+  size.
+
+- **Privileged console backdrop and layout refinement.** The site-owner sign-in
+  page now presents a full-width photographic backdrop of secured infrastructure
+  work, with the application's dark base colour sitting behind it so the
+  composition stays coherent at every viewport size. The access heading now sits
+  directly above the credential panel as its own statement, and the introductory
+  paragraph and the secondary protocol summary have been removed so the surface
+  carries only the access context and the form. The primary action now uses the
+  same blue as the application wordmark, unifying the console's colour story.
+  Existing credential checks, multi-factor handoff, role-based redirection, and
+  error feedback are unchanged, and the layout stays free of horizontal overflow
+  from the narrowest handsets to wide desktops.
+
+- **Refined password-recovery request surface.** The password-recovery page now
+  presents a single clear request action labelled "Send Request", replacing a
+  longer technical-sounding label, and a transport-version indicator badge has
+  been removed so the surface shows only what a person recovering access needs.
+  Existing validation, submission, success, and error behavior are unchanged, as
+  is the underlying transport security the removed badge described.
+
+- **Refined privileged console sign-in and responsive branding.** The site-owner
+  sign-in page now carries the application wordmark above its credential panel
+  so the privileged console is identifiable at a glance, and it scales fluidly
+  from narrow handsets to wide desktops without horizontal overflow. A redundant
+  terminal banner and the portal-switching links to the other sign-in surfaces
+  have been removed, so the page shows a single, unambiguous access context.
+  Existing credential checks, multi-factor handoff, role-based redirection, and
+  error feedback are unchanged.
+
+- **Hospital administration access refinement.** The privileged hospital
+  sign-in experience now presents a clearer operational context, protected
+  access status, and session-security cues while retaining the established
+  administrator-only access checks, multi-factor handoff, error feedback, and
+  routing behavior. It now uses the same familiar email, password-recovery,
+  remembered-email, and sign-in control pattern as the clinical sign-in flow.
+  The streamlined credential surface and updated care-setting imagery reduce
+  visual distraction without changing access safeguards. A redundant restricted-entry notice has been removed, so
+  the protected-access context and administrator safeguards are carried by a
+  single, unambiguous statement rather than repeated messaging. The primary
+  action has been simplified to one prominent "Sign In" control, while a
+  development-only credential autofill helper, the portal-switching links, and
+  a build marker have been removed from the account panel so the surface shows
+  only what an administrator needs to authenticate. The operational heading now
+  scales fluidly to remain on one line across the supported range of screen
+  sizes, from narrow handsets to wide desktops. The responsive interface
+  remains keyboard-accessible, honours reduced-motion preferences, and does not
+  introduce new personal or clinical-data handling.
+
+- **Refined clinical sign-in experience.** Staff now enter the workspace through
+  a clearer, more focused account-entry surface that makes the care-team context
+  and protected-access status easier to understand. Existing sign-in, password
+  recovery, multi-factor verification, remembered-email, validation, and
+  role-based routing behavior are unchanged. Motion now better respects
+  visitors who request reduced movement; the experience remains fully
+  keyboard-accessible and does not introduce any new clinical or personal-data
+  handling. The desktop context now uses a non-interactive care-setting image
+  while preserving high-contrast, readable sign-in content at supported screen
+  sizes.
+
+- **Focused account-entry pages.** Authentication and account-adjacent flows now omit global marketing navigation, reducing visual distraction while preserving their existing access, recovery, verification, and support journeys.
+
+- **Refined secure registration experience.** New clinical accounts now move
+  through a clearer, three-step enrollment experience with explicit identity,
+  organization, and credential sections; concise protection cues; and improved
+  small-screen readability. The enrollment card now has a wider desktop canvas
+  for paired clinical-profile fields without compromising compact layouts.
+  Primary and alternate account-access actions now provide clearer visual
+  hierarchy and keyboard/pointer feedback.
+  Existing validation, password requirements,
+  accessibility feedback, and account-provisioning behavior are preserved.
+
+- **Public FAQ experience.** Visitors can now search and filter clear answers
+  about platform evaluation, care workflows, privacy boundaries, account access,
+  and support. The responsive page uses keyboard-accessible disclosure controls,
+  reports search results to assistive technology, and directs account-specific
+  help into authenticated channels. It neither requests nor processes clinical
+  or personal health information.
+
+- **Shared public-site footer.** Marketing and demo pages now end with a consistent, responsive footer offering clear routes to platform information, company pages, account entry, and privileged administration. Landing-page links remain useful when reached from other public pages. Sign-in, registration, recovery, verification, and privileged-access pages intentionally omit it to keep attention on account access; authenticated and shared-record views retain their purpose-specific boundaries.
+
+- **Consistent public navigation.** Visitor-facing pages now share the same responsive site header, with a keyboard-accessible mobile menu and clear paths to platform information, contact, and account entry points. Secure application and shared-record views retain their purpose-specific navigation.
+
+- **Refined public wordmark presentation.** The public header now presents the
+  application name in uppercase while retaining the established logo mark,
+  navigation structure, accessible name, and layout behaviour.
+
+- **Demo-request journey alignment.** The public demo form now has a canonical
+  authentication-namespace address, while older saved links redirect there.
+  Its selection controls preserve readable labels in the supported themes, and
+  the submission action now uses a clear, uppercase “SEND REQUEST” label.
+
+- **Refined public-site hierarchy and control contrast.** Public section
+  headings now use a more restrained responsive scale while preserving their
+  semantic heading order. Calls to action retain readable labels in every hover
+  state, including alternative and dark-surface actions. The change improves
+  visual consistency and keyboard/pointer feedback without changing platform
+  behaviour or data handling.
 - **Public Contact experience.** Visitors can now choose an appropriate route
   for sales, partnership, or existing-customer conversations from a dedicated,
   responsive contact page. The page makes the public-contact boundary explicit:
@@ -70,36 +248,17 @@ implementation reasoning behind each entry here.
   replacing the previous icon-and-text marks. The change is visual only; no
   licensing or data-processing implications.
 - **Redesigned hospital admin sign-in.** The portal presents a full-height split
-  layout with the sign-in form beside an editorial landscape photograph of a
-  modern hospital facility, using a translucency treatment so the form and
-  imagery remain legible in both themes while the image fills the panel at every
-  desktop size. Presentation-only; no data is processed by this change. Imagery
-  is stock photography used under a free commercial licence.
-
-### Changed
-
-- **Upper-case brand lockup, and the brand mark now sits in the admin portal
-  footer.** The platform name shown beside the logo renders in upper case for a
-  stronger, more consistent lockup across the public site, the workstation shell,
-  and every sign-in experience. The hospital portal's footer panel now presents
-  the brand mark itself in place of a secondary clinical-team photograph, so the
-  identity appears once and in the same form everywhere. Visual only; no
-  data-processing change.
-- **The sign-in background is now a landscape, bandwidth-efficient image.** The
-  privileged sign-in panel uses a wide hospital-building view served as a WebP
-  image, replacing the earlier portrait photograph that had to be heavily cropped
-  to fill the panel. Large displays now get a purpose-framed image with less data
-  transferred. Presentation-only; no data-processing change.
-- **One-click demo-credential filler removed from the hospital sign-in form.** The
-  privileged sign-in form no longer renders a shortcut control that populated
-  demonstration credentials. Local development still pre-fills the sample account
-  for convenience, and demonstration accounts remain documented in
-  `DOCUMENTATION.md`. No authentication behaviour, credential handling, or
-  production flow is affected.
-- **Decorative frame removed from the brand mark in the sign-in footer.** The
-  brand mark now sits directly on the panel with no surrounding tint, border, or
-  rounded container, so it reads as part of the composition rather than as a
-  badge. Presentation-only.
+  layout with the sign-in form beside editorial photography of hospital
+  clinicians, using a translucency treatment so the form and imagery remain
+  legible in both themes. Presentation-only; no data is processed by this
+  change. Imagery is stock photography used under a free commercial licence.
+- **Scroll-to-top control on public pages.** Visitor-facing pages now offer a
+  floating control that returns the reader to the top once they have scrolled
+  down, so long pages such as the FAQ no longer require scrolling back up by
+  hand. It appears only after the page has actually been scrolled, is legible in
+  both themes, respects reduced-motion preferences, and is reachable and
+  operable by keyboard. It covers the public site and the account-entry pages,
+  and is not shown inside the signed-in workspace.
 
 ### Data integrity — fabricated clinical data removed
 
@@ -132,12 +291,24 @@ or audit data.* A visible empty state is honest; a plausible invention is not.
 
 ### Security
 
-- **Super-admin two-factor posture changed to unenrolled-by-default, with
-  in-console enrolment.** Previously a secret was seeded, which forced a TOTP
-  prompt on the master session and locked a fresh checkout out of the super-admin
-  console until someone had that authenticator app's code. This was an explicit
-  operator decision. **If you are deploying, enrol 2FA for the super-admin
-  account as part of cutover** — it is no longer enforced by seed data.
+- **Two-factor posture changed to unenrolled-by-default for both privileged
+  consoles, with in-console enrolment.** Previously a secret was seeded for the
+  hospital-admin account (the super-admin account had already been switched),
+  which forced a TOTP prompt on sign-in and locked a fresh checkout out of that
+  console until someone had that authenticator app's code. Both privileged
+  accounts now sign in with credentials and enrol their own authenticator from
+  their own settings surfaces. This was an explicit operator decision.
+  **If you are deploying, enrol 2FA for both privileged accounts as part of
+  cutover** — it is no longer enforced by seed data. Once an account enrols, the
+  sign-in flow correctly re-challenges with TOTP on every subsequent login until
+  it is disabled again from settings.
+- **Development-only sign-in autofill helpers removed.** The privileged sign-in
+  pages and the multi-factor step no longer pre-fill credentials or offer a
+  one-click demo code, and the development endpoint behind that code helper has
+  been removed from the codebase entirely. This closes a development path that
+  could reveal a valid second factor for a fixed demo secret without
+  authentication. Multi-factor codes must now come from the enrolled
+  authenticator app.
 - **Role-based access was under-granting.** The seeded administrator role was
   missing a guarded administrative module, so legitimate admin actions were
   refused. Grant corrected.

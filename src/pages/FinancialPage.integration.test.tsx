@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import FinancialPage from './FinancialPage';
 import { api } from '@/services/api';
@@ -80,11 +80,11 @@ const mockTransactions = [
 
 describe('FinancialPage Integration Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
+    // Full reset (not just clear): drops queued mockResolvedValueOnce
+    // implementations so a test that bails out early cannot leak a stale
+    // one-shot response into the next test. Each test (re)sets its own
+    // implementations, and nested beforeEach blocks re-establish shared ones.
+    vi.resetAllMocks();
   });
 
   describe('Full Page Load Flow', () => {
@@ -153,7 +153,7 @@ describe('FinancialPage Integration Tests', () => {
       vi.mocked(api.getAccounts).mockResolvedValueOnce(mockAccounts)
         .mockResolvedValueOnce([...mockAccounts, newAccount]);
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       render(<FinancialPage />);
 
       // Wait for initial load
@@ -207,7 +207,7 @@ describe('FinancialPage Integration Tests', () => {
     it('should handle account creation errors', async () => {
       vi.mocked(api.createAccount).mockRejectedValue(new Error('Duplicate account code'));
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       render(<FinancialPage />);
 
       await waitFor(() => {
@@ -270,7 +270,7 @@ describe('FinancialPage Integration Tests', () => {
       vi.mocked(api.getTransactions).mockResolvedValueOnce(mockTransactions)
         .mockResolvedValueOnce([...mockTransactions, newTransaction]);
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       render(<FinancialPage />);
 
       await waitFor(() => {
@@ -307,7 +307,9 @@ describe('FinancialPage Integration Tests', () => {
       await user.type(dateInput, '2024-01-16');
       await user.type(descriptionInput, 'Equipment purchase');
       await user.click(accountSelect);
-      await user.click(screen.getByRole('option', { name: /1000 - Assets/ }));
+      // Async lookup: the Select portal content renders a tick after the
+      // trigger click, so a sync getByRole races it under load.
+      await user.click(await screen.findByRole('option', { name: /1000 - Assets/ }));
       await user.type(debitInput, '10000');
       await user.type(referenceInput, 'PO-046');
 
@@ -364,7 +366,7 @@ describe('FinancialPage Integration Tests', () => {
         .mockResolvedValueOnce(mockAccounts);
       vi.mocked(api.getTransactions).mockResolvedValue(mockTransactions);
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       render(<FinancialPage />);
 
       // Should show error
@@ -391,7 +393,7 @@ describe('FinancialPage Integration Tests', () => {
     });
 
     it('should navigate through all tabs and display correct content', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       render(<FinancialPage />);
 
       await waitFor(() => {
@@ -438,7 +440,7 @@ describe('FinancialPage Integration Tests', () => {
     });
 
     it('should handle multiple rapid clicks gracefully', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ delay: null });
       render(<FinancialPage />);
 
       await waitFor(() => {

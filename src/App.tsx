@@ -7,9 +7,11 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { AppLayout } from './components/layout/AppLayout';
+import { PublicLayout } from './components/layout/PublicLayout';
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminRoute } from './components/SuperAdminRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ScrollToTopButton } from './components/common/ScrollToTopButton';
 import { ShortcutManager } from './components/ShortcutManager';
 import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
@@ -32,6 +34,8 @@ function timedLazy(name: string, load: () => Promise<{ default: ComponentType }>
 
 const LandingPage = timedLazy('landing', () => import('./pages/LandingPage'));
 const AboutUsPage = timedLazy('about-us', () => import('./pages/AboutUsPage'));
+const ContactUsPage = timedLazy('contact-us', () => import('./pages/ContactUsPage'));
+const FaqPage = timedLazy('faq', () => import('./pages/FaqPage'));
 const RequestDemoPage = timedLazy('request-demo', () => import('./pages/RequestDemoPage'));
 const LoginPage = timedLazy('login', () => import('./pages/LoginPage'));
 const RegisterPage = timedLazy('register', () => import('./pages/RegisterPage'));
@@ -86,27 +90,30 @@ function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Public Landing Page */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/landing" element={<LandingPage />} />
-        <Route path="/about-us/" element={<AboutUsPage />} />
-        <Route path="/request-demo" element={<RequestDemoPage />} />
+        {/* Marketing routes share the responsive marketing header. */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/about-us/" element={<AboutUsPage />} />
+          <Route path="/contact-us" element={<ContactUsPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+        </Route>
 
-        {/* Public Auth Routes */}
+        {/* Account and account-adjacent flows stay focused, without marketing navigation. */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/signup" element={<RegisterPage />} />
-        {/* Legacy registration entrypoint kept so existing CTAs/deep links still reach the page */}
         <Route path="/signup" element={<RegisterPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/two-factor" element={<TwoFactorPage />} />
+        <Route path="/auth/request-demo" element={<RequestDemoPage />} />
+        <Route path="/request-demo" element={<Navigate to="/auth/request-demo" replace />} />
+        <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
+        <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
         <Route path="/shared/patient-summary/:token" element={<SharedPatientSummaryPage />} />
         
         {/* Site Super Admin Auth Routes — site owner only (global scope) */}
-        <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
-        {/* Hospital Admin Auth Routes — RBAC-scoped to assigned hospital */}
-        <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
         <Route
           path="/super-admin"
           element={
@@ -167,6 +174,9 @@ function App() {
               <ErrorBoundary>
                 <AppRoutes />
               </ErrorBoundary>
+              {/* One mount covers every public surface; the button withdraws for
+                  authenticated sessions. */}
+              <ScrollToTopButton />
               <ApiDebugOverlay />
             </NotificationProvider>
           </AuditProvider>

@@ -7,6 +7,10 @@ import { cn } from '@/lib/utils';
 interface AuthLayoutProps {
   children: ReactNode;
   showBranding?: boolean;
+  /** Extra classes for the form panel. Overrides the default panel widths when supplied. */
+  formPanelClassName?: string;
+  /** Extra classes for the inner content wrapper. Overrides the default max-width when supplied. */
+  contentClassName?: string;
 }
 
 const floatingShapes = [
@@ -29,26 +33,37 @@ const features = [
   },
 ];
 
-export default function AuthLayout({ children, showBranding = true }: AuthLayoutProps) {
+export default function AuthLayout({
+  children,
+  showBranding = true,
+  formPanelClassName,
+  contentClassName,
+}: AuthLayoutProps) {
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="min-h-screen flex w-full bg-background" id="auth-layout">
+    <div className="relative min-h-screen flex w-full bg-background bg-[url('/images/medicare-login-hero-banner.webp')] bg-cover bg-center bg-no-repeat" id="auth-layout">
       {/* Left Side: Form Panel */}
       <div
         className={cn(
-          'flex-1 flex flex-col justify-center items-center lg:items-stretch px-4 xs:px-6 sm:px-8 lg:px-12 lg:flex-none lg:w-[480px] xl:w-[560px] 2xl:w-[640px] z-10 bg-background relative',
-          !showBranding && 'lg:mx-auto'
+          'flex-1 flex flex-col justify-center items-center lg:items-stretch px-4 xs:px-6 sm:px-8 lg:px-12 lg:flex-none lg:w-[480px] xl:w-[560px] 2xl:w-[640px] z-10 bg-background/80 relative',
+          !showBranding && 'lg:mx-auto',
+          formPanelClassName
         )}
       >
-        <div className="w-full max-w-[340px] xs:max-w-sm sm:max-w-md mx-auto my-auto lg:my-0">
+        <div
+          className={cn(
+            'w-full max-w-[340px] xs:max-w-sm sm:max-w-md mx-auto my-auto lg:my-0',
+            contentClassName
+          )}
+        >
           {children}
         </div>
       </div>
 
       {/* Right Side: Branding Panel */}
       {showBranding && (
-        <div className="auth-branding-panel flex-1 flex-col justify-between bg-primary px-12 py-16 text-primary-foreground overflow-hidden relative">
+        <div className="auth-branding-panel flex-1 flex-col justify-between bg-primary/80 px-12 py-16 text-primary-foreground overflow-hidden relative">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {floatingShapes.map((shape, i) => (
@@ -96,16 +111,6 @@ export default function AuthLayout({ children, showBranding = true }: AuthLayout
 
           {/* Content */}
           <div className="relative z-10 max-w-2xl mt-12">
-            <motion.div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/20 text-success text-sm font-semibold mb-8 border border-success/30"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <span className="h-2 w-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
-              System Operational
-            </motion.div>
-
             <motion.h2
               className="text-4xl xl:text-5xl font-bold tracking-tight mb-6 leading-[1.15]"
               initial={{ opacity: 0, y: 20 }}

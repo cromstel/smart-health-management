@@ -19,8 +19,8 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const mockUseAuth = useAuth as jest.Mock;
-const mockUseLocation = useLocation as jest.Mock;
+const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
+const mockUseLocation = useLocation as ReturnType<typeof vi.fn>;
 
 // Helper component to wrap AppSidebar with MemoryRouter, SidebarProvider, and mock useLocation
 const TestWrapper = ({ initialPath = '/dashboard' }) => {
