@@ -30,16 +30,17 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // The Vite dev server alone is NOT enough. The comment that used to sit
-    // here claimed the local mock API made a second API process unnecessary,
-    // which is wrong: src/server/mockApi.ts has no /api/auth routes at all, and
-    // .env.local points VITE_API_URL at the real API on :5000. Without the
-    // backend running, every auth call fails with "Failed to fetch" and the
-    // suite reports ~47 failures that look like product regressions.
+    // The Vite dev server alone is NOT enough for the whole suite. There is no
+    // mock API any more: src/server/mockApi.ts is deleted and every mode calls
+    // the real API via VITE_API_URL. So start the backend yourself before
+    // running the suite (npm run dev in server/), and Playwright reuses it. The
+    // backend needs reachable MySQL credentials and a seeded database, per
+    // AGENTS.md section 6.
     //
-    // Start the API yourself before running the suite (npm run dev in server/),
-    // then Playwright will reuse it. The backend in turn needs reachable MySQL
-    // credentials and a seeded database, per AGENTS.md section 6.
+    // CI does not start one -- the "Frontend e2e" job runs `--grep-invert @db`,
+    // which leaves only the specs the dev server can answer unaided. A spec that
+    // calls an endpoint must carry the `@db` tag or it fails there for want of
+    // a backend, which is a different problem from the one it is testing.
     command: 'npm run dev',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

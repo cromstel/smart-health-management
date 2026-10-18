@@ -11,7 +11,7 @@ test.describe('Login Page', () => {
 
     // Page title and subtitle
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
-    await expect(page.locator('text=Sign in to your clinical workstation')).toBeVisible();
+    await expect(page.locator('text=Sign in to your clinical portal')).toBeVisible();
 
     // Email field
     const emailInput = page.locator('#email');
@@ -42,15 +42,30 @@ test.describe('Login Page', () => {
     await expect(page.locator('text=Register here')).toBeVisible();
   });
 
-  test('branding panel is visible on desktop', async ({ page }) => {
+  /**
+   * The marketing side panel was dropped from every authentication surface:
+   * LoginPage, RegisterPage, TwoFactorPage and SuperAdminLogin all render
+   * `<AuthLayout showBranding={false}>`, so the panel's feature list never
+   * reaches the DOM. The photograph spans the whole layout instead.
+   *
+   * This asserts the absence deliberately. Asserting the panel is *present*
+   * was the old contract, and it silently rotted when the panel was removed --
+   * the string assertions in it kept passing on the pages that do still use
+   * AuthLayout, so nothing flagged the removal on the login page itself.
+   */
+  test('renders the form without a marketing side panel', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('text=Secure, intelligent healthcare management.')).toBeVisible();
-    await expect(page.locator('text=Enterprise Security')).toBeVisible();
-    await expect(page.locator('text=Real-time Monitoring')).toBeVisible();
-    await expect(page.locator('text=System Operational')).toBeVisible();
+    await expect(page.locator('text=Secure, intelligent healthcare management.')).toHaveCount(0);
+    await expect(page.getByText('Enterprise Security', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Real-time Monitoring', { exact: true })).toHaveCount(0);
+
+    // The credential form still owns the viewport at desktop width.
+    await expect(page.locator('#email')).toBeVisible();
+    await expect(page.locator('#password')).toBeVisible();
+    await expect(page.locator('#login-submit-btn')).toBeVisible();
   });
 
   test('can toggle password visibility', async ({ page }) => {
@@ -300,6 +315,11 @@ test.describe('Register Page', () => {
   test('gives every control the same height and the same inner padding', async ({ page }) => {
     await openRegister(page);
 
+    // The wizard mounts its first step after the route resolves, which is later
+    // than `networkidle` -- measuring immediately found an empty document and
+    // reported four of the nine controls as missing.
+    await expect(page.locator('#firstName')).toBeVisible();
+
     // The wizard mounts one step at a time, so the boxes have to be collected
     // as the steps are walked.
     const measure = () =>
@@ -382,47 +402,35 @@ test.describe('Two-Factor Page', () => {
 });
 
 test.describe('Super Admin Login Page', () => {
+  /**
+   * This portal keeps its own industrial identity: it does not go through
+   * AuthLayout at all, so there is no marketing side panel and no
+   * `showBranding` to pass. CardTitle renders a div (not a heading element),
+   * so the title is matched by text rather than by heading role.
+   */
   test('loads and displays all elements', async ({ page }) => {
     await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
-    // Brand header. This portal deliberately does NOT use the shared Logo
-    // component (it keeps its own industrial identity), so assert its own
-    // marker rather than the site-wide img role.
-    await expect(page.getByText('Site Owner Portal', { exact: true })).toBeVisible();
+    // Shared wordmark. It renders as role="img" with an accessible name.
+    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
 
-    // Page title. This portal's own identity copy is "Root Access." — it is not
-    // the "Super Admin Portal" wording the old (pre-rewrite) spec asserted.
-    await expect(page.getByRole('heading', { name: /Root Access/i })).toBeVisible();
-    await expect(page.locator('text=Multi-hospital governance')).toBeVisible();
+    await expect(page.getByText('Welcome to Super Admin Portal', { exact: true })).toBeVisible();
+    await expect(page.getByText('Central hospital management console', { exact: true })).toBeVisible();
 
-    // Restricted-terminal marker in the header strip
-    await expect(page.getByText(/RESTRICTED TERMINAL/)).toBeVisible();
-
-    // Access protocol list
-    await expect(page.getByText('Access Protocol', { exact: true })).toBeVisible();
-    await expect(page.locator('text=Multi-factor enforced')).toBeVisible();
-
-    // Form fields
+    // Form fields. The labels are uppercase-styled but their accessible names
+    // stay sentence case, so getByLabel matches the source text.
     await expect(page.locator('#admin-email')).toBeVisible();
     await expect(page.locator('#admin-password')).toBeVisible();
     await expect(page.getByLabel('Super Admin Email')).toBeVisible();
     await expect(page.getByLabel('Master Password')).toBeVisible();
 
-    // Scope guidance: this portal is for the site owner, not hospital staff.
-    await expect(page.locator('text=Site super-admin credentials. Not for hospital staff.')).toBeVisible();
+    // Submit control.
+    await expect(page.getByRole('button', { name: 'Authenticate', exact: true })).toBeVisible();
 
-    // Submit button (matched by role so it does not collide with the card title
-    // that repeats the same words)
-    await expect(page.getByRole('button', { name: 'Authenticate Master Session' })).toBeVisible();
-
-    // Audit advisory
-    await expect(page.locator('text=cryptographically signed')).toBeVisible();
-
-    // Cross-portal links. The site-owner portal has no autofill control and no
-    // dedicated "return" link; it offers the hospital portal and public sign-in.
-    await expect(page.getByRole('link', { name: 'Hospital Admin Portal' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Public Sign In' })).toBeVisible();
+    // Attribution footer.
+    await expect(page.getByLabel('System author CITGROUP')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'CITGROUP' })).toBeVisible();
   });
 
   test('has pre-filled demo credentials', async ({ page }) => {
@@ -464,10 +472,21 @@ test.describe('Navigation between auth pages', () => {
 
     await page.locator('text=Register here').click();
     await expect(page).toHaveURL(/\/register|\/signup/);
-    await expect(page.getByRole('heading', { name: 'Staff Registration' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Build your clinical workspace/ })).toBeVisible();
   });
 
-  test('starts and cancels the MFA flow after clinician login', async ({ page }) => {
+  /**
+   * Signing in as the seeded clinician is a real credential check against the
+   * API, so this is `@db`: there is no mock to answer the login, and the
+   * two-factor prompt only appears for an account the database says is
+   * enrolled.
+   *
+   * It stops at the challenge on purpose. Completing it would require a live
+   * TOTP, and the dev-only "fetch current token" shortcut that used to supply
+   * one has been removed rather than reinstated -- a shortcut that mints
+   * authentication material must not come back as a test convenience.
+   */
+  test('starts and cancels the MFA flow after clinician login', { tag: '@db' }, async ({ page }) => {
     await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
@@ -477,7 +496,10 @@ test.describe('Navigation between auth pages', () => {
 
     await expect(page).toHaveURL('/auth/two-factor');
     await expect(page.getByRole('heading', { name: 'Two-Factor Authentication' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Quick Test: Fetch Current Demo TOTP Token' })).toBeVisible();
+
+    // The removed shortcut must stay removed.
+    await expect(page.getByRole('button', { name: /Quick Test/i })).toHaveCount(0);
+
     await page.getByRole('link', { name: 'Cancel & Return to Login' }).click();
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
   });
@@ -486,7 +508,7 @@ test.describe('Navigation between auth pages', () => {
     await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('text=Back to Sign In').click();
+    await page.getByRole('link', { name: 'Sign-in' }).click();
     await expect(page).toHaveURL('/auth/login');
     await expect(page.locator('text=Welcome back')).toBeVisible();
   });
@@ -500,15 +522,24 @@ test.describe('Navigation between auth pages', () => {
     await expect(page.locator('text=Welcome back')).toBeVisible();
   });
 
-  test('can navigate from super-admin back to public sign-in', async ({ page }) => {
+  /**
+   * The site-owner portal is a standalone terminal. It deliberately offers no
+   * cross-portal navigation -- no "Public Sign In", no "Hospital Admin Portal"
+   * -- so an operator cannot walk from the master credential surface into a
+   * staff or public session by following a link. The only link on the page is
+   * the attribution link in the footer.
+   */
+  test('offers no cross-portal navigation', async ({ page }) => {
     await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
-    // The site-owner portal offers a "Public Sign In" footer link (there is no
-    // separate "return to standard staff login" control).
-    await page.getByRole('link', { name: 'Public Sign In' }).click();
-    await expect(page).toHaveURL('/auth/login');
-    await expect(page.locator('text=Welcome back')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Public Sign In' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Hospital Admin Portal' })).toHaveCount(0);
+
+    const hrefs = await page.locator('a[href^="/"]').evaluateAll((nodes) =>
+      nodes.map((n) => (n as HTMLAnchorElement).getAttribute('href')),
+    );
+    expect(hrefs).toEqual([]);
   });
 });
 
@@ -563,6 +594,6 @@ test.describe('Responsive design', () => {
     // Form should be visible
     await expect(page.locator('#admin-email')).toBeVisible();
     await expect(page.locator('#admin-password')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Authenticate Master Session' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Authenticate', exact: true })).toBeVisible();
   });
 });

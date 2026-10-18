@@ -48,7 +48,7 @@ async function signInAsSuperAdmin(page: import('@playwright/test').Page) {
   await page.goto('/auth/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
   await page.locator('#admin-password').fill('April--2024!!!!');
-  await page.getByRole('button', { name: 'Authenticate Master Session' }).click();
+  await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
   await page.waitForURL('**/super-admin/dashboard');
 }
 

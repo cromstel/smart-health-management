@@ -68,13 +68,18 @@ jobs:
     # still targeted pre-rename routes, so nothing ran and nothing was green to
     # go stale.
     #
-    # Scope is deliberate. `--grep-invert @db` excludes the specs that need the
-    # real API plus a seeded MySQL (the clinician/super-admin route walks, the
-    # super-admin user-management flow). Those skip themselves with an explicit
-    # reason when the backend is absent, rather than reporting a wall of 403s
-    # that look like product regressions. Everything that runs here needs only
-    # the Vite dev server, because src/server/mockApi.ts is mounted as middleware
-    # and serves the API in-process.
+    # Scope is deliberate. `--grep-invert @db` excludes every spec that needs a
+    # live API: the clinician and super-admin route walks, the super-admin
+    # user-management flow, the MFA challenge, the request-demo submission, and
+    # the authenticated half of the scroll-to-top boundary. Those self-skip with
+    # an explicit reason when the backend is absent rather than reporting a wall
+    # of failed logins that look like product regressions.
+    #
+    # What is left is everything the Vite dev server alone can answer: the
+    # sign-in pages, the responsive layout guard, landing, password recovery.
+    # This job no longer serves the API in-process -- src/server/mockApi.ts is
+    # gone and every mode calls VITE_API_URL -- so a spec that needs an endpoint
+    # has to be tagged `@db`, or it fails here for want of a backend.
     env:
       VITE_PORT: 5175
       CI: "true"

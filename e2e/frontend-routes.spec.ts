@@ -4,12 +4,16 @@ import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
 /**
  * Route-level checks.
  *
- * The public block needs nothing but the dev server and always runs (that is
- * what CI gates on). The clinician and super-admin blocks sign in and assert on
- * data that only the real API + seeded MySQL provide, so they are tagged `@db`
- * and skip themselves when the API is not running -- otherwise the mock answers
- * 403 and the run reports failures that are missing infrastructure, not
- * regressions. See e2e/helpers/backend.ts.
+ * There is no mock API any more: every mode talks to the real API at
+ * VITE_API_URL. That splits the suite cleanly.
+ *
+ * The public block only drives the dev server, so it always runs and is what CI
+ * gates on. The blocks that sign in -- clinician, super-admin, and the
+ * authenticated half of the scroll-to-top boundary -- assert on data that only
+ * the real API plus a seeded MySQL provide, so they are tagged `@db` and skip
+ * themselves when the API is not running. Without that guard they report a wall
+ * of failed logins, which reads like a product regression and is not one.
+ * See src/e2e/helpers/backend.ts.
  */
 
 /**
@@ -61,7 +65,7 @@ async function signInAsSuperAdmin(page: Page) {
   await page.goto('/auth/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
   await page.locator('#admin-password').fill('April--2024!!!!');
-  await page.getByRole('button', { name: 'Authenticate Master Session' }).click();
+  await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
   await page.waitForURL('**/super-admin/dashboard');
 }
 
@@ -79,14 +83,49 @@ test.describe('Public routes', () => {
     });
   }
 
-  test('request-demo form submits through the local API', async ({ page }) => {
+  /**
+   * The overflow assertions above never open the menu, so they cannot tell a
+   * working trigger from a dead one. That gap is how the tablet-width header
+   * shipped: the full navigation no longer fit at 768px and was moved to 1024px,
+   * but the panel it toggles kept the old breakpoint, so between the two widths
+   * the trigger was visible and did nothing when pressed.
+   *
+   * The range between the two breakpoints is the whole point, so it is checked
+   * explicitly rather than inferred from the absence of overflow.
+   */
+  for (const width of [768, 1023]) {
+    test(`header menu opens at ${width}px, between the compact and full breakpoints`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+
+      // Scoped to the banner: the footer carries its own Contact and Sign In
+      // links, so an unscoped name resolves to both.
+      const banner = page.getByRole('banner');
+      const trigger = banner.getByRole('button', { name: 'Open menu' });
+      await expect(trigger).toBeVisible();
+      await trigger.click();
+
+      // The panel has to actually appear, and carry the navigation.
+      await expect(banner.getByRole('link', { name: 'Contact', exact: true })).toBeVisible();
+      await expect(banner.getByRole('link', { name: 'Sign In' })).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+
+      await banner.getByRole('button', { name: 'Close menu' }).click();
+      await expect(banner.getByRole('link', { name: 'Contact', exact: true })).toHaveCount(0);
+    });
+  }
+
+  // Submitting the form POSTs to the API, so this needs the backend running.
+  // There is no mock to absorb it any more, which makes it `@db` by the same
+  // criterion as the sign-in specs: it cannot pass without the real API.
+  test('request-demo form submits through the local API', { tag: '@db' }, async ({ page }) => {
     await page.goto('/request-demo');
     await page.locator('#demo-name').fill('Avery Doe');
     await page.locator('#demo-email').fill('avery@example.org');
     await page.locator('#demo-organization').fill('Northwind Hospital');
     await page.locator('#demo-role').fill('Clinical Director');
     await page.locator('#demo-organization-size').selectOption('51-250');
-    await page.getByRole('button', { name: 'Request my demo' }).click();
+    await page.getByRole('button', { name: 'SEND REQUEST' }).click();
     await expect(page.getByRole('heading', { name: 'Your request is on its way.' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
@@ -126,7 +165,9 @@ test.describe('Public routes', () => {
   });
 });
 
-test.describe('Scroll-to-top visibility boundary', () => {
+// The control is withdrawn on sign-in, so this half of the boundary needs a
+// real session: a real credential check against the API and a seeded account.
+test.describe('Scroll-to-top visibility boundary', { tag: '@db' }, () => {
   test('the control is absent once a session is authenticated', async ({ page }) => {
     // The seeded administrator has no two-factor enrolment, so this signs in
     // through the real form. The old clinician helper cannot be reused: it
@@ -145,7 +186,7 @@ test.describe('Scroll-to-top visibility boundary', () => {
   });
 });
 
-test.describe('Clinician route smoke checks', () => {
+test.describe('Clinician route smoke checks', { tag: '@db' }, () => {
   test.beforeEach(async ({ page }) => signInAsClinician(page));
 
   const routes = [

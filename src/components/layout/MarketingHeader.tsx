@@ -28,7 +28,10 @@ export function MarketingHeader() {
           <Logo size="sm" />
         </Link>
 
-        <div className="hidden items-center gap-1 md:flex">
+        {/* Six links plus two buttons. The full row only fits from lg (1024px)
+            up; between md and lg the compact trigger is used instead, so the
+            header cannot overflow its own row at tablet width. */}
+        <div className="hidden items-center gap-1 lg:flex">
           {sectionLinks.map((link) => (
             <a key={link.hash} href={sectionHref(link.hash, isLandingPage)} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground">
               {link.label}
@@ -45,18 +48,18 @@ export function MarketingHeader() {
           </Link>
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <Button variant="ghost" size="sm" asChild><Link to="/auth/login">Sign In</Link></Button>
           <Button size="sm" asChild><Link to="/auth/signup" className="gap-1.5">Get Started <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link></Button>
         </div>
 
-        <button type="button" className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground md:hidden" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+        <button type="button" className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground lg:hidden" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
       {mobileOpen && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="border-t border-border bg-background px-4 pb-4 md:hidden">
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="border-t border-border bg-background px-4 pb-4 lg:hidden">
           <div className="flex flex-col gap-1 pt-2">
             {sectionLinks.map((link) => (
               <a key={link.hash} href={sectionHref(link.hash, isLandingPage)} onClick={() => setMobileOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground">

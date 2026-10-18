@@ -1,21 +1,21 @@
 /**
  * Backend availability probe for the e2e suite.
  *
- * The suite has two distinct halves and they need different infrastructure:
+ * There is no mock API. Every mode talks to the real API at VITE_API_URL, so the
+ * suite splits on whether a spec needs a session:
  *
- *  1. **Mock-backed specs** (tag-free). These run against the Vite dev server
- *     alone. `src/server/mockApi.ts` is mounted as Vite middleware and serves
- *     auth, patients, appointments and the rest in-process. Everything public
- *     works: the auth pages, the responsive layout guard, landing, request-demo,
- *     password recovery. These are what CI gates on.
+ *  1. **Tag-free specs.** These only drive the Vite dev server: the auth pages,
+ *     the responsive layout guard, landing, password recovery, and the public
+ *     half of the scroll-to-top boundary. This is what CI gates on.
  *
- *  2. **Database-backed specs** (tagged `@db`). These exercise data that only
- *     exists in the real API plus a seeded MySQL: the seeded clinician rows
- *     ("Dr. Smith"), the super-admin user-management flow, and the authenticated
- *     route smoke checks. Without the backend these do not fail meaningfully --
- *     they fail with a wall of 403s from the mock, which looks like a product
- *     regression and is not one. So they self-skip when the API is unreachable,
- *     and CI excludes them with `--grep-invert @db`.
+ *  2. **Database-backed specs** (tagged `@db`). These sign in and assert on data
+ *     that only the real API plus a seeded MySQL provide: the seeded clinician
+ *     rows, the authenticated route smoke checks, the super-admin
+ *     user-management flow, and the authenticated half of the scroll-to-top
+ *     boundary. Without the backend they do not fail meaningfully -- they fail
+ *     with a wall of failed logins, which looks like a product regression and is
+ *     not one. So they self-skip when the API is unreachable, and CI excludes
+ *     them with `--grep-invert @db`.
  *
  * Run them locally with:
  *   1. `mysql -u root -p < server/src/database/schema.sql` then `seed.sql`

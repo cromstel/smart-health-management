@@ -446,6 +446,14 @@ steps, across both themes.
 - **Super-admin sign-in now lands on the super-admin dashboard** rather than the
   standard one.
 
+### Fixed
+
+- **The public site header no longer overflows at tablet width.** The full
+  navigation was shown from the small-phone breakpoint upward, but six links
+  plus two buttons do not fit there: the landing page gained a horizontal
+  scrollbar and header controls were pushed out of reach with no visible
+  affordance. The compact menu now covers that whole range.
+
 ### Operator notes
 
 - **Run database seed data before executing the full end-to-end suite.** One spec
@@ -496,6 +504,19 @@ steps, across both themes.
   outside the package it was invoked from. Both are fixed and green.
 - **Concurrent runs on the same ref are cancelled**, so a stale green result
   cannot be read as evidence about the commit in front of you.
+- **The browser-level job now states the coverage it actually has.** It
+  previously described itself as running the whole suite because a development
+  mock served the API in-process; that mock has since been removed, so every
+  mode calls the real API. Checks that need a live API are now marked as such
+  and skipped explicitly, rather than failing for want of a backend and being
+  read as product defects. The job covers the sign-in, registration and
+  recovery screens plus the responsive layout guard; anything that signs in is
+  left to a local run with the API and a seeded database.
+- **Sign-in and privileged-portal checks match the current screens.** These
+  checks were still asserting wording and structure from a superseded design, so
+  they failed for reasons unrelated to the code under test. They now assert what
+  the pages actually present, including that the privileged console offers no
+  cross-portal navigation and that no second-factor shortcut has returned.
 
 ### Repository consolidated onto one branch
 
