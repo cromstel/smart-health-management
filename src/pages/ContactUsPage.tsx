@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion, useInView } from 'motion/react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -78,15 +78,24 @@ const responsePrinciples = [
   ['03', 'A clear next step', 'You choose how to be contacted when you request a demo, so the follow-up fits your team’s availability.'],
 ];
 
+/**
+ * Entrance reveal for a section.
+ *
+ * Honours `prefers-reduced-motion`. The global CSS block that zeroes
+ * `animation-duration` and `transition-duration` cannot reach these: Motion
+ * drives transforms from JavaScript, so the element still slid and faded in
+ * for anyone who asked for stillness.
+ */
 function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; delay?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+      animate={reduceMotion ? undefined : isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
       transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
       className={className}
     >
@@ -98,6 +107,9 @@ function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; 
 export default function ContactUsPage() {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState('');
+  // The hero animates on mount rather than on scroll, so each element opts out
+  // of its entrance once. See Reveal for why the CSS block is not enough.
+  const reduceMotion = useReducedMotion();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ContactRequestValues>({
     resolver: zodResolver(contactRequestSchema),
     defaultValues: { preferredContact: 'email', website: '' },
@@ -123,7 +135,7 @@ export default function ContactUsPage() {
           <motion.img
             src="/images/medicare-contact-us-hero-banner.webp"
             alt="A diverse healthcare team standing together in a bright clinical setting"
-            initial={{ opacity: 0, scale: 1.055 }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 1.055 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
@@ -137,16 +149,16 @@ export default function ContactUsPage() {
 
           <div className="relative mx-auto grid w-full max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:gap-16 lg:px-8">
             <div className="lg:col-span-8">
-              <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
+              <motion.p initial={reduceMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
                 <MessageCircleMore className="h-4 w-4 text-accent" aria-hidden="true" />
                 Start with a conversation
               </motion.p>
-              <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="mt-6 max-w-3xl border-y border-primary-foreground/30 py-8 sm:py-10">
+              <motion.div initial={reduceMotion ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="mt-6 max-w-3xl border-y border-primary-foreground/30 py-8 sm:py-10">
                 <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-tight text-primary-foreground sm:text-6xl lg:text-7xl">Let’s make room for better care.</h1>
                 <p className="mt-7 max-w-2xl text-lg leading-relaxed text-primary-foreground/90">Whether you are evaluating a new care platform, coordinating a wider team, or need help from inside your workspace, we will help you find the right next step.</p>
               </motion.div>
             </div>
-            <motion.aside initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.35 }} className="border-l-2 border-accent bg-primary/80 p-5 text-primary-foreground lg:col-span-3 lg:col-start-10 lg:mb-1">
+            <motion.aside initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.35 }} className="border-l-2 border-accent bg-primary/80 p-5 text-primary-foreground lg:col-span-3 lg:col-start-10 lg:mb-1">
               <Clock3 className="h-5 w-5 text-accent" aria-hidden="true" />
               <p className="mt-6 font-mono text-xs uppercase tracking-[0.16em] text-primary-foreground/75">Thoughtful follow-up</p>
               <p className="mt-2 text-sm leading-relaxed text-primary-foreground/90">Choose your preferred contact method when you request a demo. We will come prepared for the conversation.</p>

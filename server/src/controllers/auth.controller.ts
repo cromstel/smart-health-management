@@ -261,7 +261,11 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
     // localhost:5173, a port nothing in this project listens on, so the only
     // way to get a working reset link was to edit source.
     const frontendOrigin = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:5175';
-    console.log(`Reset link: ${frontendOrigin}/reset-password?token=${resetToken}`);
+    // The reset route moved under /auth when the auth surfaces were separated.
+    // Linking to the old path sent every recipient to the catch-all, which
+    // redirected to the landing page and discarded the token -- a dead link
+    // with no error, on a single-use token.
+    console.log(`Reset link: ${frontendOrigin}/auth/reset-password?token=${resetToken}`);
 
     // In production, send email here
     // await sendPasswordResetEmail(email, resetToken);

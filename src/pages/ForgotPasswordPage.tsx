@@ -164,7 +164,7 @@ export default function ForgotPasswordPage() {
                       type="button"
                       variant="secondary"
                       className="w-full text-xs gap-2 font-medium"
-                      onClick={() => navigate('/reset-password?token=demo-token-hospital-2026')}
+                      onClick={() => navigate('/auth/reset-password?token=demo-token-hospital-2026')}
                     >
                       <ExternalLink className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                       <span>Test Reset Flow (Use Mock Token)</span>

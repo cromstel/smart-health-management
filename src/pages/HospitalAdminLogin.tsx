@@ -33,7 +33,7 @@ function HospitalAdminLogin() {
       const res = await login(email, password);
 
       if (res.requiresMfa) {
-        navigate('/auth/login');
+        navigate('/auth/two-factor');
         return;
       }
 

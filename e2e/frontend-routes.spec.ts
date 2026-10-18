@@ -105,13 +105,19 @@ test.describe('Public routes', () => {
       await expect(trigger).toBeVisible();
       await trigger.click();
 
-      // The panel has to actually appear, and carry the navigation.
+      // The panel has to actually appear, and carry the navigation. Destinations
+      // are matched by href rather than by label: the wording is a visual choice
+      // ("Sign In", "LOGIN", ...) that should not decide whether this passes.
+      // `:visible` matters because the collapsed desktop nav keeps the same
+      // destinations in the DOM.
       await expect(banner.getByRole('link', { name: 'Contact', exact: true })).toBeVisible();
-      await expect(banner.getByRole('link', { name: 'Sign In' })).toBeVisible();
+      await expect(banner.locator('a[href="/auth/login"]:visible')).toHaveCount(1);
+      await expect(banner.locator('a[href="/auth/signup"]:visible')).toHaveCount(1);
       await expectNoHorizontalOverflow(page);
 
       await banner.getByRole('button', { name: 'Close menu' }).click();
       await expect(banner.getByRole('link', { name: 'Contact', exact: true })).toHaveCount(0);
+      await expect(banner.locator('a[href="/auth/login"]:visible')).toHaveCount(0);
     });
   }
 
@@ -128,6 +134,50 @@ test.describe('Public routes', () => {
     await page.getByRole('button', { name: 'SEND REQUEST' }).click();
     await expect(page.getByRole('heading', { name: 'Your request is on its way.' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
+  });
+
+  /**
+   * A password-reset email already in someone's inbox points at
+   * `/reset-password?token=...`. The auth surfaces moved under `/auth`, and a
+   * redirect that carried only the pathname sent that link to the catch-all,
+   * which dropped the token: the user landed on the public site with no error,
+   * and the token is single-use. The compatibility redirect has to carry the
+   * query string across, so this asserts the token survives the hop.
+   */
+  test('legacy auth paths redirect and keep their query string', async ({ page }) => {
+    await page.goto('/reset-password?token=a-real-looking-token&source=email');
+    await expect(page).toHaveURL(/\/auth\/reset-password\?/);
+    await expect(page).toHaveURL(/token=a-real-looking-token/);
+    await expect(page).toHaveURL(/source=email/);
+
+    // And the page it lands on is the reset form, not the public site.
+    await expect(page.getByRole('heading', { name: 'Set New Password' })).toBeVisible();
+  });
+
+  test('a landing-page section link works from another page', async ({ page }) => {
+    // Header and footer link to landing sections from the company pages. Those
+    // are client-side navigations, which do not move the viewport the way a real
+    // page load does, so the URL could change while the visitor stayed at the
+    // previous offset.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/contact-us');
+    await expect(page.getByRole('heading', { name: /better care/i })).toBeVisible();
+
+    await page.getByRole('banner').getByRole('link', { name: 'How It Works' }).click();
+    await expect(page).toHaveURL(/#how-it-works$/);
+
+    // The landing route is lazy, so the target appears after navigation and the
+    // scroll follows it. Poll rather than sampling once.
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const target = document.getElementById('how-it-works');
+            return target ? Math.abs(target.getBoundingClientRect().top) : null;
+          }),
+        { timeout: 10_000 },
+      )
+      .toBeLessThan(200);
   });
 
   test('scroll-to-top control appears on public pages and returns the visitor to the top', async ({ page }) => {

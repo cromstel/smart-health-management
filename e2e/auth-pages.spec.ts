@@ -165,6 +165,40 @@ test.describe('Register Page', () => {
     expect(box!.height).toBeLessThanOrEqual(1);
   };
 
+  test('rejects a name that is only whitespace', async ({ page }) => {
+    await openRegister(page);
+
+    // Two spaces satisfy a bare `min(2)`, and the submitted name is built as
+    // `${first} ${last}`.trim()` -- so without trimming, the API could be handed
+    // an empty name for a record that then displays as blank.
+    await page.locator('#firstName').fill('   ');
+    await page.locator('#lastName').fill('   ');
+    await page.locator('#email').fill('k.mensah@smarthealth.com');
+    await page.locator('#confirmEmail').fill('k.mensah@smarthealth.com');
+
+    await page.getByRole('button', { name: /proceed to organization/i }).click();
+
+    await expect(page.locator('#firstName-error')).toBeVisible();
+    await expect(page.getByText('First name must be at least 2 characters')).toBeVisible();
+    // Still on the identity step: nothing was submitted.
+    await expect(page.locator('#role')).toHaveCount(0);
+  });
+
+  test('announces the current step as text, not only as a percentage', async ({ page }) => {
+    await openRegister(page);
+
+    // aria-valuenow is 1-based, so assistive tech computes step one as 0%.
+    // The accessible text is what makes it correct.
+    const progress = page.getByRole('progressbar');
+    await expect(progress).toHaveAttribute('aria-valuetext', 'Step 1 of 3');
+
+    await fillIdentity(page);
+    await proceedToOrganization(page);
+    await proceedToSecurity(page);
+
+    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', 'Step 3 of 3');
+  });
+
   test('step one splits the name, confirms the email and leans on placeholders', async ({ page }) => {
     await openRegister(page);
 

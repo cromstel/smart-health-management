@@ -48,7 +48,13 @@ export default function RequestDemoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-[url('/images/medicare-login-hero-banner.webp')] bg-cover bg-center bg-no-repeat">
+    <div className="relative min-h-screen bg-background text-foreground">
+      <img
+        src="/images/medicare-request-demo-hero-banner.webp"
+        alt="A diverse clinical team reviewing a care plan together"
+        className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-center"
+      />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
       <main className="mx-auto my-6 grid max-w-6xl gap-10 rounded-3xl bg-background/85 px-4 py-12 sm:my-10 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
         <section className="lg:pt-8">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>

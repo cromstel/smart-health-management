@@ -121,7 +121,7 @@ export default function FaqPage() {
           <div className="mt-12 divide-y divide-border border-y border-border">
             {visibleFaqs.map((faq) => (
               <details key={faq.question} className="group py-1">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-left text-lg font-semibold tracking-tight marker:content-none focus-visible:outline-none [&::-webkit-details-marker]:hidden"><span><span className="mb-2 block font-mono text-xs font-normal uppercase tracking-[0.14em] text-accent">{faq.category}</span>{faq.question}</span><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-xl font-normal leading-none text-accent transition-transform duration-200 group-open:rotate-45" aria-hidden="true">+</span></summary>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-left text-lg font-semibold tracking-tight marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [&::-webkit-details-marker]:hidden"><span><span className="mb-2 block font-mono text-xs font-normal uppercase tracking-[0.14em] text-accent">{faq.category}</span>{faq.question}</span><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-xl font-normal leading-none text-accent transition-transform duration-200 group-open:rotate-45" aria-hidden="true">+</span></summary>
                 <div className="max-w-3xl pb-6 pr-12 leading-relaxed text-muted-foreground">{faq.answer}</div>
               </details>
             ))}

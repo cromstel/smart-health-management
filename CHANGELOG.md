@@ -23,6 +23,12 @@ implementation reasoning behind each entry here.
 
 ## [Unreleased]
 
+### Changed
+
+- **Public navigation labels clarified.** The public-site header now presents
+  the account-entry and registration actions as uppercase **LOGIN** and
+  **GET STARTED**, with their destinations and keyboard accessibility unchanged.
+
 ### Added
 
 - **Unified authentication backdrops.** Every sign-in and account-recovery page
@@ -448,11 +454,44 @@ steps, across both themes.
 
 ### Fixed
 
+- **Password-reset links work again.** The account and recovery screens moved
+  under a single sign-in area, but reset emails were still being generated
+  against the old address. Following one dropped the single-use token and
+  landed the recipient on the public site with no error and no way forward;
+  asking for another email was the only recovery. Newly generated links now use
+  the current address, and links already sitting in an inbox are forwarded
+  intact, token included, instead of being discarded.
+
+- **Landing-page section links now move the viewport.** A link such as
+  "Patient records", followed from any other page, changed the address but left
+  the visitor at the previous scroll position, because those links navigate
+  within the single-page app rather than loading a page. The target section is
+  now scrolled into view, and honours a visitor's reduced-motion preference.
+
 - **The public site header no longer overflows at tablet width.** The full
   navigation was shown from the small-phone breakpoint upward, but six links
   plus two buttons do not fit there: the landing page gained a horizontal
   scrollbar and header controls were pushed out of reach with no visible
-  affordance. The compact menu now covers that whole range.
+  affordance. The compact menu now covers that whole range, and the menu itself
+  is checked at those widths so it cannot go dead.
+
+- **Registration rejects a name made only of spaces.** Two spaces were enough to
+  satisfy the length check while the submitted name was built from trimmed
+  values, so a staff record could be created with a blank name. The fields are
+  trimmed before they are validated.
+
+- **Keyboard focus is visible on FAQ questions.** The questions removed their
+  focus outline without replacing it, so a keyboard user tabbing through the
+  page could not tell which question had focus.
+
+- **Motion honours the reduced-motion preference.** The preference was applied
+  through stylesheet rules that the animation library does not read, so sections,
+  the contact hero and the mobile menu still slid and faded in for visitors who
+  asked for stillness.
+
+- **Registration progress is announced correctly.** The step indicator is
+  numbered from one, so it was being read aloud as 0% on the first step. It now
+  announces "Step 1 of 3" and so on.
 
 ### Operator notes
 

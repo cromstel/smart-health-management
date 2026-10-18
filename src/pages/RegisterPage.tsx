@@ -32,8 +32,12 @@ import {
 
 const registerSchema = z
   .object({
-    firstName: z.string().min(2, 'First name must be at least 2 characters'),
-    lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+    // Trimmed before the length check, not after. min(2) on the raw value is
+    // satisfied by two spaces, and onSubmit then sends
+    // `name: \`${first} ${last}\`.trim()` -- so the API could be handed an empty
+    // name for a record that then displays as blank.
+    firstName: z.string().trim().min(2, 'First name must be at least 2 characters'),
+    lastName: z.string().trim().min(2, 'Last name must be at least 2 characters'),
     email: z
       .string()
       .min(1, 'Email address is required')
@@ -269,7 +273,7 @@ export default function RegisterPage() {
                   className="space-y-5"
                   noValidate
                 >
-                  <div className="flex gap-1" aria-label={`Step ${step} of ${stepDetails.length}`} role="progressbar" aria-valuemin={1} aria-valuemax={stepDetails.length} aria-valuenow={step}>
+                  <div className="flex gap-1" aria-label={`Step ${step} of ${stepDetails.length}`} role="progressbar" aria-valuemin={1} aria-valuemax={stepDetails.length} aria-valuenow={step} aria-valuetext={`Step ${step} of ${stepDetails.length}`}>
                     {stepDetails.map((stepDetail, index) => (
                       <span key={stepDetail.title} className={`h-1 flex-1 rounded-full ${index < step ? 'bg-accent' : 'bg-border'}`} />
                     ))}

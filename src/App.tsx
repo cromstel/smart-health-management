@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import type { ReactNode, ComponentType } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useReducedMotion } from 'motion/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuditProvider } from './contexts/AuditContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -86,6 +87,22 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 }
 
+/**
+ * Redirects a pre-migration auth path to its `/auth/*` equivalent while
+ * carrying the query string and fragment across intact.
+ *
+ * Preserving them is the whole point. A password-reset link is
+ * `/reset-password?token=...`; redirecting to the bare pathname drops the
+ * token, so ResetPasswordPage reports "no active reset token" and the user's
+ * only way out is to ask for another email. The token is single-use, so that
+ * failure is not recoverable in place.
+ */
+function LegacyAuthRedirect({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  const target = `${to}${search}${hash}`;
+  return <Navigate to={target} replace />;
+}
+
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -108,9 +125,26 @@ function AppRoutes() {
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/two-factor" element={<TwoFactorPage />} />
         <Route path="/auth/request-demo" element={<RequestDemoPage />} />
-        <Route path="/request-demo" element={<Navigate to="/auth/request-demo" replace />} />
+        <Route path="/request-demo" element={<LegacyAuthRedirect to="/auth/request-demo" />} />
         <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
         <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
+
+        {/* Compatibility redirects for the pre-migration auth paths.
+
+            A password-reset email already in someone's inbox points at
+            /reset-password?token=..., and a bare <Navigate to=...> sends it to
+            the catch-all, which redirects to "/" and throws the token away. The
+            user is left on the landing page with no error and no way forward,
+            and the token is single-use, so a re-send is the only recovery.
+
+            These have to carry the query string across, not just the path --
+            preserving the pathname alone is what made the old
+            /request-demo redirect lossy. */}
+        <Route path="/reset-password" element={<LegacyAuthRedirect to="/auth/reset-password" />} />
+        <Route path="/forgot-password" element={<LegacyAuthRedirect to="/auth/forgot-password" />} />
+        <Route path="/login" element={<LegacyAuthRedirect to="/auth/login" />} />
+        <Route path="/register" element={<LegacyAuthRedirect to="/auth/register" />} />
+        <Route path="/two-factor" element={<LegacyAuthRedirect to="/auth/two-factor" />} />
         <Route path="/shared/patient-summary/:token" element={<SharedPatientSummaryPage />} />
         
         {/* Site Super Admin Auth Routes — site owner only (global scope) */}
@@ -163,6 +197,49 @@ function AppRoutes() {
   );
 }
 
+/**
+ * Restores the scroll position for a fragment target after a client-side
+ * navigation.
+ *
+ * The footer and header link to landing-page sections from the company pages
+ * (`/about-us/` -> `/#features`). Those are React Router navigations, and
+ * declarative routing does not move the viewport the way a real page load does:
+ * the URL updates and the newly mounted landing page is left wherever the
+ * previous page happened to be. The visitor gets the right page at the wrong
+ * offset, with no indication that the jump did not happen.
+ *
+ * Only acts when a hash is present. Routes without one keep whatever scroll
+ * behaviour they already had; silently adding scroll-to-top everywhere would be
+ * a separate, larger behaviour change.
+ */
+function ScrollToHash() {
+  const { pathname, hash } = useLocation();
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!hash) return;
+    const id = decodeURIComponent(hash.slice(1));
+    if (!id) return;
+
+    // The destination is usually a lazily loaded route, so the target does not
+    // exist on the first frame after navigation. Retry against a wall-clock
+    // budget rather than a frame count: chunk load time is not tied to frame
+    // rate, and on a slow connection 40 frames is well under a second.
+    const deadline = performance.now() + 2000;
+    let frame = requestAnimationFrame(function attempt() {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        return;
+      }
+      if (performance.now() < deadline) frame = requestAnimationFrame(attempt);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, hash, reduceMotion]);
+
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -171,6 +248,7 @@ function App() {
           <AuditProvider>
             <NotificationProvider>
               <ShortcutManager />
+              <ScrollToHash />
               <ErrorBoundary>
                 <AppRoutes />
               </ErrorBoundary>
