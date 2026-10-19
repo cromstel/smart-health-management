@@ -467,12 +467,13 @@ test.describe('Super Admin Login Page', () => {
     await expect(page.getByRole('link', { name: 'CITGROUP' })).toBeVisible();
   });
 
-  test('has pre-filled demo credentials', async ({ page }) => {
+  test('does not expose pre-filled demo credentials', async ({ page }) => {
     await page.goto('/auth/super-admin/login');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('#admin-email')).toHaveValue('superadmin@smarthealth.com');
-    await expect(page.locator('#admin-password')).toHaveValue('April--2024!!!!');
+    // The site-owner portal has no autofill shortcut; fields start empty.
+    await expect(page.locator('#admin-email')).toHaveValue('');
+    await expect(page.locator('#admin-password')).toHaveValue('');
   });
 
   test('can toggle password visibility', async ({ page }) => {
