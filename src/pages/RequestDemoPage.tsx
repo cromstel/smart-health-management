@@ -48,7 +48,7 @@ export default function RequestDemoPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
+    <div className="relative isolate min-h-screen bg-background text-foreground">
       <img
         src="/images/hero-banner/medicare-demo-request-hero-banner.avif"
         alt="A diverse healthcare team standing together in a bright clinical setting"
