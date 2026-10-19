@@ -14,7 +14,7 @@ export interface DemoRequestPayload {
   email: string;
   organization: string;
   role: string;
-  organizationSize: '1-50' | '51-250' | '251-1000' | '1000+';
+  organizationSize: '1-50' | '51-200' | '201-500' | '501-1000' | '1000+';
   preferredContact: 'email' | 'phone';
   phone?: string;
   message?: string;

@@ -130,7 +130,7 @@ test.describe('Public routes', () => {
     await page.locator('#demo-email').fill('avery@example.org');
     await page.locator('#demo-organization').fill('Northwind Hospital');
     await page.locator('#demo-role').fill('Clinical Director');
-    await page.locator('#demo-organization-size').selectOption('51-250');
+    await page.locator('#demo-organization-size').selectOption('51-200');
     await page.getByRole('button', { name: 'SEND REQUEST' }).click();
     await expect(page.getByRole('heading', { name: 'Your request is on its way.' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
