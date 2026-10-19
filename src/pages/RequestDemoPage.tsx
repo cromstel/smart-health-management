@@ -48,25 +48,27 @@ export default function RequestDemoPage() {
   };
 
   return (
-    <div className="relative isolate min-h-screen bg-background text-foreground">
-      <img
-        src="/images/hero-banner/medicare-demo-request-hero-banner.avif"
-        alt="A diverse healthcare team standing together in a bright clinical setting"
-        className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
-      />
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
+    <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto my-6 grid max-w-6xl gap-10 rounded-3xl bg-background/85 px-4 py-12 sm:my-10 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
-        <section className="lg:pt-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
-          <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-accent">Personalised platform tour</p>
-          <h1 className="font-display mt-3 text-4xl font-semibold text-foreground sm:text-5xl">See Smart MediCare in action.</h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">Tell us about your organisation and a product specialist will prepare a focused walkthrough for your team.</p>
-          <ul className="mt-10 space-y-5 text-sm text-muted-foreground">
-            <li className="flex gap-3"><CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Built around your workflow.</strong><br />Explore the clinical, operations, pharmacy, and reporting tools most relevant to you.</span></li>
-            <li className="flex gap-3"><Users className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Bring the right people.</strong><br />Invite clinical, operational, and IT stakeholders to the same session.</span></li>
-            <li className="flex gap-3"><Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">A clear next step.</strong><br />You will receive a response through your preferred contact method.</span></li>
-          </ul>
-          <p className="mt-10 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" /> Please do not include patient or other sensitive health information.</p>
+        <section className="relative isolate overflow-hidden rounded-2xl border border-primary-foreground/15 bg-primary p-6 sm:p-8 lg:self-start lg:pt-10">
+          <img
+            src="/images/hero-banner/medicare-demo-request-hero-banner.avif"
+            alt="A diverse healthcare team standing together in a bright clinical setting"
+            className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
+          />
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
+          <div className="relative">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 hover:text-primary-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
+            <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-primary-foreground/90">Personalised platform tour</p>
+            <h1 className="font-display mt-3 text-4xl font-semibold text-primary-foreground sm:text-5xl">See Smart MediCare in action.</h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-primary-foreground/90">Tell us about your organisation and a product specialist will prepare a focused walkthrough for your team.</p>
+            <ul className="mt-10 space-y-5 text-sm text-primary-foreground/90">
+              <li className="flex gap-3"><CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-primary-foreground">Built around your workflow.</strong><br />Explore the clinical, operations, pharmacy, and reporting tools most relevant to you.</span></li>
+              <li className="flex gap-3"><Users className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-primary-foreground">Bring the right people.</strong><br />Invite clinical, operational, and IT stakeholders to the same session.</span></li>
+              <li className="flex gap-3"><Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-primary-foreground">A clear next step.</strong><br />You will receive a response through your preferred contact method.</span></li>
+            </ul>
+            <p className="mt-10 flex items-center gap-2 text-xs text-primary-foreground/90"><ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" /> Please do not include patient or other sensitive health information.</p>
+          </div>
         </section>
 
         <Card className="border-border bg-card shadow-lg shadow-border/50">
