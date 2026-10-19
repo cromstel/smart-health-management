@@ -50,9 +50,9 @@ export default function RequestDemoPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground">
       <img
-        src="/images/medicare-request-demo-hero-banner.webp"
-        alt="A diverse clinical team reviewing a care plan together"
-        className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-center"
+        src="/images/hero-banner/medicare-demo-request-hero-banner.avif"
+        alt="A diverse healthcare team standing together in a bright clinical setting"
+        className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
       />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
       <main className="mx-auto my-6 grid max-w-6xl gap-10 rounded-3xl bg-background/85 px-4 py-12 sm:my-10 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
