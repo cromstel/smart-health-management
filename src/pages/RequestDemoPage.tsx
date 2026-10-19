@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Users } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { api } from '@/services/api';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const demoRequestSchema = z.object({
 type DemoRequestValues = z.infer<typeof demoRequestSchema>;
 
 export default function RequestDemoPage() {
+  const reduce = useReducedMotion();
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState('');
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DemoRequestValues>({
@@ -49,29 +51,53 @@ export default function RequestDemoPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto my-6 grid max-w-6xl gap-10 rounded-3xl bg-background/85 px-4 py-12 sm:my-10 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:py-20">
-        <section className="relative isolate overflow-hidden rounded-2xl border border-primary-foreground/15 bg-primary p-6 sm:p-8 lg:self-start lg:pt-10">
-          <img
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">
+        Skip to main content
+      </a>
+      <main id="main-content">
+        <section className="relative isolate min-h-[32rem] overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 sm:py-24 lg:flex lg:min-h-[34rem] lg:items-center lg:py-28">
+          <motion.img
             src="/images/hero-banner/medicare-demo-request-hero-banner.avif"
             alt="A diverse healthcare team standing together in a bright clinical setting"
+            initial={reduce ? false : { opacity: 0, scale: 1.06 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
             className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
           />
-          <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
-          <div className="relative">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 hover:text-primary-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
-            <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-primary-foreground/90">Personalised platform tour</p>
-            <h1 className="font-display mt-3 text-4xl font-semibold text-primary-foreground sm:text-5xl">See Smart MediCare in action.</h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-primary-foreground/90">Tell us about your organisation and a product specialist will prepare a focused walkthrough for your team.</p>
-            <ul className="mt-10 space-y-5 text-sm text-primary-foreground/90">
-              <li className="flex gap-3"><CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-primary-foreground">Built around your workflow.</strong><br />Explore the clinical, operations, pharmacy, and reporting tools most relevant to you.</span></li>
-              <li className="flex gap-3"><Users className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-primary-foreground">Bring the right people.</strong><br />Invite clinical, operational, and IT stakeholders to the same session.</span></li>
-              <li className="flex gap-3"><Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-primary-foreground">A clear next step.</strong><br />You will receive a response through your preferred contact method.</span></li>
-            </ul>
-            <p className="mt-10 flex items-center gap-2 text-xs text-primary-foreground/90"><ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" /> Please do not include patient or other sensitive health information.</p>
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/68" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+            <div className="mx-auto grid h-full max-w-6xl grid-cols-4 border-x border-primary-foreground/15">
+              {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
+            </div>
+          </div>
+          <div className="relative mx-auto w-full max-w-6xl px-4 text-left sm:px-6 lg:px-8">
+            <motion.div initial={reduce ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 hover:text-primary-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
+            </motion.div>
+            <motion.p initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.06 }} className="mt-8 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
+              <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
+              Personalised platform tour
+            </motion.p>
+            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="max-w-2xl">
+              <div className="border-y border-primary-foreground/30 py-8 sm:py-10">
+                <h1 className="font-display text-4xl font-medium leading-[1.02] tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">See Smart MediCare in action.</h1>
+                <p className="mt-7 max-w-xl text-lg leading-relaxed text-primary-foreground/90">Tell us about your organisation and a product specialist will prepare a focused walkthrough for your team.</p>
+              </div>
+            </motion.div>
           </div>
         </section>
 
-        <Card className="border-border bg-card shadow-lg shadow-border/50">
+        <section className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16 lg:py-24">
+          <div className="lg:pt-2">
+            <ul className="space-y-6 text-sm text-muted-foreground">
+              <li className="flex gap-3"><CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Built around your workflow.</strong><br />Explore the clinical, operations, pharmacy, and reporting tools most relevant to you.</span></li>
+              <li className="flex gap-3"><Users className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">Bring the right people.</strong><br />Invite clinical, operational, and IT stakeholders to the same session.</span></li>
+              <li className="flex gap-3"><Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" /><span><strong className="text-foreground">A clear next step.</strong><br />You will receive a response through your preferred contact method.</span></li>
+            </ul>
+            <p className="mt-10 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-success" aria-hidden="true" /> Please do not include patient or other sensitive health information.</p>
+          </div>
+
+          <Card className="border-border bg-card shadow-lg shadow-border/50">
           <CardHeader className="border-b border-border">
             <CardTitle>Request a demo</CardTitle>
             <CardDescription>Required fields are marked by their labels. We use these details only to arrange your demo.</CardDescription>
@@ -105,7 +131,8 @@ export default function RequestDemoPage() {
               </form>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        </section>
       </main>
     </div>
   );

@@ -26,11 +26,12 @@ implementation reasoning behind each entry here.
 ### Changed
 
 - **Demo-request page hero scoped to its own section.** The request-a-demo
-  page's photographic banner now renders inside a dedicated hero section
-  alongside the enquiry form, following the same section-scoped hero pattern
-  as the About Us and Contact Us pages, instead of stretching across the
-  entire page. Page layout, form behaviour, and submitted data are unchanged,
-  and the banner remains legible in both light and dark themes.
+  page now opens with a full-width hero banner section in the same style as
+  the About Us and Contact Us pages (photographic banner with overlay and
+  grid lines), with the enquiry form and supporting points below. The page
+  is served within the public site frame, so the global header and footer are
+  present. Page layout, form behaviour, and submitted data are unchanged, and
+  the banner remains legible in both light and dark themes.
 
 - **Public navigation labels clarified.** The public-site header now presents
   the account-entry and registration actions as uppercase **LOGIN** and

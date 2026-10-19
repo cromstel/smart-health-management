@@ -114,6 +114,7 @@ function AppRoutes() {
           <Route path="/about-us/" element={<AboutUsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/auth/request-demo" element={<RequestDemoPage />} />
         </Route>
 
         {/* Account and account-adjacent flows stay focused, without marketing navigation. */}
@@ -124,7 +125,6 @@ function AppRoutes() {
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/two-factor" element={<TwoFactorPage />} />
-        <Route path="/auth/request-demo" element={<RequestDemoPage />} />
         <Route path="/request-demo" element={<LegacyAuthRedirect to="/auth/request-demo" />} />
         <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
         <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
