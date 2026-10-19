@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, Clock3, Loader2, Mail, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { api } from '@/services/api';
 
 import { Button } from '@/components/ui/button';
@@ -71,9 +71,6 @@ export default function RequestDemoPage() {
             </div>
           </div>
           <div className="relative mx-auto w-full max-w-6xl px-4 text-left sm:px-6 lg:px-8">
-            <motion.div initial={reduce ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 hover:text-primary-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Smart MediCare</Link>
-            </motion.div>
             <motion.p initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.06 }} className="mt-8 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
               Personalised platform tour
