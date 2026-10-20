@@ -37,6 +37,17 @@ import batchRoutes from './routes/batch.routes.js';
 import prescriptionRoutes from './routes/prescription.routes.js';
 import patientLoadPredictionRoutes from './routes/patientLoadPrediction.routes.js';
 import demoRequestRoutes from './routes/demoRequest.routes.js';
+import vitalsRoutes from './routes/vitals.routes.js';
+import sharedSummaryRoutes from './routes/sharedSummary.routes.js';
+import geminiRoutes from './routes/gemini.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
+import auditLogRoutes from './routes/auditLog.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import clinicalNotesRoutes from './routes/clinicalNotes.routes.js';
+import medicationAdministrationRoutes from './routes/medicationAdministration.routes.js';
+import dispensingEventRoutes from './routes/dispensingEvent.routes.js';
+import forecastRoutes from './routes/forecast.routes.js';
+import emergencyRoutes from './routes/emergency.routes.js';
 import './jobs/inventory.job.js';
 import './jobs/backup.job.js';
 import { scheduleBackups } from './services/cron.service.js';
@@ -126,9 +137,8 @@ app.get('/api/auth/csrf', (_req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/analytics/event', (_req, res) => {
-  res.json({ status: 'success', synced: true });
-});
+// The analytics beacon is mounted below with the analytics router, which
+// persists the event instead of discarding it.
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -150,6 +160,19 @@ app.use('/api/batches', batchRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/patient-load-predictions', patientLoadPredictionRoutes);
 app.use('/api/demo-requests', demoRequestRoutes);
+app.use('/api/vitals', vitalsRoutes);
+app.use('/api/shared', sharedSummaryRoutes);
+app.use('/api/gemini', geminiRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/clinical-notes', clinicalNotesRoutes);
+app.use('/api/medication-administrations', medicationAdministrationRoutes);
+app.use('/api/dispensing-events', dispensingEventRoutes);
+// The forecast router registers its own `/forecast` path, so it is mounted at
+// the pharmacy prefix rather than at the full path.
+app.use('/api/pharmacy', forecastRoutes);
+app.use('/api/emergency', emergencyRoutes);
 
 // Error handlers
 app.use(notFoundHandler);

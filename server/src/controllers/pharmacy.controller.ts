@@ -1,9 +1,60 @@
 import type { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
-import { buildXlsx } from '../services/reportFormatters/xlsx.js'
+import { buildXlsx } from '../services/reportFormatters/xlsx.js';
+import { buildPDF } from '../services/reportFormatters/pdf.js';
 
 import type { AuthRequest } from '../middleware/auth.js';
+
+/**
+ * Columns a client may write on `medicines_inventory`.
+ *
+ * The request body is never used to build the SET clause directly -- any key
+ * a client sends would otherwise become a column name. `id` is the primary
+ * key and is never updatable.
+ */
+const PHARMACY_ITEM_UPDATE_FIELDS: Record<string, string> = {
+  medicine_name: 'medicine_name',
+  medicineName: 'medicine_name',
+  category: 'category',
+  supplier: 'supplier',
+  supplier_id: 'supplier_id',
+  supplierId: 'supplier_id',
+  stock_level: 'stock_level',
+  stockLevel: 'stock_level',
+  low_stock_threshold: 'low_stock_threshold',
+  lowStockThreshold: 'low_stock_threshold',
+  unit_price: 'unit_price',
+  unitPrice: 'unit_price',
+  expiry_date: 'expiry_date',
+  expiryDate: 'expiry_date',
+  storage_location: 'storage_location',
+  storageLocation: 'storage_location',
+};
+
+/** Human readable titles for the generated reports. */
+const REPORT_TITLES: Record<string, string> = {
+  stock_levels: 'Stock Levels',
+  expiry_dates: 'Expiry Dates',
+  low_stock: 'Low Stock',
+};
+
+/**
+ * Coerces a form value that may arrive as a string into a number, or null
+ * when it is absent/blank. Blank strings are a normal artefact of the
+ * pharmacy form and mean "not supplied", not zero.
+ */
+const toNumberOrNull = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toTextOrNull = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text === '' ? null : text;
+};
 
 export const getPharmacyItems = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -47,20 +98,60 @@ export const createPharmacyItem = async (req: AuthRequest, res: Response): Promi
   try {
     const {
       medicineName,
+      medicine_name,
+      category,
       supplier,
+      supplierId,
+      supplier_id,
       stockLevel,
+      stock_level,
       lowStockThreshold,
+      low_stock_threshold,
       expiryDate,
+      expiry_date,
       unitPrice,
+      unit_price,
       storageLocation,
-    } = req.body;
+      storage_location,
+    } = req.body ?? {};
+
+    const name = toTextOrNull(medicineName ?? medicine_name);
+    if (!name) {
+      return res.status(400).json({ error: 'Medicine name is required' });
+    }
+
     const id = uuidv4();
+    const stock = toNumberOrNull(stockLevel ?? stock_level) ?? 0;
+    const threshold = toNumberOrNull(lowStockThreshold ?? low_stock_threshold) ?? 0;
+    const price = toNumberOrNull(unitPrice ?? unit_price) ?? 0;
+
+    // `category` and `supplier_id` are what the prescription contraindication
+    // check and the low stock re-order job rely on, so they are persisted
+    // instead of being dropped on the floor.
     await pool.query(
-      `INSERT INTO medicines_inventory (id, medicine_name, supplier, stock_level, low_stock_threshold, expiry_date, unit_price, storage_location)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, medicineName, supplier, stockLevel, lowStockThreshold, expiryDate, unitPrice, storageLocation]
+      `INSERT INTO medicines_inventory
+         (id, medicine_name, category, supplier, supplier_id, stock_level, low_stock_threshold, expiry_date, unit_price, storage_location)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        name,
+        toTextOrNull(category),
+        toTextOrNull(supplier),
+        toNumberOrNull(supplierId ?? supplier_id),
+        stock,
+        threshold,
+        toTextOrNull(expiryDate ?? expiry_date),
+        price,
+        toTextOrNull(storageLocation ?? storage_location),
+      ]
     );
-    res.status(201).json({ message: 'Pharmacy item created successfully', id });
+
+    res.status(201).json({
+      message: 'Pharmacy item created successfully',
+      id,
+      medicine_name: name,
+      category: toTextOrNull(category),
+    });
   } catch (error) {
     console.error('Create pharmacy item error:', error);
     res.status(500).json({ error: 'Failed to create pharmacy item' });
@@ -70,13 +161,41 @@ export const createPharmacyItem = async (req: AuthRequest, res: Response): Promi
 export const updatePharmacyItem = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    const updates = req.body;
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), id];
+    const updates = (req.body ?? {}) as Record<string, unknown>;
+
+    const assignments: string[] = [];
+    const values: any[] = [];
+    const usedColumns = new Set<string>();
+
+    for (const [key, column] of Object.entries(PHARMACY_ITEM_UPDATE_FIELDS)) {
+      if (!(key in updates) || updates[key] === undefined) continue;
+      if (usedColumns.has(column)) continue; // camelCase alias already applied
+      usedColumns.add(column);
+
+      let value: unknown = updates[key];
+      if (column === 'stock_level' || column === 'low_stock_threshold') {
+        value = toNumberOrNull(value) ?? 0;
+      } else if (column === 'unit_price') {
+        value = toNumberOrNull(value) ?? 0;
+      } else if (column === 'supplier_id') {
+        value = toNumberOrNull(value);
+      } else if (column === 'expiry_date') {
+        value = toTextOrNull(value);
+      } else {
+        value = toTextOrNull(value);
+      }
+
+      assignments.push(`${column} = ?`);
+      values.push(value);
+    }
+
+    if (assignments.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
 
     await pool.query(
-      `UPDATE medicines_inventory SET ${fields} WHERE id = ?`,
-      values
+      `UPDATE medicines_inventory SET ${assignments.join(', ')} WHERE id = ?`,
+      [...values, id]
     );
     res.json({ message: 'Pharmacy item updated successfully' });
   } catch (error) {
@@ -98,17 +217,17 @@ export const deletePharmacyItem = async (req: AuthRequest, res: Response): Promi
 
 export const generatePharmacyReport = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    // Accept both spellings. The client and the mock API both send ?type=, while
-    // this handler only read ?reportType=, so every report request fell through
-    // to the default branch and answered 400 "Invalid report type".
+    // Accept both spellings. The client and the mock API both send ?type=,
+    // while this handler only read ?reportType=, so every report request fell
+    // through to the default branch and answered 400 "Invalid report type".
     const reportType = String(
       (req.query as any).type ?? (req.query as any).reportType ?? ''
     );
-    const accept = String(req.headers?.['accept'] || '').toLowerCase()
-    const queryFormat = String((req.query as any).format || '').toLowerCase()
+    const accept = String(req.headers?.['accept'] || '').toLowerCase();
+    const queryFormat = String((req.query as any).format || '').toLowerCase();
     const format = accept.includes('application/pdf') ? 'pdf'
       : accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ? 'xlsx'
-      : queryFormat || 'json'
+      : queryFormat || 'json';
 
     let query = '';
     const params: any[] = [];
@@ -129,24 +248,38 @@ export const generatePharmacyReport = async (req: AuthRequest, res: Response): P
     }
 
     const [rows] = await pool.query(query, params);
-    const list = rows as any[]
+    const list = rows as any[];
     if (format === 'xlsx') {
-      const buf = await buildXlsx(list, String(reportType))
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-      res.setHeader('Content-Disposition', `attachment; filename="pharmacy_${String(reportType)}.xlsx"`)
-      res.send(buf)
-      return
+      const buf = await buildXlsx(list, String(reportType));
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="pharmacy_${String(reportType)}.xlsx"`);
+      res.send(buf);
+      return;
     }
     if (format === 'pdf') {
-      res.status(501).json({ error: 'PDF reporting is not implemented' })
-      return
+      const title = REPORT_TITLES[reportType] ?? reportType;
+      const doc = buildPDF(title, list);
+      const chunks: Buffer[] = [];
+      await new Promise<void>((resolve, reject) => {
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => {
+          const pdfBuffer = Buffer.concat(chunks);
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="pharmacy_${String(reportType)}.pdf"`);
+          res.send(pdfBuffer);
+          resolve();
+        });
+        doc.on('error', reject);
+        doc.end();
+      });
+      return;
     }
     if (format === 'csv') {
-      const headers = Object.keys(list[0] || {})
-      const lines = [headers.join(','), ...list.map((r) => headers.map((h) => String(r[h] ?? '').replace(/,/g, ';')).join(','))]
-      res.setHeader('Content-Type', 'text/csv')
-      res.send(lines.join('\n'))
-      return
+      const headers = Object.keys(list[0] || {});
+      const lines = [headers.join(','), ...list.map((r) => headers.map((h) => String(r[h] ?? '').replace(/,/g, ';')).join(','))];
+      res.setHeader('Content-Type', 'text/csv');
+      res.send(lines.join('\n'));
+      return;
     }
     res.json(rows);
   } catch (error) {

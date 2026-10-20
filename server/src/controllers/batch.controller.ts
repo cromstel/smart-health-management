@@ -5,14 +5,25 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { sendEmail } from '../utils/mail.js';
 import { sendSms } from '../utils/sms.js';
 
-export const getBatches = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
+export const getBatches = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    const [batches] = await pool.query(`
-      SELECT mb.*, mi.medicine_name
-      FROM medicine_batches mb
-      LEFT JOIN medicines_inventory mi ON mb.medicine_id = mi.id
-      ORDER BY mb.created_at DESC
-    `);
+    // Optional filter by medicine, so a caller that only needs one medicine's
+    // lots does not have to fetch and filter every batch in the system.
+    const { medicineId } = req.query;
+    const params: unknown[] = [];
+    let filter = '';
+    if (medicineId) {
+      filter = ' WHERE mb.medicine_id = ?';
+      params.push(medicineId);
+    }
+
+    const [batches] = await pool.query(
+      `SELECT mb.*, mi.medicine_name
+       FROM medicine_batches mb
+       LEFT JOIN medicines_inventory mi ON mb.medicine_id = mi.id${filter}
+       ORDER BY mb.created_at DESC`,
+      params
+    );
     res.json(batches);
   } catch (error) {
     console.error('Get batches error:', error);
@@ -53,14 +64,34 @@ export const createBatch = async (req: AuthRequest, res: Response): Promise<Resp
   }
 };
 
+// Only these columns may be changed through the API. Without a whitelist any
+// request key became a column, which allowed writes to `id` and `medicine_id`.
+const ALLOWED_BATCH_UPDATES = new Set([
+  'batch_number',
+  'expiry_date',
+  'quantity',
+  'recalled',
+]);
+
 export const updateBatch = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    const updates = req.body;
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), id];
+    const updates = req.body ?? {};
 
-    await pool.query(`UPDATE medicine_batches SET ${fields} WHERE id = ?`, values);
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    for (const [key, value] of Object.entries(updates)) {
+      if (!ALLOWED_BATCH_UPDATES.has(key)) continue;
+      fields.push(`${key} = ?`);
+      values.push(value);
+    }
+
+    if (fields.length === 0) {
+      res.status(400).json({ error: 'No updatable fields provided' });
+      return;
+    }
+
+    await pool.query(`UPDATE medicine_batches SET ${fields.join(', ')} WHERE id = ?`, [...values, id]);
     res.json({ message: 'Batch updated successfully' });
   } catch (error) {
     console.error('Update batch error:', error);

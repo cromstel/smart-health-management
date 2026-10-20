@@ -32,11 +32,20 @@ describe('Pharmacy report exports', () => {
     expect((res.send as any)).toHaveBeenCalled()
   })
 
-  it('returns 501 for PDF', async () => {
+  it('returns a PDF document', async () => {
     const req = { query: { reportType: 'expiry_dates', format: 'pdf' }, headers: {} } as any as AuthRequest
     const res = makeRes()
     await generatePharmacyReport(req, res)
-    expect((res.status as any)).toHaveBeenCalledWith(501)
-    expect((res.json as any)).toHaveBeenCalledWith({ error: 'PDF reporting is not implemented' })
+    // The PDF branch is implemented: no error status, the right headers and a
+    // real PDF payload are sent back.
+    expect((res.status as any)).not.toHaveBeenCalled()
+    expect((res.setHeader as any)).toHaveBeenCalledWith('Content-Type', 'application/pdf')
+    expect((res.setHeader as any)).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="pharmacy_expiry_dates.pdf"'
+    )
+    const payload = (res.send as any).mock.calls[0][0]
+    expect(Buffer.isBuffer(payload)).toBe(true)
+    expect(payload.subarray(0, 5).toString()).toBe('%PDF-')
   })
 })

@@ -3,7 +3,22 @@ import type { Response } from 'express'
 import type { AuthRequest } from '../middleware/auth'
 import { generatePharmacyReport } from '../controllers/pharmacy.controller'
 vi.mock('../services/reportFormatters/xlsx.js', () => ({ buildXlsx: vi.fn(() => Buffer.from('xlsx')) }))
-vi.mock('../services/reportFormatters/pdf.js', () => ({ buildPDF: vi.fn(() => ({ pipe: () => {}, end: () => {} })) }))
+vi.mock('../services/reportFormatters/pdf.js', () => ({
+  buildPDF: vi.fn(() => {
+    const handlers: Record<string, Array<(...args: any[]) => void>> = {}
+    return {
+      on(event: string, handler: (...args: any[]) => void) {
+        ;(handlers[event] = handlers[event] || []).push(handler)
+        return this
+      },
+      pipe: () => {},
+      end() {
+        ;(handlers.data || []).forEach((h) => h(Buffer.from('%PDF-1.4 mock')))
+        ;(handlers.end || []).forEach((h) => h())
+      },
+    }
+  }),
+}))
 
 vi.mock('../config/database.js', () => ({ default: { query: vi.fn(() => Promise.resolve([[{ medicine_name: 'A', stock_level: 1, unit_price: 2.5 }]])) } }))
 
@@ -27,11 +42,17 @@ describe('Pharmacy Reports binary formats', () => {
     expect((res.send as any)).toHaveBeenCalled()
   })
 
-  it('returns 501 for PDF with Accept header', async () => {
+  it('serves PDF with Accept header', async () => {
     const req = { query: { reportType: 'low_stock' }, headers: { accept: 'application/pdf' } } as any as AuthRequest
     const res = makeRes()
     await generatePharmacyReport(req, res)
-    expect((res.status as any)).toHaveBeenCalledWith(501)
-    expect((res.json as any)).toHaveBeenCalledWith({ error: 'PDF reporting is not implemented' })
+    expect((res.status as any)).not.toHaveBeenCalled()
+    expect((res.setHeader as any)).toHaveBeenCalledWith('Content-Type', 'application/pdf')
+    expect((res.setHeader as any)).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="pharmacy_low_stock.pdf"'
+    )
+    const payload = (res.send as any).mock.calls[0][0]
+    expect(Buffer.isBuffer(payload)).toBe(true)
   })
 })

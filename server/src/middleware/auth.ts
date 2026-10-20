@@ -1,7 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
+import { createHash } from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
+import type { RowDataPacket } from 'mysql2';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -9,22 +11,105 @@ export interface AuthRequest extends Request {
     email: string;
     role: string;
     hospital_id?: string;
+    department_id?: string;
   };
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
+/**
+ * Extracts the raw bearer token from a request.
+ *
+ * Header first. The query fallback exists because EventSource -- which
+ * backs the role/permission SSE stream -- cannot set request headers, so the
+ * browser can only pass the token as ?token=. Without this fallback that
+ * endpoint could only ever answer 401 and the client retried on an interval.
+ *
+ * Tradeoff: query strings are more likely to be captured in access logs and
+ * referrers than headers are. The token here is short-lived and the endpoint
+ * is same-origin; anything longer-lived should use fetch() plus streams.
+ */
+export const extractToken = (req: Request): string | undefined => {
+  const headerToken = req.headers.authorization?.split(' ')[1];
+  if (headerToken) {
+    return headerToken;
+  }
+  const queryToken = req.query?.token;
+  return typeof queryToken === 'string' && queryToken.length > 0 ? queryToken : undefined;
+};
+
+/**
+ * SHA-256 hex digest of a bearer token.
+ *
+ * A JWT is a bearer credential: anyone holding it can act as the user. Only
+ * a digest is ever persisted (revocation list, audit trails), so a dump of
+ * those tables cannot be replayed as a session.
+ */
+export const hashToken = (token: string): string =>
+  createHash('sha256').update(token).digest('hex');
+
+/**
+ * Short-lived cache of revocation lookups.
+ *
+ * The revocation check runs on every authenticated request, so the result is
+ * memoised. The cache is only a fast path: the database remains the source
+ * of truth and an entry that leaves the cache is simply re-read.
+ *
+ * A revoked token is cached for longer than a valid one. A valid token that
+ * is revoked by another process is picked up within the short window; a
+ * token that is revoked by this process is marked directly (see
+ * `markTokenRevoked`) and is rejected immediately.
+ */
+const REVOKED_CACHE_TTL_MS = 60_000;
+const VALID_CACHE_TTL_MS = 5_000;
+
+interface RevocationEntry {
+  revoked: boolean;
+  expiresAt: number;
+}
+
+const revocationCache = new Map<string, RevocationEntry>();
+
+/**
+ * Marks a token as revoked in the cache.
+ *
+ * Called by the logout handler right after the revocation row is written, so
+ * a token that was just invalidated is rejected on the very next request
+ * instead of staying usable for the length of the cache window.
+ */
+export const markTokenRevoked = (tokenHash: string): void => {
+  revocationCache.set(tokenHash, { revoked: true, expiresAt: Date.now() + REVOKED_CACHE_TTL_MS });
+};
+
+/**
+ * True when the token has been explicitly invalidated (logout) and has not
+ * expired yet.
+ */
+export const isTokenRevoked = async (tokenHash: string): Promise<boolean> => {
+  const now = Date.now();
+  const cached = revocationCache.get(tokenHash);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.revoked;
+  }
+  if (cached) {
+    revocationCache.delete(tokenHash);
+  }
+
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT 1 AS revoked FROM revoked_tokens WHERE token_hash = ? AND expires_at > NOW() LIMIT 1',
+    [tokenHash]
+  );
+
+  const revoked = rows.length > 0;
+  revocationCache.set(tokenHash, {
+    revoked,
+    expiresAt: now + (revoked ? REVOKED_CACHE_TTL_MS : VALID_CACHE_TTL_MS),
+  });
+  return revoked;
+};
+
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Header first. The query fallback exists because EventSource -- which
-    // backs the role/permission SSE stream -- cannot set request headers, so the
-    // browser can only pass the token as ?token=. Without this fallback that
-    // endpoint could only ever answer 401 and the client retried on an interval.
-    //
-    // Tradeoff: query strings are more likely to be captured in access logs and
-    // referrers than headers are. The token here is short-lived and the endpoint
-    // is same-origin; anything longer-lived should use fetch() plus streams.
-    const token =
-      req.headers.authorization?.split(' ')[1] ||
-      (typeof req.query?.token === 'string' ? req.query.token : undefined);
+    const token = extractToken(req);
 
     if (!token) {
       res.status(401).json({ error: 'Authentication required' });
@@ -36,7 +121,15 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
       email: string;
       role: string;
       hospital_id?: string;
+      department_id?: string;
     };
+
+    // A token that was invalidated by logout must stop working immediately
+    // instead of staying valid until its natural expiry.
+    if (await isTokenRevoked(hashToken(token))) {
+      res.status(401).json({ error: 'Session has been revoked' });
+      return;
+    }
 
     req.user = decoded;
     next();
@@ -147,8 +240,18 @@ export const requirePermission = (module: string, action: 'view' | 'add' | 'edit
           res.status(403).json({ error: 'Missing hospital context' });
           return;
         }
-        const targetHospital = (req.query.hospital as string) || (req.query.hospitalId as string) || (req.body?.hospitalId as string) || (req.params?.hospitalId as string) || userHospital;
-        if (targetHospital && targetHospital !== userHospital) {
+        // The target hospital can arrive under either spelling: the clients
+        // send `hospital_id` on some payloads and `hospitalId` on others, and
+        // only reading one of them let a record be attached to a hospital
+        // outside the caller's own.
+        const targetHospital =
+          (req.query.hospital as string) ||
+          (req.query.hospitalId as string) ||
+          (req.body?.hospitalId as string) ||
+          (req.body?.hospital_id as string) ||
+          (req.params?.hospitalId as string) ||
+          userHospital;
+        if (targetHospital && String(targetHospital) !== String(userHospital)) {
           res.status(403).json({ error: 'Hospital mismatch' });
           return;
         }

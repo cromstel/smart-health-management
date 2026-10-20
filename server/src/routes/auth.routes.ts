@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth.js';
 import { body } from 'express-validator';
 import { validate } from '../middleware/validator.js';
 import * as authController from '../controllers/auth.controller.js';
+import { meetsPasswordPolicy } from '../controllers/auth.controller.js';
 import { rateLimit } from 'express-rate-limit';
 
 const router = Router();
@@ -37,6 +38,22 @@ const twoFactorLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Password reset endpoints.
+//
+// The reset link is a bearer credential, and the request that creates it
+// sends mail: without a limiter the endpoint is both a mail-bomb vector and
+// a way to probe which addresses are registered. The same limiter covers
+// both endpoints of the flow, because a reset link is only useful together
+// with a redemption attempt.
+const passwordResetLimitMax = parseInt(process.env.PASSWORD_RESET_RATE_LIMIT_MAX || '10', 10);
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: passwordResetLimitMax,
+  message: 'Too many password reset requests from this IP, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/login',
   loginLimiter, // Apply brute-force protection
@@ -65,12 +82,18 @@ router.post(
 );
 
 router.post('/refresh', authController.refreshToken);
-router.post('/logout', authController.logout);
+
+// Logout is authenticated: the token the caller presents is what gets
+// revoked, so the request has to carry it.
+router.post('/logout', authenticate, authController.logout);
 
 router.post(
   '/forgot-password',
+  passwordResetLimiter,
   [
-    body('email').isEmail().withMessage('Valid email is required'),
+    // Trimmed but not HTML-escaped: escaping would corrupt an address that
+    // legitimately contains `&` and the lookup would then never match.
+    body('email').trim().isEmail().withMessage('Valid email is required'),
     validate
   ],
   authController.forgotPassword
@@ -78,9 +101,14 @@ router.post(
 
 router.post(
   '/reset-password',
+  passwordResetLimiter,
   [
-    body('token').notEmpty().withMessage('Reset token is required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('token').trim().notEmpty().withMessage('Reset token is required'),
+    // The complexity rule lives in the controller so the route and the
+    // controller can never disagree about it.
+    body('password')
+      .custom((value: unknown) => meetsPasswordPolicy(value))
+      .withMessage('Password must be at least 8 characters and meet 3 of: uppercase, lowercase, number, special character'),
     validate
   ],
   authController.resetPassword

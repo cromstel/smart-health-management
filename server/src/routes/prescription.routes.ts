@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import { validate } from '../middleware/validator.js';
 import { authenticate, requirePermission, enforcePasswordChange } from '../middleware/auth.js';
 import * as prescriptionController from '../controllers/prescription.controller.js';
@@ -19,10 +19,17 @@ router.post(
     body('dose').notEmpty().withMessage('Dose is required'),
     body('frequency').notEmpty().withMessage('Frequency is required'),
     body('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
+    body('duration_days').optional().isInt({ min: 1 }).withMessage('Duration must be a positive number of days'),
     validate,
   ],
   requirePermission('pharmacy', 'add'),
   prescriptionController.createPrescription
+);
+router.post(
+  '/:id/refill',
+  [param('id').notEmpty().withMessage('Prescription ID is required'), validate],
+  requirePermission('pharmacy', 'edit'),
+  prescriptionController.refillPrescription
 );
 router.put(
   '/:id',
