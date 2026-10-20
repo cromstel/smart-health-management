@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 import path from "path"
 import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
-import { DEFAULT_APP_NAME } from './src/config/app'
+// The extension is required. Vite loads this file with its native config
+// loader, which does not resolve extensionless imports and warns about it
+// on every start; a future Vite major will refuse them.
+import { DEFAULT_APP_NAME } from './src/config/app.ts'
 import {
   DEFAULT_DEV_HOST,
   DEFAULT_DEV_PORT,
