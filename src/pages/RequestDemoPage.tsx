@@ -129,7 +129,7 @@ export default function RequestDemoPage() {
             </div>
           </div>
 
-          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:px-8">
+          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-12 lg:px-8">
             {/* Left column */}
             <motion.div initial={reduce ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} className="space-y-6">
               <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-primary-foreground/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
@@ -155,7 +155,7 @@ export default function RequestDemoPage() {
             </motion.div>
 
             {/* Right column: form card */}
-            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
+            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="lg:ml-auto lg:w-full lg:max-w-md">
               <Card className="border-primary-foreground/20 bg-card/95 shadow-2xl shadow-primary/20 backdrop-blur">
                 <CardHeader className="border-b border-border">
                   <CardTitle>Request a Demo</CardTitle>
