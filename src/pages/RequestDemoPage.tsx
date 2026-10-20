@@ -155,7 +155,7 @@ export default function RequestDemoPage() {
             </motion.div>
 
             {/* Right column: form card */}
-            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="w-full">
+            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="lg:ml-auto lg:w-full lg:max-w-md">
               <Card className="border-primary-foreground/20 bg-card/95 shadow-2xl shadow-primary/20 backdrop-blur">
                 <CardHeader className="border-b border-border">
                   <CardTitle>Request a Demo</CardTitle>
