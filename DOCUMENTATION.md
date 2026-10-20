@@ -166,18 +166,20 @@ Smart MediCare follows a modern full-stack architecture prioritizing type safety
 
 ## 5. Quick-Start Demo Credentials
 
-For instant testing and evaluation without manual registration, use the pre-configured credentials below. These are the **dev-mode (mock API) accounts** — the same accounts the frontend auto-seeds when run without the backend:
+For instant testing and evaluation without manual registration, use the accounts the local database seed creates. The seed runner (`npm run db:setup` in `server/`) hashes each account's password **at seed time, from the environment** — no password and no hash is stored in the repository:
 
-| Role / Persona | Email Address | Password |
+| Role / Persona | Email Address | Password from |
 | :--- | :--- | :--- |
-| **Super Admin** | `superadmin@smarthealth.com` | `April--2024!!!!` |
-| **Administrator** | `admin@smarthealth.com` | `Pass@135709` |
-| **Doctor** | `doctor@smarthealth.com` | `Demo@135790` |
-| **Patient** | `patient@smarthealth.com` | `P@ssword135` |
+| **Super Admin** | `superadmin@smarthealth.com` | `SEED_SUPER_ADMIN_PASSWORD` |
+| **Administrator** | `admin@smarthealth.com` | `SEED_ADMIN_PASSWORD` |
+| **Doctor** | `doctor@smarthealth.com` | `SEED_DOCTOR_PASSWORD` |
+| **Patient** | `patient@smarthealth.com` | `SEED_PATIENT_PASSWORD` |
+
+Set the variables in `.env.local` (see `.env.example`) and re-run the seed. When a variable is unset, the seed falls back to a shared development-only password.
 
 > **Note:** The Super Admin login is accessed at `/super-admin/login`. The Doctor account (`doctor@smarthealth.com`) is the TOTP demo user — sign in with it, then use the "Fetch Current Demo TOTP Token" button on the login page to retrieve a valid 2FA code.
 
-> **Note:** When running in production mode with the MySQL backend (`server/src/database/seed.sql`), seeded accounts have the same email addresses as above; reset via the Super Admin "Reset User Password" tool if the seeded hash does not match your local configuration.
+> **Note:** When running in production mode with the MySQL backend (`server/src/database/seed.sql`), the seeded accounts use the email addresses above and the passwords configured in the environment; reset via the Super Admin "Reset User Password" tool if a seeded hash does not match your local configuration.
 
 ---
 
@@ -364,7 +366,7 @@ Smart MediCare is architected to conform with healthcare security standards:
 **Answer**: Click the Sun/Moon icon in the top header bar next to your profile avatar. The layout will instantly update CSS theme variables and `color-scheme`.
 
 ### Q3: How do I test the Super Admin panel?
-**Answer**: Navigate directly to `/super-admin/login` and log in with `superadmin@smarthealth.com` / `April--2024!!!!`.
+**Answer**: Navigate directly to `/super-admin/login` and log in as `superadmin@smarthealth.com` with the password configured in `SEED_SUPER_ADMIN_PASSWORD` (see [Section 5](#5-quick-start-demo-credentials)).
 
 ### Q4: Build fails with "Vite or Typescript error". How do I resolve it?
 **Answer**: Ensure all node modules are installed by running `npm install`, then run `npm run lint` followed by `npm run build`.

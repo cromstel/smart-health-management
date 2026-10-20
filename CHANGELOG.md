@@ -196,6 +196,27 @@ implementation reasoning behind each entry here.
   checked, so the checks were silently skipped and the suites reported a
   pass while asserting nothing. The checks now run against the live service.
 
+- **Money and measurements are numbers again.** The platform read exact
+  numeric columns as text, so a price arrived as a string and the pharmacy
+  screen failed to render at all, and the financial exports wrote money into
+  the spreadsheet as text — where a total over the column returned zero and
+  the rows sorted as words rather than as amounts. Exact numeric columns are
+  now read as numbers everywhere, so the pharmacy screen renders, the
+  exported statements total correctly, and the displayed figures carry their
+  proper precision.
+
+- **The hospital administrator sign-in screen no longer carries a
+  credential.** The form was prefilled with a working administrator password
+  in development. A prefilled password is a password in the repository, and
+  the sign-in screen is not a place to keep one. The form now starts empty
+  in every environment, and the account's password comes from the
+  environment.
+
+- **The API status panel can now see the API.** The panel asked the local
+  page for the API, which only works when both are served from one host. It
+  now asks the configured API address, so it reports the real state during
+  development as well as in production.
+
 - **Restock orders are no longer reported as sent when they were not.**
   Creating a restock order now uses the supplier recorded against the
   medicine, one order per supplier, and a failure is reported to the
@@ -204,6 +225,36 @@ implementation reasoning behind each entry here.
   than posted against the wrong supplier.
 
 ### Changed
+
+- **The product name is configuration, not source.** The name shown to people —
+  in the browser tab, the installable app, the screens, the emails, the
+  calendar invitations, the generated reports and the printable summaries — is
+  read from the environment now instead of being written into the application.
+  Deploying the platform under a different name is a configuration change and
+  no longer a code change, and the name can no longer drift between the page
+  title, the installable app, the mails and the screens. The browser and the
+  API read separate variables and must be given the same value; both fall back
+  to the shipped name outside production.
+
+- **Credentials, ports and host names are configuration, not source.** The
+  database credentials, the demo account passwords, the API and web server
+  ports, and the host names the platform is served on are all read from the
+  environment now. No credential and no port number is written into the
+  application any more, and the demo accounts are created with the passwords
+  the operator configures rather than with a password that was published in
+  the documentation. Where a value has a sensible development default, that
+  default is documented and applies outside production only; in production the
+  platform refuses to start rather than guess.
+
+- **The tenant administrator recovers on their own pages.** The site owner used
+  to be sent into the same recovery screen as patients and hospital staff, so
+  one audience's link led to another's flow. The administrator now has their
+  own recovery and password-set pages, on the administrator's own addresses
+  and in the administrator portal's own styling, and the clinical pages send
+  anyone who lands on them to the right place. The two audiences share no
+  address. The recovery request itself is unchanged, and it answers the same
+  way whether or not the address is registered, so it still cannot be used to
+  find out who has an account.
 
 - **Password recovery now looks like the sign-in page.** The forgotten-password
   screen previously used a different arrangement — a separate promotional
@@ -622,6 +673,17 @@ steps, across both themes.
 
 ### Breaking changes
 
+- **The API now requires the product name in production.** `APP_NAME` must be
+  present in the production environment; the platform refuses to start without
+  it rather than serving mail, invitations and reports that call the product
+  the wrong thing. Development is unaffected: a documented default applies when
+  the variable is unset. The browser reads its own variable, `VITE_APP_NAME`,
+  and the two must be set to the same value.
+
+- **The API now requires its ports in production.** `PORT` and `HTTPS_PORT`
+  must be present in the production environment; the platform refuses to start
+  without them rather than binding a port it was never told to use. Development
+  is unaffected: a documented default applies when the variable is unset.
 - **The development server now listens on port 5175, not 3000.** This resolves a
   collision between the frontend and API dev ports. Update any local bookmarks,
   proxy configuration, or test runner configuration. The port is now strict: if
