@@ -26,8 +26,10 @@ env:
   JWT_SECRET: ci-only-not-a-real-secret-value-0000000000000000
   SESSION_SECRET: ci-only-not-a-real-secret-value-0000000000000000
   # 32-byte key / 16-byte IV, hex encoded. CI-only; never a production value.
-  ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
-  ENCRYPTION_IV: 00000000000000000000000000000000
+  # Quoted: an unquoted run of zeros is a number, not a string, and the
+  # environment would hand the application "0" instead of the hex value.
+  ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+  ENCRYPTION_IV: '00000000000000000000000000000000'
 
 jobs:
   frontend:

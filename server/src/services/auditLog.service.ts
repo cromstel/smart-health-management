@@ -274,10 +274,15 @@ export async function fetchAuditLogSummary(filters: {
     params.push(filters.userId);
   }
 
+  // The grouped expression and the selected expression are identical. The
+  // earlier version selected a cast of the grouped column, which MySQL 8
+  // refuses under its default ONLY_FULL_GROUP_BY mode: the selected
+  // expression is not the grouped one, and the underlying column is not
+  // functionally dependent on it.
   const [dayRows] = await pool.query<RowDataPacket[]>(
-    `SELECT CAST(DATE(al.created_at) AS CHAR) AS day, COUNT(*) AS count
+    `SELECT DATE_FORMAT(al.created_at, '%Y-%m-%d') AS day, COUNT(*) AS count
        FROM audit_logs al${where}
-      GROUP BY DATE(al.created_at)
+      GROUP BY DATE_FORMAT(al.created_at, '%Y-%m-%d')
       ORDER BY day ASC`,
     params
   );
