@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { apiRequest } from '@/services/shmsApiClient';
 
 export interface AuditExportRecord {
   userId?: string;
@@ -87,19 +88,21 @@ export function exportAuditLogs(
     toast.success(`Exported ${logs.length} audit records to CSV.`);
   }
 
-  // Also log to localStorage audit trail
-  try {
-    const currentLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-    currentLogs.push({
-      userId: 'U-ADMIN',
-      userName: 'Administrator',
-      action: 'EXPORT_AUDIT_LOGS',
-      module: 'audit',
-      newValue: `Generated timestamped ${format.toUpperCase()} compliance export (${logs.length} items, Seal: ${checksum})`,
-      timestamp: new Date().toISOString(),
-    });
-    localStorage.setItem('auditLogs', JSON.stringify(currentLogs));
-  } catch (e) {
-    // ignore
-  }
+  // The export itself is audited. The record used to be pushed into a local
+  // array in browser storage, where it could be edited or removed; it is now
+  // written to the server trail like every other audited action.
+  void (async () => {
+    try {
+      await apiRequest('/audit-logs', {
+        method: 'POST',
+        body: {
+          action: 'EXPORT_AUDIT_LOGS',
+          module: 'audit',
+          newValue: `Generated timestamped ${format.toUpperCase()} compliance export (${logs.length} items, Seal: ${checksum})`,
+        },
+      });
+    } catch (e) {
+      console.warn('Failed to record the audit export:', e);
+    }
+  })();
 }

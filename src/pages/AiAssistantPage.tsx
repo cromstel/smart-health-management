@@ -191,7 +191,11 @@ export default function AiAssistantPage() {
       const response = await fetch('/api/gemini/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          // The endpoint is authenticated. The request used to go out with no
+          // credential, so every message was rejected before it reached the
+          // model.
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
         body: JSON.stringify({
           messages: apiMessages,

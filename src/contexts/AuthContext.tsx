@@ -197,7 +197,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Tell the server first, so the token it issued is actually revoked.
+    // Clearing local storage on its own left the token usable until it
+    // expired, which meant a logout did not end the session.
+    try {
+      await api.logout();
+    } catch (error) {
+      // A failed revocation must not stop the user from leaving the app.
+      console.warn('Failed to revoke the session on the server:', error);
+    }
     localStorage.removeItem('token');
     setUser(null);
     setMfaPending(false);

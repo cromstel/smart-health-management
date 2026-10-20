@@ -114,21 +114,19 @@ export const API_ORIGIN = API_BASE_URL.startsWith('http') ? API_BASE_URL.replace
 class ApiService {
   private cache: { [url: string]: any } = {};
 
+  /**
+   * The patient list used to be written to localStorage as a fallback for
+   * offline use. That is a plaintext copy of the patient roster -- names,
+   * contact details and addresses -- readable by any script on the origin and
+   * surviving the browser cache being cleared. The in-memory cache below is
+   * used instead: it lasts for the session and disappears with the tab.
+   */
   getPatientsFromLocalStorage(): any[] | null {
-    try {
-      const data = localStorage.getItem('cached_patients');
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
-    }
+    return this.cache['__patients__'] ?? null;
   }
 
   savePatientsToLocalStorage(patients: any[]): void {
-    try {
-      localStorage.setItem('cached_patients', JSON.stringify(patients));
-    } catch (e) {
-      console.warn('Failed to save patients to localStorage', e);
-    }
+    this.cache['__patients__'] = patients;
   }
 
   generateOfflineId(): string {
@@ -369,6 +367,20 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /**
+   * End the session on the server.
+   *
+   * The server records the token as revoked, so the session is genuinely
+   * finished rather than merely forgotten by the browser.
+   */
+  async logout(): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    await this.handleResponse(response);
+  }
+
   // ── WebAuthn passkeys ──────────────────────────────────────────────────────
   // Real browser attestation/assertion. The backend signs the ceremony
   // challenge into a short-lived token that is returned with the verify call.
@@ -564,6 +576,54 @@ class ApiService {
     }
   }
 
+  /**
+   * Drain the offline patient queue.
+   *
+   * The queue was written on every failed create/update/delete but nothing
+   * ever read it, so an edit made while offline was reported as saved and
+   * then silently discarded. The operations are now pushed to the server and
+   * the entries that the server accepted are removed.
+   */
+  async syncOfflinePatients(): Promise<{ applied: number; failed: number }> {
+    let queued: any[];
+    try {
+      queued = JSON.parse(localStorage.getItem('offlinePatients') || '[]');
+    } catch {
+      queued = [];
+    }
+    if (!Array.isArray(queued) || queued.length === 0) {
+      return { applied: 0, failed: 0 };
+    }
+
+    const operations = queued.map((entry) => ({
+      action: entry.offlineAction ?? 'CREATE',
+      id: entry.id,
+      patient: entry,
+      clientUpdatedAt: entry.clientUpdatedAt ?? null,
+    }));
+
+    const response = await fetch(`${API_BASE_URL}/patients/sync`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ operations }),
+    });
+    const result = (await this.handleResponse(response)) as any;
+    const results: any[] = Array.isArray(result?.results) ? result.results : [];
+
+    // Drop the operations the server confirmed. Anything it rejected stays
+    // queued so the data is not lost.
+    const acceptedIds = new Set(
+      results.filter((r) => r?.applied).map((r) => String(r.id))
+    );
+    const remaining = queued.filter((entry) => !acceptedIds.has(String(entry.id)));
+
+    if (remaining.length !== queued.length) {
+      localStorage.setItem('offlinePatients', JSON.stringify(remaining));
+    }
+
+    return { applied: acceptedIds.size, failed: queued.length - acceptedIds.size };
+  }
+
   // Dashboard endpoints
   async getDashboardStats() {
     const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
@@ -621,19 +681,40 @@ class ApiService {
     return data;
   }
 
-  async createAppointment(_data: any) {
+  async createAppointment(data: {
+    patientId: string | number;
+    doctorId?: string | number | null;
+    departmentId?: string | number | null;
+    appointmentDate: string;
+    appointmentTime: string;
+    type?: string;
+    notes?: string;
+    sendReminder?: boolean;
+    // Tenant scope. The server compares this against the caller's hospital
+    // before the appointment is written, so it must be sent as sent.
+    hospitalId?: string;
+  }) {
+    // The body is mandatory: the route validates patientId, appointmentDate
+    // and appointmentTime, and the controller writes the row from it. Sending
+    // no body made every create fail with 400.
     const response = await fetch(`${API_BASE_URL}/appointments`, {
       method: 'POST',
       headers: this.getHeaders(),
+      body: JSON.stringify(data),
     });
     return this.handleResponse(response);
   }
 
   // Super Admin endpoints
-  async triggerRestore(_backupPath: string) {
+  async triggerRestore(backupFileName: string) {
+    // The server takes a bare file name, not a path: it rejects anything with
+    // a separator in it as a path-traversal attempt. The caller used to pass
+    // "backups/<name>", which was always rejected.
+    const fileName = backupFileName.split(/[\\/]/).pop() || backupFileName;
     const response = await fetch(`${API_BASE_URL}/super-admin/restore`, {
       method: 'POST',
       headers: this.getHeaders(),
+      body: JSON.stringify({ backupFileName: fileName }),
     });
     return this.handleResponse(response);
   }
@@ -924,6 +1005,291 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Prescriptions. The backend routes were already registered; the client had
+  // no methods for them, so the fulfilment screen kept its own copy of the
+  // prescription list in browser storage.
+  async getPrescriptions() {
+    const response = await fetch(`${API_BASE_URL}/prescriptions`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getPrescription(id: string) {
+    const response = await fetch(`${API_BASE_URL}/prescriptions/${id}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createPrescription(data: {
+    patient_id: string | number;
+    doctor_id: string | number;
+    medicine_id: string;
+    dose: string;
+    frequency: string;
+    quantity: number;
+    notes?: string;
+  }) {
+    const response = await fetch(`${API_BASE_URL}/prescriptions`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updatePrescription(id: string, data: { dose?: string; frequency?: string; quantity?: number }) {
+    const response = await fetch(`${API_BASE_URL}/prescriptions/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deletePrescription(id: string) {
+    const response = await fetch(`${API_BASE_URL}/prescriptions/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // A refill restarts the course: the server resets the prescribed date so
+  // the refill tracker works from the record rather than from a copy the
+  // browser kept for itself.
+  async refillPrescription(id: string) {
+    const response = await fetch(`${API_BASE_URL}/prescriptions/${id}/refill`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Dispensing history is written server-side so it survives a cache clear.
+  async recordDispensingEvent(data: {
+    prescriptionId?: string;
+    patientId: number;
+    medicineId: string;
+    quantity: number;
+    notes?: string;
+  }) {
+    const response = await fetch(`${API_BASE_URL}/dispensing-events`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getDispensingEvents(params: { patientId?: string | number; medicineId?: string; limit?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.patientId) query.set('patientId', String(params.patientId));
+    if (params.medicineId) query.set('medicineId', params.medicineId);
+    if (params.limit) query.set('limit', String(params.limit));
+    const suffix = query.toString();
+    const response = await fetch(`${API_BASE_URL}/dispensing-events${suffix ? `?${suffix}` : ''}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Medication administration records (MAR).
+  async getMedicationAdministrations(params: { patientId?: string | number; status?: string; date?: string } = {}) {
+    const query = new URLSearchParams();
+    if (params.patientId) query.set('patientId', String(params.patientId));
+    if (params.status) query.set('status', params.status);
+    if (params.date) query.set('date', params.date);
+    const suffix = query.toString();
+    const response = await fetch(`${API_BASE_URL}/medication-administrations${suffix ? `?${suffix}` : ''}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getMedicationAdministrationOptions() {
+    const response = await fetch(`${API_BASE_URL}/medication-administrations/options`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createMedicationAdministration(data: {
+    patientId: number;
+    medicineId: string;
+    dosage: string;
+    scheduledTime: string;
+    assignedStaffId?: number | null;
+    criticalNotes?: string;
+  }) {
+    const response = await fetch(`${API_BASE_URL}/medication-administrations`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Sign-off is the only path that moves stock. The server decrements the
+  // inventory in the same transaction and refuses when the shelf is short.
+  async signOffMedicationAdministration(id: string, quantity?: number) {
+    const response = await fetch(`${API_BASE_URL}/medication-administrations/${id}/sign-off`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(quantity ? { quantity } : {}),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getPharmacyForecast(params: { surgeMultiplier?: number; lookbackDays?: number; targetCoverDays?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.surgeMultiplier) query.set('surgeMultiplier', String(params.surgeMultiplier));
+    if (params.lookbackDays) query.set('lookbackDays', String(params.lookbackDays));
+    if (params.targetCoverDays) query.set('targetCoverDays', String(params.targetCoverDays));
+    const suffix = query.toString();
+    const response = await fetch(`${API_BASE_URL}/pharmacy/forecast${suffix ? `?${suffix}` : ''}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Vitals.
+  async getVitals(params: { patientId?: string; from?: string; to?: string; limit?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.patientId) query.set('patientId', params.patientId);
+    if (params.from) query.set('from', params.from);
+    if (params.to) query.set('to', params.to);
+    if (params.limit) query.set('limit', String(params.limit));
+    const suffix = query.toString();
+    const response = await fetch(`${API_BASE_URL}/vitals${suffix ? `?${suffix}` : ''}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async recordVital(data: {
+    patientId: string | number;
+    systolicBp: number;
+    diastolicBp: number;
+    heartRate: number;
+    temperature: number;
+    respiratoryRate?: number;
+    oxygenSaturation?: number;
+    recordedAt?: string;
+    notes?: string;
+  }) {
+    const response = await fetch(`${API_BASE_URL}/vitals`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Notifications.
+  async getNotifications(params: { unread?: boolean; limit?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.unread) query.set('unread', 'true');
+    if (params.limit) query.set('limit', String(params.limit));
+    const suffix = query.toString();
+    const response = await fetch(`${API_BASE_URL}/notifications${suffix ? `?${suffix}` : ''}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async markNotificationRead(id: string) {
+    const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async markAllNotificationsRead() {
+    const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Clinical notes.
+  async getClinicalNotes(patientId: string) {
+    const response = await fetch(`${API_BASE_URL}/clinical-notes?patientId=${encodeURIComponent(patientId)}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createClinicalNote(data: { patientId: string | number; content: string; tags?: string[] }) {
+    const response = await fetch(`${API_BASE_URL}/clinical-notes`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteClinicalNote(id: string) {
+    const response = await fetch(`${API_BASE_URL}/clinical-notes/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Medicine batches (lot / expiry tracking).
+  async getBatches(medicineId?: string) {
+    const query = medicineId ? `?medicineId=${encodeURIComponent(medicineId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/batches${query}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getBatch(id: string) {
+    const response = await fetch(`${API_BASE_URL}/batches/${id}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createBatch(data: { medicineId: string; batchNumber: string; expiryDate: string; quantity: number }) {
+    const response = await fetch(`${API_BASE_URL}/batches`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateBatch(id: string, data: { batchNumber?: string; expiryDate?: string; quantity?: number; recalled?: boolean }) {
+    const response = await fetch(`${API_BASE_URL}/batches/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteBatch(id: string) {
+    const response = await fetch(`${API_BASE_URL}/batches/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async recallBatch(id: string) {
+    const response = await fetch(`${API_BASE_URL}/batches/${id}/recall`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
   async createPharmacyItem(data: any) {
     const response = await fetch(`${API_BASE_URL}/pharmacy/medicines`, {
       method: 'POST',
@@ -1118,3 +1484,16 @@ class ApiService {
 }
 
 export const api = new ApiService();
+
+// Push any patient edits that were queued while the network was down. The
+// queue is drained on start-up and whenever the browser reports it is back
+// online, so an offline edit is not stranded in browser storage.
+if (typeof window !== 'undefined') {
+  const drain = () => {
+    api.syncOfflinePatients().catch((error) => {
+      console.warn('Failed to sync offline patient changes:', error);
+    });
+  };
+  window.addEventListener('online', drain);
+  window.addEventListener('load', drain);
+}

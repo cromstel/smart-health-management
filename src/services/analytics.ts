@@ -39,13 +39,17 @@ class AnalyticsService {
 
   private async sendEventToServer(event: AnalyticsEvent) {
     try {
-      await fetch('/api/analytics/event', {
+      const response = await fetch('/api/analytics/event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(event)
-      }).catch(() => {
-        this.queueOfflineEvent(event);
       });
+      // `fetch` only rejects on a network failure, so an error status has to
+      // be checked explicitly. Without this the event was dropped from the
+      // queue even though the server never stored it.
+      if (!response.ok) {
+        this.queueOfflineEvent(event);
+      }
     } catch (e) {
       this.queueOfflineEvent(event);
     }
@@ -81,11 +85,15 @@ class AnalyticsService {
 
     for (const event of queue) {
       try {
-        await fetch('/api/analytics/event', {
+        const response = await fetch('/api/analytics/event', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(event)
         });
+        // Keep the event queued unless the server confirmed it stored it.
+        if (!response.ok) {
+          remainingEvents.push(event);
+        }
       } catch (e) {
         remainingEvents.push(event);
       }

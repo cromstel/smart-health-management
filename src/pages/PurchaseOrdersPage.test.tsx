@@ -79,7 +79,16 @@ describe('PurchaseOrdersPage', () => {
       cancelMfa: vi.fn(),
       refreshUser: vi.fn(),
     });
-    mockUseAudit.mockReturnValue({ logAction: vi.fn() });
+    // The audit context exposes the server trail as well as the write helper,
+    // so the mock has to provide the full shape.
+    mockUseAudit.mockReturnValue({
+      logAction: vi.fn(),
+      logs: [],
+      isLoading: false,
+      refreshLogs: vi.fn().mockResolvedValue(undefined),
+      reportSchedule: null,
+      saveReportSchedule: vi.fn().mockResolvedValue(undefined),
+    });
 
     mockApi.getPurchaseOrders.mockResolvedValue(mockOrders);
     mockApi.getSuppliers.mockResolvedValue(mockSuppliers);
@@ -146,8 +155,24 @@ describe('PurchaseOrdersPage', () => {
     fireEvent.click(screen.getAllByText('Approve')[0]);
 
     await waitFor(() => {
-      expect(mockApi.updatePurchaseOrder).toHaveBeenCalledWith(1, { status: 'Ordered' });
+      // The status is sent as the canonical lowercase value the database
+      // stores. 'Completed' was never a value the column accepts, so the
+      // previous "Complete" action was rejected by the server.
+      expect(mockApi.updatePurchaseOrder).toHaveBeenCalledWith(1, { status: 'ordered' });
     });
+  });
+
+  it('offers only the transitions the purchase-order workflow allows', async () => {
+    render(<PurchaseOrdersPage />);
+    await waitFor(() => {
+      expect(screen.getByText('PO123')).toBeInTheDocument();
+    });
+
+    // A pending order can be approved or cancelled, but not completed.
+    expect(screen.getByText('Approve')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.queryByText('Complete')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mark delivered')).not.toBeInTheDocument();
   });
 
   it('disables New Order button without permission', () => {

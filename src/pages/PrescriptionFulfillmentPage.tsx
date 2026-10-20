@@ -17,6 +17,7 @@ interface DispenseEvent {
   id: string;
   patientId: string;
   medicineId: string;
+  medicineName?: string;
   quantity: number;
   date: string;
   notes?: string;
@@ -33,6 +34,10 @@ interface Prescription {
   doctorName: string;
 }
 
+// Used when a prescription row carries no explicit duration. A course of
+// medication is assumed to run for a month unless the record says otherwise.
+const DEFAULT_PRESCRIPTION_DURATION_DAYS = 30;
+
 export default function PrescriptionFulfillmentPage() {
   const { hasPermission } = useAuth();
   const { logAction } = useAudit();
@@ -44,55 +49,72 @@ export default function PrescriptionFulfillmentPage() {
   const [form, setForm] = useState({ patientId: '', medicineId: '', quantity: 1, notes: '' });
 
   const loadAll = useCallback(async () => {
+    let ps: any[] = [];
+    let ms: any[] = [];
     try {
-      const [ps, ms] = await Promise.all([api.getPatients(), api.getMedicines()]);
-      setPatients(ps as any[]);
-      setMedicines(ms as any[]);
+      const [patientsResult, medicinesResult] = await Promise.all([api.getPatients(), api.getMedicines()]);
+      ps = (patientsResult as any[]) ?? [];
+      ms = (medicinesResult as any[]) ?? [];
+      setPatients(ps);
+      setMedicines(ms);
     } catch (_e) {
       toast.error('Failed to load patients or medicines');
     }
-    const stored = JSON.parse(localStorage.getItem('dispenseEvents') || '[]');
-    setEvents(stored);
 
-    const PRESCRIPTIONS_KEY = 'health_manager_prescriptions';
-    const storedPrescriptions = localStorage.getItem(PRESCRIPTIONS_KEY);
-    if (storedPrescriptions) {
-      setPrescriptions(JSON.parse(storedPrescriptions));
-    } else {
-      const initialPrescriptions = [
-        {
-          id: 'pr-1',
-          patientId: 'P-1002',
-          patientName: 'Sarah Johnson',
-          medicineId: 'med-1',
-          medicineName: 'Metformin 500mg',
-          prescribedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-          durationDays: 30,
-          doctorName: 'Dr. Michael Chen'
-        },
-        {
-          id: 'pr-2',
-          patientId: 'P-1003',
-          patientName: 'David Mensah',
-          medicineId: 'med-2',
-          medicineName: 'Lisinopril 10mg',
-          prescribedDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
-          durationDays: 30,
-          doctorName: 'Dr. Emily Davis'
-        },
-        {
-          id: 'pr-3',
-          patientId: 'P-1004',
-          patientName: 'Kwame Boateng',
-          medicineId: 'med-3',
-          medicineName: 'Amoxicillin 500mg',
-          prescribedDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-          durationDays: 10,
-          doctorName: 'Dr. Michael Chen'
-        }
-      ];
-      localStorage.setItem(PRESCRIPTIONS_KEY, JSON.stringify(initialPrescriptions));
-      setPrescriptions(initialPrescriptions);
+    // Prescriptions come from the API. The page used to keep its own copy in
+    // browser storage, seeded with three fabricated prescriptions, so the
+    // refill tracker was working against records that did not exist.
+    try {
+      const rows = (await api.getPrescriptions()) as any[];
+      const patientById = new Map(ps.map((p) => [String(p.id), p]));
+      const medicineById = new Map(ms.map((m) => [String(m.id), m]));
+      setPrescriptions(
+        (rows || []).map((row) => {
+          const patient = patientById.get(String(row.patient_id));
+          const medicine = medicineById.get(String(row.medicine_id));
+          return {
+            id: String(row.id),
+            patientId: String(row.patient_id),
+            patientName: patient
+              ? `${patient.first_name ?? ''} ${patient.last_name ?? ''}`.trim() || patient.patient_id
+              : String(row.patient_id),
+            medicineId: String(row.medicine_id),
+            medicineName: medicine?.medicine_name ?? medicine?.name ?? String(row.medicine_id),
+            prescribedDate: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+            durationDays: Number(row.duration_days) || DEFAULT_PRESCRIPTION_DURATION_DAYS,
+            doctorName: row.doctor_id ? `Staff #${row.doctor_id}` : 'Unassigned',
+          } satisfies Prescription;
+        })
+      );
+    } catch (e) {
+      console.error('Failed to load prescriptions:', e);
+      setPrescriptions([]);
+      toast.error('Failed to load prescriptions');
+    }
+
+    // Dispensing history is read from the API rather than from a local
+    // array in browser storage.
+    try {
+      const rows = (await api.getDispensingEvents({ limit: 200 })) as any[];
+      setEvents(
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          patientId: String(row.patient_id ?? ''),
+          medicineId: String(row.medicine_id ?? ''),
+          medicineName: row.medicine_name ?? undefined,
+          quantity: Number(row.quantity ?? 0),
+          // The server sends a local-time datetime string. It is parsed as
+          // local time rather than as UTC, so the displayed time matches the
+          // time the dispense happened.
+          date: row.dispensed_at
+            ? new Date(String(row.dispensed_at).replace(' ', 'T')).toISOString()
+            : new Date().toISOString(),
+          notes: row.notes ?? undefined,
+        }))
+      );
+    } catch (e) {
+      console.error('Failed to load dispensing history:', e);
+      setEvents([]);
     }
   }, []);
 
@@ -102,7 +124,6 @@ export default function PrescriptionFulfillmentPage() {
 
   const saveEvents = (next: DispenseEvent[]) => {
     setEvents(next);
-    localStorage.setItem('dispenseEvents', JSON.stringify(next));
   };
 
   const processRefill = async (p: Prescription) => {
@@ -126,28 +147,30 @@ export default function PrescriptionFulfillmentPage() {
       const nextStock = Math.max(0, dbMed.stock_level - 1);
       await api.updatePharmacyItem(dbMed.id, { stock_level: nextStock });
 
+      // The dispensing event is recorded server-side so the history is not
+      // lost when the browser cache is cleared. The patient id is sent as a
+      // number: the endpoint resolves it against the numeric patient key.
+      const recorded = await api.recordDispensingEvent({
+        prescriptionId: p.id,
+        patientId: Number(p.patientId),
+        medicineId: dbMed.id,
+        quantity: 1,
+        notes: `Automated Prescription Refill - Prescribed by ${p.doctorName}`,
+      });
+
       const ev: DispenseEvent = {
-        id: Math.random().toString(36).slice(2),
+        id: String((recorded as any)?.id ?? `evt-${Date.now()}`),
         patientId: p.patientId,
         medicineId: dbMed.id,
         quantity: 1,
         date: new Date().toISOString(),
         notes: `Automated Prescription Refill - Prescribed by ${p.doctorName}`,
       };
-      const nextEvents = [...events, ev];
-      saveEvents(nextEvents);
+      saveEvents([...events, ev]);
 
-      const updatedPrescriptions = prescriptions.map((item) => {
-        if (item.id === p.id) {
-          return {
-            ...item,
-            prescribedDate: new Date().toISOString()
-          };
-        }
-        return item;
-      });
-      setPrescriptions(updatedPrescriptions);
-      localStorage.setItem('health_manager_prescriptions', JSON.stringify(updatedPrescriptions));
+      // The refill restarts the course, so the server resets the prescribed
+      // date rather than the browser rewriting its own copy.
+      await api.refillPrescription(p.id);
 
       logAction('dispense', 'pharmacy', { recordId: ev.id, newValue: JSON.stringify(ev) });
       toast.success(`Successfully refilled ${p.medicineName} for ${p.patientName}!`);
@@ -159,7 +182,7 @@ export default function PrescriptionFulfillmentPage() {
     }
   };
 
-  const recordDispense = () => {
+  const recordDispense = async () => {
     if (!hasPermission('pharmacy:edit')) {
       toast.error('Unauthorized');
       return;
@@ -168,19 +191,29 @@ export default function PrescriptionFulfillmentPage() {
       toast.error('Please select patient, medicine and quantity');
       return;
     }
-    const ev: DispenseEvent = {
-      id: Math.random().toString(36).slice(2),
-      patientId: form.patientId,
-      medicineId: form.medicineId,
-      quantity: form.quantity,
-      date: new Date().toISOString(),
-      notes: form.notes,
-    };
-    const next = [...events, ev];
-    saveEvents(next);
-    logAction('dispense', 'pharmacy', { recordId: ev.id, newValue: JSON.stringify(ev) });
-    toast.success('Dispense recorded');
-    setForm({ patientId: '', medicineId: '', quantity: 1, notes: '' });
+    try {
+      const recorded = await api.recordDispensingEvent({
+        patientId: Number(form.patientId),
+        medicineId: form.medicineId,
+        quantity: form.quantity,
+        notes: form.notes,
+      });
+      const ev: DispenseEvent = {
+        id: String((recorded as any)?.id ?? `evt-${Date.now()}`),
+        patientId: form.patientId,
+        medicineId: form.medicineId,
+        quantity: form.quantity,
+        date: new Date().toISOString(),
+        notes: form.notes,
+      };
+      saveEvents([...events, ev]);
+      logAction('dispense', 'pharmacy', { recordId: ev.id, newValue: JSON.stringify(ev) });
+      toast.success('Dispense recorded');
+      setForm({ patientId: '', medicineId: '', quantity: 1, notes: '' });
+    } catch (e) {
+      console.error('Failed to record dispense:', e);
+      toast.error('Failed to record dispense');
+    }
   };
 
   const historyForPatient = (pid: string) => events.filter((e) => e.patientId === pid);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,78 +19,171 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * STAT emergency triage view.
+ *
+ * The board used to be two hardcoded arrays in this file: three invented
+ * patients and six invented bays. Bed allocation only mutated local state
+ * and a code-blue broadcast was a toast that contacted nobody, so the screen
+ * looked alive while the record said nothing.
+ *
+ * The board is now read from and written to the API
+ * (`/api/emergency/*`). The server returns raw values -- blood pressure as
+ * two numbers, the admission time as a timestamp, the bed status as the
+ * database enum -- and this component is the only place that decides how
+ * they are shown, so the display rules live in one place.
+ */
+
+type TriageLevel = 'RED' | 'AMBER' | 'GREEN' | 'YELLOW';
+type BedStatus = 'occupied' | 'available' | 'cleaning';
+
 interface EmergencyPatient {
+  /** `patients.patient_id`, the human readable code (e.g. "P-1002"). */
   id: string;
+  /** `patients.id`, the numeric key. */
+  patientId: number;
+  /** `emergency_admissions.id`. */
+  admissionId: number;
   name: string;
-  age: number;
-  gender: string;
-  triageLevel: 'RED' | 'AMBER';
-  condition: string;
-  bed: string;
-  bp: string;
-  hr: number;
-  spo2: number;
-  timeAdmitted: string;
+  age: number | null;
+  gender: string | null;
+  triageLevel: TriageLevel;
+  condition: string | null;
+  /** Bay id (e.g. "ER-BAY-01"), null while the patient waits for a bay. */
+  bed: string | null;
+  bedLabel: string | null;
+  systolicBp: number | null;
+  diastolicBp: number | null;
+  heartRate: number | null;
+  spo2: number | null;
+  /** Local ISO timestamp of the admission. */
+  admittedAt: string;
 }
 
 interface ErBed {
   id: string;
   label: string;
-  status: 'OCCUPIED' | 'AVAILABLE' | 'CLEANING';
+  status: BedStatus;
+  /** Patient code of the occupant. */
   patient: string | null;
+  patientName: string | null;
   triage: string | null;
 }
 
-const INITIAL_EMERGENCY_PATIENTS: EmergencyPatient[] = [
-  {
-    id: 'P-1002',
-    name: 'Sarah Connor',
-    age: 42,
-    gender: 'Female',
-    triageLevel: 'RED',
-    condition: 'Acute Chest Pain / Suspected STEMI',
-    bed: 'ER-BAY-01',
-    bp: '165/102',
-    hr: 112,
-    spo2: 93,
-    timeAdmitted: '8 mins ago',
-  },
-  {
-    id: 'P-1005',
-    name: 'Kwame Mensah',
-    age: 58,
-    gender: 'Male',
-    triageLevel: 'RED',
-    condition: 'Severe Respiratory Distress / Asthma Exacerbation',
-    bed: 'ER-BAY-03',
-    bp: '148/92',
-    hr: 124,
-    spo2: 88,
-    timeAdmitted: '14 mins ago',
-  },
-  {
-    id: 'P-1009',
-    name: 'Amina Yeboah',
-    age: 31,
-    gender: 'Female',
-    triageLevel: 'AMBER',
-    condition: 'Anaphylactic Reaction (Penicillin Allergy)',
-    bed: 'ER-BAY-04',
-    bp: '95/60',
-    hr: 105,
-    spo2: 95,
-    timeAdmitted: '22 mins ago',
-  },
-];
+interface TriageBoardResponse {
+  patients: EmergencyPatient[];
+  beds: ErBed[];
+  hotline: string;
+}
 
-const ER_BEDS: ErBed[] = [
-  { id: 'ER-BAY-01', label: 'Bay 01 (Trauma)', status: 'OCCUPIED', patient: 'Sarah Connor', triage: 'RED' },
-  { id: 'ER-BAY-02', label: 'Bay 02 (Resus)', status: 'AVAILABLE', patient: null, triage: null },
-  { id: 'ER-BAY-03', label: 'Bay 03 (Trauma)', status: 'OCCUPIED', patient: 'Kwame Mensah', triage: 'RED' },
-  { id: 'ER-BAY-04', label: 'Bay 04 (General)', status: 'OCCUPIED', patient: 'Amina Yeboah', triage: 'AMBER' },
-  { id: 'ER-BAY-05', label: 'Bay 05 (General)', status: 'AVAILABLE', patient: null, triage: null },
-  { id: 'ER-BAY-06', label: 'Bay 06 (Isolation)', status: 'CLEANING', patient: null, triage: null },
-];
+interface CodeBlueResponse {
+  codeBlue: {
+    auditId: number;
+    dispatched: boolean;
+    message: string;
+    hotline: string;
+    patientId: string | null;
+  };
+}
+
+const configuredUrl = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL =
+  import.meta.env.DEV && configuredUrl.includes('localhost:5600') ? '/api' : configuredUrl;
+
+/** The title case the board shows; the API keeps the lower-case enum. */
+const BED_STATUS_LABEL: Record<BedStatus, string> = {
+  occupied: 'OCCUPIED',
+  available: 'AVAILABLE',
+  cleaning: 'CLEANING',
+};
+
+/** Lower triage level means higher priority on the board. */
+const TRIAGE_PRIORITY: Record<TriageLevel, number> = {
+  RED: 0,
+  AMBER: 1,
+  YELLOW: 2,
+  GREEN: 3,
+};
+
+const emergencyRequest = async <T,>(
+  path: string,
+  options: { method?: string; body?: unknown } = {}
+): Promise<T> => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = localStorage.getItem('token');
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // No readable storage: the request goes out unauthenticated and the API
+    // answers with 401, which is handled like any other failure.
+  }
+
+  const response = await fetch(`${API_BASE_URL}/emergency${path}`, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    try {
+      const data = (await response.json()) as Record<string, unknown>;
+      if (data?.error) {
+        message = String(data.error);
+      } else if (Array.isArray(data?.errors) && data.errors.length > 0) {
+        message = data.errors.map((e: { msg?: string }) => e.msg || 'Invalid value').join(', ');
+      }
+    } catch {
+      // Keep the generic message when the body is not JSON.
+    }
+    throw new Error(message);
+  }
+
+  return (await response.json()) as T;
+};
+
+/** "165/102", or an em dash when the patient has no reading yet. */
+const formatBloodPressure = (patient: EmergencyPatient): string =>
+  patient.systolicBp !== null && patient.diastolicBp !== null
+    ? `${patient.systolicBp}/${patient.diastolicBp}`
+    : '—';
+
+/** "8 mins ago" for a local ISO timestamp. */
+const formatElapsed = (timestamp: string | null): string => {
+  if (!timestamp) return '—';
+  const started = new Date(timestamp).getTime();
+  if (Number.isNaN(started)) return '—';
+
+  const minutes = Math.floor((Date.now() - started) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min${minutes === 1 ? '' : 's'} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+};
+
+const formatGender = (gender: string | null): string => {
+  if (!gender) return '—';
+  return gender.charAt(0).toUpperCase() + gender.slice(1);
+};
+
+/**
+ * The patient a free bay goes to: the highest priority patient that is
+ * still waiting for a bay, and among those the one that has waited longest.
+ */
+const pickWaitingPatient = (list: EmergencyPatient[]): EmergencyPatient | null => {
+  const waiting = list.filter((patient) => !patient.bed);
+  if (waiting.length === 0) return null;
+
+  return [...waiting].sort((a, b) => {
+    const priority = TRIAGE_PRIORITY[a.triageLevel] - TRIAGE_PRIORITY[b.triageLevel];
+    if (priority !== 0) return priority;
+    return new Date(a.admittedAt).getTime() - new Date(b.admittedAt).getTime();
+  })[0];
+};
 
 interface EmergencyModeModuleProps {
   onOpenLogVitals: () => void;
@@ -98,47 +191,102 @@ interface EmergencyModeModuleProps {
 }
 
 export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: EmergencyModeModuleProps) {
-  const [patients] = useState<EmergencyPatient[]>(INITIAL_EMERGENCY_PATIENTS);
+  const [patients, setPatients] = useState<EmergencyPatient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [beds, setBeds] = useState<ErBed[]>(ER_BEDS);
+  const [beds, setBeds] = useState<ErBed[]>([]);
+  const [hotline, setHotline] = useState<string | null>(null);
   const [statActionRunning, setStatActionRunning] = useState<string | null>(null);
 
-  const handleCodeBlueBroadcast = () => {
+  const loadBoard = useCallback(async () => {
+    try {
+      const board = await emergencyRequest<TriageBoardResponse>('/triage-board');
+      setPatients(Array.isArray(board.patients) ? board.patients : []);
+      setBeds(Array.isArray(board.beds) ? board.beds : []);
+      setHotline(board.hotline ?? null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load the triage board';
+      toast.error(message);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBoard();
+  }, [loadBoard]);
+
+  const handleCodeBlueBroadcast = async () => {
     setStatActionRunning('code_blue');
-    const toastId = toast.loading('BROADCASTING CODE BLUE ALERT TO RESUSCITATION TEAM...');
-    
-    setTimeout(() => {
-      toast.error('🚨 CODE BLUE BROADCASTED TO ALL TRAUMA WORKSTATIONS & ICU LEADS', {
-        id: toastId,
-        duration: 6000,
+    const toastId = toast.loading('RECORDING CODE BLUE ALERT...');
+
+    try {
+      const response = await emergencyRequest<CodeBlueResponse>('/code-blue', {
+        method: 'POST',
+        body: {},
       });
+      const result = response.codeBlue;
+
+      if (result.dispatched) {
+        toast.success(`Code blue broadcast: ${result.message}`, { id: toastId, duration: 6000 });
+      } else {
+        // The event is recorded and audited, but nothing was sent to an
+        // emergency service: say so instead of claiming a broadcast.
+        toast.warning(result.message, { id: toastId, duration: 9000 });
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Code blue could not be recorded', {
+        id: toastId,
+      });
+    } finally {
       setStatActionRunning(null);
-    }, 1200);
+    }
   };
 
-  const handleAllocateBed = (bedId: string) => {
-    setBeds((prev) =>
-      prev.map((b) => {
-        if (b.id === bedId) {
-          const newStatus = b.status === 'AVAILABLE' ? 'OCCUPIED' : 'AVAILABLE';
-          toast.info(`Bed ${b.label} status changed to ${newStatus}`);
-          return {
-            ...b,
-            status: newStatus,
-            patient: newStatus === 'OCCUPIED' ? 'Incoming STAT Patient' : null,
-            triage: newStatus === 'OCCUPIED' ? 'RED' : null,
-          };
+  const handleAllocateBed = async (bedId: string) => {
+    const bed = beds.find((entry) => entry.id === bedId);
+    if (!bed) return;
+
+    setStatActionRunning(`bed:${bedId}`);
+    try {
+      if (bed.status === 'occupied') {
+        // Release the bay: the patient leaves and the bay is free again.
+        await emergencyRequest(`/beds/${encodeURIComponent(bedId)}`, {
+          method: 'PATCH',
+          body: { status: 'available' },
+        });
+        toast.success(`Bed ${bed.label} released and ready for admission`);
+      } else if (bed.status === 'cleaning') {
+        // The turnover is done: put the bay back into circulation.
+        await emergencyRequest(`/beds/${encodeURIComponent(bedId)}`, {
+          method: 'PATCH',
+          body: { status: 'available' },
+        });
+        toast.success(`Bed ${bed.label} is clean and back in circulation`);
+      } else {
+        const waiting = pickWaitingPatient(patients);
+        if (!waiting) {
+          toast.error('No admitted patient is waiting for a bed. Admit a patient first.');
+          return;
         }
-        return b;
-      })
-    );
+
+        await emergencyRequest(`/beds/${encodeURIComponent(bedId)}`, {
+          method: 'PATCH',
+          body: { status: 'occupied', patientId: waiting.id, triage: waiting.triageLevel },
+        });
+        toast.success(`Bed ${bed.label} allocated to ${waiting.name} (${waiting.id})`);
+      }
+
+      await loadBoard();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Bed allocation failed');
+    } finally {
+      setStatActionRunning(null);
+    }
   };
 
   const filteredPatients = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.condition.toLowerCase().includes(searchQuery.toLowerCase())
+      (p.condition ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -229,7 +377,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
             <div>
               <p className="text-[11px] font-semibold text-success uppercase tracking-wider">Available ER Bays</p>
               <p className="text-2xl font-black text-success">
-                {beds.filter((b) => b.status === 'AVAILABLE').length} / {beds.length}
+                {beds.filter((b) => b.status === 'available').length} / {beds.length}
               </p>
             </div>
             <Bed className="h-7 w-7 text-success" />
@@ -242,7 +390,7 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
               <p className="text-[11px] font-semibold text-accent uppercase tracking-wider">Trauma Hotline</p>
               <p className="text-sm font-bold text-sky-300 flex items-center gap-1">
                 <PhoneCall className="h-3.5 w-3.5" />
-                Ext. 911 / 4402
+                {hotline ?? '—'}
               </p>
             </div>
             <Activity className="h-7 w-7 text-accent" />
@@ -295,21 +443,21 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                         <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
                           {p.name}
                           <span className="text-xs font-normal text-muted-foreground">
-                            ({p.age}y, {p.gender})
+                            ({p.age ?? '—'}y, {formatGender(p.gender)})
                           </span>
                         </h4>
                         <p className="text-xs font-semibold text-destructive dark:text-destructive mt-0.5">
-                          {p.condition}
+                          {p.condition ?? 'No presenting condition recorded'}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right">
                       <Badge variant="outline" className="text-xs font-mono border-destructive/40">
-                        {p.bed}
+                        {p.bed ?? 'Awaiting bay'}
                       </Badge>
                       <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
-                        <Clock className="h-3 w-3" /> {p.timeAdmitted}
+                        <Clock className="h-3 w-3" /> {formatElapsed(p.admittedAt)}
                       </p>
                     </div>
                   </div>
@@ -320,19 +468,23 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
                         Blood Pressure
                       </span>
-                      <span className="font-mono font-bold text-foreground">{p.bp} mmHg</span>
+                      <span className="font-mono font-bold text-foreground">{formatBloodPressure(p)} mmHg</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
                         Heart Rate
                       </span>
-                      <span className="font-mono font-bold text-destructive dark:text-destructive">{p.hr} bpm</span>
+                      <span className="font-mono font-bold text-destructive dark:text-destructive">
+                        {p.heartRate ?? '—'} bpm
+                      </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
                         SpO2 Saturation
                       </span>
-                      <span className="font-mono font-bold text-success dark:text-success">{p.spo2}%</span>
+                      <span className="font-mono font-bold text-success dark:text-success">
+                        {p.spo2 ?? '—'}%
+                      </span>
                     </div>
                   </div>
 
@@ -342,7 +494,9 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        toast.success(`Administered STAT IV Therapy order for ${p.name}`);
+                        toast.info(
+                          `Medication orders are not issued from the triage board. Use the medication administration workflow for ${p.name}.`
+                        );
                       }}
                       className="h-7 text-xs border-destructive/30 text-destructive dark:text-destructive hover:bg-destructive/10"
                     >
@@ -383,20 +537,21 @@ export function EmergencyModeModule({ onOpenLogVitals, onOpenHandover }: Emergen
                   <div>
                     <span className="font-bold text-foreground block">{b.label}</span>
                     <span className="text-[10px] text-muted-foreground">
-                      {b.patient ? `Patient: ${b.patient}` : 'Ready for admission'}
+                      {b.patient ? `Patient: ${b.patientName ?? b.patient}` : 'Ready for admission'}
                     </span>
                   </div>
                   <Button
                     size="sm"
-                    variant={b.status === 'AVAILABLE' ? 'default' : 'outline'}
+                    variant={b.status === 'available' ? 'default' : 'outline'}
                     onClick={() => handleAllocateBed(b.id)}
+                    disabled={statActionRunning === `bed:${b.id}`}
                     className={`h-7 text-[11px] font-bold ${
-                      b.status === 'AVAILABLE'
+                      b.status === 'available'
                         ? 'bg-success text-success-foreground hover:bg-success'
                         : 'border-destructive/40 text-destructive dark:text-destructive'
                     }`}
                   >
-                    {b.status}
+                    {BED_STATUS_LABEL[b.status] ?? b.status}
                   </Button>
                 </div>
               ))}

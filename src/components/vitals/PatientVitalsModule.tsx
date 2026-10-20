@@ -179,7 +179,12 @@ export function PatientVitalsModule({
     try {
       const response = await fetch('/api/shared/patient-summary/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Minting a share link is an authenticated action. The request used
+          // to go out with no credential, so the link was never created.
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+        },
         body: JSON.stringify({
           patientId: selectedPatientId,
           patientName: currentPatient.name,

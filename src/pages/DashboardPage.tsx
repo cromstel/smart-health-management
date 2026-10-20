@@ -25,6 +25,7 @@ import {
   Sparkles,
   Siren,
   FileText,
+  AlertTriangle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -126,6 +127,7 @@ function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; p
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [patientGrowth, setPatientGrowth] = useState<any[]>([]);
   const [weeklyAppointments, setWeeklyAppointments] = useState<any[]>([]);
@@ -247,48 +249,17 @@ export default function DashboardPage() {
       const ghanaData = await api.getGhanaHealthData();
       setGhanaHealthData(ghanaData || []);
     } catch (error) {
+      // No fabricated fallback. A failed dashboard query used to be papered
+      // over with invented patient counts and revenue figures, which made a
+      // broken endpoint look like a working one. The failure is surfaced and
+      // every panel renders empty instead.
       console.error('Failed to load dashboard data:', error);
-      const predictions: PatientLoadPredictionsResponse = {
-        predictions: [
-          { day: 'Monday', predictedLoad: 40 },
-          { day: 'Tuesday', predictedLoad: 45 },
-          { day: 'Wednesday', predictedLoad: 50 },
-          { day: 'Thursday', predictedLoad: 48 },
-          { day: 'Friday', predictedLoad: 55 },
-          { day: 'Saturday', predictedLoad: 30 },
-          { day: 'Sunday', predictedLoad: 25 },
-        ],
-      };
-      setStats({
-        totalPatients: 2543,
-        todayAppointments: 48,
-        activeHospitals: 12,
-        monthlyRevenue: 45231,
-      });
-      setPatientGrowth([
-        { month: 'Jan', patients: 400 },
-        { month: 'Feb', patients: 450 },
-        { month: 'Mar', patients: 520 },
-        { month: 'Apr', patients: 480 },
-        { month: 'May', patients: 600 },
-        { month: 'Jun', patients: 650 },
-      ]);
-      setWeeklyAppointments([
-        { day: 'Mon', appointments: 45 },
-        { day: 'Tue', appointments: 52 },
-        { day: 'Wed', appointments: 48 },
-        { day: 'Thu', appointments: 61 },
-        { day: 'Fri', appointments: 55 },
-        { day: 'Sat', appointments: 38 },
-        { day: 'Sun', appointments: 25 },
-      ]);
-      setRecentActivities([
-        { action: 'New patient registered', name: 'Sarah Johnson', time: '5 minutes ago' },
-        { action: 'Appointment scheduled', name: 'Dr. Michael Chen', time: '15 minutes ago' },
-        { action: 'Lab report uploaded', name: 'Patient #2543', time: '1 hour ago' },
-        { action: 'Prescription issued', name: 'Dr. Emily Davis', time: '2 hours ago' },
-      ]);
-      setPatientLoadPredictions(predictions.predictions);
+      setLoadError(error instanceof Error ? error.message : 'Failed to load dashboard data.');
+      setStats({ totalPatients: 0, todayAppointments: 0, activeHospitals: 0, monthlyRevenue: 0 });
+      setPatientGrowth([]);
+      setWeeklyAppointments([]);
+      setRecentActivities([]);
+      setPatientLoadPredictions([]);
       setGhanaHealthData([]);
     } finally {
       setLoading(false);
@@ -345,6 +316,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+          <div>
+            <p className="font-semibold text-destructive">Dashboard data could not be loaded</p>
+            <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              The figures below are empty because the underlying query failed. They are not placeholders.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-muted/20 border border-border/60 p-4 rounded-xl">
         <div>
           <div className="flex items-center gap-2">
