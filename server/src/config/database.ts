@@ -53,6 +53,17 @@ export const databaseName = (): string => process.env.DB_NAME || DEFAULT_DB_NAME
 const pool = mysql.createPool({
   ...databaseConnectionOptions(),
   database: databaseName(),
+  // A DECIMAL column is returned as a string by default, which is the wrong
+  // type for money and for every measurement the application does arithmetic
+  // on. It had a concrete cost: the pharmacy page crashed on
+  // `med.price.toFixed(2)` because the price arrived as "12.50", and the
+  // financial exports wrote money into the spreadsheet as text, so a SUM over
+  // the column returned zero and the rows sorted lexicographically.
+  //
+  // Coercing at the driver removes the whole class of defect instead of
+  // relying on every endpoint to remember. The columns involved hold at most
+  // fifteen significant digits, which a double represents exactly.
+  decimalNumbers: true,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

@@ -11,12 +11,12 @@ import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 import SystemAuthorBadge from '@/components/auth/SystemAuthorBadge';
 
-const DEMO_EMAIL = 'admin@smarthealth.com';
-const DEMO_PASSWORD = 'Pass@135709';
-
 function HospitalAdminLogin() {
-  const [email, setEmail] = useState(() => (import.meta.env.DEV ? DEMO_EMAIL : ''));
-  const [password, setPassword] = useState(() => (import.meta.env.DEV ? DEMO_PASSWORD : ''));
+  // No credential is prefilled, in any environment. A prefilled password is a
+  // password in the repository, and the sign-in surface is not a place to
+  // carry one.
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

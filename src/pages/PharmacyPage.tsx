@@ -85,16 +85,22 @@ export default function PharmacyPage() {
     try {
       setLoading(true);
       const data = await api.getMedicines() as any[];
+      // The numeric columns are DECIMAL and INT in the database, and the
+      // driver returns a DECIMAL as a string. Coerced here, at the boundary,
+      // so the arithmetic and the money formatting further down work on
+      // numbers instead of throwing on `.toFixed()`.
       const transformedData = data.map((med: any) => ({
         id: med.id,
         name: med.medicine_name,
         category: med.category,
-        stock: med.stock_level,
-        minStock: med.low_stock_threshold,
-        price: med.unit_price,
+        stock: Number(med.stock_level) || 0,
+        minStock: Number(med.low_stock_threshold) || 0,
+        price: Number(med.unit_price) || 0,
         expiryDate: med.expiry_date,
         supplier: med.supplier,
-        status: med.stock_level <= med.low_stock_threshold ? (med.stock_level === 0 ? 'Out of Stock' : 'Low Stock') : 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
+        status: (Number(med.stock_level) || 0) <= (Number(med.low_stock_threshold) || 0)
+          ? ((Number(med.stock_level) || 0) === 0 ? 'Out of Stock' : 'Low Stock')
+          : 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
       }));
       setMedicines(transformedData);
     } catch (error: any) {
