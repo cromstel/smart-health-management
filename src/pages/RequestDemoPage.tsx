@@ -142,7 +142,7 @@ export default function RequestDemoPage() {
               <p className="max-w-xl text-lg leading-relaxed text-primary-foreground/85">
                 Discover how Smart MediCare streamlines hospital operations, improves patient care coordination, and supports better outcomes for your clinical and administrative teams.
               </p>
-              <ul className="space-y-3 text-sm text-primary-foreground/90">
+              <ul className="flex flex-wrap gap-3 text-sm text-primary-foreground/90">
                 {benefitItems.map(({ icon: Icon, label }) => (
                   <li key={label} className="flex items-center gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/15 text-accent">
@@ -244,6 +244,11 @@ export default function RequestDemoPage() {
         {/* Statistics strip */}
         <section className="border-b border-border bg-background py-14 sm:py-16">
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Platform at a glance</p>
+              <h2 className="mt-3 font-display text-2xl font-medium tracking-tight text-foreground sm:text-3xl">Numbers that reflect how teams use Smart MediCare</h2>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Illustrative figures — replace with verified organisational metrics before launch.</p>
+            </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map(({ icon: Icon, value, label }) => (
                 <div key={label} className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">
@@ -256,10 +261,7 @@ export default function RequestDemoPage() {
                   </div>
                 </div>
               ))}
-            </div>
-            <p className="mt-6 text-center text-xs text-muted-foreground">
-              Figures are illustrative placeholders — replace with verified organisational metrics before launch.
-            </p>
+</div>
           </div>
         </section>
       </main>
