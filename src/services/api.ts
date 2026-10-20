@@ -1,10 +1,15 @@
 import type { User } from "@/contexts/AuthContext";
+import * as apiConfig from '@/config/api';
 import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON
 } from '@simplewebauthn/browser';
+
+// Re-exported so existing consumers keep importing the origin from the API
+// service. The value itself is resolved in `src/config/api.ts`.
+export const { API_ORIGIN } = apiConfig;
 
 
 interface SystemHealthResponse { status: string; }
@@ -103,13 +108,10 @@ export interface SuperAdminBackup {
   createdAt: string;
 }
 
-let configuredUrl = import.meta.env.VITE_API_URL || '/api';
-if (import.meta.env.DEV && configuredUrl.includes('localhost:5600')) {
-  // Use Vite's local mock API middleware if the default 5600 is injected but not running
-  configuredUrl = '/api';
-}
-const API_BASE_URL = configuredUrl;
-export const API_ORIGIN = API_BASE_URL.startsWith('http') ? API_BASE_URL.replace(/\/api$/, '') : '';
+// The API base URL is resolved in one place (`src/config/api.ts`) from the
+// environment, so a change to the rule cannot leave a stale copy behind in
+// one of the modules that talks to the API.
+const { API_BASE_URL } = apiConfig;
 
 class ApiService {
   private cache: { [url: string]: any } = {};
@@ -141,8 +143,8 @@ class ApiService {
    * present, so login and the other pre-auth POSTs need one.
    *
    * It cannot come from document.cookie here: the API is a different origin
-   * (:5000) from the app (:5175), so the XSRF-TOKEN cookie is not visible to the
-   * app page at all. The server therefore also returns the token in the
+   * from the app, so the XSRF-TOKEN cookie is not visible to the app page at
+   * all. The server therefore also returns the token in the
    * X-XSRF-Token response header, which CORS exposes. Cookie is kept as a
    * fallback for same-origin deployments.
    */
@@ -208,9 +210,10 @@ class ApiService {
     await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      // The API is a different origin from the app (VITE_API_URL is typically
-      // :5000 while the app is :5175), so the session cookie has to be replayed
-      // explicitly for the double-submit check to have a session to match.
+      // The API is a different origin from the app (VITE_API_URL points at the
+      // API host, the app is served from its own), so the session cookie has
+      // to be replayed explicitly for the double-submit check to have a
+      // session to match.
       credentials: 'include',
       headers: this.getHeaders(false),
       body: JSON.stringify({ email, password }),

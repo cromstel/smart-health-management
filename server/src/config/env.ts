@@ -71,3 +71,23 @@ export const getSecret = (name: string, devFallback: string): string => {
   }
   return devFallback;
 };
+
+/**
+ * Reads a TCP port from the environment.
+ *
+ * Uses the same rule as `getSecret`: a missing port is a hard startup error
+ * in production, because a server that guesses its own port can end up bound
+ * to the wrong one and nothing says so until a client cannot reach it. In
+ * development the documented fallback is used.
+ *
+ * A value that is present but not a port is rejected in every environment:
+ * `app.listen('abc')` would bind a socket path, not a port.
+ */
+export const getPort = (name: string, devFallback: number): number => {
+  const raw = getSecret(name, String(devFallback));
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`Invalid ${name}: "${raw}" is not a valid TCP port`);
+  }
+  return port;
+};

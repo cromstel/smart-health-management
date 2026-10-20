@@ -26,6 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import { api } from '@/services/api';
+import { APP_NAME } from '@/config/app';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,7 +97,7 @@ const benefitItems = [
   {
     icon: Clock3,
     label: 'Tailored to Your Needs',
-    description: 'See how Smart MediCare maps to your departments, roles, and reporting requirements.',
+    description: `See how ${APP_NAME} maps to your departments, roles, and reporting requirements.`,
   },
 ];
 
@@ -147,10 +148,10 @@ export default function RequestDemoPage() {
                 Request a Personalized Demo
               </span>
               <h1 className="font-display text-4xl font-medium leading-[1.02] tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
-                See Smart MediCare <span className="text-accent">in Action</span>
+                See {APP_NAME} <span className="text-accent">in Action</span>
               </h1>
               <p className="max-w-xl text-lg leading-relaxed text-primary-foreground/85">
-                Discover how Smart MediCare streamlines hospital operations, improves patient care coordination, and supports better outcomes for your clinical and administrative teams.
+                {`Discover how ${APP_NAME} streamlines hospital operations, improves patient care coordination, and supports better outcomes for your clinical and administrative teams.`}
               </p>
               <ul className="flex flex-col gap-3 text-sm text-primary-foreground/90 sm:flex-row sm:flex-wrap">
                 {benefitItems.map(({ icon: Icon, label, description }) => (
@@ -178,7 +179,7 @@ export default function RequestDemoPage() {
                   {submitted ? (
                     <div className="space-y-5 py-10 text-center" role="status" aria-live="polite">
                       <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-9 w-9" aria-hidden="true" /></span>
-                      <div><h2 className="text-xl font-semibold text-foreground">Your request is on its way.</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">A Smart MediCare product specialist will contact you using your selected preference.</p></div>
+                      <div><h2 className="text-xl font-semibold text-foreground">Your request is on its way.</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{`A ${APP_NAME} product specialist will contact you using your selected preference.`}</p></div>
                       <Button asChild><Link to="/">Return to home</Link></Button>
                     </div>
                   ) : (
@@ -259,7 +260,7 @@ export default function RequestDemoPage() {
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
             <div className="mb-8 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Platform at a glance</p>
-              <h2 className="mt-3 font-display text-2xl font-medium tracking-tight text-foreground sm:text-3xl">Numbers that reflect how teams use Smart MediCare</h2>
+              <h2 className="mt-3 font-display text-2xl font-medium tracking-tight text-foreground sm:text-3xl">{`Numbers that reflect how teams use ${APP_NAME}`}</h2>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Illustrative figures — replace with verified organisational metrics before launch.</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

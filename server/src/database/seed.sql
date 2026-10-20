@@ -1,4 +1,4 @@
--- Smart MediCare Seeding Script for BIGINT Schema
+-- Application seeding script for BIGINT Schema
 --
 -- The database is not selected here either: the caller chooses it, the same
 -- way the schema file does. `npm run db:setup` selects it before running
@@ -141,14 +141,21 @@ INSERT INTO departments (id, hospital_id, name, head_of_department) VALUES
 -- After hospitals and departments, because hospital_id and department_id are
 -- foreign keys into the two blocks above.
 --
--- Password hashes are bcrypt (cost 10) over the demo credentials documented in
--- README.md and DOCUMENTATION.md section 5. They previously all shared one hash
--- that was commented "password is 'password'" but did not in fact verify against
--- any known value, so none of the documented demo logins could succeed against a
--- real database.
+-- The password column holds a PLACEHOLDER, not a hash. The seed runner
+-- (`npm run db:setup` in server/) generates a bcrypt hash for each account
+-- from the password configured in the environment -- SEED_SUPER_ADMIN_PASSWORD,
+-- SEED_ADMIN_PASSWORD, SEED_DOCTOR_PASSWORD and SEED_PATIENT_PASSWORD -- and
+-- substitutes it here. Nothing about a credential is written in the
+-- repository, and no hash is shared between accounts or deployments.
+--
+-- Running this file straight through the mysql client instead of the runner
+-- leaves the placeholder in the password column, and those accounts then
+-- cannot sign in. Use the runner.
 --
 -- These are development-only accounts for a local seed. If this seed is ever
--- applied anywhere reachable, rotate them before doing anything else.
+-- applied anywhere reachable, set the SEED_*_PASSWORD variables to values
+-- that are not shared with anything else, and rotate them before doing
+-- anything else.
 --
 -- totp_secret is base32 of JBSWY3DPEHPK3PXP (demo seed) for the clinical
 -- accounts, so their two-factor path is exercisable out of the box.
@@ -161,10 +168,10 @@ INSERT INTO departments (id, hospital_id, name, head_of_department) VALUES
 -- is where the setup belongs for a privileged account: the operator chooses the
 -- moment it becomes mandatory.
 INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id, department_id) VALUES
-(1, 1, 'superadmin@smarthealth.com', '$2b$10$Pe2N6QgTLKg/tLgWsHY8B.GfFBeQTMs3XXxTLoT3YzcEbH9fNTF1.', 'Super Admin', NULL, 1, NULL), -- password: April--2024!!!! ; two-factor NOT enrolled by default
-(2, 2, 'admin@smarthealth.com', '$2b$10$.YOxfK6xC5.qL.nhydYg6ewcMTa21QdjT0w4f7LR1VeXgSzG1fqtu', 'Admin User', NULL, 1, 1), -- password: Pass@135709 ; two-factor NOT enrolled by default
-(3, 3, 'doctor@smarthealth.com', '$2b$10$anoAXsLwXJ4D1fUIiwQ0nOijk1vMIo9NITxEzqrqdLlNKAgLGyVUu', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1), -- password: Demo@135790
-(4, 4, 'patient@smarthealth.com', '$2b$10$cmFAQ0Oo1C6zXxB8htEJIOCiw6szAuZ8qbOZXUK83e74hSyiX0Iw2', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL); -- password: P@ssword135
+(1, 1, 'superadmin@smarthealth.com', '${SEED_SUPER_ADMIN_PASSWORD_HASH}', 'Super Admin', NULL, 1, NULL), -- two-factor NOT enrolled by default
+(2, 2, 'admin@smarthealth.com', '${SEED_ADMIN_PASSWORD_HASH}', 'Admin User', NULL, 1, 1), -- two-factor NOT enrolled by default
+(3, 3, 'doctor@smarthealth.com', '${SEED_DOCTOR_PASSWORD_HASH}', 'Dr. Smith', 'GEZDGNBVGY3TQOJQ', 1, 1),
+(4, 4, 'patient@smarthealth.com', '${SEED_PATIENT_PASSWORD_HASH}', 'John Doe', 'GEZDGNBVGY3TQOJQ', 1, NULL);
 
 -- 6. Seed Staff
 INSERT INTO staff (id, staff_id, user_id, first_name, last_name, role, department_id, hospital_id, email, phone, join_date) VALUES
@@ -238,8 +245,10 @@ INSERT INTO transactions (id, transaction_id, date, description, account_id, deb
 (1, 'TRN-001', CURDATE(), 'Initial capital injection', 1, 50000.00, 0.00);
 
 -- 16. Seed Settings
+-- `${APP_NAME}` is rendered by the seed runner (see config/app.ts): the seeded
+-- system name follows the configured application name.
 INSERT INTO settings (setting_key, setting_value, category, updated_by) VALUES
-('system_name', 'Smart MediCare', 'general', 2),
+('system_name', '${APP_NAME}', 'general', 2),
 ('default_language', 'en', 'localization', 2),
 ('patient_portal_enabled', 'true', 'features', 2);
 

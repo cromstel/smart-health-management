@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/services/api';
+import { APP_NAME } from '@/config/app';
 
 const contactRequestSchema = z.object({
   name: z.string().trim().min(2, 'Enter your full name').max(120),
@@ -47,7 +48,7 @@ const conversationPaths = [
   {
     number: '01',
     icon: CalendarCheck,
-    eyebrow: 'Exploring Smart MediCare',
+    eyebrow: `Exploring ${APP_NAME}`,
     title: 'Plan a focused walkthrough',
     description: 'Tell us how your organisation works today. We will shape a platform tour around the teams and workflows that matter to you.',
     action: 'Request a demo',
@@ -59,7 +60,7 @@ const conversationPaths = [
     eyebrow: 'Already a customer',
     title: 'Start from your workspace',
     description: 'Sign in to keep support conversations connected to your organisation, access permissions, and the context your team needs.',
-    action: 'Sign in to Smart MediCare',
+    action: `Sign in to ${APP_NAME}`,
     to: '/auth/login',
   },
   {
@@ -192,7 +193,7 @@ export default function ContactUsPage() {
         <section className="mx-auto grid w-full gap-5 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-28">
           <Reveal className="border border-border bg-card p-8 sm:p-10 lg:col-span-7"><Building2 className="h-7 w-7 text-accent" aria-hidden="true" /><p className="mt-12 text-sm font-semibold uppercase tracking-[0.16em] text-accent">For care organisations</p><h2 className="mt-4 max-w-xl font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Tell us where care could feel more connected.</h2><p className="mt-5 max-w-2xl leading-relaxed text-muted-foreground">Share the shape of your organisation and the conversation you would like to have. We will use it only to prepare a focused follow-up.</p>
             {submitted ? (
-              <div className="mt-8 border border-success/30 bg-success/10 p-6" role="status" aria-live="polite"><CheckCircle2 className="h-7 w-7 text-success" aria-hidden="true" /><h3 className="mt-4 text-xl font-semibold">Your message is on its way.</h3><p className="mt-2 leading-relaxed text-muted-foreground">Thank you. A Smart MediCare specialist will follow up using your selected contact method.</p></div>
+              <div className="mt-8 border border-success/30 bg-success/10 p-6" role="status" aria-live="polite"><CheckCircle2 className="h-7 w-7 text-success" aria-hidden="true" /><h3 className="mt-4 text-xl font-semibold">Your message is on its way.</h3><p className="mt-2 leading-relaxed text-muted-foreground">{`Thank you. A ${APP_NAME} specialist will follow up using your selected contact method.`}</p></div>
             ) : (
               <form className="mt-8 space-y-5" noValidate onSubmit={handleSubmit(onSubmit)}>
                 <div className="grid gap-5 sm:grid-cols-2"><div><Label htmlFor="contact-name">Full name</Label><Input id="contact-name" className="mt-2" autoComplete="name" aria-invalid={Boolean(errors.name)} {...register('name')} />{errors.name && <p className="mt-1.5 text-sm text-destructive">{errors.name.message}</p>}</div><div><Label htmlFor="contact-email">Work email</Label><Input id="contact-email" className="mt-2" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} {...register('email')} />{errors.email && <p className="mt-1.5 text-sm text-destructive">{errors.email.message}</p>}</div></div>

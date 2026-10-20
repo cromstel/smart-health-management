@@ -47,6 +47,7 @@ import { EmergencyModeModule } from '@/components/emergency/EmergencyModeModule'
 import { ShiftHandoverModal } from '@/components/handover/ShiftHandoverModal';
 import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { APP_NAME } from '@/config/app';
 
 const chartConfig = {
   patients: { label: 'Patients', color: 'var(--chart-1)' },
@@ -70,7 +71,7 @@ interface DashboardModule {
 }
 
 const DEFAULT_MODULES: DashboardModule[] = [
-  { id: 'apiHealth', title: 'Smart MediCare API Telemetry & Health Monitor', gridClass: 'col-span-2', visible: true },
+  { id: 'apiHealth', title: `${APP_NAME} API Telemetry & Health Monitor`, gridClass: 'col-span-2', visible: true },
   { id: 'd3VitalsTrend', title: 'D3.js Patient Health Vitals Trend Analytics', gridClass: 'col-span-2', visible: true },
   { id: 'vitals7Day', title: '7-Day Patient Heart Rate & Blood Pressure Trends', gridClass: 'col-span-2', visible: true },
   { id: 'auditChart', title: 'Critical System Operations & Audit Log Frequency', gridClass: 'col-span-2', visible: true },

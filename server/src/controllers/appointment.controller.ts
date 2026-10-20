@@ -3,6 +3,7 @@ import type { ResultSetHeader } from 'mysql2';
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import ical from 'ical-generator';
+import { APP_NAME } from '../config/app.js';
 
 export const getAppointments = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -214,7 +215,7 @@ export const getAppointmentIcs = async (req: AuthRequest, res: Response): Promis
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    const cal = ical({ name: 'Smart MediCare Appointment' });
+    const cal = ical({ name: `${APP_NAME} Appointment` });
     const start = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 

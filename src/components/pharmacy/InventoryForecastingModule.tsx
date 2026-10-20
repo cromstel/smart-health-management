@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import * as apiConfig from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,13 +63,10 @@ interface ForecastResponse {
 /**
  * The API base URL.
  *
- * Mirrors the rule the shared API client uses: in development the default
- * 5600 port is replaced by the same-origin `/api` proxy when it is not
- * running.
+ * Resolved by the shared resolver in `src/config/api.ts`, from the
+ * environment, so this module cannot drift away from the rest of the app.
  */
-const configuredUrl = import.meta.env.VITE_API_URL || '/api';
-const API_BASE_URL =
-  import.meta.env.DEV && configuredUrl.includes('localhost:5600') ? '/api' : configuredUrl;
+const { API_BASE_URL } = apiConfig;
 
 /** A thin authenticated fetch. The server skips the CSRF check for bearer requests. */
 const request = async <T,>(path: string, init: RequestInit = {}): Promise<T> => {

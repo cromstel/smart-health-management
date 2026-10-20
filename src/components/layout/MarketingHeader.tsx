@@ -4,6 +4,7 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
+import { APP_NAME } from '@/config/app';
 
 const sectionLinks = [
   { label: 'Features', hash: '#features' },
@@ -27,7 +28,7 @@ export function MarketingHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-md" role="banner">
       <nav className="mx-auto flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
-        <Link to="/" className="group flex items-center gap-2.5" aria-label="Smart MediCare — Home">
+        <Link to="/" className="group flex items-center gap-2.5" aria-label={`${APP_NAME} — Home`}>
           <Logo size="sm" />
         </Link>
 

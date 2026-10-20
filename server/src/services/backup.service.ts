@@ -25,6 +25,12 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pool from '../config/database.js';
+import {
+  DEFAULT_DB_HOST,
+  DEFAULT_DB_NAME,
+  DEFAULT_DB_PORT,
+  DEFAULT_DB_USER,
+} from '../config/runtime.js';
 import type { ResultSetHeader } from 'mysql2';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -63,11 +69,11 @@ export interface BackupOptions {
 
 /** DB coordinates for the dump/restore tooling (env-only; no hardcoded credentials). */
 export const getDbConfig = (): DbConfig => ({
-  username: process.env.DB_USER || 'root',
+  username: process.env.DB_USER || DEFAULT_DB_USER,
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'smart_medicare',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306', 10),
+  database: process.env.DB_NAME || DEFAULT_DB_NAME,
+  host: process.env.DB_HOST || DEFAULT_DB_HOST,
+  port: parseInt(process.env.DB_PORT || String(DEFAULT_DB_PORT), 10),
 });
 
 /**

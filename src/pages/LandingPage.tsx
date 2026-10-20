@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { HeroGridLines, HeroPing, HeroScanLine } from '@/components/common/HeroAccents';
+import { APP_NAME } from '@/config/app';
 
 import {
   Activity,
@@ -582,7 +583,7 @@ function CtaBanner() {
             Ready to modernize your healthcare operations?
           </h2>
           <p className="text-lg text-primary-foreground/60 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Join 500+ hospitals and clinics that trust Smart MediCare to manage their clinical
+            Join 500+ hospitals and clinics that trust {APP_NAME} to manage their clinical
             workflows, pharmacy operations, and patient care — every single day.
           </p>
 

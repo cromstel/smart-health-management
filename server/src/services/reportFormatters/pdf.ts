@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit'
+import { APP_NAME } from '../../config/app.js'
 
 export function buildPDF(reportTitle: string, rows: any[], options?: { author?: string; subject?: string }): any {
   const doc = new PDFDocument({ size: 'A4', margin: 40 })
@@ -10,7 +11,7 @@ export function buildPDF(reportTitle: string, rows: any[], options?: { author?: 
   doc.info = {
     ...doc.info,
     Title: reportTitle,
-    Author: options?.author || 'Smart MediCare',
+    Author: options?.author || APP_NAME,
     Subject: options?.subject || `Pharmacy Report: ${reportTitle}`
   } as any
 

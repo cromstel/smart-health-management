@@ -1,3 +1,6 @@
+import { DEFAULT_API_PORT, DEFAULT_LOCAL_HOST } from '../../../server/src/config/runtime';
+import { loadLocalEnv } from './env';
+
 /**
  * Backend availability probe for the e2e suite.
  *
@@ -18,12 +21,41 @@
  *     them with `--grep-invert @db`.
  *
  * Run them locally with:
- *   1. `mysql -u root -p < server/src/database/schema.sql` then `seed.sql`
+ *   1. `npm run db:setup` in server/ (applies the schema and the seed)
  *   2. `cd server && npm run dev`
  *   3. `npx playwright test`
  */
 
-const API_ORIGIN = process.env.E2E_API_ORIGIN || 'http://localhost:5000';
+// The environment files have to be visible before anything reads them: the
+// API origin and the seeded credentials both come from there.
+loadLocalEnv();
+
+/**
+ * The origin the API is reached on.
+ *
+ * `E2E_API_ORIGIN` wins. Otherwise the origin of `VITE_API_URL` -- the same
+ * variable the app itself is configured with -- is used, so the suite and the
+ * app always talk to the same API. The documented local default is the last
+ * resort.
+ */
+const resolveApiOrigin = (): string => {
+  const explicit = process.env.E2E_API_ORIGIN?.trim();
+  if (explicit) return explicit.replace(/\/+$/, '');
+
+  const configured = process.env.VITE_API_URL?.trim();
+  if (configured) {
+    try {
+      return new URL(configured).origin;
+    } catch {
+      // A relative VITE_API_URL means the API is same-origin, which the
+      // dev server does not serve: fall through to the documented default.
+    }
+  }
+
+  return `http://${DEFAULT_LOCAL_HOST}:${DEFAULT_API_PORT}`;
+};
+
+const API_ORIGIN = resolveApiOrigin();
 
 /** Default timeout for the probe itself, so a hung port cannot stall the run. */
 const PROBE_TIMEOUT_MS = 3000;

@@ -4,6 +4,7 @@ import { AppSidebar } from './AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { APP_NAME } from '@/config/app';
 
 // Mock dependencies
 vi.mock('@/contexts/AuthContext', () => ({
@@ -49,8 +50,8 @@ describe('AppSidebar', () => {
 
   test('renders the sidebar header and footer', () => {
     render(<TestWrapper />);
-    expect(screen.getByRole('img', { name: 'Smart MediCare' })).toBeInTheDocument();
-    expect(screen.getByText('© 2024 Smart MediCare')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: APP_NAME })).toBeInTheDocument();
+    expect(screen.getByText(`© 2024 ${APP_NAME}`)).toBeInTheDocument();
   });
 
   test('renders all menu items when all permissions are granted', () => {

@@ -5,6 +5,7 @@ import { ArrowRight, CircleHelp, Search, ShieldCheck, Stethoscope } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HeroGridLines, HeroScanLine } from '@/components/common/HeroAccents';
+import { APP_NAME } from '@/config/app';
 
 type Faq = {
   question: string;
@@ -15,8 +16,8 @@ type Faq = {
 const faqs: Faq[] = [
   {
     category: 'Getting started',
-    question: 'Who is Smart MediCare designed for?',
-    answer: 'Smart MediCare brings clinical, operational, pharmacy, and administrative teams into one coordinated workspace. It is designed for hospitals, clinics, and care networks that need clearer handoffs across the care journey.',
+    question: `Who is ${APP_NAME} designed for?`,
+    answer: `${APP_NAME} brings clinical, operational, pharmacy, and administrative teams into one coordinated workspace. It is designed for hospitals, clinics, and care networks that need clearer handoffs across the care journey.`,
   },
   {
     category: 'Getting started',
@@ -35,7 +36,7 @@ const faqs: Faq[] = [
   },
   {
     category: 'Care workflows',
-    question: 'Does Smart MediCare replace clinical judgment?',
+    question: `Does ${APP_NAME} replace clinical judgment?`,
     answer: 'No. Platform features and AI-assisted capabilities are intended to support licensed professionals and established care processes. They do not replace professional assessment, diagnosis, or clinical decision-making.',
   },
   {
@@ -61,7 +62,7 @@ const faqs: Faq[] = [
   {
     category: 'Account & support',
     question: 'I am an existing customer. Where should I go for help?',
-    answer: 'Sign in to your Smart MediCare workspace first. This keeps assistance connected to the right organisation, account permissions, and operational context.',
+    answer: `Sign in to your ${APP_NAME} workspace first. This keeps assistance connected to the right organisation, account permissions, and operational context.`,
   },
   {
     category: 'Account & support',
@@ -98,7 +99,7 @@ export default function FaqPage() {
             <div className="lg:col-span-8">
               <motion.p initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.05 }} className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/80"><CircleHelp className="h-4 w-4 text-accent" aria-hidden="true" /> Practical answers</motion.p>
               <motion.h1 initial={reduce ? false : { opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }} className="mt-6 max-w-3xl font-display text-5xl font-medium leading-[0.98] tracking-tight sm:text-6xl">Questions, answered with care.</motion.h1>
-              <motion.p initial={reduce ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }} className="mt-7 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">A clear starting point for evaluating Smart MediCare, understanding its role in care operations, and finding the right place for support.</motion.p>
+              <motion.p initial={reduce ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }} className="mt-7 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">{`A clear starting point for evaluating ${APP_NAME}, understanding its role in care operations, and finding the right place for support.`}</motion.p>
             </div>
             <motion.aside initial={reduce ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.3 }} className="relative border-l-2 border-accent bg-primary/80 p-5 lg:col-span-3 lg:col-start-10">
               <ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />

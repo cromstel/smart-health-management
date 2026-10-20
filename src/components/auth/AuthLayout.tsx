@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { Activity, ShieldCheck, Heart, Stethoscope, Pill, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { APP_NAME } from '@/config/app';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -157,7 +158,7 @@ export default function AuthLayout({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.8 }}
             >
-              <span>&copy; 2026 Smart MediCare</span>
+              <span>&copy; 2026 {APP_NAME}</span>
               <span>&middot;</span>
               <Link to="/auth/super-admin/login" className="hover:text-primary-foreground transition-colors flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />

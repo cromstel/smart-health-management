@@ -39,6 +39,7 @@ import { api } from '@/services/api';
 import { vitalsService, computeVitalsSummary } from '@/services/vitalsService';
 import { evaluateTriagePriority } from '@/utils/triage';
 import type { VitalsRecord, VitalStatus, CriticalHealthAlert } from '@/types/vitals';
+import { APP_NAME } from '@/config/app';
 import { LogVitalsDialog } from './LogVitalsDialog';
 import { CriticalHealthAlertsSection } from './CriticalHealthAlertsSection';
 import { AlertsSummary } from './AlertsSummary';
@@ -619,7 +620,7 @@ export function PatientVitalsModule({
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
         doc.text(
-          `Smart MediCare (QA/QC Dept) | Patient: ${currentPatient.name} | Page ${i} of ${totalPages}`,
+          `${APP_NAME} (QA/QC Dept) | Patient: ${currentPatient.name} | Page ${i} of ${totalPages}`,
           margin,
           pageHeight - 8
         );

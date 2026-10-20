@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight, Lock, ShieldCheck, Zap } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { APP_NAME } from '@/config/app';
 
 type FooterLink = {
   label: string;
@@ -67,7 +68,7 @@ export function PublicFooter() {
       <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid gap-12 border-b border-primary-foreground/15 pb-12 lg:grid-cols-12 lg:gap-8 lg:pb-16">
           <div className="max-w-sm lg:col-span-4">
-            <Link to="/" className="inline-flex items-center gap-2.5" aria-label="Smart MediCare — Home">
+            <Link to="/" className="inline-flex items-center gap-2.5" aria-label={`${APP_NAME} — Home`}>
               <Logo size="sm" variant="light" />
             </Link>
             <p className="mt-6 font-display text-2xl font-medium leading-tight tracking-tight sm:text-3xl">Infrastructure for care that keeps people at the centre.</p>
@@ -91,7 +92,7 @@ export function PublicFooter() {
         </div>
 
         <div className="flex flex-col gap-5 pt-7 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-xs tabular-nums text-primary-foreground/55">© {new Date().getFullYear()} Smart MediCare. Built for accountable care.</p>
+          <p className="font-mono text-xs tabular-nums text-primary-foreground/55">© {new Date().getFullYear()} {APP_NAME}. Built for accountable care.</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <Link to="/auth/super-admin/login" className="inline-flex items-center gap-1.5 text-xs text-primary-foreground/65 transition-colors hover:text-primary-foreground focus-visible:text-primary-foreground"><Lock className="h-3.5 w-3.5" aria-hidden="true" /> Super admin</Link>
             <Link to="/auth/login" className="inline-flex items-center gap-1.5 text-xs text-primary-foreground/65 transition-colors hover:text-primary-foreground focus-visible:text-primary-foreground"><Zap className="h-3.5 w-3.5" aria-hidden="true" /> Staff sign in</Link>

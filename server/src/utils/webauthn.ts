@@ -3,20 +3,14 @@
 import jwt from 'jsonwebtoken';
 import { createHash } from 'crypto';
 import { getSecret } from '../config/env.js';
-
-/**
- * First entry of FRONTEND_URL. That variable accepts a comma-separated list of
- * allowed CORS origins (see server/src/index.ts), and WebAuthn needs exactly one
- * origin, so the primary entry is used.
- */
-const primaryFrontendOrigin = (): string | undefined =>
-  process.env.FRONTEND_URL?.split(',')[0]?.trim() || undefined;
+import { DEFAULT_FRONTEND_ORIGIN, DEFAULT_WEBAUTHN_RP_ID, primaryFrontendOrigin } from '../config/runtime.js';
+import { APP_NAME } from '../config/app.js';
 
 /** Relying-party identity used for WebAuthn ceremonies and expected values. */
 export const getRpConfig = (): { id: string; name: string; origin: string } => ({
-  id: process.env.WEBAUTHN_RP_ID || 'localhost',
-  name: process.env.WEBAUTHN_RP_NAME || 'Smart MediCare',
-  origin: process.env.WEBAUTHN_RP_ORIGIN || primaryFrontendOrigin() || 'http://localhost:5175'
+  id: process.env.WEBAUTHN_RP_ID || DEFAULT_WEBAUTHN_RP_ID,
+  name: process.env.WEBAUTHN_RP_NAME || APP_NAME,
+  origin: process.env.WEBAUTHN_RP_ORIGIN || primaryFrontendOrigin() || DEFAULT_FRONTEND_ORIGIN
 });
 
 /** Stable per-user WebAuthn user handle (derived, never random per ceremony). */

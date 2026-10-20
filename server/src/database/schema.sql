@@ -1,4 +1,4 @@
--- Smart MediCare (BIGINT Schema)
+-- Application database schema (BIGINT Schema)
 --
 -- The schema does not select a database. A schema file that picks its own
 -- database quietly defeats the caller: the CI applied this file to its test

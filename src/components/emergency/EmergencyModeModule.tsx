@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as apiConfig from '@/config/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -86,9 +87,13 @@ interface CodeBlueResponse {
   };
 }
 
-const configuredUrl = import.meta.env.VITE_API_URL || '/api';
-const API_BASE_URL =
-  import.meta.env.DEV && configuredUrl.includes('localhost:5600') ? '/api' : configuredUrl;
+/**
+ * The API base URL.
+ *
+ * Resolved by the shared resolver in `src/config/api.ts`, from the
+ * environment, so this module cannot drift away from the rest of the app.
+ */
+const { API_BASE_URL } = apiConfig;
 
 /** The title case the board shows; the API keeps the lower-case enum. */
 const BED_STATUS_LABEL: Record<BedStatus, string> = {

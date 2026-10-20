@@ -1,4 +1,5 @@
 import type { VitalsRecord, VitalStatus, VitalsSummary, CriticalHealthAlert } from '@/types/vitals';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Patient vitals client.
@@ -18,10 +19,6 @@ import type { VitalsRecord, VitalStatus, VitalsSummary, CriticalHealthAlert } fr
  * the instant preview in the log-vitals dialog and as a display fallback;
  * they mirror the server thresholds (server/src/services/vitals.service.ts).
  */
-
-const configuredUrl = import.meta.env.VITE_API_URL || '/api';
-const API_BASE_URL =
-  import.meta.env.DEV && configuredUrl.includes('localhost:5600') ? '/api' : configuredUrl;
 
 interface ApiEnvelope<T> {
   vitals?: T[];

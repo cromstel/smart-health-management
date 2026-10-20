@@ -6,26 +6,16 @@
  * client covers the endpoints owned by the notifications, clinical notes and
  * audit trail features, with the same conventions the main service uses:
  *
- *  - the API base URL comes from VITE_API_URL and falls back to '/api';
+ *  - the API base URL comes from the shared resolver in `src/config/api.ts`
+ *    and falls back to '/api';
  *  - the bearer token is read from localStorage, exactly like the main
  *    service does, so the server's CSRF check is skipped for non-GET calls;
  *  - a failed response rejects with an Error carrying the server's message.
  */
 
-const resolveApiBaseUrl = (): string => {
-  const configured = import.meta.env.VITE_API_URL || '/api';
+import * as apiConfig from '@/config/api';
 
-  // The default 5600 belongs to the local mock API middleware. When it is
-  // injected but not running, fall back to the relative path so the dev
-  // server proxy takes over.
-  if (import.meta.env.DEV && configured.includes('localhost:5600')) {
-    return '/api';
-  }
-
-  return configured;
-};
-
-export const API_BASE_URL = resolveApiBaseUrl();
+export const API_BASE_URL = apiConfig.API_BASE_URL;
 
 export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

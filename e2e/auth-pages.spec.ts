@@ -1,4 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { DEMO_PASSWORDS } from '@/e2e/helpers/credentials';
+import { APP_NAME } from '@/config/app';
 
 test.describe('Login Page', () => {
   test('loads and displays all form elements', async ({ page }) => {
@@ -7,7 +9,7 @@ test.describe('Login Page', () => {
 
     // Brand header. The shared Logo renders as role="img" with an accessible
     // name, not a text heading, so assert the accessible name instead.
-    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
+    await expect(page.getByRole('img', { name: APP_NAME })).toBeVisible();
 
     // Page title and subtitle
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
@@ -99,8 +101,11 @@ test.describe('Login Page', () => {
     await page.locator('#email').fill('doctor@smarthealth.com');
     await expect(page.locator('#email')).toHaveValue('doctor@smarthealth.com');
 
-    await page.locator('#password').fill('Demo@135790');
-    await expect(page.locator('#password')).toHaveValue('Demo@135790');
+    // A placeholder, not a credential: this test only proves the field
+    // accepts what is typed into it, so it must not carry a password that
+    // works for a seeded account.
+    await page.locator('#password').fill('not-a-real-password');
+    await expect(page.locator('#password')).toHaveValue('not-a-real-password');
   });
 
   test('forgot password mode toggle works', async ({ page }) => {
@@ -203,7 +208,7 @@ test.describe('Register Page', () => {
     await openRegister(page);
 
     // Brand mark and page framing
-    await expect(page.locator('[aria-label="Smart MediCare"]').first()).toBeVisible();
+    await expect(page.locator(`[aria-label="${APP_NAME}"]`).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Build your clinical workspace.' })).toBeVisible();
     await expect(page.locator('text=Set up a verified profile')).toBeVisible();
     await expect(page.locator('text=01 / 03')).toBeVisible();
@@ -428,7 +433,7 @@ test.describe('Two-Factor Page', () => {
     await page.goto('/auth/two-factor');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
+    await expect(page.getByRole('img', { name: APP_NAME })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'No Verification Session' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Return to Login' })).toBeVisible();
     await expect(page.locator('[aria-label^="Digit "]')).toHaveCount(0);
@@ -447,7 +452,7 @@ test.describe('Super Admin Login Page', () => {
     await page.waitForLoadState('networkidle');
 
     // Shared wordmark. It renders as role="img" with an accessible name.
-    await expect(page.getByRole('img', { name: 'Smart MediCare' })).toBeVisible();
+    await expect(page.getByRole('img', { name: APP_NAME })).toBeVisible();
 
     await expect(page.getByText('Welcome to Super Admin Portal', { exact: true })).toBeVisible();
     await expect(page.getByText('Central hospital management console', { exact: true })).toBeVisible();
@@ -526,7 +531,7 @@ test.describe('Navigation between auth pages', () => {
     await page.waitForLoadState('networkidle');
 
     await page.locator('#email').fill('doctor@smarthealth.com');
-    await page.locator('#password').fill('Demo@135790');
+    await page.locator('#password').fill(DEMO_PASSWORDS.doctor);
     await page.locator('#login-submit-btn').click();
 
     await expect(page).toHaveURL('/auth/two-factor');

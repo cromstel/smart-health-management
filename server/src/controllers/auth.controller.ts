@@ -6,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
+import { DEFAULT_FRONTEND_ORIGIN, primaryFrontendOrigin } from '../config/runtime.js';
+import { APP_NAME } from '../config/app.js';
 import { sendEmail } from '../utils/mail.js';
 import type { ResultSetHeader } from 'mysql2';
 import { verifyToken, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
@@ -420,9 +422,9 @@ const deliverResetLink = async (params: {
   try {
     await sendEmail({
       to: params.email,
-      subject: 'Smart MediCare password reset',
-      text: `A password reset was requested for your Smart MediCare account.\n\nReset link (valid for ${expiryMinutes} minutes):\n${params.resetLink}\n\nIf you did not request this, you can ignore this message.`,
-      html: `<p>A password reset was requested for your Smart MediCare account.</p><p><a href="${safeLink}">Reset your password</a></p><p>This link is valid for ${expiryMinutes} minutes. If you did not request it, you can ignore this message.</p><p>Account: ${safeEmail}</p>`,
+      subject: `${APP_NAME} password reset`,
+      text: `A password reset was requested for your ${APP_NAME} account.\n\nReset link (valid for ${expiryMinutes} minutes):\n${params.resetLink}\n\nIf you did not request this, you can ignore this message.`,
+      html: `<p>A password reset was requested for your ${APP_NAME} account.</p><p><a href="${safeLink}">Reset your password</a></p><p>This link is valid for ${expiryMinutes} minutes. If you did not request it, you can ignore this message.</p><p>Account: ${safeEmail}</p>`,
     });
   } catch (error) {
     // Delivery is best effort: the request was accepted and the generic
@@ -439,8 +441,16 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
   try {
     const { email } = req.body as { email: string };
 
+    // The role is read with the account so the recovery link can point at the
+    // right surface. The tenant administrator recovers on their own pages;
+    // patients and hospital staff recover on the clinical ones. The two
+    // audiences share no URL, so a site owner never lands in the clinical
+    // workstation's recovery flow.
     const [users] = await pool.query(
-      'SELECT id, email FROM users WHERE email = ? LIMIT 1',
+      `SELECT u.id, u.email, r.name AS role_name
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+        WHERE u.email = ? LIMIT 1`,
       [email]
     );
 
@@ -473,9 +483,15 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
       [user.id, tokenHash, expiresAt, (req as any).ip ?? null]
     );
 
-    const frontendOrigin = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:5175';
-    // The reset route lives under /auth when the auth surfaces were separated.
-    const resetLink = `${frontendOrigin}/auth/reset-password?token=${rawToken}`;
+    const frontendOrigin = primaryFrontendOrigin() || DEFAULT_FRONTEND_ORIGIN;
+    // The reset route is audience-specific. The administrator's link lands on
+    // the administrator's own page; everyone else lands on the clinical one.
+    const roleName = String(user.role_name ?? '').toLowerCase();
+    const isSuperAdmin = roleName === 'super_admin' || roleName === 'super admin';
+    const resetPath = isSuperAdmin
+      ? '/auth/super-admin/reset-password'
+      : '/auth/reset-password';
+    const resetLink = `${frontendOrigin}${resetPath}?token=${rawToken}`;
 
     await deliverResetLink({ email: user.email, resetLink, rawToken, userId: user.id });
 

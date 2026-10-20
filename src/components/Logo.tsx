@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { APP_NAME } from '@/config/app';
 
 type LogoVariant = 'default' | 'light' | 'sidebar';
 type LogoSize = 'xs' | 'sm' | 'md';
@@ -29,7 +30,7 @@ const TEXT_COLORS: Record<LogoVariant, string> = {
 };
 
 /**
- * Single source of truth for the Smart MediCare brand mark.
+ * Single source of truth for the application brand mark.
  * Every logo on the site renders through this component and points at the
  * one canonical asset: /public/medicare-logo.webp.
  */
@@ -46,7 +47,7 @@ export default function Logo({
     <span
       className={cn('inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap', className)}
       role="img"
-      aria-label="Smart MediCare"
+      aria-label={APP_NAME}
     >
       <img
         src="/medicare-logo.webp"

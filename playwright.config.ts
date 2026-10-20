@@ -1,4 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
+import { DEFAULT_DEV_PORT, DEFAULT_LOCAL_HOST } from './server/src/config/runtime';
+import { publishAppName } from './src/e2e/helpers/appName';
 
 // Keep the app port configurable and, more importantly, verify it is actually
 // ours. Port 3000 was held on this machine by a WSL relay serving an unrelated
@@ -7,9 +9,14 @@ import { defineConfig, devices } from '@playwright/test';
 // vite.config.ts stops the server side of that, and the content check below
 // stops the test side from ever trusting a port that is not this app.
 //
-// VITE_PORT rather than PORT, because PORT is the API server's port (5000).
-const PORT = Number(process.env.VITE_PORT || 5175);
-const BASE_URL = `http://localhost:${PORT}`;
+// VITE_PORT rather than PORT, because PORT is the API server's port.
+const PORT = Number(process.env.VITE_PORT || DEFAULT_DEV_PORT);
+const BASE_URL = `http://${DEFAULT_LOCAL_HOST}:${PORT}`;
+
+// The dev server resolves the application name from VITE_APP_NAME; the
+// Playwright process has to see the same value, or the branding assertions
+// would compare the rendered name against the shipped one.
+publishAppName();
 
 export default defineConfig({
   testDir: './e2e',

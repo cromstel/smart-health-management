@@ -17,6 +17,7 @@ import { fileURLToPath } from 'url';
 // running server. Plain dotenv here would miss .env.local and fail the
 // handshake with an opaque auth plugin error.
 import '../config/env.js';
+import { databaseConnectionOptions, databaseName } from '../config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,14 +40,10 @@ const listMigrationFiles = (): string[] =>
 const run = async (): Promise<void> => {
   const statusOnly = process.argv.includes('--status');
 
-  const dbName = process.env.DB_NAME || 'smart_medicare';
+  const dbName = databaseName();
 
   const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306'),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD,
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+    ...databaseConnectionOptions(),
     multipleStatements: true,
   });
 

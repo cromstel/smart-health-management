@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
+import { DEMO_PASSWORDS } from '@/e2e/helpers/credentials';
 
 /**
  * Route-level checks.
@@ -56,7 +57,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 async function signInAsClinician(page: Page) {
   await page.goto('/auth/login');
   await page.locator('#email').fill('admin@smarthealth.com');
-  await page.locator('#password').fill('Pass@135709');
+  await page.locator('#password').fill(DEMO_PASSWORDS.admin);
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
   await page.waitForURL('**/dashboard', { timeout: 30000 });
 }
@@ -64,7 +65,7 @@ async function signInAsClinician(page: Page) {
 async function signInAsSuperAdmin(page: Page) {
   await page.goto('/auth/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
-  await page.locator('#admin-password').fill('April--2024!!!!');
+  await page.locator('#admin-password').fill(DEMO_PASSWORDS.superAdmin);
   await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
   await page.waitForURL('**/super-admin/dashboard');
 }
@@ -213,6 +214,28 @@ test.describe('Public routes', () => {
     await expect(page.getByRole('link', { name: 'Access Portal Login' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
+
+  test('the tenant administrator recovers on its own URL', async ({ page }) => {
+    // The site owner must never land in the clinical workstation's recovery
+    // flow, and the two audiences share no URL.
+    await page.goto('/auth/super-admin/forgot-password');
+    await expect(page.getByRole('heading', { name: 'Administrator Recovery' })).toBeVisible();
+    await expect(page.locator('#super-admin-recovery-email')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    // The administrator's own reset page is separate from the clinical one.
+    await page.goto('/auth/super-admin/reset-password?token=a-real-looking-token');
+    await expect(page.getByRole('heading', { name: 'Set a new administrator password' })).toBeVisible();
+    await expect(page.locator('#super-admin-new-password')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    // The clinical pages keep their own headings: the audiences are separate.
+    await page.goto('/auth/forgot-password');
+    await expect(page.getByRole('heading', { name: 'Password Recovery' })).toBeVisible();
+
+    await page.goto('/auth/reset-password');
+    await expect(page.getByRole('heading', { name: 'Set New Password' })).toBeVisible();
+  });
 });
 
 // The control is withdrawn on sign-in, so this half of the boundary needs a
@@ -225,7 +248,7 @@ test.describe('Scroll-to-top visibility boundary', { tag: '@db' }, () => {
     // deliberately removed from sign-in surfaces.
     await page.goto('/auth/login');
     await page.locator('#email').fill('admin@smarthealth.com');
-    await page.locator('#password').fill('Pass@135709');
+    await page.locator('#password').fill(DEMO_PASSWORDS.admin);
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
     await expect(page.locator('#main-content')).toBeVisible({ timeout: 30000 });
 

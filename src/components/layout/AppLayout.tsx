@@ -9,6 +9,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { analyticsService } from '@/services/analytics';
+import { APP_NAME } from '@/config/app';
 
 export function AppLayout() {
   const location = useLocation();
@@ -61,7 +62,7 @@ export function AppLayout() {
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-foreground">Updates Available</h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                A new and improved version of Smart MediCare workstation is ready for your clinical session.
+                {`A new and improved version of ${APP_NAME} workstation is ready for your clinical session.`}
               </p>
               <div className="flex items-center gap-2 mt-3">
                 <Button

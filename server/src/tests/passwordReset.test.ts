@@ -73,8 +73,11 @@ afterAll(async () => {
   await pool.end();
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   sentEmails.length = 0;
+  // Each test starts from a clean slate: the reset rows are per-account, so a
+  // leftover row from an earlier case would make the row count wrong.
+  await pool.query('DELETE FROM password_resets WHERE user_id = ?', [userId]);
 });
 
 describe('password policy helper', () => {
@@ -98,6 +101,46 @@ describe('password policy helper', () => {
 });
 
 describe('POST /auth/forgot-password', () => {
+  it('sends the clinical audience to the clinical reset page', async () => {
+    const res = mockRes();
+    await forgotPassword(mockReq({ email: TEST_EMAIL }), res);
+
+    expect(sentEmails).toHaveLength(1);
+    const link = /https?:\/\/\S+/.exec(sentEmails[0].text)?.[0] ?? '';
+    expect(link).toContain('/auth/reset-password?token=');
+    expect(link).not.toContain('/auth/super-admin/');
+  });
+
+  it('sends the tenant administrator to the administrator reset page', async () => {
+    // The site owner and the clinical workforce recover on separate pages, so
+    // a site owner never lands in the clinical workstation's recovery flow.
+    const adminEmail = 'pwreset.superadmin@test.local';
+    const hashed = await bcrypt.hash(ORIGINAL_PASSWORD, 10);
+    const [result] = await pool.query(
+      `INSERT INTO users (email, password, name, role_id, hospital_id)
+       VALUES (?, ?, ?, 1, 1)`,
+      [adminEmail, hashed, 'Password Reset Site Owner']
+    );
+    const adminId = (result as any).insertId;
+
+    try {
+      const res = mockRes();
+      await forgotPassword(mockReq({ email: adminEmail }), res);
+
+      expect(res.json.mock.calls[0][0]).toEqual({
+        message: 'If the email exists, a reset link has been sent',
+      });
+      expect(sentEmails).toHaveLength(1);
+      const link = /https?:\/\/\S+/.exec(sentEmails[0].text)?.[0] ?? '';
+      expect(link).toContain('/auth/super-admin/reset-password?token=');
+      expect(link).not.toMatch(/\/auth\/reset-password/);
+    } finally {
+      await pool.query('DELETE FROM password_resets WHERE user_id = ?', [adminId]);
+      await pool.query('DELETE FROM audit_logs WHERE user_id = ?', [adminId]);
+      await pool.query('DELETE FROM users WHERE id = ?', [adminId]);
+    }
+  });
+
   it('stores only the hash of the token and never the raw token', async () => {
     const res = mockRes();
     await forgotPassword(mockReq({ email: TEST_EMAIL }), res);

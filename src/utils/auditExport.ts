@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import { apiRequest } from '@/services/shmsApiClient';
+import { APP_NAME } from '@/config/app';
 
 export interface AuditExportRecord {
   userId?: string;
@@ -38,7 +39,7 @@ export function exportAuditLogs(
   if (format === 'json') {
     const payload = {
       complianceMetadata: {
-        system: 'Smart MediCare - PACS & Clinical EHR',
+        system: `${APP_NAME} - PACS & Clinical EHR`,
         exportScope: scopeLabel,
         totalRecords: logs.length,
         generatedAt: timestampIso,

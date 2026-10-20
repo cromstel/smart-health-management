@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
+import { DEMO_PASSWORDS } from '@/e2e/helpers/credentials';
 
 /**
  * User management for the site owner.
@@ -47,7 +48,7 @@ async function signInWithTotp(page: import('@playwright/test').Page, email: stri
 async function signInAsSuperAdmin(page: import('@playwright/test').Page) {
   await page.goto('/auth/super-admin/login');
   await page.locator('#admin-email').fill('superadmin@smarthealth.com');
-  await page.locator('#admin-password').fill('April--2024!!!!');
+  await page.locator('#admin-password').fill(DEMO_PASSWORDS.superAdmin);
   await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
   await page.waitForURL('**/super-admin/dashboard');
 }
@@ -118,15 +119,15 @@ test.describe('Super-admin user management', () => {
       // password_must_change is set by the reset, so the modal gates the app.
       await expect(restorePage.getByRole('heading', { name: 'Change your password' })).toBeVisible({ timeout: 20000 });
       await restorePage.locator('#currentPassword').fill(temporaryPassword);
-      await restorePage.locator('#newPassword').fill('Pass@135709');
-      await restorePage.locator('#confirmPassword').fill('Pass@135709');
+      await restorePage.locator('#newPassword').fill(DEMO_PASSWORDS.admin);
+      await restorePage.locator('#confirmPassword').fill(DEMO_PASSWORDS.admin);
       await restorePage.getByRole('button', { name: /change password/i }).last().click();
       await expect(restorePage.getByRole('heading', { name: 'Change your password' })).toBeHidden({ timeout: 20000 });
 
       // Prove the documented credential works again.
       await restoreCtx.clearCookies();
       await restorePage.evaluate(() => localStorage.clear());
-      await signInWithTotp(restorePage, 'admin@smarthealth.com', 'Pass@135709');
+      await signInWithTotp(restorePage, 'admin@smarthealth.com', DEMO_PASSWORDS.admin);
       await expect(restorePage).toHaveURL(/\/dashboard/);
     } finally {
       await restoreCtx.close();

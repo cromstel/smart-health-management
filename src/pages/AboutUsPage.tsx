@@ -12,6 +12,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { APP_NAME } from '@/config/app';
 
 const principles = [
   {
@@ -100,7 +101,7 @@ export default function AboutUsPage() {
             <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="max-w-2xl">
               <div className="border-y border-primary-foreground/30 py-8 sm:py-10">
                 <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-tight text-primary-foreground sm:text-6xl lg:text-7xl">Better systems make room for better care.</h1>
-                <p className="mt-7 max-w-xl text-lg leading-relaxed text-primary-foreground/90">Smart MediCare helps healthcare teams coordinate the work behind every meaningful patient moment.</p>
+                <p className="mt-7 max-w-xl text-lg leading-relaxed text-primary-foreground/90">{`${APP_NAME} helps healthcare teams coordinate the work behind every meaningful patient moment.`}</p>
                 <motion.div initial={reduce ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.6 }} className="mt-8 flex items-center gap-3 border-l-2 border-accent pl-4 text-sm text-primary-foreground/85">
                   <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
                   Built around the people doing the work
@@ -163,7 +164,7 @@ export default function AboutUsPage() {
         </section>
 
         <section className="border-t border-border bg-primary py-20 text-center sm:py-24">
-          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-3xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-4xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">See how Smart MediCare can support your hospital, clinic, or care network.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground uppercase tracking-[0.12em] hover:bg-accent/90 hover:text-accent-foreground" asChild><Link to="/auth/request-demo">Request Demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground uppercase tracking-[0.12em] hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore Platform</Link></Button></div></Reveal>
+          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-3xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-4xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">{`See how ${APP_NAME} can support your hospital, clinic, or care network.`}</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground uppercase tracking-[0.12em] hover:bg-accent/90 hover:text-accent-foreground" asChild><Link to="/auth/request-demo">Request Demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground uppercase tracking-[0.12em] hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore Platform</Link></Button></div></Reveal>
         </section>
       </main>
     </div>
