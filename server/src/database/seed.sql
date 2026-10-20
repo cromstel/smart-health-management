@@ -1,7 +1,8 @@
 -- Smart MediCare Seeding Script for BIGINT Schema
-
--- Use the correct database
-USE smart_medicare;
+--
+-- The database is not selected here either: the caller chooses it, the same
+-- way the schema file does. `npm run db:setup` selects it before running
+-- this file, and the CI passes it on the command line.
 
 -- Disable foreign key checks and truncate all tables to reset them
 SET FOREIGN_KEY_CHECKS = 0;

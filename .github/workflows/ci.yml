@@ -178,6 +178,14 @@ jobs:
       - name: Apply schema
         run: mysql --host=127.0.0.1 --port=3306 --user=root --password=ci-root-password shms_ci < src/database/schema.sql
 
+      # The migrations are applied here, not only in development. A migration
+      # that has never been run against a fresh database is a migration that
+      # has never been tested: the ordering constraint between a table and
+      # the table its foreign key points at is exactly the kind of thing
+      # that only shows up on a clean install.
+      - name: Apply migrations
+        run: npm run db:migrate
+
       - name: Seed data
         run: mysql --host=127.0.0.1 --port=3306 --user=root --password=ci-root-password shms_ci < src/database/seed.sql
 

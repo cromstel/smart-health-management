@@ -102,7 +102,7 @@ describe('chat', () => {
   });
 
   it('passes the system instruction as a system instruction and enables grounding', async () => {
-    process.env.GEMINI_API_KEY = 'test-key-not-real';
+    process.env.GEMINI_API_KEY = 'stub-key';
     const fetchMock = vi.fn(async () => ({
       ok: true,
       status: 200,
@@ -142,7 +142,7 @@ describe('chat', () => {
   });
 
   it('falls back to a simulated answer when the upstream call fails', async () => {
-    process.env.GEMINI_API_KEY = 'test-key-not-real';
+    process.env.GEMINI_API_KEY = 'stub-key';
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
@@ -179,7 +179,7 @@ describe('clinicalInsights', () => {
 
   it('sends the vitals to the model when PHI sending is enabled', async () => {
     process.env.GEMINI_SEND_PHI = 'true';
-    process.env.GEMINI_API_KEY = 'test-key-not-real';
+    process.env.GEMINI_API_KEY = 'stub-key';
     const fetchMock = vi.fn(async () => ({
       ok: true,
       status: 200,
