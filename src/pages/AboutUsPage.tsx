@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useRef, type ReactNode } from 'react';
+import { HeroGridLines, HeroScanLine } from '@/components/common/HeroAccents';
 import {
   ArrowRight,
   Compass,
@@ -89,12 +90,9 @@ export default function AboutUsPage() {
             className="absolute inset-0 -z-20 h-full w-full select-none object-cover object-[62%_center] sm:object-[58%_center]"
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/68" aria-hidden="true" />
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full w-full grid-cols-4 border-x border-primary-foreground/15">
-              {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
-            </div>
-          </div>
-          <div className="relative mx-auto w-full w-full px-4 text-left sm:px-6 lg:px-8">
+          <HeroGridLines columns={4} />
+          <HeroScanLine delay={0.4} />
+          <div className="relative mx-auto w-full px-4 text-left sm:px-6 lg:px-8">
             <motion.p initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mb-6 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
               Our purpose

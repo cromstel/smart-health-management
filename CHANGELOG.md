@@ -23,6 +23,19 @@ implementation reasoning behind each entry here.
 
 ## [Unreleased]
 
+### Added
+
+- **Hero motion and structure across the public pages.** Every full-width hero
+  banner (home, About Us, Contact Us, FAQ, and request-a-demo) now shares one
+  entrance treatment: the column hairlines draw downward once on load, a thin
+  accent rule sweeps across the banner, and each hero's eyebrow, heading,
+  supporting copy, and side panel rise into place in sequence. The home hero
+  also carries a soft expanding ring behind its live-status dot, and the
+  request-a-demo hero keeps its linked benefit panels. All of this is
+  decorative: it never blocks reading, and any visitor who has asked their
+  device for reduced motion sees the finished layout immediately with no
+  animation at all. No content, route, or form behaviour changed.
+
 ### Changed
 
 - **Demo-request page hero scoped to its own section.** The request-a-demo

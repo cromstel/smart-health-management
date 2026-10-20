@@ -1,7 +1,8 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useInView } from 'motion/react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { HeroGridLines, HeroPing, HeroScanLine } from '@/components/common/HeroAccents';
 
 import {
   Activity,
@@ -144,22 +145,16 @@ const testimonials = [
 /* -------------------------------------------------------------------------- */
 
 function Hero() {
+  const reduce = useReducedMotion();
+
   return (
-    <section className="relative bg-primary pt-16 pb-24 sm:pt-24 sm:pb-32" id="hero">
+    <section className="relative isolate overflow-hidden bg-primary pt-16 pb-24 sm:pt-24 sm:pb-32" id="hero">
       {/* Column hairlines. Flat 1px rules standing in for a printed grid --
           a gradient mesh would be the obvious way to texture this and rule 1
-          forbids it, so depth comes from ruled structure instead. */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="mx-auto h-full w-full">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="absolute top-0 bottom-0 w-px bg-primary-foreground/[0.07]"
-              style={{ left: `${(i + 1) * 20}%` }}
-            />
-          ))}
-        </div>
-      </div>
+          forbids it, so depth comes from ruled structure instead. Each rule
+          draws down once on mount, then holds. */}
+      <HeroGridLines columns={5} bordered={false} trailing ruleClass="border-primary-foreground/10" />
+      <HeroScanLine delay={0.5} />
 
       <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
@@ -169,11 +164,14 @@ function Hero() {
           <div className="lg:col-span-7 lg:pr-8">
             <motion.div
               className="inline-flex items-center gap-2.5 border border-primary-foreground/25 px-3.5 py-1.5"
-              initial={{ opacity: 0, y: 16 }}
+              initial={reduce ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05 }}
             >
-              <span className="h-1.5 w-1.5 bg-success" aria-hidden="true" />
+              <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+                <span className="h-1.5 w-1.5 bg-success" />
+                <HeroPing tone="success" />
+              </span>
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary-foreground/80">
                 Live in 500+ institutions
               </span>
@@ -181,7 +179,7 @@ function Hero() {
 
             <motion.h1
               className="font-display mt-8 text-[2.75rem] font-medium leading-[0.98] text-primary-foreground sm:text-6xl lg:text-[4.5rem]"
-              initial={{ opacity: 0, y: 22 }}
+              initial={reduce ? false : { opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             >
@@ -192,7 +190,7 @@ function Hero() {
 
             <motion.p
               className="mt-7 max-w-xl text-base leading-relaxed text-primary-foreground/70 sm:text-lg"
-              initial={{ opacity: 0, y: 20 }}
+              initial={reduce ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
@@ -203,7 +201,7 @@ function Hero() {
 
             <motion.div
               className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center"
-              initial={{ opacity: 0, y: 20 }}
+              initial={reduce ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.45 }}
             >
@@ -231,7 +229,7 @@ function Hero() {
 
             <motion.dl
               className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-primary-foreground/15 pt-6"
-              initial={{ opacity: 0 }}
+              initial={reduce ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
@@ -257,7 +255,7 @@ function Hero() {
               rounding everything to the same radius. */}
           <motion.aside
             className="lg:col-span-5 lg:pl-8"
-            initial={{ opacity: 0, y: 28 }}
+            initial={reduce ? false : { opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >

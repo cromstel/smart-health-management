@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useRef, useState, type ReactNode } from 'react';
+import { HeroGridLines, HeroScanLine } from '@/components/common/HeroAccents';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -141,13 +142,10 @@ export default function ContactUsPage() {
             className="absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full w-full grid-cols-4 border-x border-primary-foreground/15">
-              {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
-            </div>
-          </div>
+          <HeroGridLines columns={4} />
+          <HeroScanLine delay={0.4} />
 
-          <div className="relative mx-auto grid w-full w-full gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:gap-16 lg:px-8">
+          <div className="relative mx-auto grid w-full gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:gap-16 lg:px-8">
             <div className="lg:col-span-8">
               <motion.p initial={reduceMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
                 <MessageCircleMore className="h-4 w-4 text-accent" aria-hidden="true" />

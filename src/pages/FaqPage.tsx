@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { ArrowRight, CircleHelp, Search, ShieldCheck, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { HeroGridLines, HeroScanLine } from '@/components/common/HeroAccents';
 
 type Faq = {
   question: string;
@@ -76,6 +78,7 @@ const faqs: Faq[] = [
 const categories = ['All questions', ...Array.from(new Set(faqs.map((faq) => faq.category)))];
 
 export default function FaqPage() {
+  const reduce = useReducedMotion();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All questions');
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -88,19 +91,21 @@ export default function FaqPage() {
     <div className="min-h-screen bg-background text-foreground">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">Skip to main content</a>
       <main id="main-content">
-        <section className="border-b border-primary-foreground/15 bg-primary py-16 text-primary-foreground sm:py-24">
-          <div className="mx-auto grid w-full gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:px-8">
+        <section className="relative isolate overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 text-primary-foreground sm:py-24">
+          <HeroGridLines columns={4} />
+          <HeroScanLine delay={0.4} />
+          <motion.div initial={reduce ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative mx-auto grid w-full gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:px-8">
             <div className="lg:col-span-8">
-              <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/80"><CircleHelp className="h-4 w-4 text-accent" aria-hidden="true" /> Practical answers</p>
-              <h1 className="mt-6 max-w-3xl font-display text-5xl font-medium leading-[0.98] tracking-tight sm:text-6xl">Questions, answered with care.</h1>
-              <p className="mt-7 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">A clear starting point for evaluating Smart MediCare, understanding its role in care operations, and finding the right place for support.</p>
+              <motion.p initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.05 }} className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/80"><CircleHelp className="h-4 w-4 text-accent" aria-hidden="true" /> Practical answers</motion.p>
+              <motion.h1 initial={reduce ? false : { opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }} className="mt-6 max-w-3xl font-display text-5xl font-medium leading-[0.98] tracking-tight sm:text-6xl">Questions, answered with care.</motion.h1>
+              <motion.p initial={reduce ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }} className="mt-7 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">A clear starting point for evaluating Smart MediCare, understanding its role in care operations, and finding the right place for support.</motion.p>
             </div>
-            <aside className="border-l-2 border-accent bg-primary/80 p-5 lg:col-span-3 lg:col-start-10">
+            <motion.aside initial={reduce ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.3 }} className="relative border-l-2 border-accent bg-primary/80 p-5 lg:col-span-3 lg:col-start-10">
               <ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />
               <p className="mt-5 font-mono text-xs uppercase tracking-[0.16em] text-primary-foreground/70">Privacy reminder</p>
               <p className="mt-2 text-sm leading-relaxed text-primary-foreground/90">Please do not include patient or confidential information in public enquiries.</p>
-            </aside>
-          </div>
+            </motion.aside>
+          </motion.div>
         </section>
 
         <section className="mx-auto w-full px-4 py-16 sm:px-6 lg:px-8 lg:py-24" aria-labelledby="faq-heading">

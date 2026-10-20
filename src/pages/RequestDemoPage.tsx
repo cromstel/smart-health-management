@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { HeroGridLines, HeroScanLine } from '@/components/common/HeroAccents';
 import {
   Activity,
   ArrowRight,
@@ -135,11 +136,8 @@ export default function RequestDemoPage() {
             className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/60" aria-hidden="true" />
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full w-full grid-cols-4 border-x border-primary-foreground/15">
-              {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
-            </div>
-          </div>
+          <HeroGridLines columns={4} />
+          <HeroScanLine delay={0.4} />
 
           <div className="relative mx-auto grid w-full gap-10 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-12 lg:px-8">
             {/* Left column */}
