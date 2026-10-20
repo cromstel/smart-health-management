@@ -205,6 +205,15 @@ implementation reasoning behind each entry here.
 
 ### Changed
 
+- **Password recovery now looks like the sign-in page.** The forgotten-password
+  screen previously used a different arrangement — a separate promotional
+  panel, a heading outside the card, and differently sized controls — so
+  moving between the two felt like leaving one product and entering another.
+  It now shares the sign-in page's layout exactly: the same panel, the same
+  card, the same heading treatment, and the same form controls. The recovery
+  request, the resend timer and the confirmation state are unchanged, and the
+  screen still announces the field to assistive technology.
+
 - **Demo-request page hero scoped to its own section.** The request-a-demo
   page now opens with a full-width hero banner section in the same style as
   the About Us and Contact Us pages (photographic banner with overlay and
