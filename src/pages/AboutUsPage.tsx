@@ -90,11 +90,11 @@ export default function AboutUsPage() {
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/68" aria-hidden="true" />
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full max-w-7xl grid-cols-4 border-x border-primary-foreground/15">
+            <div className="mx-auto grid h-full w-full grid-cols-4 border-x border-primary-foreground/15">
               {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
             </div>
           </div>
-          <div className="relative mx-auto w-full max-w-7xl px-4 text-left sm:px-6 lg:px-8">
+          <div className="relative mx-auto w-full w-full px-4 text-left sm:px-6 lg:px-8">
             <motion.p initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mb-6 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
               Our purpose
@@ -112,7 +112,7 @@ export default function AboutUsPage() {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
+        <section className="mx-auto grid w-full gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
           <Reveal className="lg:col-span-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Why we exist</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Healthcare is already complex enough.</h2></Reveal>
           <Reveal delay={0.12} className="space-y-6 text-lg leading-relaxed text-muted-foreground lg:col-span-7 lg:col-start-6">
             <p>Every day, care teams reconcile appointments, records, inventory, compliance, and the needs of real people. When those systems are disconnected, the cost is felt in every handoff.</p>
@@ -122,7 +122,7 @@ export default function AboutUsPage() {
         </section>
 
         <section className="border-y border-border bg-muted/45 py-20 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
             <Reveal className="mb-12 max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">The way we work</p><h2 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl">Principles that guide every decision.</h2></Reveal>
             <div className="grid gap-5 md:grid-cols-3 lg:gap-7">
               {principles.map(({ icon: Icon, title, description }, index) => (
@@ -136,13 +136,13 @@ export default function AboutUsPage() {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
+        <section className="mx-auto grid w-full gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
           <Reveal className="lg:col-span-5"><div className="flex h-full min-h-72 flex-col justify-between border border-border bg-card p-8 sm:p-10"><UsersRound className="h-8 w-8 text-accent" aria-hidden="true" /><div><p className="font-display text-3xl font-medium leading-tight tracking-tight">Designed for the whole care team.</p><p className="mt-4 leading-relaxed text-muted-foreground">From first appointment to finance review, each role deserves tools that respect its expertise.</p></div></div></Reveal>
           <Reveal delay={0.1} className="lg:col-span-6 lg:col-start-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">What we are committed to</p><ol className="mt-5 divide-y divide-border border-y border-border">{commitments.map(([title, description], index) => <li key={title} className="grid grid-cols-[2.5rem_1fr] gap-4 py-6 sm:grid-cols-[3.5rem_1fr]"><span className="font-mono text-sm tabular-nums text-accent">0{index + 1}</span><div><h3 className="font-semibold">{title}</h3><p className="mt-1.5 leading-relaxed text-muted-foreground">{description}</p></div></li>)}</ol></Reveal>
         </section>
 
         <section className="overflow-hidden border-y border-border bg-card py-20 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
             <Reveal className="grid gap-8 lg:grid-cols-12 lg:items-end"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Our team</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Different disciplines. One care-minded standard.</h2></div><p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">Our work brings clinical, operational, technical, and safety perspectives into the same room—because good healthcare software is a team sport.</p></Reveal>
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {teamDisciplines.map((discipline, index) => (

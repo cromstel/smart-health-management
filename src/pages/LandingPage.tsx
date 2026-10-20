@@ -150,7 +150,7 @@ function Hero() {
           a gradient mesh would be the obvious way to texture this and rule 1
           forbids it, so depth comes from ruled structure instead. */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="mx-auto h-full max-w-7xl">
+        <div className="mx-auto h-full w-full">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -161,7 +161,7 @@ function Hero() {
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           {/* Editorial column. Deliberately left-aligned and optically hung
               rather than centred: a centred hero is the default this design is
@@ -397,7 +397,7 @@ function Hero() {
 function StatsBar() {
   return (
     <AnimatedSection className="bg-card border-y border-border py-12">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
@@ -421,7 +421,7 @@ function StatsBar() {
 function Features() {
   return (
     <AnimatedSection id="features" className="py-20 sm:py-28 bg-background">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Platform Features</p>
@@ -465,7 +465,7 @@ function Features() {
 function HowItWorks() {
   return (
     <AnimatedSection id="how-it-works" className="py-20 sm:py-28 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">How It Works</p>
@@ -515,7 +515,7 @@ function HowItWorks() {
 function Testimonials() {
   return (
     <AnimatedSection id="testimonials" className="py-20 sm:py-28 bg-background">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-accent uppercase tracking-wider mb-3">Testimonials</p>

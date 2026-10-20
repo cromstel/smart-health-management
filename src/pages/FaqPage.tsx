@@ -89,7 +89,7 @@ export default function FaqPage() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">Skip to main content</a>
       <main id="main-content">
         <section className="border-b border-primary-foreground/15 bg-primary py-16 text-primary-foreground sm:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:px-8">
+          <div className="mx-auto grid w-full gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:px-8">
             <div className="lg:col-span-8">
               <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/80"><CircleHelp className="h-4 w-4 text-accent" aria-hidden="true" /> Practical answers</p>
               <h1 className="mt-6 max-w-3xl font-display text-5xl font-medium leading-[0.98] tracking-tight sm:text-6xl">Questions, answered with care.</h1>
@@ -103,7 +103,7 @@ export default function FaqPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24" aria-labelledby="faq-heading">
+        <section className="mx-auto w-full px-4 py-16 sm:px-6 lg:px-8 lg:py-24" aria-labelledby="faq-heading">
           <div className="grid gap-8 border-b border-border pb-10 lg:grid-cols-12 lg:items-end">
             <div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Find an answer</p><h2 id="faq-heading" className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Start with the question in front of you.</h2></div>
             <p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">Search across common topics, or narrow the list to the part of the platform you are exploring.</p>
@@ -130,7 +130,7 @@ export default function FaqPage() {
         </section>
 
         <section className="border-t border-border bg-card py-16 sm:py-20">
-          <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-12 lg:items-center lg:px-8"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Still deciding?</p><h2 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl">We can make the next step straightforward.</h2><p className="mt-4 max-w-2xl leading-relaxed text-muted-foreground">Request a focused platform walkthrough, or sign in to continue an existing customer conversation in the right context.</p></div><div className="flex flex-col gap-3 sm:flex-row lg:col-span-4 lg:col-start-9 lg:justify-end"><Button size="lg" asChild><Link to="/auth/request-demo">Request a demo <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" asChild><Link to="/auth/login">Sign in</Link></Button></div></div>
+          <div className="mx-auto grid w-full gap-8 px-4 sm:px-6 lg:grid-cols-12 lg:items-center lg:px-8"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Still deciding?</p><h2 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl">We can make the next step straightforward.</h2><p className="mt-4 max-w-2xl leading-relaxed text-muted-foreground">Request a focused platform walkthrough, or sign in to continue an existing customer conversation in the right context.</p></div><div className="flex flex-col gap-3 sm:flex-row lg:col-span-4 lg:col-start-9 lg:justify-end"><Button size="lg" asChild><Link to="/auth/request-demo">Request a demo <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" asChild><Link to="/auth/login">Sign in</Link></Button></div></div>
         </section>
       </main>
     </div>

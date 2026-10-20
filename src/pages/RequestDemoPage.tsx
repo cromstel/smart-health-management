@@ -120,16 +120,16 @@ export default function RequestDemoPage() {
             initial={reduce ? false : { opacity: 0, scale: 1.06 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute inset-0 -z-20 h-full max-w-6xl select-none object-cover object-[60%_center]"
+            className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/60" aria-hidden="true" />
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full max-w-6xl grid-cols-4 border-x border-primary-foreground/15">
+            <div className="mx-auto grid h-full w-full grid-cols-4 border-x border-primary-foreground/15">
               {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
             </div>
           </div>
 
-          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-12 lg:px-8">
+          <div className="relative mx-auto grid w-full gap-10 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-12 lg:px-8">
             {/* Left column */}
             <motion.div initial={reduce ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} className="space-y-6">
               <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-primary-foreground/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
@@ -155,7 +155,7 @@ export default function RequestDemoPage() {
             </motion.div>
 
             {/* Right column: form card */}
-            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="max-w-6xl">
+            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="w-full">
               <Card className="border-primary-foreground/20 bg-card/95 shadow-2xl shadow-primary/20 backdrop-blur">
                 <CardHeader className="border-b border-border">
                   <CardTitle>Request a Demo</CardTitle>
@@ -183,7 +183,7 @@ export default function RequestDemoPage() {
                         <Input id="demo-organization" className={inputClass} autoComplete="organization" {...register('organization')} aria-invalid={!!errors.organization} />
                       </Field>
                       <Field id="demo-organization-size" label="Number of Staff" required error={errors.organizationSize?.message} icon={Users}>
-                        <select id="demo-organization-size" className={`h-9 max-w-6xl rounded-md border border-accent/30 bg-muted/40 px-3 pl-10 text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-accent/30 focus-visible:ring-[3px] [&>option]:bg-background [&>option]:text-foreground`} {...register('organizationSize')} aria-invalid={!!errors.organizationSize}>
+                        <select id="demo-organization-size" className={`h-9 w-full rounded-md border border-accent/30 bg-muted/40 px-3 pl-10 text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-accent/30 focus-visible:ring-[3px] [&>option]:bg-background [&>option]:text-foreground`} {...register('organizationSize')} aria-invalid={!!errors.organizationSize}>
                           <option value="">Select size</option>
                           <option value="1-50">1–50</option>
                           <option value="51-200">51–200</option>
@@ -202,7 +202,7 @@ export default function RequestDemoPage() {
                       </div>
                       <div className="hidden" aria-hidden="true"><Label htmlFor="website">Website</Label><Input id="website" tabIndex={-1} autoComplete="off" {...register('website')} /></div>
                       {serverError && <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{serverError}</p>}
-                      <Button type="submit" className="h-11 max-w-6xl rounded-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
+                      <Button type="submit" className="h-11 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
                         {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Sending request…</> : <><span>Request Demo</span><ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
                       </Button>
                       <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -221,7 +221,7 @@ export default function RequestDemoPage() {
 
         {/* Trust & benefits */}
         <section className="border-y border-border bg-muted/40 py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
             <div className="mb-10 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Why teams choose us</p>
               <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-foreground sm:text-4xl">Trusted by Healthcare Professionals</h2>
@@ -243,7 +243,7 @@ export default function RequestDemoPage() {
 
         {/* Statistics strip */}
         <section className="border-b border-border bg-background py-14 sm:py-16">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map(({ icon: Icon, value, label }) => (
                 <div key={label} className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">

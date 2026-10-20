@@ -142,12 +142,12 @@ export default function ContactUsPage() {
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/70" aria-hidden="true" />
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full max-w-7xl grid-cols-4 border-x border-primary-foreground/15">
+            <div className="mx-auto grid h-full w-full grid-cols-4 border-x border-primary-foreground/15">
               {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
             </div>
           </div>
 
-          <div className="relative mx-auto grid w-full max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:gap-16 lg:px-8">
+          <div className="relative mx-auto grid w-full w-full gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:gap-16 lg:px-8">
             <div className="lg:col-span-8">
               <motion.p initial={reduceMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
                 <MessageCircleMore className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -166,7 +166,7 @@ export default function ContactUsPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+        <section className="mx-auto w-full px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
           <Reveal className="grid gap-8 border-b border-border pb-12 lg:grid-cols-12 lg:items-end">
             <div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Choose your path</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">A good conversation begins in the right place.</h2></div>
             <p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">We have kept public contact simple on purpose. Pick the route that matches what you need, without placing sensitive information in an open web form.</p>
@@ -185,13 +185,13 @@ export default function ContactUsPage() {
         </section>
 
         <section className="border-y border-border bg-muted/45 py-20 sm:py-24">
-          <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8">
+          <div className="mx-auto grid w-full gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8">
             <Reveal className="lg:col-span-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">What to expect</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Useful before it is urgent.</h2><div className="mt-8 border-l-2 border-accent pl-5 text-sm leading-relaxed text-muted-foreground"><ShieldCheck className="mb-3 h-5 w-5 text-success" aria-hidden="true" />For the protection of patients and teams, do not include protected health information in a public request.</div></Reveal>
             <Reveal delay={0.1} className="lg:col-span-7 lg:col-start-6"><ol className="divide-y divide-border border-y border-border">{responsePrinciples.map(([number, title, description]) => <li key={number} className="grid grid-cols-[2.5rem_1fr] gap-4 py-7 sm:grid-cols-[3.5rem_1fr]"><span className="font-mono text-sm tabular-nums text-accent">{number}</span><div><h3 className="text-lg font-semibold tracking-tight">{title}</h3><p className="mt-2 leading-relaxed text-muted-foreground">{description}</p></div></li>)}</ol></Reveal>
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-5 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-28">
+        <section className="mx-auto grid w-full gap-5 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-28">
           <Reveal className="border border-border bg-card p-8 sm:p-10 lg:col-span-7"><Building2 className="h-7 w-7 text-accent" aria-hidden="true" /><p className="mt-12 text-sm font-semibold uppercase tracking-[0.16em] text-accent">For care organisations</p><h2 className="mt-4 max-w-xl font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Tell us where care could feel more connected.</h2><p className="mt-5 max-w-2xl leading-relaxed text-muted-foreground">Share the shape of your organisation and the conversation you would like to have. We will use it only to prepare a focused follow-up.</p>
             {submitted ? (
               <div className="mt-8 border border-success/30 bg-success/10 p-6" role="status" aria-live="polite"><CheckCircle2 className="h-7 w-7 text-success" aria-hidden="true" /><h3 className="mt-4 text-xl font-semibold">Your message is on its way.</h3><p className="mt-2 leading-relaxed text-muted-foreground">Thank you. A Smart MediCare specialist will follow up using your selected contact method.</p></div>
