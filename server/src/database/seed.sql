@@ -30,6 +30,27 @@ TRUNCATE TABLE forecasts;
 TRUNCATE TABLE settings;
 TRUNCATE TABLE super_admin_settings;
 TRUNCATE TABLE audit_logs;
+TRUNCATE TABLE suppliers;
+TRUNCATE TABLE medicines_inventory;
+TRUNCATE TABLE medicine_batches;
+TRUNCATE TABLE purchase_orders;
+TRUNCATE TABLE purchase_order_items;
+TRUNCATE TABLE prescriptions;
+TRUNCATE TABLE contraindications;
+TRUNCATE TABLE notifications;
+TRUNCATE TABLE notification_dedupe;
+TRUNCATE TABLE medication_administrations;
+TRUNCATE TABLE emergency_beds;
+TRUNCATE TABLE emergency_admissions;
+TRUNCATE TABLE clinical_notes;
+TRUNCATE TABLE dispensing_events;
+TRUNCATE TABLE vitals;
+TRUNCATE TABLE shared_summaries;
+TRUNCATE TABLE analytics_events;
+TRUNCATE TABLE password_resets;
+TRUNCATE TABLE revoked_tokens;
+-- schema_migrations is deliberately NOT truncated: it is the migration
+-- ledger, and clearing it would make every migration re-apply.
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. Seed Roles
@@ -69,12 +90,20 @@ INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delet
 (2, 'pharmacy', 1, 1, 1, 1),
 (2, 'purchaseOrder', 1, 1, 1, 1),
 (2, 'staff', 1, 1, 1, 1),
-(2, 'supplier', 1, 1, 1, 1);
+(2, 'supplier', 1, 1, 1, 1),
+-- Emergency triage board and ER bed state. The module string is the one the
+-- emergency routes guard with requirePermission('emergency', ...).
+(2, 'emergency', 1, 1, 1, 1);
 -- Doctor permissions (role_id = 3)
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (3, 'patients', 1, 1, 1, 0),
 (3, 'appointments', 1, 1, 1, 0),
-(3, 'medical_history', 1, 1, 1, 0);
+(3, 'medical_history', 1, 1, 1, 0),
+-- A doctor runs the triage board: they may read it, admit patients and
+-- update an admission. `can_delete` stays 0, so a code blue broadcast
+-- (which the emergency routes guard with the 'delete' action) is reserved
+-- for the roles that are allowed to raise one.
+(3, 'emergency', 1, 1, 1, 0);
 -- Patient permissions (role_id = 4)
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (4, 'appointments', 1, 1, 0, 0),
@@ -83,7 +112,10 @@ INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delet
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (5, 'patients', 1, 0, 1, 0),
 (5, 'appointments', 1, 1, 1, 0),
-(5, 'medical_history', 1, 1, 1, 0);
+(5, 'medical_history', 1, 1, 1, 0),
+-- A nurse works the board: they read it and update an admission (triage
+-- level, condition, vitals). They do not admit, and they do not broadcast.
+(5, 'emergency', 1, 0, 1, 0);
 -- Pharmacist permissions (role_id = 6)
 INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delete) VALUES
 (6, 'pharmacy', 1, 1, 1, 0),
@@ -135,7 +167,10 @@ INSERT INTO users (id, role_id, email, password, name, totp_secret, hospital_id,
 
 -- 6. Seed Staff
 INSERT INTO staff (id, staff_id, user_id, first_name, last_name, role, department_id, hospital_id, email, phone, join_date) VALUES
-(1, 'STAFF-001', 3, 'John', 'Smith', 'Doctor', 1, 1, 'doctor@smarthealth.com', '555-5678', '2022-01-15');
+-- The role holds the role NAME, and the names in `roles` are lowercase. A
+-- capitalised value here matched no role, so the staff editor could not find
+-- the role to send back.
+(1, 'STAFF-001', 3, 'John', 'Smith', 'doctor', 1, 1, 'doctor@smarthealth.com', '555-5678', '2022-01-15');
 
 -- 7. Seed Patients
 INSERT INTO patients (id, patient_id, first_name, last_name, age, gender, phone, email, address, hospital_id, last_visit) VALUES
@@ -162,8 +197,33 @@ INSERT INTO documents (id, patient_id, document_type, document_id, name, file_ty
 (1, 1, 'Lab Report', 'DOC-001', 'Blood Test Results', 'pdf', 'lab_report', 'local', 2);
 
 -- 13. Seed Medicines
+-- Expiry dates are relative to the current date. Hard-coded dates went stale
+-- and every seeded medicine was treated as expired, which made the pharmacy
+-- and prescription paths unusable.
 INSERT INTO medicines (id, medicine_id, name, category, stock, min_stock, price, expiry_date, supplier) VALUES
-(1, 'MED-001', 'Paracetamol 500mg', 'Painkiller', 1000, 100, 5.50, '2025-12-31', 'Pharma Inc.');
+(1, 'MED-001', 'Paracetamol 500mg', 'Painkiller', 1000, 100, 5.50, DATE_ADD(CURDATE(), INTERVAL 300 DAY), 'Pharma Inc.');
+
+-- 13.1 Seed Suppliers (purchase orders reference a supplier)
+INSERT INTO suppliers (id, name, contact_person, email, phone, address) VALUES
+(1, 'Pharma Inc.', 'Ada Mensah', 'orders@pharmainc.example', '+233200000001', 'Industrial Area, Accra'),
+(2, 'MedLife Supplies', 'Kwame Owusu', 'sales@medlife.example', '+233200000002', 'Spintex, Accra');
+
+-- 13.2 Seed Pharmacy Inventory (the pharmacy module reads this table)
+INSERT INTO medicines_inventory (id, medicine_name, category, supplier, supplier_id, stock_level, low_stock_threshold, unit_price, expiry_date, storage_location) VALUES
+('MED-001', 'Paracetamol 500mg', 'Painkiller', 'Pharma Inc.', 1, 1000, 100, 5.50, DATE_ADD(CURDATE(), INTERVAL 300 DAY), 'Shelf A1'),
+('MED-002', 'Amoxicillin 500mg', 'Antibiotic', 'Pharma Inc.', 1, 240, 50, 8.25, DATE_ADD(CURDATE(), INTERVAL 120 DAY), 'Shelf B2'),
+('MED-003', 'Metformin 500mg', 'Antidiabetic', 'MedLife Supplies', 2, 180, 40, 12.00, DATE_ADD(CURDATE(), INTERVAL 240 DAY), 'Shelf C1'),
+('MED-004', 'Lisinopril 10mg', 'Antihypertensive', 'MedLife Supplies', 2, 60, 40, 9.40, DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'Shelf C3');
+
+-- 13.3 Seed Drug Interaction Rules
+-- Without these rows the contraindication check can never fire, because the
+-- table starts empty on a fresh install.
+INSERT INTO contraindications (category_a, category_b, severity, description) VALUES
+('NSAID', 'Antibiotic', 'high', 'NSAIDs alongside antibiotics raise the risk of gastrointestinal bleeding'),
+('Anticoagulant', 'NSAID', 'high', 'Anticoagulants with NSAIDs significantly increase bleeding risk'),
+('Opioid', 'Benzodiazepine', 'moderate', 'Opioids with benzodiazepines risk respiratory depression'),
+('Statin', 'Fibrate', 'moderate', 'Statins with fibrates risk muscle damage'),
+('Antibiotic', 'NSAID', 'high', 'NSAIDs alongside antibiotics raise the risk of gastrointestinal bleeding');
 
 -- 14. Seed Chart of Accounts
 INSERT INTO accounts (id, account_code, name, type, level, balance) VALUES
