@@ -60,6 +60,8 @@ const RolesPage = timedLazy('roles', () => import('./pages/RolesPage'));
 const SettingsPage = timedLazy('settings', () => import('./pages/SettingsPage'));
 const AuditLogsPage = timedLazy('audit-logs', () => import('./pages/AuditLogsPage'));
 const SiteSuperAdminLogin = timedLazy('super-admin-login', () => import('./pages/SiteSuperAdminLogin'));
+const SuperAdminForgotPasswordPage = timedLazy('super-admin-forgot-password', () => import('./pages/SuperAdminForgotPasswordPage'));
+const SuperAdminResetPasswordPage = timedLazy('super-admin-reset-password', () => import('./pages/SuperAdminResetPasswordPage'));
 const HospitalAdminLogin = timedLazy('admin-login', () => import('./pages/HospitalAdminLogin'));
 const SuperAdminDashboard = timedLazy('super-admin-dashboard', () => import('./pages/SuperAdminDashboard'));
 const SuperAdminUsers = timedLazy('super-admin-users', () => import('./pages/SuperAdminUsers'));
@@ -127,6 +129,11 @@ function AppRoutes() {
         <Route path="/auth/two-factor" element={<TwoFactorPage />} />
         <Route path="/request-demo" element={<LegacyAuthRedirect to="/auth/request-demo" />} />
         <Route path="/auth/super-admin/login" element={<SiteSuperAdminLogin />} />
+        {/* Tenant administrator recovery lives on its own URLs. The site owner
+            never lands in the clinical workstation's recovery flow, and the
+            two audiences share no URL. */}
+        <Route path="/auth/super-admin/forgot-password" element={<SuperAdminForgotPasswordPage />} />
+        <Route path="/auth/super-admin/reset-password" element={<SuperAdminResetPasswordPage />} />
         <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
 
         {/* Compatibility redirects for the pre-migration auth paths.

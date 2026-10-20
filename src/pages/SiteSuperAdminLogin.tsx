@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardFooter } from '@/components/ui/card';
 import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 import SystemAuthorBadge from '@/components/auth/SystemAuthorBadge';
@@ -52,7 +52,11 @@ function SiteSuperAdminLogin() {
               <div className="flex justify-center">
                 <Logo variant="light" size="md" textClassName="text-base sm:text-xl lg:text-2xl" />
               </div>
-              <CardTitle className="font-display text-xl sm:text-2xl tracking-tight">Welcome to Super Admin Portal</CardTitle>
+              {/* A real heading, not the card's title element: the page
+                  needs a top-level heading for the document outline. */}
+              <h1 className="leading-none font-semibold font-display text-xl sm:text-2xl tracking-tight">
+                Welcome to Super Admin Portal
+              </h1>
               <CardDescription className="text-xs text-(--industrial-muted)">Central hospital management console</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-5">
@@ -104,6 +108,13 @@ function SiteSuperAdminLogin() {
             </CardContent>
 
             <CardFooter className="border-t border-(--navy-dark-border) pt-4 flex flex-col items-center gap-3 text-[11px] text-(--industrial-subtle) font-mono">
+              <button
+                type="button"
+                onClick={() => navigate('/auth/super-admin/forgot-password')}
+                className="flex items-center gap-1.5 hover:text-(--industrial-text) transition-colors"
+              >
+                Forgot password?
+              </button>
               <SystemAuthorBadge />
             </CardFooter>
           </Card>

@@ -59,6 +59,9 @@ export default function ResetPasswordPage() {
   );
 
   if (user?.role === 'Super Admin' || user?.role === 'super_admin') {
+    // The tenant administrator recovers on their own URL. The token is carried
+    // across, so a link that was issued before the split still works.
+    const adminResetUrl = `/auth/super-admin/reset-password${token ? `?token=${encodeURIComponent(token)}` : ''}`;
     return (
       <AuthLayout>
         <div className="space-y-8">
@@ -68,14 +71,17 @@ export default function ResetPasswordPage() {
               <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
                 <AlertCircle className="h-6 w-6" aria-hidden="true" />
               </div>
-              <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
+              <CardTitle className="text-xl font-bold text-foreground">Administrator Accounts Recover Separately</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Super Admins cannot reset passwords via token. Please use the privileged console security settings.
+                This is the reset flow for patients and hospital staff. The tenant administrator has its own reset page, so the two never share a URL.
               </CardDescription>
             </CardHeader>
-            <CardFooter className="pt-2">
-              <Button onClick={() => navigate('/super-admin/dashboard')} className="w-full bg-accent text-accent-foreground">
-                Go to Super Admin Console
+            <CardFooter className="pt-2 flex flex-col gap-3">
+              <Button onClick={() => navigate(adminResetUrl)} className="w-full bg-accent text-accent-foreground">
+                Go to Administrator Reset
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/auth/super-admin/login')} className="w-full text-xs text-muted-foreground hover:text-foreground">
+                Back to the Administrator Portal
               </Button>
             </CardFooter>
           </Card>

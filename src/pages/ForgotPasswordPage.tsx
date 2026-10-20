@@ -110,18 +110,28 @@ export default function ForgotPasswordPage() {
               </div>
               <div className="space-y-2">
                 <h2 className="font-display text-xl font-medium tracking-tight text-foreground">
-                  Super Admin Restriction
+                  Administrator Accounts Recover Separately
                 </h2>
                 <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
-                  Super Admin credentials cannot be reset via public self-service recovery. Use the console security prompt or contact root sysadmin.
+                  This is the recovery flow for patients and hospital staff. The tenant administrator has its own recovery page, so the two never share a URL.
                 </p>
               </div>
-              <Button
-                onClick={() => navigate('/auth/super-admin/login')}
-                className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
-              >
-                Return to Super Admin Portal
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => navigate('/auth/super-admin/forgot-password')}
+                  className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
+                >
+                  Go to Administrator Recovery
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/auth/super-admin/login')}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                  Back to the Administrator Portal
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
