@@ -25,6 +25,106 @@ implementation reasoning behind each entry here.
 
 ### Added
 
+- **A notification inbox that is real.** Staff now receive notifications from
+  the system rather than from a fixed list built in the browser: appointments
+  starting shortly, prescriptions approaching the end of their course, stock
+  that has fallen to its reorder level, and observations that came back
+  abnormal. Each alert is raised once, is remembered per person, and can be
+  read, confirmed or dismissed. The notification list starts empty until the
+  real conditions are met.
+
+- **Clinical notes are kept in the clinical record.** Notes taken during a
+  consultation are now stored with the patient, attributed to the clinician
+  who wrote them, and can be listed, corrected and withdrawn from the patient
+  record. They are no longer written to the browser, where they could be read
+  by anything running on the same device.
+
+- **An emergency board with a real bed state.** The emergency panel now reads
+  the patients currently admitted and the bays they occupy, allocates a bay
+  through the service, and releases it when the patient is discharged. A bay
+  held by one patient cannot be taken by another, and a bay being turned over
+  cannot receive a patient until it is ready. Activating the emergency code is
+  recorded against the audit trail, and the response says plainly that no
+  external service was contacted, so nobody believes a team was dispatched
+  when it was not.
+
+- **Password reset works and signing out really signs out.** A forgotten
+  password can now be reset with a single-use link that expires, and the new
+  password takes effect immediately. Signing out ends the session on the
+  service as well as in the browser, so the session cannot be carried on
+  after the user has left.
+
+- **Work done while offline is no longer lost.** Patient records created,
+  changed or removed while the service was unreachable are now delivered when
+  the connection returns, and the browser only discards a queued change once
+  the service has confirmed it. Previously the browser reported the work as
+  saved and then dropped it.
+
+- **Patient vitals are recorded on the server.** Blood pressure, heart rate,
+  temperature, respiratory rate and oxygen saturation readings are now held
+  centrally and shared by every device that opens a patient record, instead
+  of each browser keeping a private copy that vanished with the tab. The
+  clinical thresholds are applied by the service, so the severity shown
+  against a reading is the one the service derived, and a reading cannot be
+  filed as unremarkable when the measurements say otherwise. Operator impact:
+  the vitals log starts empty for every patient and fills with real
+  observations, and a recorded reading is corrected or withdrawn through the
+  service rather than in the browser.
+- **A patient summary can be shared as a time-limited link.** A clinician can
+  issue a link to a patient's summary for a recipient who has no account.
+  The link carries a single-purpose, unguessable reference, expires on a
+  fixed schedule, can be used by the recipient without a login, and every
+  use is counted. An unknown, withdrawn or expired link reveals nothing.
+  The link exposes the shared summary only: no other patient, no full
+  record, and no access to anything the recipient was not sent.
+- **The clinical AI assistant answers for real.** The assistant now reaches
+  the model instead of failing silently, can ground an answer in current
+  medical literature, and reports which model produced the reply. When the
+  service is unavailable the reply is clearly labelled as a placeholder and
+  is never presented as model output. Patient observations are not sent to
+  the external service by default; the service answers from the recorded
+  observations locally unless an operator deliberately switches the
+  disclosure on.
+- **Usage events are kept instead of being discarded.** Product usage events
+  are stored centrally and reported back as stored, so the browser no longer
+  believes an event was synchronised when it was not. When an event cannot
+  be stored the browser keeps it in its offline queue and retries it later,
+  so no event is lost by a transient failure.
+- **The audit trail is readable by ordinary staff.** Staff can now review the
+  recorded audit trail for their own actions, and platform administrators
+  can review the whole trail, with the same paging and filtering the
+  administrative view already offers. Entries carry the actor, the action,
+  the module, the record and the time, and the trail is read from the
+  central record rather than from a browser-local list that any user could
+  erase.
+
+- **Medication administration is recorded on the server.** Scheduled doses,
+  their notes and the nurse they are assigned to are now held centrally
+  instead of in the browser, and signing a dose off moves the pharmacy
+  stock in the same, single, all-or-nothing step. A dose can never be
+  recorded as given while the shelf still shows the full quantity, and a
+  dose that is signed off against an empty shelf is refused outright rather
+  than driving the stock negative. Doses that fall past their scheduled
+  time while still pending are identified by the service, so every ward
+  screen agrees on what is overdue. Operator impact: the compliance tracker
+  now starts empty and fills with real records; it no longer ships sample
+  entries, and the patient and nurse pick-lists are drawn from the live
+  roster.
+- **Inventory forecasting is computed from real movement.** Shortage
+  predictions, days of supply, depletion dates and restock suggestions are
+  now calculated from actual dispensing and administration history rather
+  than from sample figures, and the seasonal surge control is applied by the
+  service instead of in the browser. A medicine with no recorded movement in
+  the window is reported as unknown instead of being given an invented
+  consumption rate, and it is left out of the risk ranking and out of the
+  restock suggestions. Operator impact: the forecast reads empty until
+  medicines and dispensing activity exist in the inventory.
+- **Dispensing history is kept centrally.** Every dispense is recorded
+  against the patient and the medicine, attributed to the staff member who
+  dispensed it, and can be reviewed per patient, per medicine and per date
+  range. Operator impact: dispensing history no longer lives in the
+  browser and is no longer lost when the tab is closed.
+
 - **Hero motion and structure across the public pages.** Every full-width hero
   banner (home, About Us, Contact Us, FAQ, and request-a-demo) now shares one
   entrance treatment: the column hairlines draw downward once on load, a thin
@@ -35,6 +135,73 @@ implementation reasoning behind each entry here.
   decorative: it never blocks reading, and any visitor who has asked their
   device for reduced motion sees the finished layout immediately with no
   animation at all. No content, route, or form behaviour changed.
+
+### Fixed
+
+- **Records can no longer be created or edited through a broken request.**
+  Creating a hospital, a patient, a member of staff, a supplier, a purchase
+  order, a batch or a prescription returned a server error every time, so
+  those screens could not add anything. All of them now work, and each new
+  record receives its own identifier in the same format as the existing ones.
+
+- **A request can no longer write fields it was not meant to.** Several edit
+  screens passed whatever they were given straight through to the record, so
+  a request could alter fields the form does not show, including the
+  identifiers and the ownership fields. Each screen now accepts only the
+  fields it is meant to change.
+
+- **The dashboard no longer shows invented numbers.** When the service could
+  not be reached, the dashboard filled itself with plausible-looking patient
+  counts, revenue and activity that had never been measured. It now says the
+  figures could not be loaded and leaves the panels empty, so a failure is
+  visible instead of being disguised as data.
+
+- **The emergency hotline and the patient roster are no longer sample
+  entries.** The emergency panel and several selection lists were populated
+  with made-up patients and staff who do not exist. They are now drawn from
+  the live records.
+
+- **The pharmacy reports can be exported again.** Exporting a pharmacy report
+  as a document was refused outright, and the same fault stopped the
+  financial statements from being exported. Both work again, and the exported
+  document opens correctly.
+
+- **Purchase orders follow a single workflow.** Orders moved through their
+  states with button labels that did not match what the service accepts, so
+  the request was rejected. The buttons now offer only the moves the order
+  can actually make, and the goods-received entry is posted when the order
+  is marked delivered.
+
+- **Patient contact details are protected at rest.** Phone numbers were the
+  one patient field stored in the clear, because the column was too narrow to
+  hold the protected form. The column has been widened, so the phone number
+  is now protected in the same way as the other patient details.
+
+- **A record can no longer be attached to a hospital outside the user's
+  own.** Some requests were checked against the wrong field name when
+  enforcing the hospital boundary, which let a record be attached to a
+  hospital the user does not have access to. The boundary is now enforced for
+  both spellings.
+
+- **The member list shows the right number of people.** The count beside each
+  role was always zero because nothing maintained it. It is now derived from
+  the accounts that actually carry the role.
+
+- **A failed report request is reported as a failure.** The report scheduler
+  appeared to succeed even when the request behind it failed. It now reports
+  the failure and its reason.
+
+- **A closed session is not counted as a working one.** Several test suites
+  decided at the start whether the database was available and then never
+  checked, so the checks were silently skipped and the suites reported a
+  pass while asserting nothing. The checks now run against the live service.
+
+- **Restock orders are no longer reported as sent when they were not.**
+  Creating a restock order now uses the supplier recorded against the
+  medicine, one order per supplier, and a failure is reported to the
+  operator with its reason instead of being hidden behind a success
+  message. Medicines with no supplier on file are listed as skipped rather
+  than posted against the wrong supplier.
 
 ### Changed
 
