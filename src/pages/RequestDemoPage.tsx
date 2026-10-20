@@ -120,7 +120,7 @@ export default function RequestDemoPage() {
             initial={reduce ? false : { opacity: 0, scale: 1.06 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute inset-0 -z-20 h-full w-full select-none object-cover object-[60%_center]"
+            className="pointer-events-none absolute inset-0 -z-20 h-full max-w-6xl select-none object-cover object-[60%_center]"
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/60" aria-hidden="true" />
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
@@ -155,7 +155,7 @@ export default function RequestDemoPage() {
             </motion.div>
 
             {/* Right column: form card */}
-            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="w-full">
+            <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="max-w-6xl">
               <Card className="border-primary-foreground/20 bg-card/95 shadow-2xl shadow-primary/20 backdrop-blur">
                 <CardHeader className="border-b border-border">
                   <CardTitle>Request a Demo</CardTitle>
@@ -183,7 +183,7 @@ export default function RequestDemoPage() {
                         <Input id="demo-organization" className={inputClass} autoComplete="organization" {...register('organization')} aria-invalid={!!errors.organization} />
                       </Field>
                       <Field id="demo-organization-size" label="Number of Staff" required error={errors.organizationSize?.message} icon={Users}>
-                        <select id="demo-organization-size" className={`h-9 w-full rounded-md border border-accent/30 bg-muted/40 px-3 pl-10 text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-accent/30 focus-visible:ring-[3px] [&>option]:bg-background [&>option]:text-foreground`} {...register('organizationSize')} aria-invalid={!!errors.organizationSize}>
+                        <select id="demo-organization-size" className={`h-9 max-w-6xl rounded-md border border-accent/30 bg-muted/40 px-3 pl-10 text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-accent/30 focus-visible:ring-[3px] [&>option]:bg-background [&>option]:text-foreground`} {...register('organizationSize')} aria-invalid={!!errors.organizationSize}>
                           <option value="">Select size</option>
                           <option value="1-50">1–50</option>
                           <option value="51-200">51–200</option>
@@ -202,7 +202,7 @@ export default function RequestDemoPage() {
                       </div>
                       <div className="hidden" aria-hidden="true"><Label htmlFor="website">Website</Label><Input id="website" tabIndex={-1} autoComplete="off" {...register('website')} /></div>
                       {serverError && <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{serverError}</p>}
-                      <Button type="submit" className="h-11 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
+                      <Button type="submit" className="h-11 max-w-6xl rounded-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
                         {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Sending request…</> : <><span>Request Demo</span><ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
                       </Button>
                       <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

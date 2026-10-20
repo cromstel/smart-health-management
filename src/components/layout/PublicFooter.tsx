@@ -64,7 +64,7 @@ export function PublicFooter() {
 
   return (
     <footer className="border-t border-primary-foreground/15 bg-primary text-primary-foreground" role="contentinfo">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+      <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid gap-12 border-b border-primary-foreground/15 pb-12 lg:grid-cols-12 lg:gap-8 lg:pb-16">
           <div className="max-w-sm lg:col-span-4">
             <Link to="/" className="inline-flex items-center gap-2.5" aria-label="Smart MediCare — Home">
