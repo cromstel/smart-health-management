@@ -82,9 +82,21 @@ const stats = [
 ];
 
 const benefitItems = [
-  { icon: CalendarCheck, label: 'Live Product Tour' },
-  { icon: Users, label: 'Expert Guidance' },
-  { icon: Clock3, label: 'Tailored to Your Needs' },
+  {
+    icon: CalendarCheck,
+    label: 'Live Product Tour',
+    description: 'Walk through the platform with a specialist, guided by the workflows your teams use every day.',
+  },
+  {
+    icon: Users,
+    label: 'Expert Guidance',
+    description: 'Get straight answers on setup, integrations, and clinical data from people who know the product.',
+  },
+  {
+    icon: Clock3,
+    label: 'Tailored to Your Needs',
+    description: 'See how Smart MediCare maps to your departments, roles, and reporting requirements.',
+  },
 ];
 
 export default function RequestDemoPage() {
@@ -142,13 +154,16 @@ export default function RequestDemoPage() {
               <p className="max-w-xl text-lg leading-relaxed text-primary-foreground/85">
                 Discover how Smart MediCare streamlines hospital operations, improves patient care coordination, and supports better outcomes for your clinical and administrative teams.
               </p>
-              <ul className="flex flex-wrap gap-3 text-sm text-primary-foreground/90">
-                {benefitItems.map(({ icon: Icon, label }) => (
-                  <li key={label} className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/15 text-accent">
+              <ul className="flex flex-col gap-3 text-sm text-primary-foreground/90 sm:flex-row sm:flex-wrap">
+                {benefitItems.map(({ icon: Icon, label, description }) => (
+                  <li key={label} className="flex items-start gap-3 rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 px-4 py-3 sm:max-w-[16rem] sm:flex-1">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/15 text-accent">
                       <Icon className="h-4 w-4" aria-hidden="true" />
                     </span>
-                    {label}
+                    <span className="space-y-1">
+                      <span className="block font-semibold text-primary-foreground">{label}</span>
+                      <span className="block text-xs leading-relaxed text-primary-foreground/75">{description}</span>
+                    </span>
                   </li>
                 ))}
               </ul>
