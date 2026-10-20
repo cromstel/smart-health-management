@@ -150,4 +150,11 @@ CREATE TABLE IF NOT EXISTS dispensing_events (
 -- ---------------------------------------------------------------------------
 -- Audit trail: keep the actor's display name even if the user is removed.
 -- ---------------------------------------------------------------------------
-ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_name VARCHAR(255) NULL;
+-- Guarded through information_schema rather than `ADD COLUMN IF NOT EXISTS`,
+-- which is a MariaDB extension that MySQL 8 does not accept.
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'user_name'
+);
+SET @col_sql = IF(@col_exists = 0, 'ALTER TABLE audit_logs ADD COLUMN user_name VARCHAR(255) NULL', 'SELECT 1');
+PREPARE stmt FROM @col_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

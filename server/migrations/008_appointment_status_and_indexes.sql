@@ -17,5 +17,16 @@ ALTER TABLE appointments
 
 UPDATE prescriptions SET duration_days = 30 WHERE duration_days IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_appointments_status_start
-  ON appointments (status, appointment_date, appointment_time);
+-- `CREATE INDEX IF NOT EXISTS` is a MariaDB extension as well, so the index
+-- is guarded the same way the column adds are.
+SET @index_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'appointments'
+    AND INDEX_NAME = 'idx_appointments_status_start'
+);
+SET @index_sql = IF(
+  @index_exists = 0,
+  'CREATE INDEX idx_appointments_status_start ON appointments (status, appointment_date, appointment_time)',
+  'SELECT 1'
+);
+PREPARE stmt FROM @index_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

@@ -129,19 +129,53 @@ CREATE TABLE IF NOT EXISTS revoked_tokens (
 -- ---------------------------------------------------------------------------
 -- Column fixes
 -- ---------------------------------------------------------------------------
+--
+-- The column adds are guarded through information_schema rather than using
+-- `ADD COLUMN IF NOT EXISTS`. That clause is a MariaDB extension: MySQL 8 has
+-- no equivalent and refuses the statement, so a migration written that way
+-- only works on one of the two engines the project runs against. A prepared
+-- statement is used because the column name has to be a literal.
 
 -- Hospitals: the create endpoint has always written these.
-ALTER TABLE hospitals ADD COLUMN IF NOT EXISTS city VARCHAR(100) NULL;
-ALTER TABLE hospitals ADD COLUMN IF NOT EXISTS state VARCHAR(100) NULL;
-ALTER TABLE hospitals ADD COLUMN IF NOT EXISTS zip_code VARCHAR(20) NULL;
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'hospitals' AND COLUMN_NAME = 'city'
+);
+SET @col_sql = IF(@col_exists = 0, 'ALTER TABLE hospitals ADD COLUMN city VARCHAR(100) NULL', 'SELECT 1');
+PREPARE stmt FROM @col_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'hospitals' AND COLUMN_NAME = 'state'
+);
+SET @col_sql = IF(@col_exists = 0, 'ALTER TABLE hospitals ADD COLUMN state VARCHAR(100) NULL', 'SELECT 1');
+PREPARE stmt FROM @col_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'hospitals' AND COLUMN_NAME = 'zip_code'
+);
+SET @col_sql = IF(@col_exists = 0, 'ALTER TABLE hospitals ADD COLUMN zip_code VARCHAR(20) NULL', 'SELECT 1');
+PREPARE stmt FROM @col_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Inventory rows need a supplier reference so a low-stock run can raise a
 -- purchase order against a real supplier. Stock level stays the single
 -- source of truth in `stock_level`; the low-stock job reads that column.
-ALTER TABLE medicines_inventory ADD COLUMN IF NOT EXISTS supplier_id BIGINT UNSIGNED NULL;
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'medicines_inventory' AND COLUMN_NAME = 'supplier_id'
+);
+SET @col_sql = IF(@col_exists = 0, 'ALTER TABLE medicines_inventory ADD COLUMN supplier_id BIGINT UNSIGNED NULL', 'SELECT 1');
+PREPARE stmt FROM @col_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Purchase orders are raised per hospital.
-ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS hospital_id BIGINT UNSIGNED NULL;
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'purchase_orders' AND COLUMN_NAME = 'hospital_id'
+);
+SET @col_sql = IF(@col_exists = 0, 'ALTER TABLE purchase_orders ADD COLUMN hospital_id BIGINT UNSIGNED NULL', 'SELECT 1');
+PREPARE stmt FROM @col_sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Audit rows record ids from tables whose keys are not all numeric.
+-- A MODIFY is idempotent, so it needs no guard.
 ALTER TABLE audit_logs MODIFY COLUMN record_id VARCHAR(64) NULL;
