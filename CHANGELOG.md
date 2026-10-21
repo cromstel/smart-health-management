@@ -271,6 +271,14 @@ implementation reasoning behind each entry here.
   different in development and in a deployment, so one setting named two
   different places. They are resolved against the repository root now.
 
+- **Nothing about the deployment is written in the code any more.** The
+  ports, the product name, the mail settings and every secret come from
+  the environment. A value that is missing is reported by name rather than
+  guessed, and a production build refuses to run without the product name,
+  so a release can never carry a name that was baked in. The address written
+  into a calendar invitation and the one shown in the interface follow the
+  published address rather than a host name written down.
+
 - **The tenant administrator recovers on their own pages.** The site owner used
   to be sent into the same recovery screen as patients and hospital staff, so
   one audience's link led to another's flow. The administrator now has their

@@ -1,4 +1,4 @@
-import { APP_NAME } from '@/config/app';
+import { APP_NAME, APP_HOST } from '@/config/app';
 
 export function formatIcalDate(date: Date): string {
   const year = date.getFullYear()
@@ -28,7 +28,7 @@ VERSION:2.0
 PRODID:-//${APP_NAME}//EN
 CALSCALE:GREGORIAN
 BEGIN:VEVENT
-UID:${appointment.id}@smartmedicare.com
+UID:${appointment.id}@${APP_HOST || 'localhost'}
 DTSTART:${formatIcalDate(startTime)}
 DTEND:${formatIcalDate(endTime)}
 SUMMARY:${type} with ${doctorName}

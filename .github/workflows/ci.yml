@@ -30,6 +30,11 @@ env:
   # environment would hand the application "0" instead of the hex value.
   ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
   ENCRYPTION_IV: '00000000000000000000000000000000'
+  # The product name is required configuration and is not written into the
+  # source. The build refuses to produce a bundle without it, so CI supplies
+  # one exactly as a deployment does.
+  APP_NAME: 'CI Test Application'
+  VITE_APP_NAME: 'CI Test Application'
 
 jobs:
   frontend:
@@ -150,6 +155,12 @@ jobs:
       DB_USER: root
       DB_PASSWORD: ci-root-password
       DB_SSL: "false"
+      # The ports are configuration and the API requires them. CI supplies
+      # them exactly as a deployment does.
+      PORT: "5000"
+      HTTPS_PORT: "8443"
+      FRONTEND_URL: http://localhost:5175
+      VITE_PORT: "5175"
 
     defaults:
       run:

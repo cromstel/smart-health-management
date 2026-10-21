@@ -54,7 +54,7 @@ const resetRows = async () => {
 
 beforeAll(async () => {
   // Make sure the mail path is taken, whatever the ambient environment says.
-  process.env.SMTP_HOST = 'smtp.test.local';
+  process.env.SMTP_HOST = 'smtp.test.invalid';
   process.env.SMTP_USER = 'test-user';
   process.env.SMTP_PASS = 'test-pass';
 

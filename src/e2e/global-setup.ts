@@ -1,5 +1,5 @@
 import type { FullConfig } from '@playwright/test';
-import { DEFAULT_DEV_PORT, DEFAULT_LOCAL_HOST } from '../../server/src/config/runtime';
+import { DEFAULT_LOCAL_HOST } from '../../server/src/config/runtime';
 
 /**
  * Global setup: refuse to run against whatever happens to be answering the port.
@@ -22,7 +22,12 @@ import { DEFAULT_DEV_PORT, DEFAULT_LOCAL_HOST } from '../../server/src/config/ru
  *      client entry, and does not look like some other SPA.
  */
 
-const PORT = Number(process.env.VITE_PORT || DEFAULT_DEV_PORT);
+// The port comes from the environment. There is no written-down default: a
+// port in the source has to be changed in the source to be changed at all.
+const PORT = Number(process.env.VITE_PORT);
+if (!Number.isInteger(PORT) || PORT < 1) {
+  throw new Error('Missing or invalid environment variable: VITE_PORT.');
+}
 const BASE_URL = `http://${DEFAULT_LOCAL_HOST}:${PORT}`;
 
 export default async function globalSetup(config: FullConfig) {

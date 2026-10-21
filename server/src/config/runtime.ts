@@ -1,47 +1,96 @@
 /**
- * Runtime defaults shared by the API, the front-end build and the end-to-end
- * suite.
+ * Runtime configuration shared by the API, the front-end build and the
+ * end-to-end suite.
  *
- * Every port number and host name used as a fallback lives here, and nowhere
- * else. They used to be repeated in the API entry point, the CORS allow-list,
- * the WebAuthn configuration, the database scripts, the Vite config, the
- * Playwright config and the e2e helpers -- eight copies of the same handful of
- * numbers, each of which had to be changed in every copy to be changed at all.
+ * The ports and host names the platform runs on are deployment facts, so they
+ * are not written down here or anywhere else in the source. They come from the
+ * environment, and a value that is missing is reported by name rather than
+ * guessed: a guessed port silently moves the service somewhere nobody is
+ * listening.
  *
  * This module lives in the server package on purpose. The API's tsconfig pins
  * `rootDir` to `server/src`, so the API cannot import anything from outside
  * its own package; the front-end build, the Playwright config and the e2e
  * helpers, on the other hand, can reach into the server package freely. One
  * module in the server package is therefore the only place both sides can
- * read, which is what keeps the numbers from drifting apart.
+ * read, which is what keeps the configuration from drifting apart.
  *
  * It has no imports on purpose: the front-end package has neither `dotenv`
  * nor `bcryptjs`, so this module has to be plain data plus functions that
  * touch nothing but `process.env`.
- *
- * Every value here is a *fallback*. The environment wins: `PORT`,
- * `HTTPS_PORT`, `VITE_PORT`, `VITE_HOST` and `VITE_ALLOWED_HOSTS` all
- * override what is written below, and the API refuses to start in production
- * when a port it needs is not configured at all.
  */
 
-/** Port the API listens on when `PORT` is unset (development fallback). */
-export const DEFAULT_API_PORT = 5000;
+/** Reads a required port from the environment. */
+const requiredPort = (name: string): number => {
+  const raw = (process.env[name] ?? '').trim();
+  const port = Number(raw);
+  if (!raw || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      `Missing or invalid environment variable: ${name}. Set the port the service listens on.`
+    );
+  }
+  return port;
+};
 
-/** Port the API's HTTPS listener binds to when `HTTPS_PORT` is unset. */
-export const DEFAULT_HTTPS_PORT = 8443;
+/** Reads a required value from the environment, trimmed. */
+const requiredValue = (name: string): string => {
+  const value = (process.env[name] ?? '').trim();
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}.`);
+  }
+  return value;
+};
 
-/** Port the Vite dev/preview server listens on when `VITE_PORT` is unset. */
-export const DEFAULT_DEV_PORT = 5175;
+/** Port the API listens on. */
+export const apiPort = (): number => requiredPort('PORT');
 
-/** Interface the dev/preview server binds to when `VITE_HOST` is unset. */
+/** Port the API's HTTPS listener binds to. */
+export const httpsPort = (): number => requiredPort('HTTPS_PORT');
+
+/** Port the Vite dev/preview server listens on. */
+export const devPort = (): number => requiredPort('VITE_PORT');
+
+/** Port the MySQL server listens on. */
+export const dbPort = (): number => requiredPort('DB_PORT');
+
+/** Interface the dev/preview server binds to. */
 export const DEFAULT_DEV_HOST = '0.0.0.0';
-
-/** Host the production server binds to when `VITE_HOST` is unset. */
-export const DEFAULT_PROD_HOST = 'medicare.cromstelit.com';
 
 /** Host name used to reach a server running on this machine. */
 export const DEFAULT_LOCAL_HOST = 'localhost';
+
+/**
+ * The host the application is published on.
+ *
+ * Derived from the published address rather than written down, so the name
+ * and the address the platform is served at cannot disagree. The values can
+ * be supplied directly, which is what the front-end build does: it reads the
+ * environment files itself and does not publish them to `process.env`.
+ */
+export const productionHost = (configured?: {
+  allowedHosts?: string;
+  frontendUrl?: string;
+}): string => {
+  const allowed = (configured?.allowedHosts ?? process.env.VITE_ALLOWED_HOSTS ?? '')
+    .split(',')[0]
+    ?.trim();
+  if (allowed) return allowed;
+
+  const frontend = (
+    configured?.frontendUrl ?? process.env.FRONTEND_URL ?? ''
+  ).split(',')[0]?.trim();
+  if (frontend) {
+    try {
+      return new URL(frontend).host;
+    } catch {
+      return frontend;
+    }
+  }
+
+  throw new Error(
+    'Missing required environment variable: VITE_ALLOWED_HOSTS or FRONTEND_URL. Set the host the application is served on.'
+  );
+};
 
 /**
  * Relying-party id for WebAuthn ceremonies when none is configured.
@@ -57,9 +106,6 @@ export const DEFAULT_LOCAL_SCHEME = 'http';
 /** Host the MySQL server runs on when `DB_HOST` is unset. */
 export const DEFAULT_DB_HOST = 'localhost';
 
-/** Port the MySQL server listens on when `DB_PORT` is unset. */
-export const DEFAULT_DB_PORT = 3306;
-
 /** User the application connects as when `DB_USER` is unset. */
 export const DEFAULT_DB_USER = 'root';
 
@@ -67,25 +113,33 @@ export const DEFAULT_DB_USER = 'root';
 export const DEFAULT_DB_NAME = 'smart_medicare';
 
 /** The origin the dev server is served from, used as the API's CORS fallback. */
-export const DEFAULT_FRONTEND_ORIGIN = `${DEFAULT_LOCAL_SCHEME}://${DEFAULT_LOCAL_HOST}:${DEFAULT_DEV_PORT}`;
+export const defaultFrontendOrigin = (): string =>
+  `${DEFAULT_LOCAL_SCHEME}://${DEFAULT_LOCAL_HOST}:${devPort()}`;
 
 /**
- * The first entry of `FRONTEND_URL`.
+ * The canonical address the application is published at.
  *
- * That variable accepts a comma-separated list of allowed CORS origins, and
- * WebAuthn needs exactly one origin, so the primary entry is used.
+ * `FRONTEND_URL` may list several addresses, comma separated; the first is
+ * the canonical one. Empty when the variable is not set, so a caller can
+ * decide whether to fall back or to require it.
  */
-export const primaryFrontendOrigin = (): string | undefined =>
-  process.env.FRONTEND_URL?.split(',')[0]?.trim() || undefined;
+export const primaryFrontendOrigin = (): string =>
+  (process.env.FRONTEND_URL ?? '').split(',')[0]?.trim() ?? '';
 
 /**
- * Every origin the API accepts browser requests from.
+ * The addresses the API accepts browser requests from.
  *
- * Configured with `FRONTEND_URL`; falls back to the local dev origin so a
- * checkout without an env file still serves the app.
+ * Derived from `FRONTEND_URL`. A deployment that serves the API on its own
+ * domain states it there; there is no second list to keep in step.
  */
-export const allowedFrontendOrigins = (): string[] =>
-  (process.env.FRONTEND_URL || DEFAULT_FRONTEND_ORIGIN)
+export const allowedFrontendOrigins = (): string[] => {
+  const configured = (process.env.FRONTEND_URL ?? '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter(Boolean);
+
+  if (configured.length > 0) return configured;
+  return [defaultFrontendOrigin()];
+};
+
+export { requiredValue, requiredPort };

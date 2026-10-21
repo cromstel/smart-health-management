@@ -73,6 +73,24 @@ export const getSecret = (name: string, devFallback: string): string => {
 };
 
 /**
+ * Reads a variable that has no sensible fallback.
+ *
+ * Unlike `getSecret`, which has a development fallback, this one always
+ * refuses. It is for values that have no correct default: the product name
+ * is a fact about the deployment, and a made-up one puts the wrong name on
+ * every email, every report and every calendar invitation.
+ */
+export const requireEnv = (name: string): string => {
+  const value = process.env[name];
+  if (value && value.trim() !== '') {
+    return value.trim();
+  }
+  throw new Error(
+    `Missing required environment variable: ${name}. Set it in .env, or in the deployment environment.`
+  );
+};
+
+/**
  * Whether an optional integration is really configured.
  *
  * The environment files carry a placeholder for every integration that is not
@@ -91,19 +109,20 @@ export const isConfigured = (value: string | undefined | null): boolean => {
 /**
  * Reads a TCP port from the environment.
  *
- * Uses the same rule as `getSecret`: a missing port is a hard startup error
- * in production, because a server that guesses its own port can end up bound
- * to the wrong one and nothing says so until a client cannot reach it. In
- * development the documented fallback is used.
+ * The port is required in every environment. There is no written-down
+ * fallback: a server that guesses its own port can end up bound to the wrong
+ * one, and nothing says so until a client cannot reach it.
  *
- * A value that is present but not a port is rejected in every environment:
- * `app.listen('abc')` would bind a socket path, not a port.
+ * A value that is present but not a port is rejected: `app.listen('abc')`
+ * would bind a socket path, not a port.
  */
-export const getPort = (name: string, devFallback: number): number => {
-  const raw = getSecret(name, String(devFallback));
+export const getPort = (name: string): number => {
+  const raw = (process.env[name] ?? '').trim();
   const port = Number(raw);
-  if (!Number.isInteger(port) || port < 0 || port > 65535) {
-    throw new Error(`Invalid ${name}: "${raw}" is not a valid TCP port`);
+  if (!raw || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      `Missing or invalid environment variable: ${name}. Set the TCP port the service listens on.`
+    );
   }
   return port;
 };

@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import pool from '../config/database.js';
 import { getSecret } from '../config/env.js';
-import { DEFAULT_FRONTEND_ORIGIN, primaryFrontendOrigin } from '../config/runtime.js';
+import { primaryFrontendOrigin } from '../config/runtime.js';
 import { APP_NAME } from '../config/app.js';
 import { sendEmail } from '../utils/mail.js';
 import type { ResultSetHeader } from 'mysql2';
@@ -488,7 +488,12 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
       [user.id, tokenHash, expiresAt, (req as any).ip ?? null]
     );
 
-    const frontendOrigin = primaryFrontendOrigin() || DEFAULT_FRONTEND_ORIGIN;
+    // The link points at the address the application is published at, so a
+    // deployment does not have to be told about it twice.
+    const frontendOrigin = primaryFrontendOrigin();
+    if (!frontendOrigin) {
+      throw new Error('FRONTEND_URL is not configured: the recovery link has nowhere to point.');
+    }
     // The reset route is audience-specific. The administrator's link lands on
     // the administrator's own page; everyone else lands on the clinical one.
     const roleName = String(user.role_name ?? '').toLowerCase();

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { HeroGridLines, HeroPing, HeroScanLine } from '@/components/common/HeroAccents';
-import { APP_NAME } from '@/config/app';
+import { APP_NAME, APP_HOST } from '@/config/app';
 
 import {
   Activity,
@@ -317,7 +317,7 @@ function Hero() {
                 <div className="h-2.5 w-2.5 rounded-full bg-success/70" />
               </div>
               <div className="mx-auto rounded bg-muted px-3 py-1 font-mono text-[11px] text-muted-foreground">
-                app.smartmedicare.com/dashboard
+                {APP_HOST ? APP_HOST : 'localhost'}/dashboard
               </div>
             </div>
             <div className="space-y-5 p-5 sm:p-7">

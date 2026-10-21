@@ -6,29 +6,50 @@ import tailwindcss from '@tailwindcss/vite'
 // The extension is required. Vite loads this file with its native config
 // loader, which does not resolve extensionless imports and warns about it
 // on every start; a future Vite major will refuse them.
-import { DEFAULT_APP_NAME } from './src/config/app.ts'
 import {
   DEFAULT_DEV_HOST,
-  DEFAULT_DEV_PORT,
-  DEFAULT_PROD_HOST,
+  productionHost,
 } from './server/src/config/runtime.ts'
 
 /**
  * The hosts the dev/preview server answers to.
  *
- * `VITE_ALLOWED_HOSTS` is a comma-separated list. Left unset, the documented
- * default applies: any host in development, so the app can be reached by
- * machine name, and the production host alone when NODE_ENV=production.
+ * `VITE_ALLOWED_HOSTS` is a comma-separated list. Left unset, the default
+ * applies: any host in development, so the app can be reached by machine
+ * name, and the published host alone when NODE_ENV=production. The published
+ * host comes from the configuration, not from a name written down here.
  */
-const resolveAllowedHosts = (configured: string | undefined, isProduction: boolean): true | string[] => {
+const resolveAllowedHosts = (
+  configured: string | undefined,
+  isProduction: boolean,
+  published?: { allowedHosts?: string; frontendUrl?: string }
+): true | string[] => {
   const hosts = (configured || '')
     .split(',')
     .map((host) => host.trim())
     .filter(Boolean)
 
   if (hosts.length > 0) return hosts
-  return isProduction ? [DEFAULT_PROD_HOST] : true
+  return isProduction ? [productionHost(published)] : true
 }
+
+/**
+ * Reads the port the dev/preview server binds to.
+ *
+ * Required. A port written into the source has to be changed in the source
+ * to be changed at all, and a stale copy makes the server bind somewhere
+ * nothing is listening.
+ */
+const resolveDevPort = (configured: string | undefined): number => {
+  const raw = (configured ?? '').trim();
+  const port = Number(raw);
+  if (!raw || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      'Missing or invalid environment variable: VITE_PORT. Set the port the dev server listens on.'
+    );
+  }
+  return port;
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -36,11 +57,29 @@ export default defineConfig(({ mode }) => {
   // `src/config/app.ts`, which is the single source of truth for the
   // frontend). `vite.config.ts` runs before Vite loads `.env` files into
   // `import.meta.env`, so the value is read from the same place Vite reads
-  // it from: the loaded environment (`.env`, `.env.local`, and the shell),
-  // falling back to the shipped name.
-  const env = loadEnv(mode, import.meta.dirname, 'VITE_')
-  const appName = (env.VITE_APP_NAME || process.env.VITE_APP_NAME || '').trim() || DEFAULT_APP_NAME
+  // it from: the loaded environment (`.env`, `.env.local`, and the shell).
+  //
+  // Every variable is loaded, not only the VITE_-prefixed ones: `loadEnv`
+  // defaults to the VITE_ prefix, and the published address is not a browser
+  // variable -- the build has to be able to read it to work out which host
+  // the application is served on. Only the name is handed to the browser
+  // bundle below.
+  const env = loadEnv(mode, import.meta.dirname, '')
+  const appName = (env.VITE_APP_NAME || process.env.VITE_APP_NAME || '').trim()
   const isProduction = process.env.NODE_ENV === 'production'
+  const publishedHost = () => productionHost({
+    allowedHosts: env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS,
+    frontendUrl: env.FRONTEND_URL || process.env.FRONTEND_URL,
+  })
+
+  // A production bundle has to carry the configured name. Building without one
+  // would ship a product that calls itself nothing, so the build refuses
+  // rather than producing it.
+  if (isProduction && !appName) {
+    throw new Error(
+      'VITE_APP_NAME is required to build for production. Set it in .env, or in the deployment environment.'
+    )
+  }
 
   return {
     // Gives `%VITE_APP_NAME%` in index.html a value even when the variable is
@@ -185,27 +224,25 @@ export default defineConfig(({ mode }) => {
     server: {
       // Deployment specifics are configuration, not literals. The bind address
       // comes from VITE_HOST, the port from VITE_PORT, and the host allow-list
-      // from VITE_ALLOWED_HOSTS; the documented defaults live in
-      // `server/src/config/runtime.ts`, the one place the API, this config and
-      // the end-to-end suite share them.
-      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction ? DEFAULT_PROD_HOST : DEFAULT_DEV_HOST),
-      port: Number(env.VITE_PORT || process.env.VITE_PORT || DEFAULT_DEV_PORT),
+      // from VITE_ALLOWED_HOSTS. There is no written-down port or host name:
+      // a value that is missing is reported by name.
+      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction ? publishedHost() : DEFAULT_DEV_HOST),
+      port: resolveDevPort(env.VITE_PORT || process.env.VITE_PORT),
       // VITE_PORT, not PORT: PORT already belongs to the API server
       // (server/src/index.ts reads it from the environment). Sharing one
       // variable would move both servers at once.
       // Fail loudly instead of silently moving to the next free port. Without
-      // this, a foreign process already holding the port (a WSL relay held 3000
-      // here) made Vite bind the next one up while a test run kept talking to
-      // the squatter -- the suite reported failures from an entirely different
-      // application.
+      // this, a foreign process already holding the port made Vite bind the
+      // next one up while a test run kept talking to the squatter -- the suite
+      // reported failures from an entirely different application.
       strictPort: true,
-      allowedHosts: resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction),
+      allowedHosts: resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction, { allowedHosts: env.VITE_ALLOWED_HOSTS, frontendUrl: env.FRONTEND_URL }),
     },
     preview: {
-      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction ? DEFAULT_PROD_HOST : DEFAULT_DEV_HOST),
-      port: Number(env.VITE_PORT || process.env.VITE_PORT || DEFAULT_DEV_PORT),
+      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction ? publishedHost() : DEFAULT_DEV_HOST),
+      port: resolveDevPort(env.VITE_PORT || process.env.VITE_PORT),
       strictPort: true,
-      allowedHosts: resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction),
+      allowedHosts: resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction, { allowedHosts: env.VITE_ALLOWED_HOSTS, frontendUrl: env.FRONTEND_URL }),
     },
   }
 })

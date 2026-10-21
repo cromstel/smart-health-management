@@ -1,6 +1,5 @@
 import mysql from 'mysql2/promise';
 import pool from '../config/database.js'
-import { DEFAULT_DB_PORT } from '../config/runtime.js'
 /**
  * Imports patients from the Ghana Health Service database into the local system,
  * performing upsert based on external patient id mapping.
@@ -8,7 +7,8 @@ import { DEFAULT_DB_PORT } from '../config/runtime.js'
 
 const dbConfig = {
   host: process.env.GHS_DB_HOST || '',
-  port: parseInt(process.env.GHS_DB_PORT || String(DEFAULT_DB_PORT), 10),
+  // The external database's port is its own setting; it is not the local one.
+  port: parseInt(process.env.GHS_DB_PORT || '', 10) || 0,
   database: process.env.GHS_DB_NAME || '',
   user: process.env.GHS_DB_USER || '',
   password: process.env.GHS_DB_PASSWORD || '',

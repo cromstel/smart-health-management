@@ -5,8 +5,8 @@ import mysql from 'mysql2/promise';
 import {
   DEFAULT_DB_HOST,
   DEFAULT_DB_NAME,
-  DEFAULT_DB_PORT,
   DEFAULT_DB_USER,
+  dbPort,
 } from './runtime.js';
 
 /**
@@ -41,7 +41,7 @@ export interface DatabaseConnectionOptions {
  */
 export const databaseConnectionOptions = (): DatabaseConnectionOptions => ({
   host: process.env.DB_HOST || DEFAULT_DB_HOST,
-  port: parseInt(process.env.DB_PORT || String(DEFAULT_DB_PORT), 10),
+  port: dbPort(),
   user: process.env.DB_USER || DEFAULT_DB_USER,
   password: process.env.DB_PASSWORD,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,

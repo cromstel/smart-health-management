@@ -10,7 +10,9 @@ const smtpPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD;
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
+  // The port is configuration. Left unset, the mailer applies the submission
+  // port its own transport standardises on.
+  ...(process.env.SMTP_PORT ? { port: Number(process.env.SMTP_PORT) } : {}),
   auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
 });
 

@@ -29,8 +29,8 @@ import { resolveConfiguredPath } from '../config/paths.js';
 import {
   DEFAULT_DB_HOST,
   DEFAULT_DB_NAME,
-  DEFAULT_DB_PORT,
   DEFAULT_DB_USER,
+  dbPort,
 } from '../config/runtime.js';
 import type { ResultSetHeader } from 'mysql2';
 
@@ -74,7 +74,7 @@ export const getDbConfig = (): DbConfig => ({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || DEFAULT_DB_NAME,
   host: process.env.DB_HOST || DEFAULT_DB_HOST,
-  port: parseInt(process.env.DB_PORT || String(DEFAULT_DB_PORT), 10),
+  port: dbPort(),
 });
 
 /**

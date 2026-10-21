@@ -26,12 +26,17 @@
  * `process` does not exist in the browser.
  */
 
-/** The shipped product name — the one place in the frontend where it is written down. */
-export const DEFAULT_APP_NAME = 'Smart MediCare';
-
-/** The shared resolution rule: a configured name, trimmed, or the shipped one. */
+/**
+ * The shared resolution rule: a configured name, trimmed, or nothing.
+ *
+ * There is no product name written into the source. The name is a fact about
+ * the deployment — it is what the browser tab says, what the installable
+ * application is called, and what the emails, the calendar invitations and
+ * the reports call the platform — so it comes from the environment and
+ * nothing else.
+ */
 export const resolveAppName = (value: string | null | undefined): string =>
-  (value ?? '').trim() || DEFAULT_APP_NAME;
+  (value ?? '').trim();
 
 /** Reads the configured name from whichever environment the caller runs in. */
 const readConfiguredName = (): string | undefined => {
@@ -48,8 +53,59 @@ const readConfiguredName = (): string | undefined => {
   return undefined;
 };
 
-/** The configured application name, e.g. `Smart MediCare`. */
-export const APP_NAME: string = resolveAppName(readConfiguredName());
+/**
+ * The configured application name.
+ *
+ * It is required. A production build refuses to run without it, so a bundle
+ * can never carry a name that was baked into the source, and a missing one
+ * fails with a message that says which variable to set rather than rendering
+ * an unnamed product.
+ */
+export const APP_NAME: string = (() => {
+  const configured = resolveAppName(readConfiguredName());
+  if (configured) return configured;
+  throw new Error(
+    'The application name is not configured. Set VITE_APP_NAME in the environment.'
+  );
+})();
 
-/** The application name with whitespace removed, e.g. `SmartMediCare`. */
+/** The application name with whitespace removed, for use in a file name or an identifier. */
 export const APP_NAME_SLUG: string = APP_NAME.replace(/\s+/g, '');
+
+/**
+ * Where the application is published.
+ *
+ * Read from the environment, so the addresses written into a calendar
+ * invitation and shown in the interface follow the deployment rather than a
+ * host name written into the source. Falls back to the address the browser is
+ * actually on, which is the same origin in every deployment behind one host.
+ */
+const readConfiguredBaseUrl = (): string | undefined => {
+  const viteUrl = import.meta.env?.VITE_BASE_URL;
+  if (viteUrl) return viteUrl;
+
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.VITE_BASE_URL;
+  }
+
+  return undefined;
+};
+
+/** The published address of the application, without a trailing slash. */
+export const APP_BASE_URL: string = (
+  readConfiguredBaseUrl()?.trim()
+  || (typeof window !== 'undefined' ? window.location.origin : '')
+).replace(/\/+$/, '');
+
+/** The host the application is published on, used where a bare host is needed. */
+export const APP_HOST: string = (() => {
+  const configured = APP_BASE_URL;
+  if (configured) {
+    try {
+      return new URL(configured).host || configured;
+    } catch {
+      return configured;
+    }
+  }
+  return typeof window !== 'undefined' ? window.location.host : '';
+})();

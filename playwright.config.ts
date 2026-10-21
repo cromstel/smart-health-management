@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { DEFAULT_DEV_PORT, DEFAULT_LOCAL_HOST } from './server/src/config/runtime';
+import { DEFAULT_LOCAL_HOST } from './server/src/config/runtime';
 import { publishAppName } from './src/e2e/helpers/appName';
 
 // Keep the app port configurable and, more importantly, verify it is actually
@@ -10,7 +10,12 @@ import { publishAppName } from './src/e2e/helpers/appName';
 // stops the test side from ever trusting a port that is not this app.
 //
 // VITE_PORT rather than PORT, because PORT is the API server's port.
-const PORT = Number(process.env.VITE_PORT || DEFAULT_DEV_PORT);
+// The port is required and comes from the environment: a port written into
+// the source has to be changed in the source to be changed at all.
+const PORT = Number(process.env.VITE_PORT);
+if (!Number.isInteger(PORT) || PORT < 1) {
+  throw new Error('Missing or invalid environment variable: VITE_PORT.');
+}
 const BASE_URL = `http://${DEFAULT_LOCAL_HOST}:${PORT}`;
 
 // The dev server resolves the application name from VITE_APP_NAME; the

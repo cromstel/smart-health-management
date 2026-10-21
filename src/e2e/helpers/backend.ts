@@ -1,4 +1,4 @@
-import { DEFAULT_API_PORT, DEFAULT_LOCAL_HOST } from '../../../server/src/config/runtime';
+import { DEFAULT_LOCAL_HOST } from '../../../server/src/config/runtime';
 import { loadLocalEnv } from './env';
 
 /**
@@ -35,8 +35,7 @@ loadLocalEnv();
  *
  * `E2E_API_ORIGIN` wins. Otherwise the origin of `VITE_API_URL` -- the same
  * variable the app itself is configured with -- is used, so the suite and the
- * app always talk to the same API. The documented local default is the last
- * resort.
+ * app always talk to the same API. The API's own port is the last resort.
  */
 const resolveApiOrigin = (): string => {
   const explicit = process.env.E2E_API_ORIGIN?.trim();
@@ -48,11 +47,18 @@ const resolveApiOrigin = (): string => {
       return new URL(configured).origin;
     } catch {
       // A relative VITE_API_URL means the API is same-origin, which the
-      // dev server does not serve: fall through to the documented default.
+      // dev server does not serve: fall through to the API's own port.
     }
   }
 
-  return `http://${DEFAULT_LOCAL_HOST}:${DEFAULT_API_PORT}`;
+  const apiPort = Number(process.env.PORT);
+  if (!Number.isInteger(apiPort) || apiPort < 1) {
+    // Nothing says where the API is. That is not a reason to fail the run:
+    // the probe below reports the API as unreachable, and the suites that
+    // need it skip themselves with a reason.
+    return '';
+  }
+  return `http://${DEFAULT_LOCAL_HOST}:${apiPort}`;
 };
 
 const API_ORIGIN = resolveApiOrigin();
@@ -72,6 +78,11 @@ let cached: boolean | null = null;
  */
 export async function backendReachable(): Promise<boolean> {
   if (cached !== null) return cached;
+  if (!API_ORIGIN) {
+    // Nowhere to look.
+    cached = false;
+    return cached;
+  }
   try {
     const response = await fetch(`${API_ORIGIN}/api/auth/me`, {
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),

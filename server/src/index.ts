@@ -17,8 +17,8 @@ import session from 'express-session';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
-import { getSecret, getPort } from './config/env.js';
-import { allowedFrontendOrigins, DEFAULT_API_PORT, DEFAULT_HTTPS_PORT } from './config/runtime.js';
+import { getSecret } from './config/env.js';
+import { allowedFrontendOrigins, apiPort, httpsPort } from './config/runtime.js';
 import authRoutes from './routes/auth.routes.js';
 import webauthnRoutes from './routes/webauthn.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
@@ -55,11 +55,11 @@ import { scheduleBackups } from './services/cron.service.js';
 import { rateLimit } from 'express-rate-limit';
 
 const app = express();
-// The ports are configuration. `getPort` uses the same rule as `getSecret`:
-// a missing port is a hard startup error in production, and a development
-// environment falls back to the documented default.
-const PORT = getPort('PORT', DEFAULT_API_PORT);
-const HTTPS_PORT = getPort('HTTPS_PORT', DEFAULT_HTTPS_PORT);
+// The ports are configuration, and they are required. A missing port is
+// reported by name rather than guessed: a guessed port moves the service
+// somewhere nobody is listening.
+const PORT = apiPort();
+const HTTPS_PORT = httpsPort();
 // The HTTPS listener only starts when it is asked for: in production, or when
 // HTTPS_PORT is configured explicitly.
 const httpsRequested =

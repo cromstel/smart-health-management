@@ -3,14 +3,17 @@
 import jwt from 'jsonwebtoken';
 import { createHash } from 'crypto';
 import { getSecret } from '../config/env.js';
-import { DEFAULT_FRONTEND_ORIGIN, DEFAULT_WEBAUTHN_RP_ID, primaryFrontendOrigin } from '../config/runtime.js';
+import { DEFAULT_WEBAUTHN_RP_ID, primaryFrontendOrigin } from '../config/runtime.js';
 import { APP_NAME } from '../config/app.js';
 
 /** Relying-party identity used for WebAuthn ceremonies and expected values. */
 export const getRpConfig = (): { id: string; name: string; origin: string } => ({
   id: process.env.WEBAUTHN_RP_ID || DEFAULT_WEBAUTHN_RP_ID,
   name: process.env.WEBAUTHN_RP_NAME || APP_NAME,
-  origin: process.env.WEBAUTHN_RP_ORIGIN || primaryFrontendOrigin() || DEFAULT_FRONTEND_ORIGIN
+  // The ceremony's origin is the address the application is published at.
+  // There is no written-down fallback: a ceremony against the wrong origin
+  // fails on the user's device with nothing to go on.
+  origin: process.env.WEBAUTHN_RP_ORIGIN || primaryFrontendOrigin()
 });
 
 /** Stable per-user WebAuthn user handle (derived, never random per ceremony). */
