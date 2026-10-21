@@ -93,9 +93,11 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
       );
 
       // Lock account if max attempts reached
-      if (user.login_attempts + 1 >= 5) {
-        const lockoutDuration = 15; // minutes
-        const lockedUntil = new Date(Date.now() + lockoutDuration * 60000);
+      const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10);
+      if (user.login_attempts + 1 >= maxAttempts) {
+        // The lockout window is configuration, in milliseconds.
+        const lockoutMs = parseInt(process.env.LOCKOUT_DURATION || '900000', 10);
+        const lockedUntil = new Date(Date.now() + lockoutMs);
         await pool.query(
           'UPDATE users SET status = ?, locked_until = ? WHERE id = ?',
           ['locked', lockedUntil, user.id]
@@ -252,8 +254,11 @@ export const register = async (req: Request, res: Response): Promise<Response | 
       }
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password. The cost is configuration, so a deployment can raise it
+    // without the cost of a hash and the cost of a newly created account
+    // disagreeing.
+    const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    const hashedPassword = await bcrypt.hash(password, bcryptRounds);
 
     // Create user
     const [insertResult] = await pool.query<any>(
@@ -538,7 +543,8 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
       return res.status(400).json({ error: 'This reset link has expired' });
     }
 
-    const hashed = await bcrypt.hash(password as string, 12);
+    const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    const hashed = await bcrypt.hash(password as string, bcryptRounds);
 
     // Burn the token first. The conditional update makes the redemption
     // single-use even when two requests race for the same link.

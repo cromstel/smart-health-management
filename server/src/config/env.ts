@@ -73,6 +73,22 @@ export const getSecret = (name: string, devFallback: string): string => {
 };
 
 /**
+ * Whether an optional integration is really configured.
+ *
+ * The environment files carry a placeholder for every integration that is not
+ * switched on, so that nothing is missing when a deployment is set up. A
+ * placeholder is still a non-empty string, so a plain "is it set?" check
+ * treated it as configured and the integration failed at the moment it was
+ * first used, with the placeholder in the error. A placeholder now reads as
+ * "not configured", which is what it means.
+ */
+export const isConfigured = (value: string | undefined | null): boolean => {
+  const trimmed = (value ?? '').trim();
+  if (trimmed === '') return false;
+  return !/^replace[_-]?with/i.test(trimmed) && !/^changeme$/i.test(trimmed);
+};
+
+/**
  * Reads a TCP port from the environment.
  *
  * Uses the same rule as `getSecret`: a missing port is a hard startup error

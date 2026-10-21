@@ -16,6 +16,7 @@
  */
 import { computeVitalStatus, extractRecordAlerts } from './vitals.service.js';
 import type { VitalsRecord } from './vitals.service.js';
+import { isConfigured } from '../config/env.js';
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 // The free tier of the API can take the better part of a minute to answer, so
@@ -69,8 +70,9 @@ export function resolveModel(modelType?: string): string {
 }
 
 export function isGeminiConfigured(): boolean {
-  const key = process.env.GEMINI_API_KEY;
-  return typeof key === 'string' && key.trim() !== '';
+  // A placeholder is not a key: the environment files carry one for every
+  // integration that is not switched on.
+  return isConfigured(process.env.GEMINI_API_KEY);
 }
 
 /**

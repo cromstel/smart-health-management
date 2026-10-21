@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import { resolveConfiguredPath } from '../config/paths.js';
 import { OneDriveStorageProvider } from './onedrive.storage.service.js';
 import { GoogleDriveStorageProvider } from './googledrive.storage.service.js';
 
@@ -25,7 +26,15 @@ export interface IStorageProvider {
  */
 export class LocalStorageProvider implements IStorageProvider {
   private getUploadsDir(): string {
-    return path.join(__dirname, '../../uploads');
+    // The directory is configuration. It was fixed relative to this file, so a
+    // deployment could not move its document store without editing the code.
+    // A configured path is resolved against the repository root, so the same
+    // setting names the same directory whether the API was started from
+    // `server/` or from the repository root.
+    return resolveConfiguredPath(
+      process.env.UPLOAD_DIR,
+      path.join(__dirname, '../../uploads')
+    );
   }
 
   public calculateDirectorySize(dir: string): number {

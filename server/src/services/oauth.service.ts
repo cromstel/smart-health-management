@@ -1,8 +1,13 @@
 import axios from 'axios';
+import { isConfigured } from '../config/env.js';
 
 export const refreshOneDriveToken = async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
   const client_id = process.env.ONEDRIVE_CLIENT_ID;
   const client_secret = process.env.ONEDRIVE_CLIENT_SECRET;
+
+  if (!isConfigured(client_id) || !isConfigured(client_secret)) {
+    throw new Error('OneDrive is not configured: set ONEDRIVE_CLIENT_ID and ONEDRIVE_CLIENT_SECRET');
+  }
 
   try {
     const tokenResponse = await axios.post(
@@ -31,6 +36,10 @@ export const refreshOneDriveToken = async (refreshToken: string): Promise<{ acce
 export const refreshGoogleDriveToken = async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
   const client_id = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const client_secret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+
+  if (!isConfigured(client_id) || !isConfigured(client_secret)) {
+    throw new Error('Google Drive is not configured: set GOOGLE_DRIVE_CLIENT_ID and GOOGLE_DRIVE_CLIENT_SECRET');
+  }
 
   try {
     const tokenResponse = await axios.post(

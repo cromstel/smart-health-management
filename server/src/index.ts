@@ -116,9 +116,19 @@ app.use(morgan('dev'));
 app.use(cookieParser() as any);
 app.use(session({
   secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' }
+  name: process.env.SESSION_COOKIE_NAME || 'shms_session',
+  resave: process.env.SESSION_RESAVE === 'true',
+  saveUninitialized: process.env.SESSION_SAVE_UNINITIALIZED !== 'false',
+  cookie: {
+    secure: process.env.SESSION_SECURE
+      ? process.env.SESSION_SECURE === 'true'
+      : process.env.NODE_ENV === 'production',
+    httpOnly: process.env.SESSION_HTTP_ONLY !== 'false',
+    sameSite: (process.env.SESSION_SAME_SITE || 'lax') as 'lax' | 'strict' | 'none',
+    ...(process.env.SESSION_COOKIE_MAX_AGE
+      ? { maxAge: parseInt(process.env.SESSION_COOKIE_MAX_AGE, 10) }
+      : {}),
+  }
 }) as any);
 app.use(generateCsrfToken); // Generate token for all requests
 app.use(validateCsrfToken); // Validate token for non-GET/HEAD/OPTIONS requests
@@ -192,8 +202,18 @@ app.listen(PORT, () => {
 // HTTPS server (for production or when HTTPS_PORT is defined)
 if (httpsRequested) {
   try {
-    const privateKey = fs.readFileSync(path.join(__dirname, '../certs/key.pem'), 'utf8');
-    const certificate = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'), 'utf8');
+    // The certificate locations are configuration. They were fixed relative to
+    // this file, so a deployment whose certificates live elsewhere had no way
+    // to point at them.
+    const certPath = process.env.HTTPS_CERT_PATH
+      ? path.resolve(process.cwd(), process.env.HTTPS_CERT_PATH)
+      : path.join(__dirname, '../certs/cert.pem');
+    const keyPath = process.env.HTTPS_KEY_PATH
+      ? path.resolve(process.cwd(), process.env.HTTPS_KEY_PATH)
+      : path.join(__dirname, '../certs/key.pem');
+
+    const privateKey = fs.readFileSync(keyPath, 'utf8');
+    const certificate = fs.readFileSync(certPath, 'utf8');
     const credentials = { key: privateKey, cert: certificate };
 
     const httpsServer = https.createServer(credentials, app);

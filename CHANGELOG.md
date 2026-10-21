@@ -246,6 +246,31 @@ implementation reasoning behind each entry here.
   default is documented and applies outside production only; in production the
   platform refuses to start rather than guess.
 
+- **The environment files are complete and agree with each other.** Every
+  setting the platform reads is now listed once, in the section that owns it,
+  in the template as well as in the deployment and development files — the
+  same keys, in the same order, with the differences that matter and only
+  those. A setting that was present but never read has been removed, a
+  setting that was read but absent has been added, and the optional
+  integrations that are not switched on are shown with a placeholder so
+  nothing is missing from a fresh setup. A placeholder now reads as "not
+  configured" rather than as a value, so an integration that was never
+  switched on stays off instead of failing the first time it is used.
+
+- **Settings the platform already promised are now honoured.** The card
+  currency, the document store's location, the session cookie, the sign-in
+  lockout window, the password hashing cost, the certificate and key
+  locations, the backup retention window and the notification sender's
+  display name were all present in the environment and ignored by the
+  application. They are read now, and the two that had no behaviour at all —
+  pruning old backups, and sending with a sender's name — do what their
+  names say.
+
+- **A configured path means the same directory everywhere.** The upload and
+  backup locations were resolved against the working directory, which is
+  different in development and in a deployment, so one setting named two
+  different places. They are resolved against the repository root now.
+
 - **The tenant administrator recovers on their own pages.** The site owner used
   to be sent into the same recovery screen as patients and hospital staff, so
   one audience's link led to another's flow. The administrator now has their

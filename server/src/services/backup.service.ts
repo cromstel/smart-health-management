@@ -25,6 +25,7 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pool from '../config/database.js';
+import { resolveConfiguredPath } from '../config/paths.js';
 import {
   DEFAULT_DB_HOST,
   DEFAULT_DB_NAME,
@@ -82,11 +83,11 @@ export const getDbConfig = (): DbConfig => ({
  * path is the same no matter where the API was started from.
  */
 export const getBackupDirectory = (): string => {
-  const configured = process.env.BACKUP_DIR?.trim();
-  if (configured) {
-    return path.resolve(configured);
-  }
-  return path.join(serverRoot, 'backups');
+  // A configured path is resolved against the repository root, not the
+  // working directory: the API is started from `server/` in development and
+  // from elsewhere in a deployment, and the same setting has to name the
+  // same directory either way.
+  return resolveConfiguredPath(process.env.BACKUP_DIR, path.join(serverRoot, 'backups'));
 };
 
 /** Lists the available dumps, newest first. A missing directory is not an error. */
@@ -114,6 +115,47 @@ export const listBackups = async (): Promise<BackupFile[]> => {
   );
 
   return entries.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+};
+
+/**
+ * Removes the backups older than the retention window.
+ *
+ * The window is configuration, in days. Nothing acted on it before, so the
+ * backup directory grew without bound.
+ */
+export const pruneExpiredBackups = async (): Promise<{ removed: number; retentionDays: number }> => {
+  const retentionDays = parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
+  if (!Number.isFinite(retentionDays) || retentionDays <= 0) {
+    return { removed: 0, retentionDays };
+  }
+
+  const backupDir = getBackupDirectory();
+  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  let files: string[];
+  try {
+    files = await fsPromises.readdir(backupDir);
+  } catch {
+    return { removed: 0, retentionDays };
+  }
+
+  let removed = 0;
+  for (const file of files) {
+    if (!file.endsWith('.sql')) continue;
+    const full = path.join(backupDir, file);
+    try {
+      const stats = await fsPromises.stat(full);
+      if (stats.mtimeMs < cutoff) {
+        await fsPromises.unlink(full);
+        removed += 1;
+      }
+    } catch {
+      // A file that cannot be removed is left alone rather than failing the
+      // backup that triggered the sweep.
+    }
+  }
+
+  return { removed, retentionDays };
 };
 
 /**
@@ -226,6 +268,10 @@ export const runDatabaseBackup = async (options: BackupOptions = {}): Promise<Ba
       userAgent: options.userAgent ?? null,
     });
 
+    // Prune the old backups. Without this the directory grows without bound,
+    // and the retention setting had nothing to act on.
+    const pruned = await pruneExpiredBackups();
+
     return {
       success: true,
       fileName,
@@ -233,6 +279,7 @@ export const runDatabaseBackup = async (options: BackupOptions = {}): Promise<Ba
       sizeBytes: stats.size,
       timestamp: startedAt.toISOString(),
       error: null,
+      ...(pruned.removed > 0 ? { pruned: pruned.removed } : {}),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

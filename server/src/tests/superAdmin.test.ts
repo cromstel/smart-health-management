@@ -307,16 +307,20 @@ describe('backup service', () => {
   it('reports a backup failure honestly instead of claiming success', async () => {
     const { status, body } = await api('/backup', { method: 'POST' });
 
-    const dumpAvailable = Boolean(
-      process.env.MYSQLDUMP_BIN ||
-        ['mysqldump', 'mysqldump.exe'].some((bin) => {
-          try {
-            return Boolean(process.env.PATH?.split(path.delimiter).some((dir) => fs.existsSync(path.join(dir, bin))));
-          } catch {
-            return false;
-          }
-        })
-    );
+    // Whether the dump tool is available means the binary exists, not that the
+    // setting names one. A configured name that is not on the PATH is still
+    // missing, and the endpoint has to say so rather than claim success.
+    const configuredBinary = process.env.MYSQLDUMP_BIN || 'mysqldump';
+    const dumpAvailable = (() => {
+      try {
+        if (path.isAbsolute(configuredBinary)) return fs.existsSync(configuredBinary);
+        return Boolean(process.env.PATH?.split(path.delimiter).some((dir) =>
+          fs.existsSync(path.join(dir, configuredBinary))
+        ));
+      } catch {
+        return false;
+      }
+    })();
 
     if (dumpAvailable) {
       expect(status).toBe(200);
