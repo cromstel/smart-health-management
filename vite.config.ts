@@ -36,9 +36,10 @@ const resolveAllowedHosts = (
 /**
  * Reads the port the dev/preview server binds to.
  *
- * Required. A port written into the source has to be changed in the source
- * to be changed at all, and a stale copy makes the server bind somewhere
- * nothing is listening.
+ * Required when a server is actually started. A port written into the
+ * source has to be changed in the source to be changed at all, and a stale
+ * copy makes the server bind somewhere nothing is listening. A build does
+ * not start a server, so it does not need the port.
  */
 const resolveDevPort = (configured: string | undefined): number => {
   const raw = (configured ?? '').trim();
@@ -52,7 +53,10 @@ const resolveDevPort = (configured: string | undefined): number => {
 };
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
+  // A build does not start a server, so the dev server's port is only
+  // required when one is actually going to run.
+  const isServing = command === 'serve';
   // The application name is configuration, never a literal (see
   // `src/config/app.ts`, which is the single source of truth for the
   // frontend). `vite.config.ts` runs before Vite loads `.env` files into
@@ -226,8 +230,8 @@ export default defineConfig(({ mode }) => {
       // comes from VITE_HOST, the port from VITE_PORT, and the host allow-list
       // from VITE_ALLOWED_HOSTS. There is no written-down port or host name:
       // a value that is missing is reported by name.
-      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction ? publishedHost() : DEFAULT_DEV_HOST),
-      port: resolveDevPort(env.VITE_PORT || process.env.VITE_PORT),
+      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction && isServing ? publishedHost() : DEFAULT_DEV_HOST),
+      port: isServing ? resolveDevPort(env.VITE_PORT || process.env.VITE_PORT) : undefined,
       // VITE_PORT, not PORT: PORT already belongs to the API server
       // (server/src/index.ts reads it from the environment). Sharing one
       // variable would move both servers at once.
@@ -236,13 +240,13 @@ export default defineConfig(({ mode }) => {
       // next one up while a test run kept talking to the squatter -- the suite
       // reported failures from an entirely different application.
       strictPort: true,
-      allowedHosts: resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction, { allowedHosts: env.VITE_ALLOWED_HOSTS, frontendUrl: env.FRONTEND_URL }),
+      allowedHosts: isServing ? resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction, { allowedHosts: env.VITE_ALLOWED_HOSTS, frontendUrl: env.FRONTEND_URL }) : true,
     },
     preview: {
-      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction ? publishedHost() : DEFAULT_DEV_HOST),
-      port: resolveDevPort(env.VITE_PORT || process.env.VITE_PORT),
+      host: env.VITE_HOST || process.env.VITE_HOST || (isProduction && isServing ? publishedHost() : DEFAULT_DEV_HOST),
+      port: isServing ? resolveDevPort(env.VITE_PORT || process.env.VITE_PORT) : undefined,
       strictPort: true,
-      allowedHosts: resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction, { allowedHosts: env.VITE_ALLOWED_HOSTS, frontendUrl: env.FRONTEND_URL }),
+      allowedHosts: isServing ? resolveAllowedHosts(env.VITE_ALLOWED_HOSTS || process.env.VITE_ALLOWED_HOSTS, isProduction, { allowedHosts: env.VITE_ALLOWED_HOSTS, frontendUrl: env.FRONTEND_URL }) : true,
     },
   }
 })

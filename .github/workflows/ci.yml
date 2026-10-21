@@ -35,6 +35,9 @@ env:
   # one exactly as a deployment does.
   APP_NAME: 'CI Test Application'
   VITE_APP_NAME: 'CI Test Application'
+  # The dev server's port. A build does not start a server, but the
+  # end-to-end job does, so the value is supplied throughout.
+  VITE_PORT: "5175"
 
 jobs:
   frontend:
