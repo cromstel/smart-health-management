@@ -494,13 +494,18 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
     if (!frontendOrigin) {
       throw new Error('FRONTEND_URL is not configured: the recovery link has nowhere to point.');
     }
-    // The reset route is audience-specific. The administrator's link lands on
-    // the administrator's own page; everyone else lands on the clinical one.
+    // The reset route is audience-specific, because the three audiences
+    // recover on three separate pages: the platform site owner, the tenant
+    // hospital administrator, and the clinical workforce. Sending a link to
+    // the wrong one puts an administrator in a clinical form.
     const roleName = String(user.role_name ?? '').toLowerCase();
     const isSuperAdmin = roleName === 'super_admin' || roleName === 'super admin';
+    const isHospitalAdmin = roleName === 'admin';
     const resetPath = isSuperAdmin
       ? '/auth/super-admin/reset-password'
-      : '/auth/reset-password';
+      : isHospitalAdmin
+        ? '/auth/admin/reset-password'
+        : '/auth/reset-password';
     const resetLink = `${frontendOrigin}${resetPath}?token=${rawToken}`;
 
     await deliverResetLink({ email: user.email, resetLink, rawToken, userId: user.id });

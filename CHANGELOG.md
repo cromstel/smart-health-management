@@ -271,6 +271,28 @@ implementation reasoning behind each entry here.
   different in development and in a deployment, so one setting named two
   different places. They are resolved against the repository root now.
 
+- **The tenant administrator recovers on their own pages.** The hospital
+  administrator's recovery link pointed at the clinical workforce's recovery
+  page, so an administrator was filling in a form belonging to a different
+  portal. There are now three separate recovery surfaces, one per audience:
+  the clinical workforce, the hospital administrator, and the platform site
+  owner. The recovery email points each account at its own page, and the
+  clinical pages link to the administrator ones so a signed-out
+  administrator can find the right one.
+
+- **Every call to action on an authentication page leads to the right
+  place.** A two-factor screen that was cancelled sent a platform owner or a
+  hospital administrator back to the clinical sign-in page, which is not
+  where they started. Each of these now returns the person to the portal
+  they belong to, and the routes are declared once so a link, a redirect and
+  a back-link cannot disagree about where a surface lives.
+
+- **A development shortcut on the recovery screen is gone.** The reset page
+  offered a button that filled in a made-up recovery token, so a developer
+  could walk through a reset that could never work. The recovery flow is
+  real, and a made-up token is authentication material; the only way in is a
+  link the account owner received.
+
 - **Nothing about the deployment is written in the code any more.** The
   ports, the product name, the mail settings and every secret come from
   the environment. A value that is missing is reported by name rather than

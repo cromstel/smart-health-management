@@ -141,6 +141,37 @@ describe('POST /auth/forgot-password', () => {
     }
   });
 
+  it('sends the hospital administrator to the hospital administrator reset page', async () => {
+    // The tenant hospital administrator recovers on their own page, not the
+    // clinical one and not the site owner's. Three audiences, three pages.
+    const hospitalAdminEmail = 'pwreset.hospitaladmin@test.local';
+    const hashed = await bcrypt.hash(ORIGINAL_PASSWORD, 10);
+    const [result] = await pool.query(
+      `INSERT INTO users (email, password, name, role_id, hospital_id)
+       VALUES (?, ?, ?, 2, 1)`,
+      [hospitalAdminEmail, hashed, 'Password Reset Hospital Admin']
+    );
+    const hospitalAdminId = (result as any).insertId;
+
+    try {
+      const res = mockRes();
+      await forgotPassword(mockReq({ email: hospitalAdminEmail }), res);
+
+      expect(res.json.mock.calls[0][0]).toEqual({
+        message: 'If the email exists, a reset link has been sent',
+      });
+      expect(sentEmails).toHaveLength(1);
+      const link = /https?:\/\/\S+/.exec(sentEmails[0].text)?.[0] ?? '';
+      expect(link).toContain('/auth/admin/reset-password?token=');
+      expect(link).not.toContain('/auth/super-admin/');
+      expect(link).not.toMatch(/\/auth\/reset-password/);
+    } finally {
+      await pool.query('DELETE FROM password_resets WHERE user_id = ?', [hospitalAdminId]);
+      await pool.query('DELETE FROM audit_logs WHERE user_id = ?', [hospitalAdminId]);
+      await pool.query('DELETE FROM users WHERE id = ?', [hospitalAdminId]);
+    }
+  });
+
   it('stores only the hash of the token and never the raw token', async () => {
     const res = mockRes();
     await forgotPassword(mockReq({ email: TEST_EMAIL }), res);

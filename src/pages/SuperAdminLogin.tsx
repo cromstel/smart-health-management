@@ -40,9 +40,10 @@ const SuperAdminLogin = React.memo(() => {
       const res = await login(email, password);
 
       if (res.requiresMfa) {
-        // The pending MFA session is now active in AuthContext; the standard
-        // workstation sign-in page renders the TOTP step to complete it.
-        navigate('/auth/login');
+        // The pending MFA session is now active in AuthContext. The two-factor
+        // page is the shared surface that completes it, and it returns a
+        // person to the portal they came from.
+        navigate('/auth/two-factor');
         return;
       }
 

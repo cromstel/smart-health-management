@@ -24,6 +24,7 @@ import {
 import { api } from '@/services/api';
 import { startWebAuthnAuthentication } from '@/utils/webauthn';
 import { postAuthRoute } from '@/lib/postAuthRoute';
+import { signInRouteFor } from '@/lib/authRoutes';
 
 const methods = [
   { id: 'totp' as const, label: 'Authenticator', icon: Lock },
@@ -179,7 +180,7 @@ export default function TwoFactorPage() {
 
             <CardContent className="pt-6 flex justify-center">
               <Link
-                to="/auth/login"
+                to={signInRouteFor(mfaPendingUser)}
                 className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -420,7 +421,7 @@ export default function TwoFactorPage() {
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
             <Link
-              to="/auth/login"
+              to={signInRouteFor(mfaPendingUser)}
               onClick={cancelMfa}
               className="text-accent hover:text-accent/80 flex items-center gap-1.5 font-medium transition-colors"
             >

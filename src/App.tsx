@@ -63,6 +63,8 @@ const SiteSuperAdminLogin = timedLazy('super-admin-login', () => import('./pages
 const SuperAdminForgotPasswordPage = timedLazy('super-admin-forgot-password', () => import('./pages/SuperAdminForgotPasswordPage'));
 const SuperAdminResetPasswordPage = timedLazy('super-admin-reset-password', () => import('./pages/SuperAdminResetPasswordPage'));
 const HospitalAdminLogin = timedLazy('admin-login', () => import('./pages/HospitalAdminLogin'));
+const HospitalAdminForgotPasswordPage = timedLazy('admin-forgot-password', () => import('./pages/HospitalAdminForgotPasswordPage'));
+const HospitalAdminResetPasswordPage = timedLazy('admin-reset-password', () => import('./pages/HospitalAdminResetPasswordPage'));
 const SuperAdminDashboard = timedLazy('super-admin-dashboard', () => import('./pages/SuperAdminDashboard'));
 const SuperAdminUsers = timedLazy('super-admin-users', () => import('./pages/SuperAdminUsers'));
 const SuperAdminHospitals = timedLazy('super-admin-hospitals', () => import('./pages/SuperAdminHospitals'));
@@ -135,6 +137,11 @@ function AppRoutes() {
         <Route path="/auth/super-admin/forgot-password" element={<SuperAdminForgotPasswordPage />} />
         <Route path="/auth/super-admin/reset-password" element={<SuperAdminResetPasswordPage />} />
         <Route path="/auth/admin/login" element={<HospitalAdminLogin />} />
+        {/* The tenant hospital administrator recovers on their own URLs, in their
+            own portal. The clinical workforce, the hospital administrator and
+            the platform site owner share no recovery page. */}
+        <Route path="/auth/admin/forgot-password" element={<HospitalAdminForgotPasswordPage />} />
+        <Route path="/auth/admin/reset-password" element={<HospitalAdminResetPasswordPage />} />
 
         {/* Compatibility redirects for the pre-migration auth paths.
 

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/Logo';
 import SystemAuthorBadge from '@/components/auth/SystemAuthorBadge';
+import { HOSPITAL_ADMIN_AUTH_ROUTES } from '@/lib/authRoutes';
 
 function HospitalAdminLogin() {
   // No credential is prefilled, in any environment. A prefilled password is a
@@ -123,7 +124,7 @@ function HospitalAdminLogin() {
                     />
                     <Label htmlFor="admin-remember" className="cursor-pointer whitespace-nowrap text-xs font-mono text-(--industrial-muted)">Remember me</Label>
                   </div>
-                  <Link to="/auth/forgot-password" className="whitespace-nowrap text-xs font-mono text-accent transition-colors hover:text-white">Forgot password?</Link>
+                  <Link to={HOSPITAL_ADMIN_AUTH_ROUTES.forgotPassword} className="whitespace-nowrap text-xs font-mono text-accent transition-colors hover:text-white">Forgot password?</Link>
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full min-h-11 whitespace-normal text-sm font-mono font-bold uppercase tracking-wide bg-accent text-accent-foreground hover:bg-accent/90 border-0 shadow-lg shadow-accent/30 transition-all">

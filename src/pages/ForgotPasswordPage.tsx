@@ -16,8 +16,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { AuthLayout } from '@/components/auth';
+import AdminRecoveryLinks from '@/components/auth/AdminRecoveryLinks';
 import Logo from '@/components/Logo';
 import { api } from '@/services/api';
+import { CLINICAL_AUTH_ROUTES, SITE_ADMIN_AUTH_ROUTES } from '@/lib/authRoutes';
 
 export default function ForgotPasswordPage() {
   const { user } = useAuth();
@@ -118,14 +120,14 @@ export default function ForgotPasswordPage() {
               </div>
               <div className="space-y-3">
                 <Button
-                  onClick={() => navigate('/auth/super-admin/forgot-password')}
+                  onClick={() => navigate(SITE_ADMIN_AUTH_ROUTES.forgotPassword)}
                   className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30"
                 >
                   Go to Administrator Recovery
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => navigate('/auth/super-admin/login')}
+                  onClick={() => navigate(SITE_ADMIN_AUTH_ROUTES.login)}
                   className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -266,7 +268,7 @@ export default function ForgotPasswordPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => navigate('/auth/login')}
+                  onClick={() => navigate(CLINICAL_AUTH_ROUTES.login)}
                   className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -282,6 +284,11 @@ export default function ForgotPasswordPage() {
               </div>
             </motion.form>
           )}
+
+          {/* A signed-out administrator cannot be recognised from this page,
+              so the two administrator recovery routes are offered here
+              rather than leaving them to find the clinical form. */}
+          <AdminRecoveryLinks className="pt-6" />
         </div>
       </Card>
     </AuthLayout>
