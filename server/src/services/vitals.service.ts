@@ -77,6 +77,13 @@ export interface ResolvedPatient {
   /** Human readable `patients.patient_id` (e.g. "P-1001"). */
   patientId: string;
   patientName: string;
+  /**
+   * The hospital the patient belongs to.
+   *
+   * The readings are the patient's, and the patient belongs to a hospital.
+   * This is what confines a caller's view of them to their own hospital.
+   */
+  hospitalId: number | null;
 }
 
 export interface VitalsFilters {
@@ -526,7 +533,7 @@ export async function resolvePatient(reference: string | number): Promise<Resolv
   if (!raw) return null;
 
   const byCode = await pool.query<RowDataPacket[]>(
-    `SELECT id, patient_id, first_name, last_name FROM patients WHERE patient_id = ? LIMIT 1`,
+    `SELECT id, patient_id, first_name, last_name, hospital_id FROM patients WHERE patient_id = ? LIMIT 1`,
     [raw]
   );
   if (byCode[0].length > 0) {
@@ -535,12 +542,13 @@ export async function resolvePatient(reference: string | number): Promise<Resolv
       id: Number(row.id),
       patientId: row.patient_id,
       patientName: `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
+      hospitalId: row.hospital_id === null || row.hospital_id === undefined ? null : Number(row.hospital_id),
     };
   }
 
   if (/^\d+$/.test(raw)) {
     const byId = await pool.query<RowDataPacket[]>(
-      `SELECT id, patient_id, first_name, last_name FROM patients WHERE id = ? LIMIT 1`,
+      `SELECT id, patient_id, first_name, last_name, hospital_id FROM patients WHERE id = ? LIMIT 1`,
       [Number(raw)]
     );
     if (byId[0].length > 0) {
@@ -549,6 +557,7 @@ export async function resolvePatient(reference: string | number): Promise<Resolv
         id: Number(row.id),
         patientId: row.patient_id,
         patientName: `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
+        hospitalId: row.hospital_id === null || row.hospital_id === undefined ? null : Number(row.hospital_id),
       };
     }
   }
@@ -622,10 +631,18 @@ export async function getPatientAlerts(
  * Active alerts across every patient: the latest reading of each patient is
  * evaluated and its alerts are merged, critical first.
  */
-export async function getAllActiveAlerts(): Promise<CriticalHealthAlert[]> {
+export async function getAllActiveAlerts(hospitalId?: number | null): Promise<CriticalHealthAlert[]> {
   // One query: the latest reading of every patient. The subquery keeps the
   // "latest per patient" rule in SQL instead of fetching the whole table and
   // grouping in memory.
+  //
+  // The alerts are a hospital's alerts: the readings are the patients', and
+  // the patients belong to hospitals. The list is also bounded, because the
+  // table of readings grows without limit and the list is read whole.
+  const scope =
+    hospitalId === undefined
+      ? { sql: '', params: [] as unknown[] }
+      : { sql: ' AND p.hospital_id = ?', params: [hospitalId] as unknown[] };
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT
        v.id,
@@ -653,7 +670,10 @@ export async function getAllActiveAlerts(): Promise<CriticalHealthAlert[]> {
      ) latest
        ON latest.patient_id = v.patient_id
       AND latest.latest_at = v.recorded_at
-     ORDER BY v.recorded_at DESC`
+     WHERE 1 = 1${scope.sql}
+     ORDER BY v.recorded_at DESC
+     LIMIT 500`,
+    scope.params
   );
 
   const alerts: CriticalHealthAlert[] = [];

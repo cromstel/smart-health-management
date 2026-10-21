@@ -31,6 +31,7 @@ export const listEvents = async (
 
     const events = await listDispensingEvents({
       patientId: patientId ? Number(patientId) : null,
+      hospitalId: req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1,
       medicineId: typeof medicineId === 'string' && medicineId ? medicineId : null,
       from: typeof from === 'string' && from ? from : null,
       to: typeof to === 'string' && to ? to : null,
@@ -74,6 +75,7 @@ export const createEvent = async (
     const event = await createDispensingEvent({
       prescriptionId: typeof prescriptionId === 'string' && prescriptionId ? prescriptionId : null,
       patientId: Number(patientId),
+      hospitalId: req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1,
       medicineId: String(medicineId),
       quantity: Number(quantity),
       notes: typeof notes === 'string' ? notes : null,

@@ -19,7 +19,7 @@ import {
 } from '../services/vitals.service';
 import type { VitalsRecord } from '../services/vitals.service';
 
-const patientRow = { id: 7, patient_id: 'PAT-007', first_name: 'Ada', last_name: 'Lovelace' };
+const patientRow = { id: 7, patient_id: 'PAT-007', first_name: 'Ada', last_name: 'Lovelace', hospital_id: 1 };
 
 function vitalsRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -152,7 +152,7 @@ describe('resolvePatient', () => {
   it('resolves the human readable patient id', async () => {
     queryMock.mockResolvedValueOnce([[patientRow], []]);
     const patient = await resolvePatient('PAT-007');
-    expect(patient).toEqual({ id: 7, patientId: 'PAT-007', patientName: 'Ada Lovelace' });
+    expect(patient).toEqual({ id: 7, patientId: 'PAT-007', patientName: 'Ada Lovelace', hospitalId: 1 });
   });
 
   it('falls back to the numeric id', async () => {

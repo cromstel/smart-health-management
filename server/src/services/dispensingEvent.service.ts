@@ -46,6 +46,13 @@ export interface DispensingEventFilters {
   from?: string | null;
   to?: string | null;
   limit?: number | null;
+  /**
+   * The hospital the records are confined to.
+   *
+   * Undefined means no confinement, which is what the platform-wide caller
+   * gets. A number confines the records to that hospital.
+   */
+  hospitalId?: number | null;
 }
 
 const SELECT_EVENT = `
@@ -99,6 +106,12 @@ export const listDispensingEvents = async (
   const where: string[] = [];
   const params: unknown[] = [];
 
+  // The events are the patients', and the patients belong to hospitals.
+  if (filters.hospitalId !== undefined) {
+    where.push('p.hospital_id = ?');
+    params.push(filters.hospitalId);
+  }
+
   if (filters.patientId) {
     where.push('de.patient_id = ?');
     params.push(filters.patientId);
@@ -151,6 +164,13 @@ export interface CreateDispensingEventInput {
   notes?: string | null;
   dispensedAt?: string | null;
   dispensedBy?: number | null;
+  /**
+   * The hospital the record is confined to.
+   *
+   * Undefined means no confinement, which is what the platform-wide caller
+   * gets. A number refuses a dispense for a patient of another hospital.
+   */
+  hospitalId?: number | null;
 }
 
 /**
@@ -163,10 +183,19 @@ export interface CreateDispensingEventInput {
 export const createDispensingEvent = async (
   input: CreateDispensingEventInput
 ): Promise<DispensingEventRecord> => {
-  const [patientRows] = await pool.query('SELECT id FROM patients WHERE id = ? LIMIT 1', [
-    input.patientId,
-  ]);
-  if (!(patientRows as RowDataPacket[]).length) {
+  const [patientRows] = await pool.query(
+    'SELECT id, hospital_id FROM patients WHERE id = ? LIMIT 1',
+    [input.patientId]
+  );
+  const patient = (patientRows as RowDataPacket[])[0];
+  if (!patient) {
+    throw new DispensingEventError(`Patient ${input.patientId} was not found`, 404);
+  }
+  // A dispense is recorded against a patient of the caller's own hospital.
+  if (
+    input.hospitalId !== undefined &&
+    Number(patient.hospital_id ?? -1) !== Number(input.hospitalId)
+  ) {
     throw new DispensingEventError(`Patient ${input.patientId} was not found`, 404);
   }
 

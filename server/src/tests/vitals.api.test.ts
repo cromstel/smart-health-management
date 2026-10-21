@@ -25,7 +25,7 @@ function resMock() {
   return res;
 }
 
-const patientRow = { id: 7, patient_id: 'PAT-007', first_name: 'Ada', last_name: 'Lovelace' };
+const patientRow = { id: 7, patient_id: 'PAT-007', first_name: 'Ada', last_name: 'Lovelace', hospital_id: 1 };
 
 function vitalsRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -146,7 +146,10 @@ describe('getVitals controller', () => {
     });
 
     const res = resMock();
-    await vitalsController.getVitals({ params: {}, query: { patientId: 'PAT-007' } } as any, res);
+    await vitalsController.getVitals(
+      { params: {}, query: { patientId: 'PAT-007' }, tenant: { hospitalId: 1, hospitalCode: 'HOSP-001', platformWide: false } } as any,
+      res
+    );
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.count).toBe(1);
@@ -183,7 +186,7 @@ describe('getVitalsSummary controller', () => {
 
     const res = resMock();
     await vitalsController.getVitalsSummary(
-      { params: { patientId: 'PAT-007' }, query: {} } as any,
+      { params: { patientId: 'PAT-007' }, query: {}, tenant: { hospitalId: 1, hospitalCode: 'HOSP-001', platformWide: false } } as any,
       res
     );
 

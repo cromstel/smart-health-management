@@ -32,9 +32,20 @@ const PRESCRIPTION_UPDATE_FIELDS = [
 export const listPrescriptions = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { patient_id } = req.query as any
-    let sql = 'SELECT * FROM prescriptions'
+    // The prescriptions are the patients', and the patients belong to
+    // hospitals. The list is confined to the caller's own hospital, and it is
+    // paged: a table of prescriptions is a table of everybody's medicines.
+    let sql = 'SELECT pr.* FROM prescriptions pr JOIN patients p ON p.id = pr.patient_id WHERE 1 = 1'
     const params: any[] = []
-    if (patient_id) { sql += ' WHERE patient_id = ?'; params.push(patient_id) }
+    if (!req.tenant?.platformWide) {
+      sql += ' AND p.hospital_id = ?'
+      params.push(req.tenant?.hospitalId ?? -1)
+    }
+    if (patient_id) { sql += ' AND pr.patient_id = ?'; params.push(patient_id) }
+    const limit = Math.min(Math.max(Number((req.query as any).limit) || 100, 1), 500)
+    const offset = Math.max(Number((req.query as any).offset) || 0, 0)
+    sql += ' ORDER BY pr.created_at DESC LIMIT ? OFFSET ?'
+    params.push(limit, offset)
     const [rows] = await pool.query(sql, params)
     res.json(rows)
   } catch (e) {
@@ -46,7 +57,17 @@ export const listPrescriptions = async (req: AuthRequest, res: Response): Promis
 export const getPrescription = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params
-    const [rows] = await pool.query('SELECT * FROM prescriptions WHERE id = ?', [id])
+    // A prescription of another hospital is not found for this caller.
+    const params: any[] = [id]
+    let predicate = ''
+    if (!req.tenant?.platformWide) {
+      predicate = ' AND p.hospital_id = ?'
+      params.push(req.tenant?.hospitalId ?? -1)
+    }
+    const [rows] = await pool.query(
+      `SELECT pr.* FROM prescriptions pr JOIN patients p ON p.id = pr.patient_id WHERE pr.id = ?${predicate}`,
+      params
+    )
     const p = (rows as any[])[0]
     if (!p) { res.status(404).json({ error: 'Prescription not found' }); return }
     res.json(p)

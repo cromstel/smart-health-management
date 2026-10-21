@@ -5,6 +5,7 @@
  * services/vitals.service.ts.
  */
 import type { Request, Response } from 'express';
+import { belongsToTenant } from '../middleware/tenant.js';
 import { validationResult } from 'express-validator';
 import type { AuthRequest } from '../middleware/auth.js';
 import * as vitalsService from '../services/vitals.service.js';
@@ -28,7 +29,7 @@ const readRecorder = async (req: AuthRequest) => {
  * GET /api/vitals?patientId=...&from=...&to=...&limit=...
  * GET /api/vitals/:patientId
  */
-export const getVitals = async (req: Request, res: Response): Promise<void> => {
+export const getVitals = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (handleValidation(req, res)) return;
 
@@ -39,6 +40,12 @@ export const getVitals = async (req: Request, res: Response): Promise<void> => {
     if (patientRef) {
       const patient = await vitalsService.resolvePatient(patientRef);
       if (!patient) {
+        res.status(404).json({ error: 'Patient not found' });
+        return;
+      }
+      // The readings are the patient's, and the patient belongs to a
+      // hospital. A patient of another hospital is not found here.
+      if (!belongsToTenant(req.tenant, patient.hospitalId)) {
         res.status(404).json({ error: 'Patient not found' });
         return;
       }
@@ -61,13 +68,19 @@ export const getVitals = async (req: Request, res: Response): Promise<void> => {
 /**
  * GET /api/vitals/:patientId/summary
  */
-export const getVitalsSummary = async (req: Request, res: Response): Promise<void> => {
+export const getVitalsSummary = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (handleValidation(req, res)) return;
 
     const { patientId } = req.params as { patientId: string };
     const patient = await vitalsService.resolvePatient(patientId);
     if (!patient) {
+      res.status(404).json({ error: 'Patient not found' });
+      return;
+    }
+
+    // A patient of another hospital is not found here.
+    if (!belongsToTenant(req.tenant, patient.hospitalId)) {
       res.status(404).json({ error: 'Patient not found' });
       return;
     }
@@ -83,9 +96,11 @@ export const getVitalsSummary = async (req: Request, res: Response): Promise<voi
 /**
  * GET /api/vitals/alerts -- active alerts across every patient.
  */
-export const getAllAlerts = async (_req: Request, res: Response): Promise<void> => {
+export const getAllAlerts = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const alerts = await vitalsService.getAllActiveAlerts();
+    const alerts = await vitalsService.getAllActiveAlerts(
+      req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1
+    );
     res.status(200).json({ alerts, count: alerts.length });
   } catch (error) {
     console.error('Error fetching vitals alerts:', error instanceof Error ? error.message : error);
@@ -96,7 +111,7 @@ export const getAllAlerts = async (_req: Request, res: Response): Promise<void> 
 /**
  * GET /api/vitals/:patientId/alerts -- alerts for the latest reading.
  */
-export const getPatientAlerts = async (req: Request, res: Response): Promise<void> => {
+export const getPatientAlerts = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (handleValidation(req, res)) return;
 
@@ -106,6 +121,18 @@ export const getPatientAlerts = async (req: Request, res: Response): Promise<voi
       res.status(404).json({ error: 'Patient not found' });
       return;
     }
+
+    // A patient of another hospital is not found here.
+
+    if (!belongsToTenant(req.tenant, patient.hospitalId)) {
+
+      res.status(404).json({ error: 'Patient not found' });
+
+      return;
+
+    }
+
+    
 
     const alerts = await vitalsService.getPatientAlerts(patient.id);
     res.status(200).json({ alerts, count: alerts.length, patientId: patient.patientId });
