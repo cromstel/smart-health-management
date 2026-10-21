@@ -9,11 +9,16 @@ import path from 'node:path';
  * was meant for. The name is therefore reduced to its last component, and
  * then to characters that cannot mean anything to the filesystem.
  *
+ * Both separators are treated as separators, whichever platform the server
+ * runs on. A name may have been composed on one system and stored on
+ * another, and the server is the one that has to refuse it.
+ *
  * The name a person sees is kept in the database. This is the name the file
  * is stored under, not the name it is shown with.
  */
 export const safeFileName = (name: string | null | undefined, fallback = 'file'): string => {
-  const base = path.basename(String(name ?? '').trim());
+  const segments = String(name ?? '').trim().split(/[/\\]+/);
+  const base = segments[segments.length - 1] ?? '';
   const cleaned = base.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '');
   return cleaned.length > 0 ? cleaned.slice(0, 180) : fallback;
 };

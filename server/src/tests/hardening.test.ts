@@ -185,7 +185,12 @@ describe('the tenant a request is confined to', () => {
 describe('a file name from a client', () => {
   it('cannot climb out of the directory it is stored in', () => {
     expect(safeFileName('../../../etc/passwd')).toBe('passwd');
+    // Both separators are refused, whichever platform the server runs on: a
+    // name may have been composed on one system and stored on another.
     expect(safeFileName('..\\..\\windows\\system32\\cmd.exe')).toBe('cmd.exe');
+    expect(safeFileName('..\\..\\windows\\system32\\cmd.exe')).toBe('cmd.exe');
+    expect(safeFileName('a/b/c/report.pdf')).toBe('report.pdf');
+    expect(safeFileName('a\\b\\c\\report.pdf')).toBe('report.pdf');
   });
 
   it('keeps the characters a name normally has', () => {
