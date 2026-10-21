@@ -18,7 +18,10 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
 import { getSecret } from './config/env.js';
-import { allowedFrontendOrigins, apiPort, httpsPort } from './config/runtime.js';
+import { allowedFrontendOrigins, apiPort, optionalHttpsPort, trustProxyHops } from './config/runtime.js';
+import { frontendDistDir } from './config/frontend.js';
+import { resolveConfiguredPath } from './config/paths.js';
+import { frontendFallback, frontendStatic } from './middleware/serveFrontend.js';
 import authRoutes from './routes/auth.routes.js';
 import webauthnRoutes from './routes/webauthn.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
@@ -59,11 +62,10 @@ const app = express();
 // reported by name rather than guessed: a guessed port moves the service
 // somewhere nobody is listening.
 const PORT = apiPort();
-const HTTPS_PORT = httpsPort();
-// The HTTPS listener only starts when it is asked for: in production, or when
-// HTTPS_PORT is configured explicitly.
-const httpsRequested =
-  process.env.NODE_ENV === 'production' || Boolean(process.env.HTTPS_PORT?.trim());
+// The HTTPS listener is only opened when a deployment asks for one. A
+// deployment that terminates TLS at the platform's proxy has no use for it,
+// and demanding the port from such a deployment would stop it from starting.
+const HTTPS_PORT = optionalHttpsPort();
 const SESSION_SECRET = getSecret('SESSION_SECRET', 'dev-session-only-secret'); // Hard-fails in production when unset
 
 const __filename = fileURLToPath(import.meta.url);
@@ -114,6 +116,14 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cookieParser() as any);
+// The application is published through a proxy that terminates TLS. Trusting
+// that hop is what makes the request look like the secure one it is: without
+// it the secure session cookie is never set, so no session is established
+// and no one can sign in.
+const proxyHops = trustProxyHops();
+if (proxyHops > 0) {
+  app.set('trust proxy', proxyHops);
+}
 app.use(session({
   secret: SESSION_SECRET,
   name: process.env.SESSION_COOKIE_NAME || 'shms_session',
@@ -140,7 +150,10 @@ app.use('/api/', apiLimiter);
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-app.get('/', (_req, res) => {
+// The service's own status. It sits under the API prefix because the root
+// path belongs to the application itself whenever a front-end build is
+// present.
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -189,6 +202,32 @@ app.use('/api/dispensing-events', dispensingEventRoutes);
 app.use('/api/pharmacy', forecastRoutes);
 app.use('/api/emergency', emergencyRoutes);
 
+// ---------------------------------------------------------------------------
+// The front-end
+//
+// In a deployment the platform sends every request for the site to this
+// process, so this process answers the page requests as well as the API
+// requests. The build's assets are served from disk, and any other page
+// request is answered with the entry document, because the application reads
+// its routes from the address bar.
+//
+// The API prefix is left alone: an unknown API route has to answer with a
+// JSON error, not with the application's HTML. A request for an uploaded
+// file that does not exist is left alone for the same reason.
+// ---------------------------------------------------------------------------
+const webRoot = frontendDistDir();
+
+if (webRoot) {
+  app.use(frontendStatic(webRoot));
+  app.use(frontendFallback(webRoot));
+} else {
+  // With no front-end build there is no application document to serve, so the
+  // root answers with the service's own status.
+  app.get('/', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+}
+
 // Error handlers
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -199,19 +238,27 @@ app.listen(PORT, () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
 });
 
-// HTTPS server (for production or when HTTPS_PORT is defined)
-if (httpsRequested) {
-  try {
-    // The certificate locations are configuration. They were fixed relative to
-    // this file, so a deployment whose certificates live elsewhere had no way
-    // to point at them.
-    const certPath = process.env.HTTPS_CERT_PATH
-      ? path.resolve(process.cwd(), process.env.HTTPS_CERT_PATH)
-      : path.join(__dirname, '../certs/cert.pem');
-    const keyPath = process.env.HTTPS_KEY_PATH
-      ? path.resolve(process.cwd(), process.env.HTTPS_KEY_PATH)
-      : path.join(__dirname, '../certs/key.pem');
+// HTTPS server
+//
+// A deployment that terminates TLS at the platform's proxy does not need a
+// listener of its own, and a deployment that does need one has to say where
+// its certificate is. The listener is therefore opened only when a
+// certificate and its key are both present, and the port is only required in
+// that case. The certificate locations are configuration, so a deployment
+// whose certificates live elsewhere can point at them.
+const certPath = resolveConfiguredPath(
+  process.env.HTTPS_CERT_PATH,
+  path.join(__dirname, '../certs/cert.pem')
+);
+const keyPath = resolveConfiguredPath(
+  process.env.HTTPS_KEY_PATH,
+  path.join(__dirname, '../certs/key.pem')
+);
 
+const certificatesPresent = fs.existsSync(certPath) && fs.existsSync(keyPath);
+
+if (certificatesPresent && HTTPS_PORT !== null) {
+  try {
     const privateKey = fs.readFileSync(keyPath, 'utf8');
     const certificate = fs.readFileSync(certPath, 'utf8');
     const credentials = { key: privateKey, cert: certificate };
@@ -223,6 +270,13 @@ if (httpsRequested) {
     });
   } catch (error) {
     console.error('❌ Failed to start HTTPS server:', error);
-    console.warn('💡 Ensure server/certs/key.pem and server/certs/cert.pem exist for HTTPS.');
   }
+} else if (certificatesPresent) {
+  console.warn(
+    '⚠️  A TLS certificate was found but HTTPS_PORT is not set, so the HTTPS listener was not opened.'
+  );
+} else {
+  console.log(
+    'ℹ️  No TLS certificate was found, so the server is serving plain HTTP. TLS is expected to be terminated upstream.'
+  );
 }

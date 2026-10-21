@@ -110,3 +110,8 @@ dependabot-alerts.md
 
 # Source docs site
 src/docs/TROUBLESHOOTING.md
+
+# Deployment artefacts. The bundle is the compiled application, the archive
+# is what the platform installs, and the provisioning SQL carries the account
+# password hashes. None of it belongs in the repository.
+deploy/

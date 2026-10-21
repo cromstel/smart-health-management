@@ -35,10 +35,36 @@ const here = nodePath.dirname(fileURLToPath(import.meta.url));
 // config/ -> src/ -> server/ -> repository root
 const repoRoot = nodePath.resolve(here, '..', '..', '..');
 
+/**
+ * The environment files to read, outermost first.
+ *
+ * A platform may keep the environment file beside the application (`.env`) or
+ * in a `config` directory next to it (`config/.env`), and it may put it one
+ * or more directories above the application it published. The application
+ * root is therefore the starting point rather than the answer: the search
+ * walks up a bounded number of levels and takes the nearest file that exists.
+ *
+ * The order is outermost first, so the file closest to the application is the
+ * one that is read last and therefore the one that wins between files.
+ */
+const environmentFiles = (): string[] => {
+  const files: string[] = [];
+  let directory = repoRoot;
+  for (let depth = 0; depth < 4; depth += 1) {
+    const parent = nodePath.dirname(directory);
+    if (parent === directory) break; // The filesystem root has been reached.
+    files.push(nodePath.join(directory, '.env'));
+    files.push(nodePath.join(directory, 'config', '.env'));
+    directory = parent;
+  }
+  return files.reverse();
+};
+
 // Precedence, highest first:
 //   1. the real process environment (shell, CI, `set VAR=...`)
 //   2. .env.local
-//   3. .env
+//   3. the environment file nearest the application
+//   4. the environment files above it
 //
 // dotenv does not override an already-set variable, which is right for .env
 // but not enough on its own: loading .env.local with override:true would also
@@ -52,7 +78,9 @@ const realEnv = new Map(
   Object.entries(process.env).filter((e): e is [string, string] => e[1] !== undefined)
 );
 
-dotenv.config({ path: nodePath.join(repoRoot, '.env') });
+for (const file of environmentFiles()) {
+  dotenv.config({ path: file, override: true });
+}
 dotenv.config({ path: nodePath.join(repoRoot, '.env.local'), override: true });
 // Also honour a CWD-relative server/.env.local, for anyone who keeps one.
 dotenv.config({ path: nodePath.resolve(process.cwd(), '.env.local'), override: true });

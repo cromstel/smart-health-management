@@ -25,6 +25,70 @@ implementation reasoning behind each entry here.
 
 ### Added
 
+- **The platform is published and serving.** The application is live at its own
+  address, with the clinical workforce, the hospital administrator and the
+  platform owner each signing in at their own portal. The production database
+  carries the full clinical schema, and the accounts are created with
+  credentials that are held in the deployment's environment rather than in the
+  repository.
+
+- **One process answers the whole site.** In production a single service
+  answers both the page requests and the application requests, so a page
+  opened directly, refreshed, or shared as a link works, and an unknown
+  application request still answers with a machine-readable error rather than
+  with a page.
+
+### Fixed
+
+- **Signing in works through the platform's proxy.** The service was being
+  published through a proxy that terminates the connection, and it did not
+  know it was behind one. The consequence was that it believed every request
+  arrived over an insecure connection, so it refused to set the secure
+  session cookie — and with no session, no one could sign in. It now
+  recognises the proxy it sits behind.
+
+- **Every visitor is counted separately.** Rate limiting identified clients by
+  the proxy's address rather than by theirs, so the whole hospital shared one
+  allowance and a busy moment locked everyone out at once. The audit trail
+  recorded the proxy's address for the same reason, and now records the
+  person's.
+
+- **The seeded application name is the configured one.** The name written into
+  the platform's own settings was the literal text of the placeholder rather
+  than the name the deployment is configured with, so the platform referred to
+  itself by a token on that screen.
+
+- **A mistyped backup schedule can no longer stop the service.** The schedule
+  is configuration, and a schedule that cannot be parsed is now reported and
+  replaced with the default instead of preventing the service from starting.
+  The daily backup also runs on the schedule the deployment states, rather
+  than on one written into the code.
+
+### Security and integrity
+
+- **The production environment is held by the platform, not in the
+  repository.** The deployment's configuration — including the rotated
+  database credentials — is now held by the hosting platform and applied to
+  the running service. It is never committed, never printed, and never
+  written into a build artefact.
+
+- **Nothing sensitive is reachable from the public address.** The deployment
+  archive is removed from the public directory once the platform has taken
+  it, the compiled application is not served as a static file, and the
+  environment file is refused by the web server.
+
+### Known issues and limitations
+
+- **Sessions are held in memory.** A restart signs everyone out, and the
+  session store grows with the number of people who have visited. A published
+  deployment would be better served by a session store that outlives the
+  process; this is recorded as the next piece of work rather than changed
+  during a deployment.
+
+- **A request from an unknown origin is refused loudly.** A browser sending
+  a request from a page it does not belong to is turned away, and the refusal
+  is recorded as a server error. The request is refused either way.
+
 - **A notification inbox that is real.** Staff now receive notifications from
   the system rather than from a fixed list built in the browser: appointments
   starting shortly, prescriptions approaching the end of their course, stock

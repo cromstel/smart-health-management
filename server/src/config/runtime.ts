@@ -44,8 +44,25 @@ const requiredValue = (name: string): string => {
 /** Port the API listens on. */
 export const apiPort = (): number => requiredPort('PORT');
 
-/** Port the API's HTTPS listener binds to. */
-export const httpsPort = (): number => requiredPort('HTTPS_PORT');
+/**
+ * Port the API's HTTPS listener binds to, when one is wanted.
+ *
+ * A deployment that terminates TLS at the platform's proxy has no HTTPS
+ * listener of its own, and requiring the port from such a deployment would
+ * stop the application from starting for a setting it never uses. The port is
+ * therefore only required when a listener is actually going to be opened.
+ */
+export const optionalHttpsPort = (): number | null => {
+  const raw = (process.env.HTTPS_PORT ?? '').trim();
+  if (raw === '') return null;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      'Invalid environment variable: HTTPS_PORT. Set the TCP port the HTTPS listener binds to, or leave it unset.'
+    );
+  }
+  return port;
+};
 
 /** Port the Vite dev/preview server listens on. */
 export const devPort = (): number => requiredPort('VITE_PORT');
@@ -55,6 +72,35 @@ export const dbPort = (): number => requiredPort('DB_PORT');
 
 /** Interface the dev/preview server binds to. */
 export const DEFAULT_DEV_HOST = '0.0.0.0';
+
+/**
+ * How many proxy hops to trust.
+ *
+ * The application is published through a platform proxy that terminates TLS
+ * and forwards the request. The server has to be told to trust that hop, and
+ * the reason is not cosmetic: a request that looks like plain HTTP cannot
+ * set a secure cookie, so the session cookie is never sent, no session is
+ * established, and no one can sign in. The same missing trust makes every
+ * client look like the proxy, which puts them all in one rate-limit bucket
+ * and puts the proxy's address in the audit trail.
+ *
+ * The default is one hop, because that is the shape of a published
+ * deployment: the proxy in front, the application behind it, and nothing
+ * else. A development machine has no proxy in front of it and trusts none.
+ */
+export const trustProxyHops = (): number => {
+  const raw = (process.env.TRUST_PROXY_HOPS ?? '').trim();
+  if (raw !== '') {
+    const hops = Number(raw);
+    if (!Number.isInteger(hops) || hops < 0) {
+      throw new Error(
+        'Invalid environment variable: TRUST_PROXY_HOPS. Set the number of proxy hops to trust.'
+      );
+    }
+    return hops;
+  }
+  return process.env.NODE_ENV === 'production' ? 1 : 0;
+};
 
 /** Host name used to reach a server running on this machine. */
 export const DEFAULT_LOCAL_HOST = 'localhost';

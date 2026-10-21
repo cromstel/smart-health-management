@@ -109,3 +109,48 @@ export const APP_HOST: string = (() => {
   }
   return typeof window !== 'undefined' ? window.location.host : '';
 })();
+
+/**
+ * The host to attribute a generated identifier to.
+ *
+ * A calendar entry names the host it came from, so that two entries with the
+ * same identifier cannot be confused with one another. The host is the
+ * application's own: the address it is published at, or the address the
+ * browser is on.
+ *
+ * A value that names a development machine is never correct, and a bundle
+ * that carries one puts a development name into a document that leaves the
+ * organisation. So the last resort is the application's own name, which is at
+ * least true.
+ */
+export const APP_HOST_LABEL: string = APP_HOST || APP_NAME_SLUG;
+
+/**
+ * The ICE servers used for real-time connections.
+ *
+ * Two browsers cannot find each other on the internet without a server that
+ * says what address each of them has, and where that server is depends on the
+ * deployment. The list is therefore configuration rather than a value written
+ * into the source: a bundle that carried a hard-coded address would point a
+ * deployment's connections at somebody else's server, or at the machine it
+ * was built on.
+ *
+ * An empty list is a valid answer. A connection whose two ends are on the
+ * same machine is made from that machine's own addresses and needs no server
+ * to say so.
+ */
+export const readIceServers = (
+  value: string | null | undefined
+): Array<{ urls: string[] }> => {
+  const urls = (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return urls.length > 0 ? [{ urls }] : [];
+};
+
+/** The configured ICE servers. */
+export const ICE_SERVERS: Array<{ urls: string[] }> = readIceServers(
+  import.meta.env?.VITE_ICE_SERVERS ??
+    (typeof process !== 'undefined' ? process.env.VITE_ICE_SERVERS : undefined)
+);

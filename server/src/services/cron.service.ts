@@ -21,6 +21,28 @@ export interface ScheduledJobStatus {
 const jobStatuses = new Map<string, ScheduledJobStatus>();
 const scheduledTasks: ScheduledTask[] = [];
 
+/** The schedule used when none is configured, or when the configured one is not a schedule. */
+export const DEFAULT_BACKUP_SCHEDULE = '0 2 * * *';
+
+/**
+ * The daily backup schedule.
+ *
+ * The schedule is configuration, so it is read from the environment rather
+ * than written down here. A schedule that cannot be parsed is reported and
+ * the default is used instead: a mistyped expression must not stop the
+ * service from starting, and it must not leave the backups unsaid-for
+ * either.
+ */
+export const backupSchedule = (): string => {
+  const configured = (process.env.BACKUP_CRON ?? '').trim();
+  if (configured === '') return DEFAULT_BACKUP_SCHEDULE;
+  if (cron.validate(configured)) return configured;
+  console.error(
+    `[cron] BACKUP_CRON ("${configured}") is not a valid schedule. Using ${DEFAULT_BACKUP_SCHEDULE} instead.`
+  );
+  return DEFAULT_BACKUP_SCHEDULE;
+};
+
 /** Snapshot of every job this scheduler owns. */
 export const getScheduledJobStatuses = (): ScheduledJobStatus[] =>
   Array.from(jobStatuses.values()).map((job) => ({ ...job }));
@@ -92,7 +114,7 @@ const registerJob = (
  * parameters, and both the HTTP endpoint and the scheduler call it.
  */
 export const scheduleBackups = (): void => {
-  registerJob('database-backup', '0 0 * * *', async () => {
+  registerJob('database-backup', backupSchedule(), async () => {
     console.log('Running daily database backup...');
     const result = await runDatabaseBackup({
       triggeredBy: null,

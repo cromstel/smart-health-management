@@ -25,9 +25,15 @@ export const APP_NAME_PLACEHOLDER = '${APP_NAME}';
  * The seed is a template: it carries the token rather than a name, so the
  * product name is never written into the repository. The value is escaped
  * before it goes in, because it reaches a SQL statement.
+ *
+ * Every occurrence is replaced, not just the first. A single replacement
+ * stopped at whichever token came first in the file, which in this seed was
+ * the one in a comment explaining the substitution — so the name in the
+ * statement that actually stores it was left as the literal token, and the
+ * seeded application name was the text "${APP_NAME}".
  */
 export const applySeedAppName = (sql: string): string =>
-  sql.replace(APP_NAME_PLACEHOLDER, () => escapeSqlLiteral(APP_NAME));
+  sql.split(APP_NAME_PLACEHOLDER).join(escapeSqlLiteral(APP_NAME));
 
 /** Escapes a value for a single-quoted SQL literal. */
 const escapeSqlLiteral = (value: string): string => value.replace(/'/g, "''");

@@ -245,8 +245,8 @@ INSERT INTO transactions (id, transaction_id, date, description, account_id, deb
 (1, 'TRN-001', CURDATE(), 'Initial capital injection', 1, 50000.00, 0.00);
 
 -- 16. Seed Settings
--- `${APP_NAME}` is rendered by the seed runner (see config/app.ts): the seeded
--- system name follows the configured application name.
+-- The application name is rendered by the seed runner (see config/app.ts): the
+-- seeded system name follows the configured application name.
 INSERT INTO settings (setting_key, setting_value, category, updated_by) VALUES
 ('system_name', '${APP_NAME}', 'general', 2),
 ('default_language', 'en', 'localization', 2),
