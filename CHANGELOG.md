@@ -1,26 +1,3 @@
-# Changelog
-
-All notable changes to **Smart MediCare** are recorded in this file.
-
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## Scope of this document
-
-This is the public record. It reports **outcomes, security and data-integrity
-posture, accessibility conformance, breaking changes, operator impact, and known
-limitations** — the things a deploying clinician, auditor, or integrator needs.
-
-It deliberately does **not** carry implementation detail: no component or file
-paths, no database or schema identifiers, no query-parameter or internal symbol
-names, no colour literals, no commit or branch topology, no tooling internals, and
-no credentials. Demo accounts are documented in `DOCUMENTATION.md` and are
-dev/mock-mode only.
-
-If you are changing this codebase, the local-only engineering log carries the
-implementation reasoning behind each entry here.
-
----
-
 ## [Unreleased]
 
 ### Added
@@ -37,57 +14,6 @@ implementation reasoning behind each entry here.
   opened directly, refreshed, or shared as a link works, and an unknown
   application request still answers with a machine-readable error rather than
   with a page.
-
-### Fixed
-
-- **Signing in works through the platform's proxy.** The service was being
-  published through a proxy that terminates the connection, and it did not
-  know it was behind one. The consequence was that it believed every request
-  arrived over an insecure connection, so it refused to set the secure
-  session cookie — and with no session, no one could sign in. It now
-  recognises the proxy it sits behind.
-
-- **Every visitor is counted separately.** Rate limiting identified clients by
-  the proxy's address rather than by theirs, so the whole hospital shared one
-  allowance and a busy moment locked everyone out at once. The audit trail
-  recorded the proxy's address for the same reason, and now records the
-  person's.
-
-- **The seeded application name is the configured one.** The name written into
-  the platform's own settings was the literal text of the placeholder rather
-  than the name the deployment is configured with, so the platform referred to
-  itself by a token on that screen.
-
-- **A mistyped backup schedule can no longer stop the service.** The schedule
-  is configuration, and a schedule that cannot be parsed is now reported and
-  replaced with the default instead of preventing the service from starting.
-  The daily backup also runs on the schedule the deployment states, rather
-  than on one written into the code.
-
-### Security and integrity
-
-- **The production environment is held by the platform, not in the
-  repository.** The deployment's configuration — including the rotated
-  database credentials — is now held by the hosting platform and applied to
-  the running service. It is never committed, never printed, and never
-  written into a build artefact.
-
-- **Nothing sensitive is reachable from the public address.** The deployment
-  archive is removed from the public directory once the platform has taken
-  it, the compiled application is not served as a static file, and the
-  environment file is refused by the web server.
-
-### Known issues and limitations
-
-- **Sessions are held in memory.** A restart signs everyone out, and the
-  session store grows with the number of people who have visited. A published
-  deployment would be better served by a session store that outlives the
-  process; this is recorded as the next piece of work rather than changed
-  during a deployment.
-
-- **A request from an unknown origin is refused loudly.** A browser sending
-  a request from a page it does not belong to is turned away, and the refusal
-  is recorded as a server error. The request is refused either way.
 
 - **A notification inbox that is real.** Staff now receive notifications from
   the system rather than from a fixed list built in the browser: appointments
@@ -992,6 +918,160 @@ steps, across both themes.
   count is 76.
 
 ---
+
+### Fixed
+
+- **Signing in works through the platform's proxy.** The service was being
+  published through a proxy that terminates the connection, and it did not
+  know it was behind one. The consequence was that it believed every request
+  arrived over an insecure connection, so it refused to set the secure
+  session cookie — and with no session, no one could sign in. It now
+  recognises the proxy it sits behind.
+
+- **Every visitor is counted separately.** Rate limiting identified clients by
+  the proxy's address rather than by theirs, so the whole hospital shared one
+  allowance and a busy moment locked everyone out at once. The audit trail
+  recorded the proxy's address for the same reason, and now records the
+  person's.
+
+- **The seeded application name is the configured one.** The name written into
+  the platform's own settings was the literal text of the placeholder rather
+  than the name the deployment is configured with, so the platform referred to
+  itself by a token on that screen.
+
+- **A mistyped backup schedule can no longer stop the service.** The schedule
+  is configuration, and a schedule that cannot be parsed is now reported and
+  replaced with the default instead of preventing the service from starting.
+  The daily backup also runs on the schedule the deployment states, rather
+  than on one written into the code.
+
+### Security and integrity
+
+- **The production environment is held by the platform, not in the
+  repository.** The deployment's configuration — including the rotated
+  database credentials — is now held by the hosting platform and applied to
+  the running service. It is never committed, never printed, and never
+  written into a build artefact.
+
+- **Nothing sensitive is reachable from the public address.** The deployment
+  archive is removed from the public directory once the platform has taken
+  it, the compiled application is not served as a static file, and the
+  environment file is refused by the web server.
+
+### Known issues and limitations
+
+- **Sessions are held in memory.** A restart signs everyone out, and the
+  session store grows with the number of people who have visited. A published
+  deployment would be better served by a session store that outlives the
+  process; this is recorded as the next piece of work rather than changed
+  during a hardening pass.
+
+- **A request from an unknown origin is refused loudly.** A browser sending
+  a request from a page it does not belong to is turned away, and the refusal
+  is recorded as a server error. The request is refused either way.
+
+### Hardening
+
+- **The uploaded records are no longer handed out to the world.** The
+  patient's documents were served as ordinary static files, so anybody who
+  could work out a document's address could read it without signing in. They
+  are now served only through the route that authenticates the caller, checks
+  the permission and checks whose record it is.
+
+- **A registration can no longer create an administrator.** Self-service
+  registration took the role from the request, so anybody who could reach the
+  sign-up page could create themselves an account with the widest possible
+  access — and then read every hospital's records. The role is now taken from
+  a list the deployment states, the administrative roles are not on it, and a
+  new account cannot sign in until somebody with the authority to say so has
+  said so.
+
+- **The second factor is now actually a second factor.** The short-lived
+  token that is issued between the password and the verification code was
+  accepted everywhere a session token was accepted, so knowing somebody's
+  password was enough to read their patients. It is now accepted only by the
+  endpoints that complete the verification it was issued for.
+
+- **A record now stays inside its hospital.** The list of patients, of
+  appointments, of notes, of medication administrations, of documents, of
+  purchase orders and the emergency board were all answered without regard to
+  which hospital asked. A clinician at one hospital could read another's
+  records, and a patient record could be read, changed or deleted by anyone
+  who knew its number. Every one of them is now confined to the caller's own
+  hospital, and a record that belongs to another is reported as absent rather
+  than as forbidden.
+
+- **A suspended account stays suspended.** Signing in with the right
+  password quietly set the account back to active, which undid a suspension
+  and released a lock that an administrator had applied. The status is no
+  longer touched by a successful sign-in, and an account that is not active
+  does not sign in at all.
+
+- **The account balances and the transactions behind them now agree.** The
+  ledger wrote a transaction and moved the balance by rules that did not
+  match each other, and a changed or removed transaction left the balance
+  where it was. Every path that writes now moves the balance the same way,
+  and the change and the removal move it back.
+
+- **The installation's settings can only be written with the installation's
+  own settings.** Any key the request carried was stored, so a caller could
+  write a setting the application reads — including where its reports are
+  sent — for the whole installation. The keys are now the same list the
+  application reads, and an unknown key is refused.
+
+- **The application's own errors are no longer echoed to the caller.** A
+  failure that reached the error handler answered with the message the
+  database or the driver had written, which named tables, columns and
+  occasionally the value that had collided. The detail is now kept in the
+  operator's log, and the caller is told what happened without being told
+  the shape of the system.
+
+- **The recovery link is no longer written to the log.** When the mail
+  service was not configured, the password reset link — with its live token
+  — was printed, where anybody with log access could take the account over.
+  The link is never written down now.
+
+- **A file's name can no longer decide where it is written.** A document's
+  name, and the name an upload arrived with, were used as parts of a path.
+  They are reduced to names that cannot mean anything to the filesystem
+  before they are used, and a stored path is checked against the directory it
+  is supposed to be in.
+
+- **A document is no longer served as whatever the uploader said it was.** A
+  document declared as a web page was served as one, so opening a patient's
+  record ran that record's own script in the hospital's own address. The
+  type is now decided by the file itself, only the types that cannot carry a
+  script are shown in place, and everything else is downloaded.
+
+- **The restore of a backup is no longer a command line.** The restore was
+  built by pasting values into a string and handing it to a shell, where a
+  value carrying a quote or a command substitution became part of the
+  command. It is now run as an argument list, with no shell, and the database
+  name is checked before it is used.
+
+- **The deployment's secrets are required in every environment.** A secret
+  that was missing fell back to a value published in the source, so a
+  deployment that started in the wrong mode signed its own sessions with a
+  key anybody could read. The secret is now required, and the only way to run
+  without one is to ask for it deliberately.
+
+- **The addresses the browser uses are all the same rule now.** Several
+  places called a fixed path on the application's own host, so on a
+  deployment where the API is on another host those calls never reached it.
+  They go through the one resolver, and the health panel asks the service
+  whether it is alive rather than asking it to refuse a sign-in.
+
+- **A patient's record can be read again.** The schema the browser checked
+  the answer against asked for a shape the API does not send, so the picker
+  that used it was permanently empty with nothing to show for it.
+
+- **The changes the browser asks for are the changes that are made.** A batch
+  number and an expiry date were dropped on every edit, and the answer said
+  the edit had been saved.
+
+- **A request that names another hospital is refused with a plain refusal.**
+  The answer says the hospital does not match, which is what the caller
+  asked about, and does not say whose it was.
 
 ## [1.3.0] - 2026-09-08
 

@@ -1,18 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import express from 'express';
 import type { Server } from 'http';
-import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 
 import pool from '../config/database.js';
-import { getSecret } from '../config/env.js';
 import superAdminRoutes from '../routes/superAdmin.routes.js';
 import { getBackupDirectory, listBackups } from '../services/backup.service.js';
 import { getScheduledJobStatuses, scheduleBackups } from '../services/cron.service.js';
 import { addClient, broadcast, getClientCount, removeClient } from '../events/permissions.js';
-
-const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret');
 
 const SUPER_ADMIN_ID = 1;
 const SUPER_ADMIN_EMAIL = 'superadmin@smarthealth.com';
@@ -36,11 +33,7 @@ beforeAll(async () => {
   const port = typeof address === 'object' && address ? address.port : 0;
   baseUrl = `http://127.0.0.1:${port}/api/super-admin`;
 
-  token = jwt.sign(
-    { id: SUPER_ADMIN_ID, email: SUPER_ADMIN_EMAIL, role: 'super_admin', hospital_id: 'HOSP-001' },
-    JWT_SECRET,
-    { expiresIn: '15m' } as jwt.SignOptions
-  );
+  token = mintSessionToken(SUPER_ADMIN_ID, SUPER_ADMIN_EMAIL, 'super_admin', { hospital_id: 'HOSP-001' });
 });
 
 afterAll(async () => {

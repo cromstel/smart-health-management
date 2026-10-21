@@ -82,13 +82,29 @@ function formatDate(value: Date | string): string {
  * The patient is resolved from either the numeric id or the human readable
  * `patients.patient_id`, and the stored name always comes from the patient
  * row -- never from the request body.
+ *
+ * The share is made for a patient of the caller's own hospital. A link to
+ * another hospital's patient would hand the recipient that hospital's
+ * records, and the link is a bearer credential: whoever holds it reads the
+ * summary.
  */
 export async function createShareLink(
   patientRef: string,
-  sharedBy?: number
+  sharedBy?: number,
+  hospitalId?: number | null
 ): Promise<CreatedShareLink | null> {
   const patient = await resolvePatient(patientRef);
   if (!patient) return null;
+
+  if (hospitalId !== undefined) {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT hospital_id FROM patients WHERE id = ? LIMIT 1',
+      [patient.id]
+    );
+    const recordHospital = (rows as any[])[0]?.hospital_id;
+    if (recordHospital === undefined || recordHospital === null) return null;
+    if (Number(recordHospital) !== Number(hospitalId)) return null;
+  }
 
   const token = crypto.randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + getShareTtlHours() * 60 * 60 * 1000);

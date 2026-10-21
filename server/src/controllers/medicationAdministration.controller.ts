@@ -53,6 +53,7 @@ export const listAdministrations = async (
       status: toStatus(status),
       date: typeof date === 'string' && date ? date : null,
       assignedStaffId: assignedStaffId ? Number(assignedStaffId) : null,
+      hospitalId: req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1,
       limit: limit ? Number(limit) : null,
     });
 
@@ -68,11 +69,11 @@ export const listAdministrations = async (
  * The patients that can be dosed and the staff a dose can be assigned to.
  */
 export const listOptions = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response
 ): Promise<Response | void> => {
   try {
-    const options = await getMedicationAdministrationOptions();
+    const options = await getMedicationAdministrationOptions(req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1);
     res.json(options);
   } catch (error) {
     respondWithError(res, error);
@@ -85,7 +86,10 @@ export const getAdministration = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const record = await getMedicationAdministration(Number(req.params.id));
+    const record = await getMedicationAdministration(
+      Number(req.params.id),
+      req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1
+    );
     if (!record) {
       return res.status(404).json({ error: 'Medication administration not found' });
     }
@@ -116,6 +120,7 @@ export const createAdministration = async (
       dosage: String(dosage),
       scheduledTime: String(scheduledTime),
       assignedStaffId: assignedStaffId ? Number(assignedStaffId) : null,
+      hospitalId: req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1,
       criticalNotes: typeof criticalNotes === 'string' ? criticalNotes : null,
     });
 
@@ -138,7 +143,12 @@ export const signOffAdministration = async (
         ? null
         : Number(req.body.quantity);
 
-    const result = await signOffMedicationAdministration(id, actorId, requestedQuantity);
+    const result = await signOffMedicationAdministration(
+      id,
+      actorId,
+      requestedQuantity,
+      req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1
+    );
 
     res.json({ ...result.record, quantity: result.quantity, stockAfter: result.stockAfter });
   } catch (error) {
@@ -172,7 +182,7 @@ export const updateAdministration = async (
       dosage: body.dosage === undefined ? undefined : String(body.dosage),
       scheduledTime:
         body.scheduledTime === undefined ? undefined : String(body.scheduledTime),
-    });
+    }, req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1);
 
     res.json(record);
   } catch (error) {
@@ -186,7 +196,10 @@ export const removeAdministration = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    await deleteMedicationAdministration(Number(req.params.id));
+    await deleteMedicationAdministration(
+      Number(req.params.id),
+      req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1
+    );
     res.json({ deleted: true, id: Number(req.params.id) });
   } catch (error) {
     respondWithError(res, error);

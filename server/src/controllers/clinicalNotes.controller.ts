@@ -10,6 +10,7 @@
 import type { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import type { AuthRequest } from '../middleware/auth.js';
+import { patientBelongsToTenant } from '../middleware/tenant.js';
 import * as clinicalNotesService from '../services/clinicalNotes.service.js';
 
 const handleValidation = (req: Request, res: Response): boolean => {
@@ -51,6 +52,13 @@ export const getClinicalNotes = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
+    // The note is the patient's, and the patient belongs to a hospital. A
+    // patient that belongs to another hospital is not found for this caller.
+    if (!(await patientBelongsToTenant(patientId, req.tenant))) {
+      res.status(404).json({ error: 'Patient not found' });
+      return;
+    }
+
     const result = await clinicalNotesService.listClinicalNotes(patientId, {
       authorId: query.mine === 'true' ? userId : undefined,
       limit: query.limit ? Number(query.limit) : undefined,
@@ -74,6 +82,12 @@ export const getClinicalNoteById = async (req: AuthRequest, res: Response): Prom
     const note = await clinicalNotesService.getClinicalNote(Number(req.params.id));
 
     if (!note) {
+      res.status(404).json({ error: 'Clinical note not found' });
+      return;
+    }
+
+    // The note belongs to a patient, and the patient belongs to a hospital.
+    if (!(await patientBelongsToTenant(Number(note.patientId), req.tenant))) {
       res.status(404).json({ error: 'Clinical note not found' });
       return;
     }
@@ -105,6 +119,12 @@ export const createClinicalNote = async (req: AuthRequest, res: Response): Promi
 
     const patientId = await clinicalNotesService.resolvePatientId(String(body.patientId ?? ''));
     if (patientId === null) {
+      res.status(404).json({ error: 'Patient not found' });
+      return;
+    }
+
+    // A note is written on a patient of the caller's own hospital.
+    if (!(await patientBelongsToTenant(patientId, req.tenant))) {
       res.status(404).json({ error: 'Patient not found' });
       return;
     }
@@ -155,6 +175,12 @@ export const updateClinicalNote = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
+    // The note belongs to a patient of the caller's own hospital.
+    if (!(await patientBelongsToTenant(Number(note.patientId), req.tenant))) {
+      res.status(404).json({ error: 'Clinical note not found' });
+      return;
+    }
+
     res.status(200).json(note);
   } catch (error) {
     console.error('Error updating clinical note:', error instanceof Error ? error.message : error);
@@ -168,6 +194,19 @@ export const updateClinicalNote = async (req: AuthRequest, res: Response): Promi
 export const deleteClinicalNote = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (handleValidation(req, res)) return;
+
+    const note = await clinicalNotesService.getClinicalNote(Number(req.params.id));
+    if (!note) {
+      res.status(404).json({ error: 'Clinical note not found' });
+      return;
+    }
+
+    // The note belongs to a patient of the caller's own hospital. A note
+    // belonging to another hospital is not deleted and is not found.
+    if (!(await patientBelongsToTenant(Number(note.patientId), req.tenant))) {
+      res.status(404).json({ error: 'Clinical note not found' });
+      return;
+    }
 
     const deleted = await clinicalNotesService.deleteClinicalNote(Number(req.params.id));
 

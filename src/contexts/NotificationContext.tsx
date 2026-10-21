@@ -219,12 +219,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const confirmAppointment = useCallback(
     async (notificationId: string, appointmentId?: string) => {
       try {
+        let appointmentUpdated = true;
         if (appointmentId) {
           try {
-            await api.updateAppointment(appointmentId, { status: 'Confirmed' });
+            await api.updateAppointment(appointmentId, { status: 'confirmed' });
           } catch {
             // The appointment update is best effort: the notification state
-            // must still be recorded if the appointment service refuses.
+            // must still be recorded if the appointment service refuses. The
+            // message says which of the two happened, because saying
+            // "confirmed" for an appointment that was not confirmed is not
+            // true.
+            appointmentUpdated = false;
           }
         }
 
@@ -242,7 +247,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           )
         );
 
-        toast.success('Appointment confirmed successfully! Notification status updated.');
+        if (appointmentUpdated) {
+          toast.success('Appointment confirmed successfully! Notification status updated.');
+        } else {
+          toast.warning(
+            'The notification was confirmed, but the appointment itself could not be updated.'
+          );
+        }
       } catch (err: any) {
         toast.error(`Failed to confirm appointment: ${err?.message || 'Error'}`);
       }

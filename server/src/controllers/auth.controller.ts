@@ -5,14 +5,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import pool from '../config/database.js';
-import { getSecret } from '../config/env.js';
 import { primaryFrontendOrigin } from '../config/runtime.js';
 import { APP_NAME } from '../config/app.js';
 import { sendEmail } from '../utils/mail.js';
 import type { ResultSetHeader } from 'mysql2';
-import { verifyToken, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
+import { verifyToken as verifyTotp, generateSecret, base32Decode, generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode as recoveryCodeMatches } from '../utils/totp.js';
+import { signToken, verifyToken } from '../config/tokens.js';
 
-const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret'); // Hard-fails in production when unset
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 /** Fallback session lifetime used when a token carries no `exp` claim. */
@@ -74,43 +73,52 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
     const user = (users as any[])[0];
 
     if (!user) {
+      // A comparison is made anyway. Returning at once would answer in a
+      // millisecond where a real answer takes a hundred, and the difference
+      // says whether the address is registered.
+      await bcrypt.compare(password, ABSENT_ACCOUNT_HASH);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check if account is locked
-    if (user.status === 'locked' && user.locked_until && new Date(user.locked_until) > new Date()) {
-      return res.status(423).json({ error: 'Account is locked. Please try again later.' });
+    // An account that is not active does not sign in. The check used to
+    // refuse only an account that was locked with an end time, so a
+    // suspended account, and an account an administrator had locked without
+    // one, both signed in -- and the success path then set the status back
+    // to active, quietly undoing the suspension.
+    if (user.status !== 'active') {
+      await bcrypt.compare(password, ABSENT_ACCOUNT_HASH);
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      // Increment login attempts
-      await pool.query(
-        'UPDATE users SET login_attempts = login_attempts + 1 WHERE id = ?',
-        [user.id]
-      );
-
-      // Lock account if max attempts reached
+      // The attempt counter and the lock are one statement, so that parallel
+      // attempts cannot all read the same starting value and all decide
+      // that the limit has not been reached.
       const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10);
-      if (user.login_attempts + 1 >= maxAttempts) {
-        // The lockout window is configuration, in milliseconds.
-        const lockoutMs = parseInt(process.env.LOCKOUT_DURATION || '900000', 10);
-        const lockedUntil = new Date(Date.now() + lockoutMs);
-        await pool.query(
-          'UPDATE users SET status = ?, locked_until = ? WHERE id = ?',
-          ['locked', lockedUntil, user.id]
-        );
-      }
+      // The lockout window is configuration, in milliseconds.
+      const lockoutMs = parseInt(process.env.LOCKOUT_DURATION || '900000', 10);
+      const lockedUntil = new Date(Date.now() + lockoutMs);
+      await pool.query(
+        `UPDATE users
+            SET login_attempts = login_attempts + 1,
+                status = IF(login_attempts + 1 >= ?, 'locked', status),
+                locked_until = IF(login_attempts + 1 >= ?, ?, locked_until)
+          WHERE id = ?`,
+        [maxAttempts, maxAttempts, lockedUntil, user.id]
+      );
 
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Reset login attempts and update last login
+    // The attempt counter is cleared and the last sign-in recorded. The
+    // status is not written here: it is the account's own business, and
+    // setting it here undid an administrator's suspension.
     await pool.query(
-      'UPDATE users SET login_attempts = 0, status = ?, last_login = NOW() WHERE id = ?',
-      ['active', user.id]
+      'UPDATE users SET login_attempts = 0, last_login = NOW() WHERE id = ?',
+      [user.id]
     );
 
     // Get role information
@@ -120,21 +128,22 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
     );
     const role = (roles as any[])[0]?.name || 'User';
 
-    // Two-factor authentication check — when the user has a TOTP secret, do NOT
+    // Two-factor authentication check â€” when the user has a TOTP secret, do NOT
     // issue a full token yet. Only a short-lived temp token that gates the
     // verify-2fa endpoint; the full JWT is issued after the code checks out.
     if (user.totp_secret) {
-      const tempToken = jwt.sign(
+      const tempToken = signToken(
         {
           id: user.id,
           email: user.email,
           role,
           hospital_id: user.hospital_code || undefined,
+          hospital_ref: user.hospital_id ?? undefined,
           department_id: user.department_id != null ? String(user.department_id) : undefined,
+          ver: Number(user.token_version ?? 0),
           mfa_pending: true
         },
-        JWT_SECRET,
-        { expiresIn: '5m' } as jwt.SignOptions
+        '5m'
       );
 
       return res.json({
@@ -153,16 +162,17 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
     }
 
     // Generate JWT token
-    const token = jwt.sign(
+    const token = signToken(
       {
         id: user.id,
         email: user.email,
         role,
         hospital_id: user.hospital_code || undefined,
-        department_id: user.department_id != null ? String(user.department_id) : undefined
+        hospital_ref: user.hospital_id ?? undefined,
+        department_id: user.department_id != null ? String(user.department_id) : undefined,
+        ver: Number(user.token_version ?? 0),
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+      JWT_EXPIRES_IN
     );
 
     const [perms] = await pool.query(
@@ -200,6 +210,35 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
   }
 };
 
+/**
+ * The roles a person may give themselves when they register.
+ *
+ * Registration is self-service: anybody who can reach the sign-up page can
+ * create an account. The role in the request used to be written straight
+ * into the account, which meant that anybody could create themselves an
+ * administrator â€” and an administrator sees every hospital's records.
+ *
+ * The role is therefore taken from this list, which is configuration, and a
+ * role that is not on it is refused. The administrator roles are not on the
+ * list by default; a deployment that wants them to be adds them, and that
+ * deployment has to want it.
+ */
+const selfRegistrationRoles = (): string[] =>
+  (process.env.REGISTRATION_ALLOWED_ROLES || 'doctor,nurse,pharmacist,patient')
+    .split(',')
+    .map((role) => role.trim().toLowerCase())
+    .filter(Boolean);
+
+/**
+ * A hash to compare against when the account is not there.
+ *
+ * Comparing against nothing returns immediately, and comparing against a
+ * hash takes about a hundred milliseconds. The difference tells a caller
+ * whether the address is registered, so a comparison is made either way.
+ */
+const ABSENT_ACCOUNT_HASH =
+  '$2b$12$C6UzMDM.H6dfI/f/IKcEe.7dJEbtLdRxGSxuTsvJiI.JLO9CLz0';
+
 export const register = async (req: Request, res: Response): Promise<Response | void> => {
   try {
     const { email, password, name, roleId, hospital, department } = req.body;
@@ -232,22 +271,23 @@ export const register = async (req: Request, res: Response): Promise<Response | 
       departmentId = (deptRows as any[])[0]?.id ?? null;
     }
 
-    // Registration submits the role's canonical name from the UI, while the
-    // database stores its numeric foreign key. Resolve either representation
-    // before the insert so a valid staff registration never creates an
-    // unassigned account or attempts to write a string into a BIGINT column.
+    // The role is a name, and it has to be one a person may give
+    // themselves. A number is not a name and is not accepted: the number is
+    // the role's key, and accepting it would let a caller pick any role in
+    // the installation, including the ones that are not on the list.
     let resolvedRoleId: number | null = null;
-    if (roleId !== undefined && roleId !== null && String(roleId).trim()) {
-      const numericRoleId = Number(roleId);
-      if (Number.isSafeInteger(numericRoleId) && numericRoleId > 0) {
-        resolvedRoleId = numericRoleId;
-      } else {
-        const [roleRows] = await pool.query(
-          'SELECT id FROM roles WHERE LOWER(name) = LOWER(?) LIMIT 1',
-          [String(roleId).trim()]
-        );
-        resolvedRoleId = Number((roleRows as any[])[0]?.id) || null;
+    const requestedRole = String(roleId ?? '').trim().toLowerCase();
+    const allowedRoles = selfRegistrationRoles();
+
+    if (requestedRole) {
+      if (!allowedRoles.includes(requestedRole)) {
+        return res.status(400).json({ error: 'The selected role is not configured for this system.' });
       }
+      const [roleRows] = await pool.query(
+        'SELECT id FROM roles WHERE LOWER(name) = ? LIMIT 1',
+        [requestedRole]
+      );
+      resolvedRoleId = Number((roleRows as any[])[0]?.id) || null;
 
       if (!resolvedRoleId) {
         return res.status(400).json({ error: 'The selected role is not configured for this system.' });
@@ -261,12 +301,21 @@ export const register = async (req: Request, res: Response): Promise<Response | 
     const hashedPassword = await bcrypt.hash(password, bcryptRounds);
 
     // Create user
+    //
+    // The account is created inactive. It cannot sign in until somebody
+    // with the authority to say so has said so, which is the only thing that
+    // separates "somebody filled in a form" from "somebody works here". The
+    // console activates the account, and the account has to change its
+    // password when it first signs in.
     const [insertResult] = await pool.query<any>(
-      'INSERT INTO users (email, password, name, role_id, hospital_id, department_id, password_must_change) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [email, hashedPassword, name, resolvedRoleId, hospitalId, departmentId, true]
+      'INSERT INTO users (email, password, name, role_id, hospital_id, department_id, status, password_must_change) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, name, resolvedRoleId, hospitalId, departmentId, 'inactive', true]
     );
 
-    res.status(201).json({ message: 'User registered successfully', userId: String(insertResult.insertId) });
+    res.status(201).json({
+      message: 'Account created. It can sign in once an administrator has activated it.',
+      userId: String(insertResult.insertId),
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration failed' });
@@ -281,7 +330,15 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; exp?: number };
+    const decoded = verifyToken(token);
+
+    // A token that is still waiting for its second factor is not a session
+    // and cannot be exchanged for one. It used to be accepted here, which
+    // meant that knowing somebody's password was enough to get a full
+    // session for an account that has a second factor.
+    if (decoded.mfa_pending) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
 
     // A token that was invalidated by logout cannot be refreshed back to life.
     if (await isTokenRevoked(hashToken(token))) {
@@ -294,7 +351,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
     // answered 403 "Missing hospital context". A client-supplied payload is
     // never trusted for the scope fields.
     const [rows] = await pool.query(
-      `SELECT u.id, u.email, u.role_id, u.department_id,
+      `SELECT u.id, u.email, u.role_id, u.department_id, u.status, u.token_version,
               r.name AS role, h.hospital_id AS hospital_code
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
@@ -308,16 +365,23 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const newToken = jwt.sign(
+    // An account that has been suspended or locked does not get a new
+    // session, however old the token it presented is.
+    if (user.status !== 'active') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const newToken = signToken(
       {
         id: user.id,
         email: user.email,
         role: user.role || 'User',
         hospital_id: user.hospital_code || undefined,
+        hospital_ref: user.hospital_id ?? undefined,
         department_id: user.department_id != null ? String(user.department_id) : undefined,
+        ver: Number(user.token_version ?? 0),
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+      JWT_EXPIRES_IN
     );
 
     res.json({ token: newToken });
@@ -407,16 +471,15 @@ const deliverResetLink = async (params: {
   const smtpConfigured = Boolean(smtpHost && smtpUser && smtpPass);
 
   if (!smtpConfigured) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error(
-        '[auth] password reset requested but SMTP is not configured; the reset link was not delivered',
-        { userId: params.userId, tokenHashPrefix: hashToken(params.rawToken).slice(0, 12) }
-      );
-    } else {
-      console.warn(
-        `[auth] SMTP is not configured. Password reset link for ${params.email}:\n${params.resetLink}`
-      );
-    }
+    // The link is never written to the log. It carries a live token: anyone
+    // who can read the log can take the account over, and a log is exactly
+    // the sort of thing that is copied, kept and read by people who are not
+    // the operator. The token's digest is recorded instead, which identifies
+    // the reset without being one.
+    console.error(
+      '[auth] password reset requested but SMTP is not configured; the reset link was not delivered',
+      { userId: params.userId, tokenHashPrefix: hashToken(params.rawToken).slice(0, 12) }
+    );
     return;
   }
 
@@ -749,12 +812,12 @@ export const verifyTwoFactor = async (req: AuthRequest, res: Response): Promise<
       return res.status(400).json({ error: 'Two-factor authentication is not enabled for this account' });
     }
 
-    // Constant-time TOTP verification (±1 × 30 s step for clock skew)
-    if (!verifyToken(user.totp_secret, code)) {
+    // Constant-time TOTP verification (Â±1 Ã— 30 s step for clock skew)
+    if (!verifyTotp(user.totp_secret, code)) {
       return res.status(401).json({ error: 'Invalid or expired authentication code' });
     }
 
-    // Code verified — sign the full JWT and return the authenticated session.
+    // Code verified â€” sign the full JWT and return the authenticated session.
     // Shared with the recovery-code verifier so both MFA paths behave identically.
     await issueMfaSuccessResponse(res, user);
   } catch (error) {
@@ -774,16 +837,17 @@ export const issueMfaSuccessResponse = async (res: Response, user: any): Promise
   const [roles] = await pool.query('SELECT name FROM roles WHERE id = ?', [user.role_id]);
   const role = (roles as any[])[0]?.name || 'User';
 
-  const token = jwt.sign(
+  const token = signToken(
     {
       id: user.id,
       email: user.email,
       role,
       hospital_id: user.hospital_code || undefined,
-      department_id: user.department_id != null ? String(user.department_id) : undefined
+      hospital_ref: user.hospital_id ?? undefined,
+      department_id: user.department_id != null ? String(user.department_id) : undefined,
+      ver: Number(user.token_version ?? 0),
     },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    JWT_EXPIRES_IN
   );
 
   const [perms] = await pool.query(
@@ -816,7 +880,7 @@ export const issueMfaSuccessResponse = async (res: Response, user: any): Promise
 
 /**
  * Verify a single-use recovery code issued at TOTP enrollment. Fallback access
- * for when the authenticator app is lost — shares the 2FA brute-force limiter.
+ * for when the authenticator app is lost â€” shares the 2FA brute-force limiter.
  * On a match the code is burned (its hash removed) so each code works once,
  * then the full JWT is issued exactly as verify-2fa would.
  */
@@ -867,7 +931,7 @@ export const verifyRecovery = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ error: 'Invalid or already used recovery code' });
     }
 
-    // Re-hash the submitted code and drop it from the stored list → single-use,
+    // Re-hash the submitted code and drop it from the stored list â†’ single-use,
     // so a replay of the same code is rejected even inside the limiter window.
     const burned = hashRecoveryCode(code);
     const remaining = hashedCodes.filter((h) => h !== burned);
@@ -951,8 +1015,8 @@ const logMfaEvent = async (req: AuthRequest, action: string, payload: Record<str
 
 /**
  * Per-user MFA lifecycle audit trail (self-service, read-only). Returns only
- * the caller's own 2FA events — enrollment/rotation, disable, and
- * recovery-code use — newest first. `new_value` is returned both raw and
+ * the caller's own 2FA events â€” enrollment/rotation, disable, and
+ * recovery-code use â€” newest first. `new_value` is returned both raw and
  * parsed so the frontend can render friendly labels.
  */
 export const getMfaEvents = async (req: AuthRequest, res: Response): Promise<Response | void> => {
@@ -992,7 +1056,7 @@ export const getMfaEvents = async (req: AuthRequest, res: Response): Promise<Res
 };
 
 /**
- * Generate a fresh TOTP secret for authenticator pairing. Stateless — the
+ * Generate a fresh TOTP secret for authenticator pairing. Stateless â€” the
  * secret is returned but NOT persisted; /totp/confirm proves possession of
  * the new key first. Works both for first-time enrollment and rotation.
  */
@@ -1036,7 +1100,7 @@ export const totpConfirm = async (req: AuthRequest, res: Response): Promise<Resp
       return res.status(400).json({ error: 'Invalid secret key' });
     }
 
-    if (!verifyToken(secret.trim(), code)) {
+    if (!verifyTotp(secret.trim(), code)) {
       return res.status(401).json({ error: 'Invalid or expired authentication code' });
     }
 
@@ -1049,7 +1113,7 @@ export const totpConfirm = async (req: AuthRequest, res: Response): Promise<Resp
     ]);
     await logMfaEvent(req, 'mfa_totp_changed', { enabled: true, recovery_codes: recovered.length });
 
-    // Recovery codes are returned in cleartext exactly once — from this
+    // Recovery codes are returned in cleartext exactly once â€” from this
     // moment only their hashes exist in the database. Rotating the key
     // regenerates a fresh set and invalidates the previous one.
     res.json({ enabled: true, recoveryCodes });
@@ -1060,7 +1124,7 @@ export const totpConfirm = async (req: AuthRequest, res: Response): Promise<Resp
 };
 
 /**
- * Remove two-factor by verifying a current code against the stored secret —
+ * Remove two-factor by verifying a current code against the stored secret â€”
  * possession of the authenticator app is required before disabling.
  */
 export const totpDisable = async (req: AuthRequest, res: Response): Promise<Response | void> => {
@@ -1083,7 +1147,7 @@ export const totpDisable = async (req: AuthRequest, res: Response): Promise<Resp
       return res.status(400).json({ error: 'Two-factor authentication is not enabled for this account' });
     }
 
-    if (!verifyToken(user.totp_secret, code)) {
+    if (!verifyTotp(user.totp_secret, code)) {
       return res.status(401).json({ error: 'Invalid or expired authentication code' });
     }
 

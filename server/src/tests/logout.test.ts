@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import { createHash, randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 
@@ -6,7 +7,6 @@ import pool from '../config/database.js';
 import { login, logout } from '../controllers/auth.controller.js';
 import { authenticate, hashToken } from '../middleware/auth.js';
 import jwt from 'jsonwebtoken';
-import { getSecret } from '../config/env.js';
 
 const TEST_EMAIL = 'logout.agent@test.local';
 const TEST_PASSWORD = 'Logout@2026';
@@ -90,16 +90,12 @@ describe('POST /auth/logout', () => {
   });
 
   it('leaves other sessions alone', async () => {
-    const freshToken = jwt.sign(
-      {
-        id: userId,
-        email: TEST_EMAIL,
-        role: 'patient',
-        hospital_id: 'HOSP-001',
-        nonce: randomUUID(),
-      },
-      getSecret('JWT_SECRET', 'dev-only-jwt-secret'),
-      { expiresIn: '10m' } as jwt.SignOptions
+    const freshToken = mintSessionToken(
+      userId,
+      TEST_EMAIL,
+      'patient',
+      { hospital_id: 'HOSP-001', nonce: randomUUID() },
+      '10m'
     );
 
     const { req, res, next } = await runAuthenticate(freshToken);

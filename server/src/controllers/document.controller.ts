@@ -2,6 +2,7 @@ import type { Response } from 'express';
 
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
+import { patientBelongsToTenant } from '../middleware/tenant.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -23,8 +24,16 @@ const normalizeCategory = (category: string | undefined | null): string | null =
   return CATEGORY_MAP[trimmed] || trimmed.toLowerCase().replace(/\s+/g, '_');
 };
 
-/** Whitelist of columns that may be updated via PATCH/PUT to prevent column-name injection. */
-const ALLOWED_UPDATE_FIELDS = ['name', 'category', 'notes', 'patient_id', 'file_type'];
+/**
+ * The columns a client may change through PUT /api/documents/:id.
+ *
+ * The patient a document belongs to and the type it is served as are the
+ * server's business: the first decides whose record it appears in, and the
+ * second decides how the browser treats the bytes. A client that could set
+ * either could re-point a document at another patient, or have a file
+ * declared as something the browser will run.
+ */
+const ALLOWED_UPDATE_FIELDS = ['name', 'category', 'notes'];
 
 export const getDocuments = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -43,11 +52,15 @@ export const getDocuments = async (req: AuthRequest, res: Response): Promise<Res
     `;
     const params: any[] = [];
 
-    // If the user is a patient, they can only access their own documents
-    if (user.role === 'patient') {
-      query += ' AND d.patient_id = ?';
-      params.push(user.id);
-    } else if (patientId) {
+    // The documents are the patients', and the patients belong to a
+    // hospital. The list is confined to the caller's own hospital.
+    const scope = req.tenant;
+    if (!scope?.platformWide) {
+      query += ' AND p.hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
+
+    if (patientId) {
       query += ' AND d.patient_id = ?';
       params.push(patientId);
     }
@@ -64,17 +77,27 @@ export const getDocuments = async (req: AuthRequest, res: Response): Promise<Res
     }
 
     if (req.query.tags) {
-      const tags = (req.query.tags as string).split(',');
-      query += `
-        AND d.id IN (
-          SELECT dt.document_id
-          FROM document_tags dt
-          JOIN tags t ON dt.tag_id = t.id
-          WHERE t.name IN (?)
-        )
-      `;
-      params.push(tags);
+      // The list of tags is bounded, so the statement cannot be made to grow
+      // without limit.
+      const tags = (req.query.tags as string).split(',').map((tag) => tag.trim()).filter(Boolean).slice(0, 20);
+      if (tags.length > 0) {
+        query += `
+          AND d.id IN (
+            SELECT dt.document_id
+            FROM document_tags dt
+            JOIN tags t ON dt.tag_id = t.id
+            WHERE t.name IN (?)
+          )
+        `;
+        params.push(tags);
+      }
     }
+
+    // The list is paged: the documents are a table of everybody's records.
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    query += ' ORDER BY d.uploaded_at DESC, d.id DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
     const [documents] = await pool.query(query, params);
     res.json(documents);
@@ -106,9 +129,13 @@ export const getDocumentById = async (req: AuthRequest, res: Response): Promise<
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // If the user is a patient, they can only access their own documents
-    if (user.role === 'patient' && document.patient_id !== user.id) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+    // The document belongs to a patient, and the patient belongs to a
+    // hospital. The check used to compare the document's patient against the
+    // caller's account number, which are two different things: the account
+    // and the patient record are not the same row, and the comparison
+    // resolved to whichever patient happened to carry that number.
+    if (!(await patientBelongsToTenant(document.patient_id, req.tenant))) {
+      return res.status(404).json({ error: 'Document not found' });
     }
 
     res.json(document);
@@ -119,21 +146,28 @@ export const getDocumentById = async (req: AuthRequest, res: Response): Promise<
 };
 
 export const createDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  // Everything that can be refused is refused before the transaction opens.
+  // A request that returns while a transaction is open hands the connection
+  // back to the pool with the transaction still running, and the next request
+  // that borrows it commits or discards the abandoned work along with its
+  // own.
+  const { patientId, category, notes, tags, storageLocation = 'local' } = req.body;
+  const file = req.file;
+
+  if (!file) {
+    res.status(400).json({ error: 'No file uploaded' });
+    return;
+  }
+
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
   const connection = await pool.getConnection();
   let writtenFilePath: string | null = null;
   try {
     await connection.beginTransaction();
-    const { patientId, category, notes, tags, storageLocation = 'local' } = req.body;
-    const file = req.file;
-
-    if (!file) {
-      res.status(400).json({ error: 'No file uploaded' });
-      return;
-    }
-
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
 
     // Select the storage backend: inbuilt local filesystem or a connected cloud provider.
     const currentStorageProvider = getStorageProvider(storageLocation, Number(req.user.id));
@@ -154,16 +188,17 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       const documentId = (result as any).insertId;
 
       if (tags) {
-        const tagList = tags.split(',').map((tag: string) => tag.trim());
+        const tagList = String(tags).split(',').map((tag: string) => tag.trim()).filter(Boolean);
         for (const tagName of tagList) {
-          const [tag] = await connection.query('SELECT id FROM tags WHERE name = ?', [tagName]);
-          let tagId;
-          if ((tag as any).length === 0) {
-            const [tagResult] = await connection.query('INSERT INTO tags (name) VALUES (?)', [tagName]);
-            tagId = (tagResult as any).insertId;
-          } else {
-            tagId = (tag as any)[0].id;
-          }
+          // The tag is created if it is not there yet. The insert is an
+          // upsert, so two uploads carrying the same new tag cannot collide:
+          // a check followed by an insert could, and the loser would fail a
+          // request that had already written the file.
+          const [tagResult] = await connection.query(
+            'INSERT INTO tags (name) VALUES (?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)',
+            [tagName]
+          );
+          const tagId = (tagResult as any).insertId;
           await connection.query('INSERT INTO document_tags (document_id, tag_id) VALUES (?, ?)', [documentId, tagId]);
         }
       }
@@ -172,7 +207,9 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       res.status(201).json({ message: 'Document uploaded successfully', id: documentIdStr });
     } catch (storageError) {
       if ((storageError as any).message === 'Storage quota exceeded') {
-        return res.status(413).json({ error: (storageError as any).message });
+        await connection.rollback();
+        res.status(413).json({ error: (storageError as any).message });
+        return;
       }
       throw storageError;
     }
@@ -245,9 +282,18 @@ export const downloadDocument = async (req: AuthRequest, res: Response): Promise
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const [rows] = await pool.query('SELECT storage_type, file_type FROM documents WHERE document_id = ?', [id]);
+    const [rows] = await pool.query(
+      'SELECT storage_type, file_type, name, patient_id FROM documents WHERE document_id = ?',
+      [id]
+    );
     const doc = (rows as any[])[0];
     if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // The document belongs to a patient, and the patient belongs to a
+    // hospital. A document that belongs to another hospital is not found.
+    if (!(await patientBelongsToTenant(doc.patient_id, req.tenant))) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
@@ -256,6 +302,7 @@ export const downloadDocument = async (req: AuthRequest, res: Response): Promise
     if (!fs.existsSync(filePath)) {
       return res.status(410).json({ error: 'File missing' });
     }
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.download(filePath, fileName);
   } catch (error) {
     if ((error as any).message === 'Document not found') {
@@ -266,6 +313,36 @@ export const downloadDocument = async (req: AuthRequest, res: Response): Promise
   }
 };
 
+/**
+ * The content type a stored document is served as.
+ *
+ * The type recorded at upload was declared by the client, and a client can
+ * declare anything. A document declared as `text/html` and served as such
+ * runs its own script in the application's own origin the moment somebody
+ * opens it, which is the patient's record running code in the ward's
+ * browser.
+ *
+ * So the type is decided by the file's name, and only the types that cannot
+ * carry a script are served inline. Everything else is served as a download,
+ * with the browser told not to guess.
+ */
+const INLINE_CONTENT_TYPES: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.txt': 'text/plain; charset=utf-8',
+};
+
+const contentTypeFor = (fileName: string): { type: string; inline: boolean } => {
+  const extension = path.extname(String(fileName ?? '')).toLowerCase();
+  const type = INLINE_CONTENT_TYPES[extension];
+  if (type) return { type, inline: true };
+  return { type: 'application/octet-stream', inline: false };
+};
+
 export const previewDocument = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
@@ -273,18 +350,37 @@ export const previewDocument = async (req: AuthRequest, res: Response): Promise<
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const [rows] = await pool.query('SELECT storage_type, file_type FROM documents WHERE document_id = ?', [id]);
+    const [rows] = await pool.query(
+      'SELECT storage_type, file_type, name, patient_id FROM documents WHERE document_id = ?',
+      [id]
+    );
     const doc = (rows as any[])[0];
     if (!doc) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
+    // The document belongs to a patient, and the patient belongs to a
+    // hospital. A document that belongs to another hospital is not found.
+    if (!(await patientBelongsToTenant(doc.patient_id, req.tenant))) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
     const currentStorageProvider = getStorageProvider(doc.storage_type, Number(req.user.id));
-    const { filePath } = await currentStorageProvider.preview(id as string);
+    const { filePath, fileName } = await currentStorageProvider.preview(id as string);
     if (!fs.existsSync(filePath)) {
       return res.status(410).json({ error: 'File missing' });
     }
-    res.setHeader('Content-Type', doc.file_type as string);
+
+    const { type, inline } = contentTypeFor(fileName || doc.name);
+    res.setHeader('Content-Type', type);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; img-src 'self' data:; object-src 'none'; sandbox"
+    );
+    if (!inline) {
+      res.setHeader('Content-Disposition', 'attachment');
+    }
     fs.createReadStream(filePath).pipe(res);
   } catch (error) {
     if ((error as any).message === 'Document not found') {

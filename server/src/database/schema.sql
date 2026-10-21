@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS users (
   locked_until DATETIME NULL,
   last_login DATETIME NULL,
   password_must_change BOOLEAN DEFAULT FALSE,
+  -- The account's token version. It changes when the credentials change, and
+  -- a token minted before the change stops being accepted.
+  token_version INT NOT NULL DEFAULT 0,
   password_changed_at DATETIME NULL,
   password_postpone_count INT DEFAULT 0,
   totp_secret VARCHAR(64) NULL,
@@ -180,6 +183,9 @@ CREATE TABLE IF NOT EXISTS patients (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_patient_id (patient_id),
   INDEX idx_status (status),
+  -- The index the tenant filter needs: the list of a hospital's patients,
+  -- newest first.
+  INDEX idx_patients_hospital_created (hospital_id, created_at, id),
   FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL
 );
 
@@ -409,13 +415,19 @@ CREATE TABLE IF NOT EXISTS medicines_inventory (
   category VARCHAR(100),
   supplier VARCHAR(255),
   supplier_id BIGINT UNSIGNED NULL,
+  -- The hospital the stock belongs to. The stock is per hospital, so a
+  -- hospital's low-stock list is its own.
+  hospital_id BIGINT UNSIGNED NULL,
   stock_level INT DEFAULT 0,
   low_stock_threshold INT DEFAULT 0,
   unit_price DECIMAL(10,2) DEFAULT 0,
   expiry_date DATE,
   storage_location VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_inventory_stock (low_stock_threshold, stock_level),
+  INDEX idx_inventory_expiry (expiry_date),
+  INDEX idx_inventory_hospital (hospital_id)
 );
 
 -- 20.0 Purchase Order Items table
@@ -745,16 +757,22 @@ CREATE TABLE IF NOT EXISTS medication_administrations (
 CREATE TABLE IF NOT EXISTS emergency_beds (
   id VARCHAR(32) NOT NULL PRIMARY KEY,
   label VARCHAR(100) NOT NULL,
+  -- The hospital the bay belongs to. The board is per hospital.
+  hospital_id BIGINT UNSIGNED NULL,
   status ENUM('occupied', 'available', 'cleaning') DEFAULT 'available',
   patient_id BIGINT UNSIGNED NULL,
   triage_level VARCHAR(20) NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_erbed_hospital (hospital_id),
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS emergency_admissions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   patient_id BIGINT UNSIGNED NOT NULL,
+  -- The hospital the admission belongs to. It is the hospital of the patient
+  -- who was admitted, and it is what the board is narrowed by.
+  hospital_id BIGINT UNSIGNED NULL,
   triage_level ENUM('RED', 'AMBER', 'GREEN', 'YELLOW') DEFAULT 'AMBER',
   -- "condition" is a reserved word in MariaDB, so the column is named
   -- condition_note and the API exposes it as `condition`.
@@ -772,7 +790,8 @@ CREATE TABLE IF NOT EXISTS emergency_admissions (
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
   FOREIGN KEY (bed_id) REFERENCES emergency_beds(id) ON DELETE SET NULL,
   INDEX idx_eradmission_status (status),
-  INDEX idx_eradmission_patient (patient_id)
+  INDEX idx_eradmission_patient (patient_id),
+  INDEX idx_eradmission_hospital (hospital_id)
 );
 
 -- 38. Clinical notes

@@ -6,11 +6,10 @@
  * the controller.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import express from 'express';
 import type { Server } from 'http';
-import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
-import { getSecret } from '../config/env.js';
 import notificationRoutes from '../routes/notification.routes.js';
 
 let dbAvailable = false;
@@ -23,11 +22,7 @@ let server: Server;
 let baseUrl = '';
 
 const mintToken = (userId: number, email: string, role: string): string =>
-  jwt.sign(
-    { id: String(userId), email, role },
-    getSecret('JWT_SECRET', 'dev-only-jwt-secret'),
-    { expiresIn: '15m' }
-  );
+  mintSessionToken(userId, email, role);
 
 /**
  * The fixture gets its own hospital so the scanner finds nothing for the

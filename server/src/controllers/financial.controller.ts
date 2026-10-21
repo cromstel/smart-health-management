@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
+import { postTransaction, reverseTransaction, balanceDelta, inTransaction } from '../services/ledger.service.js';
 import { createStripeCustomer, createStripeCharge } from '../services/stripe.service.js';
 import { buildPDF } from '../services/reportFormatters/pdf.js';
 import { buildXlsx } from '../services/reportFormatters/xlsx.js';
@@ -149,15 +150,16 @@ export const getTransactionById = async (req: AuthRequest, res: Response): Promi
 export const createTransaction = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { accountId, transactionDate, description, debit, credit, reference } = req.body;
-    const transactionId = `TRN-${uuidv4().slice(0, 8)}`;
-  await pool.query(
-      'INSERT INTO transactions (transaction_id, account_id, date, description, debit, credit, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [transactionId, accountId, transactionDate, description, debit ?? 0, credit ?? 0, reference || null, (req.user as any)?.id || null]
-    );
-    // Update running balance for account
-    await pool.query(
-      'UPDATE accounts SET balance = balance + ? - ? WHERE id = ?',
-      [debit ?? 0, credit ?? 0, accountId]
+    const transactionId = await inTransaction((connection) =>
+      postTransaction(connection, {
+        accountId: Number(accountId),
+        date: transactionDate,
+        description,
+        debit: Number(debit ?? 0),
+        credit: Number(credit ?? 0),
+        reference: reference || null,
+        createdBy: (req.user as any)?.id || null,
+      })
     );
     await logAudit((req.user as any)?.id, 'CREATE', 'financial', transactionId, { accountId, transactionDate, description, debit, credit, reference });
     res.status(201).json({ message: 'Transaction created successfully', transaction_id: transactionId });
@@ -183,7 +185,39 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
     }
     const fields = Object.keys(filteredUpdates).map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(filteredUpdates), id];
-    await pool.query(`UPDATE transactions SET ${fields} WHERE id = ?`, values);
+
+    // The balance follows the transaction. Changing what a transaction says
+    // without moving the balance leaves the two telling different stories.
+    await inTransaction(async (connection) => {
+      const [rows] = await connection.query<any[]>(
+        'SELECT account_id, debit, credit FROM transactions WHERE id = ? LIMIT 1',
+        [id]
+      );
+      const existing = (rows as any[])[0];
+      if (!existing) return;
+
+      await connection.query(`UPDATE transactions SET ${fields} WHERE id = ?`, values);
+
+      const [accountRows] = await connection.query<any[]>(
+        'SELECT type FROM accounts WHERE id = ? LIMIT 1',
+        [existing.account_id]
+      );
+      const accountType = String((accountRows as any[])[0]?.type ?? 'asset');
+      const before = balanceDelta(accountType, Number(existing.debit || 0), Number(existing.credit || 0));
+      const after = balanceDelta(
+        accountType,
+        Number(filteredUpdates.debit ?? existing.debit ?? 0),
+        Number(filteredUpdates.credit ?? existing.credit ?? 0)
+      );
+      const difference = after - before;
+      if (difference !== 0) {
+        await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [
+          difference,
+          existing.account_id,
+        ]);
+      }
+    });
+
     await logAudit((req.user as any)?.id, 'UPDATE', 'financial', id, filteredUpdates);
     res.json({ message: 'Transaction updated successfully' });
   } catch (_error) {
@@ -194,7 +228,12 @@ export const updateTransaction = async (req: AuthRequest, res: Response): Promis
 export const deleteTransaction = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM transactions WHERE id = ?', [id]);
+    // The balance goes back with the transaction. Removing the row without
+    // moving the balance leaves the account showing money that is not there.
+    await inTransaction(async (connection) => {
+      await reverseTransaction(connection, Number(id));
+      await connection.query('DELETE FROM transactions WHERE id = ?', [id]);
+    });
     res.json({ message: 'Transaction deleted successfully' });
   } catch (_error) {
     res.status(500).json({ error: 'Failed to delete transaction' });
@@ -211,12 +250,12 @@ export const generateReport = async (req: AuthRequest, res: Response): Promise<R
     switch (reportType) {
       case 'income_statement': {
         const [incomeRows] = await pool.query(
-          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "income" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
-          [startDate, endDate]
+          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate, 'income']
         );
         const [expenseRows] = await pool.query(
-          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "expense" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
-          [startDate, endDate]
+          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate, 'income']
         );
         const totalIncome = (incomeRows as any[]).reduce((s, r) => s + (Number(r.amount) || 0), 0);
         const totalExpenses = (expenseRows as any[]).reduce((s, r) => s + (Number(r.amount) || 0), 0);
@@ -233,7 +272,7 @@ export const generateReport = async (req: AuthRequest, res: Response): Promise<R
       case 'cash_flow': {
         const [rows] = await pool.query(
           'SELECT date, SUM(credit - debit) AS net_flow FROM transactions WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date',
-          [startDate, endDate]
+          [startDate, endDate, 'income']
         );
         return res.json({ title: 'Cash Flow', period: { startDate, endDate }, daily: rows });
       }
@@ -251,7 +290,7 @@ export const createInvoice = async (req: AuthRequest, res: Response): Promise<Re
     const { patientId, items, dueDate } = req.body;
     const invoiceId = `INV-${uuidv4().slice(0, 8)}`;
     const [result] = await pool.query(
-      'INSERT INTO invoices (invoice_id, patient_id, date, due_date, status, total_amount, created_by) VALUES (?, ?, CURDATE(), ?, "draft", 0, ?)',
+      'INSERT INTO invoices (invoice_id, patient_id, date, due_date, status, total_amount, created_by) VALUES (?, ?, CURDATE(), ?, ?, 0, ?)',
       [invoiceId, patientId || null, dueDate || null, (req.user as any)?.id || null]
     );
     const insertId = (result as any).insertId;
@@ -275,19 +314,26 @@ export const createInvoice = async (req: AuthRequest, res: Response): Promise<Re
 export const finalizeInvoice = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-  await pool.query('UPDATE invoices SET status = "finalized" WHERE id = ?', [id]);
+    await pool.query("UPDATE invoices SET status = 'finalized' WHERE id = ?", [id]);
     const [[invoice]]: any = await pool.query('SELECT total_amount FROM invoices WHERE id = ?', [id]);
     const amount = Number(invoice?.total_amount || 0);
     if (amount > 0) {
-      const [[incomeAccount]]: any = await pool.query('SELECT id FROM accounts WHERE type = "income" LIMIT 1');
+      const [[incomeAccount]]: any = await pool.query("SELECT id FROM accounts WHERE type = 'income' LIMIT 1");
       const accountId = incomeAccount?.id;
       if (accountId) {
-        const trnId = `TRN-${uuidv4().slice(0, 8)}`;
-        await pool.query(
-          'INSERT INTO transactions (transaction_id, account_id, date, description, debit, credit, reference, created_by) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?)',
-          [trnId, accountId, 'Invoice finalized', 0, amount, `INV:${id}`, (req.user as any)?.id || null]
+        // The invoice is income, so it is posted as a credit to the income
+        // account, and the income account's balance moves with it.
+        await inTransaction((connection) =>
+          postTransaction(connection, {
+            accountId,
+            date: new Date().toISOString().slice(0, 10),
+            description: 'Invoice finalized',
+            debit: 0,
+            credit: amount,
+            reference: `INV:${id}`,
+            createdBy: (req.user as any)?.id || null,
+          })
         );
-        await pool.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [0, accountId]);
       }
     }
     res.json({ message: 'Invoice finalized' });
@@ -305,17 +351,22 @@ export const recordPayment = async (req: AuthRequest, res: Response): Promise<Re
       'INSERT INTO payments (payment_id, invoice_id, amount, method, date, reference, created_by) VALUES (?, ?, ?, ?, CURDATE(), ?, ?)',
       [paymentId, invoiceId, amount, method || 'other', reference || null, (req.user as any)?.id || null]
     );
-    await pool.query('UPDATE invoices SET status = "paid" WHERE id = ?', [invoiceId]);
+    await pool.query("UPDATE invoices SET status = 'paid' WHERE id = ?", [invoiceId]);
     await logAudit((req.user as any)?.id, 'CREATE', 'financial', paymentId, { invoiceId, amount, method });
-    const [[incomeAccount]]: any = await pool.query('SELECT id FROM accounts WHERE type = "income" LIMIT 1');
+    const [[incomeAccount]]: any = await pool.query("SELECT id FROM accounts WHERE type = 'income' LIMIT 1");
     const accountId = incomeAccount?.id;
     if (accountId) {
-      const trnId = `TRN-${uuidv4().slice(0, 8)}`;
-      await pool.query(
-        'INSERT INTO transactions (transaction_id, account_id, date, description, debit, credit, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [trnId, accountId, 'Payment received', 0, amount, `PAY:${paymentId}`, (req.user as any)?.id || null]
+      await inTransaction((connection) =>
+        postTransaction(connection, {
+          accountId,
+          date: new Date().toISOString().slice(0, 10),
+          description: 'Payment received',
+          debit: 0,
+          credit: Number(amount),
+          reference: `PAY:${paymentId}`,
+          createdBy: (req.user as any)?.id || null,
+        })
       );
-      await pool.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, accountId]);
     }
     res.status(201).json({ message: 'Payment recorded', payment_id: paymentId });
   } catch (_error) {
@@ -333,15 +384,22 @@ export const createExpense = async (req: AuthRequest, res: Response): Promise<Re
       [expenseId, category, vendor || null, date, amount, description || null, (req.user as any)?.id || null]
     );
     await logAudit((req.user as any)?.id, 'CREATE', 'financial', expenseId, { category, vendor, date, amount });
-    const [[expenseAccount]]: any = await pool.query('SELECT id FROM accounts WHERE type = "expense" LIMIT 1');
+    const [[expenseAccount]]: any = await pool.query("SELECT id FROM accounts WHERE type = 'expense' LIMIT 1");
     const accountId = expenseAccount?.id;
     if (accountId) {
-      const trnId = `TRN-${uuidv4().slice(0, 8)}`;
-      await pool.query(
-        'INSERT INTO transactions (transaction_id, account_id, date, description, debit, credit, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [trnId, accountId, date, description || 'Expense', amount, 0, `EXP:${expenseId}`, (req.user as any)?.id || null]
+      // An expense is a debit, and an expense account is measured by its
+      // debits, so the balance moves with it.
+      await inTransaction((connection) =>
+        postTransaction(connection, {
+          accountId,
+          date,
+          description: description || 'Expense',
+          debit: Number(amount),
+          credit: 0,
+          reference: `EXP:${expenseId}`,
+          createdBy: (req.user as any)?.id || null,
+        })
       );
-      await pool.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, accountId]);
     }
     res.status(201).json({ message: 'Expense created', expense_id: expenseId });
   } catch (_error) {
@@ -356,19 +414,24 @@ export const createPayroll = async (req: AuthRequest, res: Response): Promise<Re
     const payrollId = `PAYR-${uuidv4().slice(0, 8)}`;
     const net = Number(gross) - Number(deductions || 0);
   await pool.query(
-      'INSERT INTO payroll (payroll_id, staff_id, period_start, period_end, gross_amount, deductions, net_amount, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, "processed", ?)',
-      [payrollId, staffId, periodStart, periodEnd, gross, deductions ?? 0, net, (req.user as any)?.id || null]
+      'INSERT INTO payroll (payroll_id, staff_id, period_start, period_end, gross_amount, deductions, net_amount, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [payrollId, staffId, periodStart, periodEnd, gross, deductions ?? 0, net, 'processed', (req.user as any)?.id || null]
     );
     await logAudit((req.user as any)?.id, 'CREATE', 'financial', payrollId, { staffId, periodStart, periodEnd, gross, net });
-    const [[expenseAccount]]: any = await pool.query('SELECT id FROM accounts WHERE type = "expense" LIMIT 1');
+    const [[expenseAccount]]: any = await pool.query("SELECT id FROM accounts WHERE type = 'expense' LIMIT 1");
     const accountId = expenseAccount?.id;
     if (accountId) {
-      const trnId = `TRN-${uuidv4().slice(0, 8)}`;
-      await pool.query(
-        'INSERT INTO transactions (transaction_id, account_id, date, description, debit, credit, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [trnId, accountId, periodEnd, 'Payroll', net, 0, `PAYR:${payrollId}`, (req.user as any)?.id || null]
+      await inTransaction((connection) =>
+        postTransaction(connection, {
+          accountId,
+          date: periodEnd,
+          description: 'Payroll',
+          debit: net,
+          credit: 0,
+          reference: `PAYR:${payrollId}`,
+          createdBy: (req.user as any)?.id || null,
+        })
       );
-      await pool.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [net, accountId]);
     }
     res.status(201).json({ message: 'Payroll processed', payroll_id: payrollId, net_amount: net });
   } catch (_error) {
@@ -472,12 +535,12 @@ export const exportPdf = async (req: AuthRequest, res: Response): Promise<Respon
     switch (reportType) {
       case 'income_statement': {
         const [incomeRows] = await pool.query(
-          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "income" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
-          [startDate, endDate]
+          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate, 'income']
         );
         const [expenseRows] = await pool.query(
-          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "expense" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
-          [startDate, endDate]
+          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate, 'income']
         );
         rows = [...(incomeRows as any[]).map(r => ({ type: 'Income', ...r })), ...(expenseRows as any[]).map(r => ({ type: 'Expense', ...r }))];
         title = 'Income Statement';
@@ -493,7 +556,7 @@ export const exportPdf = async (req: AuthRequest, res: Response): Promise<Respon
       case 'cash_flow': {
         const [cfRows] = await pool.query(
           'SELECT date, SUM(credit - debit) AS net_flow FROM transactions WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date',
-          [startDate, endDate]
+          [startDate, endDate, 'income']
         );
         rows = cfRows as any[];
         title = 'Cash Flow';
@@ -531,12 +594,12 @@ export const exportExcel = async (req: AuthRequest, res: Response): Promise<Resp
     switch (reportType) {
       case 'income_statement': {
         const [incomeRows] = await pool.query(
-          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "income" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
-          [startDate, endDate]
+          'SELECT name, SUM(credit - debit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate, 'income']
         );
         const [expenseRows] = await pool.query(
-          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = "expense" AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
-          [startDate, endDate]
+          'SELECT name, SUM(debit - credit) AS amount FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? AND t.date BETWEEN ? AND ? GROUP BY a.id, a.name',
+          [startDate, endDate, 'income']
         );
         rows = [...(incomeRows as any[]).map(r => ({ type: 'Income', ...r })), ...(expenseRows as any[]).map(r => ({ type: 'Expense', ...r }))];
         break;
@@ -550,7 +613,7 @@ export const exportExcel = async (req: AuthRequest, res: Response): Promise<Resp
       case 'cash_flow': {
         const [cfRows] = await pool.query(
           'SELECT date, SUM(credit - debit) AS net_flow FROM transactions WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date',
-          [startDate, endDate]
+          [startDate, endDate, 'income']
         );
         rows = cfRows as any[];
         break;

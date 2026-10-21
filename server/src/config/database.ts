@@ -44,8 +44,29 @@ export const databaseConnectionOptions = (): DatabaseConnectionOptions => ({
   port: dbPort(),
   user: process.env.DB_USER || DEFAULT_DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  ssl: databaseSslOptions(),
 });
+
+/**
+ * The TLS settings for the database connection.
+ *
+ * The connection is encrypted when `DB_SSL` is on. Whether the server's
+ * certificate is also checked depends on `DB_SSL_CA`: with a certificate
+ * authority supplied, the connection is verified, and without one it is
+ * encrypted but not verified — which stops a reader from seeing the traffic
+ * but does not stop somebody in the middle of it from changing it.
+ */
+const databaseSslOptions = (): { rejectUnauthorized: boolean; ca?: string } | undefined => {
+  if (process.env.DB_SSL !== 'true') return undefined;
+  const ca = (process.env.DB_SSL_CA ?? '').trim();
+  if (!ca) {
+    console.warn(
+      '[database] DB_SSL is on but DB_SSL_CA is not set: the connection is encrypted but the server is not verified.'
+    );
+    return { rejectUnauthorized: false };
+  }
+  return { rejectUnauthorized: true, ca };
+};
 
 /** The schema the application works in. */
 export const databaseName = (): string => process.env.DB_NAME || DEFAULT_DB_NAME;

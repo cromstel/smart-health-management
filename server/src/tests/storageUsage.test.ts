@@ -25,6 +25,14 @@ describe('Storage usage endpoint', () => {
     expect(res.statusCode).toBe(200)
     expect(res.payload).toBeDefined()
     expect(typeof res.payload.usedBytes).toBe('number')
-    expect(res.payload.uploadsDir).toMatch(/uploads/)
+  })
+
+  it('does not hand the server\'s filesystem layout to the caller', async () => {
+    // The absolute path of the upload directory is a fact about the server's
+    // filesystem and says nothing to the person asking.
+    const req: any = {}
+    const res = createMockRes()
+    await getStorageUsage(req, res)
+    expect(res.payload.uploadsDir).toBeUndefined()
   })
 })

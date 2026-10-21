@@ -205,6 +205,8 @@ interface PatientRef {
   id: number;
   code: string;
   name: string;
+  /** The hospital the patient belongs to. The board is narrowed by it. */
+  hospitalId: number | null;
 }
 
 type QueryFn = (sql: string, values: unknown[]) => Promise<RowDataPacket[]>;
@@ -271,6 +273,7 @@ function mapPatient(row: RowDataPacket): PatientRef {
     id: Number(row.id),
     code: String(row.patient_id),
     name: patientName(row),
+    hospitalId: row.hospital_id === null || row.hospital_id === undefined ? null : Number(row.hospital_id),
   };
 }
 
@@ -305,14 +308,14 @@ async function findPatient(query: QueryFn, reference: string): Promise<PatientRe
   if (!raw) return null;
 
   const byCode = await query(
-    'SELECT id, patient_id, first_name, last_name FROM patients WHERE patient_id = ? LIMIT 1',
+    'SELECT id, patient_id, first_name, last_name, hospital_id FROM patients WHERE patient_id = ? LIMIT 1',
     [raw]
   );
   if (byCode.length > 0) return mapPatient(byCode[0]);
 
   if (/^\d+$/.test(raw)) {
     const byId = await query(
-      'SELECT id, patient_id, first_name, last_name FROM patients WHERE id = ? LIMIT 1',
+      'SELECT id, patient_id, first_name, last_name, hospital_id FROM patients WHERE id = ? LIMIT 1',
       [Number(raw)]
     );
     if (byId.length > 0) return mapPatient(byId[0]);
@@ -400,15 +403,32 @@ const BED_SELECT = `
     LEFT JOIN patients p ON p.id = b.patient_id
 `;
 
+/**
+ * The bays of one hospital.
+ *
+ * A bay that belongs to a hospital is that hospital's. A bay that belongs to
+ * nobody is the default set every hospital shares, and it is shown while it
+ * is empty -- and afterwards only to the hospital of whoever is in it, because
+ * a bay with a patient in it says who that patient is.
+ */
+const bedScope = (hospitalId: number | null | undefined): { sql: string; params: unknown[] } => {
+  if (hospitalId === undefined) return { sql: '', params: [] };
+  return {
+    sql: ' WHERE (b.hospital_id = ? OR (b.hospital_id IS NULL AND (b.patient_id IS NULL OR p.hospital_id = ?)))',
+    params: [hospitalId, hospitalId],
+  };
+};
+
 /** The current bed list, with the occupant of every bay. */
-export async function listBeds(): Promise<BedRecord[]> {
-  let rows = await poolQuery(`${BED_SELECT} ORDER BY b.id`, []);
+export async function listBeds(hospitalId?: number | null): Promise<BedRecord[]> {
+  const scope = bedScope(hospitalId);
+  let rows = await poolQuery(`${BED_SELECT}${scope.sql} ORDER BY b.id`, scope.params);
 
   if (rows.length === 0) {
     // A fresh install, or a table that was emptied underneath this server:
     // put the default bays back so the board stays usable.
     await ensureDefaultBeds();
-    rows = await poolQuery(`${BED_SELECT} ORDER BY b.id`, []);
+    rows = await poolQuery(`${BED_SELECT}${scope.sql} ORDER BY b.id`, scope.params);
   }
 
   return rows.map(mapBedRow);
@@ -427,7 +447,13 @@ async function getBedById(id: string): Promise<BedRecord | null> {
  * function, so the board is one query instead of one query per patient. A
  * patient without a reading gets nulls -- the board never invents a number.
  */
-export async function listActiveAdmissions(): Promise<BoardPatient[]> {
+export async function listActiveAdmissions(hospitalId?: number | null): Promise<BoardPatient[]> {
+  // The board is a hospital's board. An admission belongs to the hospital of
+  // the patient it admits, and that is what the board is narrowed by.
+  const scope =
+    hospitalId === undefined
+      ? { sql: '', params: [] as unknown[] }
+      : { sql: ' AND a.hospital_id = ?', params: [hospitalId] as unknown[] };
   const rows = await poolQuery(
     `SELECT
         a.id AS admission_id,
@@ -462,9 +488,9 @@ export async function listActiveAdmissions(): Promise<BoardPatient[]> {
           ) ranked
          WHERE ranked.rn = 1
       ) vit ON vit.patient_id = a.patient_id
-      WHERE a.status = 'admitted'
+      WHERE a.status = 'admitted'${scope.sql}
       ORDER BY FIELD(a.triage_level, 'RED', 'AMBER', 'YELLOW', 'GREEN'), a.admitted_at ASC, a.id ASC`,
-    []
+    scope.params
   );
 
   return rows.map((row) => ({
@@ -515,10 +541,10 @@ export async function getHotline(): Promise<string> {
 }
 
 /** The whole board in one response: active admissions plus the bed list. */
-export async function getTriageBoard(): Promise<TriageBoard> {
+export async function getTriageBoard(hospitalId?: number | null): Promise<TriageBoard> {
   const [patients, beds, hotline] = await Promise.all([
-    listActiveAdmissions(),
-    listBeds(),
+    listActiveAdmissions(hospitalId),
+    listBeds(hospitalId),
     getHotline(),
   ]);
   return { patients, beds, hotline, generatedAt: toLocalIso(new Date()) };
@@ -726,11 +752,15 @@ export async function createAdmission(input: CreateAdmissionInput): Promise<Admi
 
     const [result] = await connection.query<ResultSetHeader>(
       `INSERT INTO emergency_admissions
-        (patient_id, triage_level, condition_note, bed_id, systolic_bp, diastolic_bp,
+        (patient_id, hospital_id, triage_level, condition_note, bed_id, systolic_bp, diastolic_bp,
          heart_rate, spo2, status, admitted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admitted', NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admitted', NOW())`,
       [
         patient.id,
+        // The admission belongs to the hospital of the patient it admits.
+        // The board is narrowed by it, and an admission without one would be
+        // on nobody's board.
+        (patient as any).hospital_id ?? null,
         input.triageLevel,
         input.condition ? String(input.condition).slice(0, 255) : null,
         bedId,

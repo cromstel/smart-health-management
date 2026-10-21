@@ -29,6 +29,10 @@ const makeReq = (overrides: Record<string, unknown> = {}) => ({
   ip: '127.0.0.1',
   headers: { 'user-agent': 'vitest' },
   user: { id: 1, email: 'superadmin@smarthealth.com', role: 'super_admin' },
+  // The tenant scope the authentication middleware works out and the
+  // permission check confines the request to. The seeded clinician belongs to
+  // the first hospital.
+  tenant: { hospitalId: 1, hospitalCode: 'HOSP-001', platformWide: true },
   ...overrides,
 }) as any;
 

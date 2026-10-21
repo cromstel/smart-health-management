@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '@/config/api';
+
 // Check if analytics is enabled via configuration flag
 const ANALYTICS_ENABLED = 
   import.meta.env.VITE_ANALYTICS_ENABLED !== 'false' && 
@@ -39,7 +41,7 @@ class AnalyticsService {
 
   private async sendEventToServer(event: AnalyticsEvent) {
     try {
-      const response = await fetch('/api/analytics/event', {
+      const response = await fetch(`${API_BASE_URL}/analytics/event`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(event)
@@ -85,7 +87,7 @@ class AnalyticsService {
 
     for (const event of queue) {
       try {
-        const response = await fetch('/api/analytics/event', {
+        const response = await fetch(`${API_BASE_URL}/analytics/event`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(event)

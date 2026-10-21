@@ -42,9 +42,23 @@ const rollbackQuietly = async (connection: PoolConnection | null): Promise<void>
 };
 
 /** Get all purchase orders */
-export const getPurchaseOrders = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
+export const getPurchaseOrders = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
-    const [orders] = await pool.query('SELECT * FROM purchase_orders ORDER BY id DESC');
+    // The orders are a hospital's orders. The list used to answer with the
+    // orders of every hospital in the installation.
+    const scope = req.tenant;
+    let query = 'SELECT * FROM purchase_orders WHERE 1=1';
+    const params: any[] = [];
+    if (!scope?.platformWide) {
+      query += ' AND hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    query += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const [orders] = await pool.query(query, params);
     res.json(orders);
   } catch (error) {
     console.error('Get purchase orders error:', error);
@@ -56,7 +70,17 @@ export const getPurchaseOrders = async (_req: AuthRequest, res: Response): Promi
 export const getPurchaseOrderById = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    const [orders] = await pool.query('SELECT * FROM purchase_orders WHERE id = ?', [id]);
+    // An order that belongs to another hospital is not found for this
+    // caller, rather than forbidden: the answer should not say that it
+    // exists somewhere else.
+    const scope = req.tenant;
+    const params: any[] = [id];
+    let predicate = '';
+    if (!scope?.platformWide) {
+      predicate = ' AND hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
+    const [orders] = await pool.query(`SELECT * FROM purchase_orders WHERE id = ?${predicate}`, params);
     const order = (orders as any[])[0];
 
     if (!order) {
@@ -189,7 +213,14 @@ export const updatePurchaseOrder = async (req: AuthRequest, res: Response): Prom
     }
 
     if (status) {
-      const [orders] = await connection.query('SELECT status FROM purchase_orders WHERE id = ?', [id]);
+      // The row is read with a lock, so that two requests cannot both read
+      // the same current status and both decide the transition is allowed.
+      // The order would then be delivered twice, and the stock credited
+      // twice.
+      const [orders] = await connection.query(
+        'SELECT status FROM purchase_orders WHERE id = ? FOR UPDATE',
+        [id]
+      );
       const current = String((orders as any[])[0]?.status || '').toLowerCase();
       const ok = allowedTransitions[current]?.includes(status);
       if (!ok) {

@@ -20,10 +20,15 @@ export function ApiHealthWidget() {
       // path, which assumed the app and the API share an origin -- true in
       // production behind one host, false in development, where it made the
       // widget report the API as unreachable.
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'health-probe@invalid.local' })
+      //
+      // The probe asks the service whether it is alive. It used to post to
+      // the sign-in route, which is refused before it runs -- the sign-in
+      // route requires a request token, and a probe has none -- so the probe
+      // measured a refusal and called it healthy. The health route answers
+      // exactly the question being asked.
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
       }).catch(() => null);
 
       const end = performance.now();

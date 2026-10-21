@@ -8,12 +8,11 @@
  * step).
  */
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import express from 'express';
 import type { Server } from 'http';
 import type { AddressInfo } from 'net';
-import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
-import { getSecret } from '../config/env.js';
 import { encrypt } from '../utils/encryption.js';
 import emergencyRoutes from '../routes/emergency.routes.js';
 
@@ -118,11 +117,7 @@ describe('Emergency triage board', () => {
 
     // The super admin holds the 'all' permission, so every emergency
     // permission resolves without a per-module permissions row.
-    token = jwt.sign(
-      { id: 1, email: 'superadmin@smarthealth.com', role: 'super_admin', hospital_id: 'HOSP-001' },
-      getSecret('JWT_SECRET', 'dev-only-jwt-secret'),
-      { expiresIn: '1h' }
-    );
+    token = mintSessionToken(1, 'superadmin@smarthealth.com', 'super_admin', { hospital_id: 'HOSP-001' }, '1h');
   });
 
   afterAll(async () => {

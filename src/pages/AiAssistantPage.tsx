@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -188,7 +189,7 @@ export default function AiAssistantPage() {
         newValue: `Queried Clinical AI (${selectedPersona.name}) using model type ${modelType} with search grounding ${enableSearchGrounding ? 'ON' : 'OFF'}`
       });
 
-      const response = await fetch('/api/gemini/chat', {
+      const response = await fetch(`${API_BASE_URL}/gemini/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -14,7 +14,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import { errorHandler } from './middleware/errorHandler.js';
+import { errorHandler, PublicError } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
 import { getSecret } from './config/env.js';
@@ -73,12 +73,20 @@ const __dirname = path.dirname(__filename);
 
 // Rate limiting middleware
 //
-// This is the broad per-IP ceiling across all /api routes, and it is the limit
-// that actually bounded the Playwright suite: at 100 requests per 15 minutes a
+// This is the broad per-IP ceiling across all /api routes. It is overridable
+// because a test run has to be able to raise it: at the default ceiling a
 // single browser run exceeds it, after which auth tests fail with 429 for a
-// reason unrelated to the code under test. Overridable so a test run can raise
-// it, with the secure default preserved everywhere else.
-const apiLimitMax = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10);
+// reason unrelated to the code under test.
+//
+// The default is set for a real deployment rather than for a test. A hospital
+// reaches the service through one address, so every member of staff and
+// every device on the network share one allowance when the limit counts the
+// address rather than the person. A ceiling low enough to stop one client
+// from abusing the service is low enough to lock a ward out of it.
+//
+// The sign-in and second-factor routes carry their own, much tighter
+// ceilings, which is where an abuse of the service actually costs something.
+const apiLimitMax = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '2000', 10);
 const apiLimitWindowMs = parseInt(
   process.env.RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000),
   10
@@ -93,6 +101,11 @@ const apiLimiter = rateLimit({
 });
 
 // Middleware
+// The framework announces itself in a header by default, which tells a
+// visitor which server software is in use and nothing else. It is turned
+// off: the answer to a request says what the request was about, not what
+// answered it.
+app.disable('x-powered-by');
 app.use(helmet());
 // FRONTEND_URL may list several origins, comma separated, so a developer whose
 // default app port is occupied by another process can run on a free port without
@@ -104,7 +117,10 @@ app.use(cors({
     // Same-origin and non-browser callers send no Origin header.
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    // A request from an address that is not on the list is refused, and the
+    // refusal says nothing about which addresses are on the list or which one
+    // asked. It is a refusal, not a fault, so it is answered as one.
+    return callback(new PublicError('This request is not allowed from this address.', 403));
   },
   credentials: true,
   // Required for the app to read the CSRF token: response headers other than
@@ -113,8 +129,21 @@ app.use(cors({
   // the server sends it.
   exposedHeaders: ['X-XSRF-Token']
 }));
-app.use(express.json());
-app.use(morgan('dev'));
+// The body limit is stated rather than left to the framework's default, so
+// that the limit a deployment has is the one its configuration says it has.
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: process.env.JSON_BODY_LIMIT || '1mb' }));
+// The access log records the request and its answer. It records nothing
+// about the person who made it: no body, no session, and no query string.
+//
+// The query string is dropped because one of the streams carries its token
+// there, and a token in the access log is a token in every copy of the log.
+// The format is the one a server operator reads.
+const accessLogFormat = (tokens: any, req: any, res: any): string => {
+  const path = (req.originalUrl || req.url || '').split('?')[0];
+  return `${req.method} ${path} ${res.statusCode} ${tokens['response-time']}ms`;
+};
+app.use(morgan(process.env.NODE_ENV === 'production' ? accessLogFormat : ('dev' as any)));
 app.use(cookieParser() as any);
 // The application is published through a proxy that terminates TLS. Trusting
 // that hop is what makes the request look like the secure one it is: without
@@ -147,8 +176,12 @@ scheduleBackups();
 // Apply the rate limiting middleware to all API requests
 app.use('/api/', apiLimiter);
 
-// Static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// The API is mounted below. The uploaded documents are deliberately NOT
+// served as static files: they are the patient's records, and a static route
+// hands every one of them to anybody who can guess or derive the address,
+// with no sign-in and no check that the person asking is allowed to see it.
+// They are served by the document routes instead, which authenticate the
+// caller, check the permission and check whose record it is.
 
 // The service's own status. It sits under the API prefix because the root
 // path belongs to the application itself whenever a front-end build is

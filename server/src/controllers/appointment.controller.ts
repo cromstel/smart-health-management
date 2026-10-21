@@ -8,6 +8,7 @@ import { APP_NAME } from '../config/app.js';
 export const getAppointments = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { patientId, doctorId, departmentId, status, date } = req.query;
+    const scope = req.tenant;
     let query = `
       SELECT a.*, p.first_name as patient_first_name, p.last_name as patient_last_name,
              s.first_name as doctor_first_name, s.last_name as doctor_last_name,
@@ -19,6 +20,14 @@ export const getAppointments = async (req: AuthRequest, res: Response): Promise<
       WHERE 1=1
     `;
     const params: any[] = [];
+
+    // The list is confined to the caller's hospital. The appointment's
+    // hospital is the hospital of the patient it is for, and the patient
+    // table is already joined.
+    if (!scope?.platformWide) {
+      query += ' AND p.hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
 
     if (patientId) {
       query += ' AND a.patient_id = ?';
@@ -41,7 +50,12 @@ export const getAppointments = async (req: AuthRequest, res: Response): Promise<
       params.push(date);
     }
 
-    query += ' ORDER BY a.appointment_date, a.appointment_time';
+    // The list is paged. The schedule of every hospital is everybody's
+    // business otherwise, and it grows without bound.
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    query += ' ORDER BY a.appointment_date, a.appointment_time LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
     const [appointments] = await pool.query(query, params);
     res.json(appointments);
@@ -132,6 +146,17 @@ const APPOINTMENT_COLUMN_MAP: Record<string, string> = {
   notes: 'notes',
 };
 
+// The statuses the appointment can be in. The column holds them in lower
+// case, and a request that says "Confirmed" used to be written as it came,
+// which the column does not accept.
+const APPOINTMENT_STATUSES = ['scheduled', 'confirmed', 'completed', 'cancelled'];
+
+const normalizeAppointmentStatus = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalised = value.trim().toLowerCase();
+  return APPOINTMENT_STATUSES.includes(normalised) ? normalised : null;
+};
+
 export const updateAppointment = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { id } = req.params;
@@ -141,6 +166,18 @@ export const updateAppointment = async (req: AuthRequest, res: Response): Promis
     const values: unknown[] = [];
     for (const [key, value] of Object.entries(updates)) {
       if (!ALLOWED_APPOINTMENT_UPDATES.has(key)) continue;
+      if (key === 'status') {
+        const status = normalizeAppointmentStatus(value);
+        if (status === null) {
+          res.status(400).json({
+            error: `Status must be one of: ${APPOINTMENT_STATUSES.join(', ')}`,
+          });
+          return;
+        }
+        fields.push(`${APPOINTMENT_COLUMN_MAP[key]} = ?`);
+        values.push(status);
+        continue;
+      }
       fields.push(`${APPOINTMENT_COLUMN_MAP[key]} = ?`);
       values.push(value === '' ? null : value);
     }

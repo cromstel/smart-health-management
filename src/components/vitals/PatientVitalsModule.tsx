@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -178,7 +179,7 @@ export function PatientVitalsModule({
     const toastId = toast.loading('Generating secure digital health token...');
 
     try {
-      const response = await fetch('/api/shared/patient-summary/generate', {
+      const response = await fetch(`${API_BASE_URL}/shared/patient-summary/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

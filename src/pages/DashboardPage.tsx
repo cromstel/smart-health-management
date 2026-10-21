@@ -248,7 +248,14 @@ export default function DashboardPage() {
       setPatientLoadPredictions(predictions.predictions || []);
 
       const ghanaData = await api.getGhanaHealthData();
-      setGhanaHealthData(ghanaData || []);
+      // The endpoint answers with the records and whether the integration is
+      // configured. The panel wanted the records, and was handed the object
+      // that holds them, so it never rendered anything.
+      setGhanaHealthData(
+        Array.isArray(ghanaData)
+          ? ghanaData
+          : ((ghanaData as { ghanaHealthData?: unknown[] })?.ghanaHealthData ?? [])
+      );
     } catch (error) {
       // No fabricated fallback. A failed dashboard query used to be papered
       // over with invented patient counts and revenue figures, which made a

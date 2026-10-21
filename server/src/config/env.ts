@@ -89,15 +89,31 @@ for (const [key, value] of realEnv) {
   process.env[key] = value;
 }
 
-export const getSecret = (name: string, devFallback: string): string => {
+/**
+ * Reads a secret that the application cannot work without.
+ *
+ * The secret is required in every environment, not only in production. The
+ * development fallback used to stand in for a missing one, and the fallback
+ * was a published string: a deployment that started with
+ * `NODE_ENV=development` -- which is what the environment template ships --
+ * signed and verified its tokens with a key that anybody could read, and
+ * could then mint a token for an administrator.
+ *
+ * The fallback is still here for the rare case where it is asked for
+ * deliberately, and it has to be asked for deliberately.
+ */
+export const getSecret = (name: string, devFallback?: string): string => {
   const value = process.env[name];
   if (value && value.trim() !== '') {
     return value;
   }
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(`Missing required environment variable: ${name}`);
+  if (devFallback && process.env.ALLOW_INSECURE_DEV_SECRETS === 'true') {
+    console.warn(
+      `[config] ${name} is not set and the development fallback was allowed. This is not a production arrangement.`
+    );
+    return devFallback;
   }
-  return devFallback;
+  throw new Error(`Missing required environment variable: ${name}`);
 };
 
 /**

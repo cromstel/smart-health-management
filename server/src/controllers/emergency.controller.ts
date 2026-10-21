@@ -49,9 +49,9 @@ const readActor = async (req: AuthRequest) => {
  *
  * The whole board in one response: the active admissions and the bed list.
  */
-export const getTriageBoard = async (_req: AuthRequest, res: Response): Promise<void> => {
+export const getTriageBoard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const board = await emergencyService.getTriageBoard();
+    const board = await emergencyService.getTriageBoard(req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1);
     res.status(200).json({
       patients: board.patients,
       beds: board.beds,
@@ -66,9 +66,9 @@ export const getTriageBoard = async (_req: AuthRequest, res: Response): Promise<
 /**
  * GET /api/emergency/beds
  */
-export const getBeds = async (_req: AuthRequest, res: Response): Promise<void> => {
+export const getBeds = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const beds = await emergencyService.listBeds();
+    const beds = await emergencyService.listBeds(req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1);
     res.status(200).json({ beds, count: beds.length });
   } catch (error) {
     respondWithServiceError(error, res, 'Error fetching emergency beds');

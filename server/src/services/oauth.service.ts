@@ -1,6 +1,27 @@
 import axios from 'axios';
 import { isConfigured } from '../config/env.js';
 
+/**
+ * A failure of the token exchange, described without the request.
+ *
+ * The error a client library raises carries the whole request: the URL, the
+ * headers and the body. The body is the form that carried the application's
+ * client secret and the user's own long-lived refresh token, so logging the
+ * error as it came writes both of them into the log file. The status and a
+ * short message say everything that is needed to diagnose it.
+ */
+const describeTokenFailure = (error: unknown, provider: string): string => {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  const code = (error as { code?: string })?.code;
+  return [
+    `${provider} token refresh failed`,
+    status ? `status ${status}` : null,
+    code ? `code ${code}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+};
+
 export const refreshOneDriveToken = async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
   const client_id = process.env.ONEDRIVE_CLIENT_ID;
   const client_secret = process.env.ONEDRIVE_CLIENT_SECRET;
@@ -28,7 +49,7 @@ export const refreshOneDriveToken = async (refreshToken: string): Promise<{ acce
     const { access_token, refresh_token: new_refresh_token } = tokenResponse.data;
     return { accessToken: access_token, refreshToken: new_refresh_token || refreshToken };
   } catch (error) {
-    console.error('Error refreshing OneDrive token:', error);
+    console.error(describeTokenFailure(error, 'OneDrive'));
     throw new Error('Failed to refresh OneDrive token', { cause: error });
   }
 };
@@ -60,7 +81,7 @@ export const refreshGoogleDriveToken = async (refreshToken: string): Promise<{ a
     const { access_token, refresh_token: new_refresh_token } = tokenResponse.data;
     return { accessToken: access_token, refreshToken: new_refresh_token || refreshToken };
   } catch (error) {
-    console.error('Error refreshing Google Drive token:', error);
+    console.error(describeTokenFailure(error, 'Google Drive'));
     throw new Error('Failed to refresh Google Drive token', { cause: error });
   }
 };

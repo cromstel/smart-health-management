@@ -1,10 +1,10 @@
 // server/src/controllers/superAdmin.controller.ts
 
 import { Request, Response } from 'express';
-import child_process from 'child_process';
-const { exec } = child_process;
+import { spawn } from 'child_process';
 
 import fs from 'fs/promises';
+import { createReadStream } from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
@@ -251,35 +251,59 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     }
 
     // Drop existing database and then restore.
-    // Password passed via MYSQL_PWD env (never on the command line / process list).
-    const dropDbCommand = `mysql -h ${host} -P ${port} -u ${username} -e "DROP DATABASE IF EXISTS \`${database}\`; CREATE DATABASE \`${database}\`;"`;
-    const restoreCommand = `mysql -h ${host} -P ${port} -u ${username} ${database} < "${backupPath}"`;
+    //
+    // The command is built as an argument list and run without a shell. It
+    // used to be a command line assembled by interpolation and handed to a
+    // shell, which meant a value carrying a backtick, a quote or a `$()`
+    // became part of the command rather than part of the argument.
+    //
+    // The password is passed through MYSQL_PWD, so it never appears in the
+    // command or in the process list.
+    const databaseName = String(database);
+    if (!/^[A-Za-z0-9_]+$/.test(databaseName)) {
+      res.status(400).json({ error: 'The database name is not a valid identifier' });
+      return;
+    }
 
-    await new Promise<void>((resolve, reject) => {
-      exec(dropDbCommand, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
-        if (error) {
-          console.error(`exec error (dropDb): ${error}`);
-          return reject(error);
-        }
-        if (stderr) {
-          console.error(`stderr (dropDb): ${stderr}`);
-        }
-        resolve();
-      });
-    });
+    const mysqlArgs = ['--host', String(host), '--port', String(port), '--user', String(username)];
+    const mysqlEnv = { ...process.env, MYSQL_PWD: password };
 
-    await new Promise<void>((resolve, reject) => {
-      exec(restoreCommand, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
-        if (error) {
-          console.error(`exec error (restore): ${error}`);
-          return reject(error);
+    const runMysql = (args: string[], stdinFile?: string): Promise<void> =>
+      new Promise<void>((resolve, reject) => {
+        const child = spawn('mysql', [...mysqlArgs, ...args], {
+          env: mysqlEnv,
+          shell: false,
+        });
+        let stderr = '';
+        child.stderr.on('data', (chunk) => {
+          stderr += String(chunk);
+        });
+        child.on('error', reject);
+        child.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+            return;
+          }
+          reject(new Error(`mysql exited with code ${code}: ${stderr.slice(0, 400)}`));
+        });
+        if (stdinFile) {
+          const source = createReadStream(stdinFile);
+          source.on('error', reject);
+          source.pipe(child.stdin);
         }
-        if (stderr) {
-          console.error(`stderr (restore): ${stderr}`);
-        }
-        resolve();
       });
-    });
+
+    try {
+      await runMysql([
+        '--execute',
+        `DROP DATABASE IF EXISTS \`${databaseName}\`; CREATE DATABASE \`${databaseName}\`;`,
+      ]);
+      await runMysql([databaseName], backupPath);
+    } catch (error) {
+      console.error('Restore failed:', error instanceof Error ? error.message : error);
+      res.status(500).json({ error: 'Failed to restore the database from the backup' });
+      return;
+    }
 
     const authReq = req as AuthRequest;
     if (authReq.user) {

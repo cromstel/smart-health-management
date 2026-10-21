@@ -1,18 +1,34 @@
 import type { Request, Response, NextFunction } from 'express';
 import { createHash } from 'crypto';
-import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
-import { getSecret } from '../config/env.js';
+import { verifyToken, type TokenClaims } from '../config/tokens.js';
 import type { RowDataPacket } from 'mysql2';
 
+/**
+ * The tenant a request belongs to.
+ *
+ * The scope is worked out from the account's own row, never from what the
+ * request asked for. A request that names a hospital is a request that is
+ * checked against this scope; it is not the scope itself.
+ */
+export interface TenantScope {
+  /** The hospital's numeric key, which is what the records are keyed by. */
+  hospitalId: number | null;
+  /** The hospital's public code, for messages and for display. */
+  hospitalCode: string | null;
+  /**
+   * True when the account's role holds the platform-wide permission.
+   *
+   * Such an account is the one that is meant to see across the installation;
+   * everybody else is confined to their own hospital.
+   */
+  platformWide: boolean;
+}
+
 export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-    hospital_id?: string;
-    department_id?: string;
-  };
+  user?: TokenClaims & { hospital_ref?: number; ver?: number };
+  /** The tenant the request is confined to. */
+  tenant?: TenantScope;
 }
 
 /**
@@ -107,6 +123,60 @@ export const isTokenRevoked = async (tokenHash: string): Promise<boolean> => {
   return revoked;
 };
 
+/**
+ * Resolves the account behind a token, and the tenant it is confined to.
+ *
+ * The account is read from the database rather than taken from the token,
+ * because the token says who the account was when it was issued and the
+ * database says who it is now. A token that survived a change of role, of
+ * hospital or of status would otherwise still carry the old answer, and the
+ * permission check would act on it.
+ */
+interface AccountState {
+  roleId: number | null;
+  roleName: string;
+  hospitalId: number | null;
+  hospitalCode: string | null;
+  status: string;
+  tokenVersion: number;
+  platformWide: boolean;
+}
+
+const accountState = async (userId: string): Promise<AccountState | null> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT u.id, u.role_id, u.status, u.hospital_id, u.token_version,
+            r.name AS role_name, h.hospital_id AS hospital_code,
+            EXISTS (
+              SELECT 1 FROM permissions p
+               WHERE p.role_id = u.role_id AND p.module = 'all' AND p.can_view = 1
+            ) AS platform_wide
+       FROM users u
+       LEFT JOIN roles r ON r.id = u.role_id
+       LEFT JOIN hospitals h ON u.hospital_id = h.id
+      WHERE u.id = ?`,
+    [userId]
+  );
+  const row = rows[0] as any;
+  if (!row) return null;
+  return {
+    roleId: row.role_id ?? null,
+    roleName: row.role_name || 'User',
+    hospitalId: row.hospital_id ?? null,
+    hospitalCode: row.hospital_code ?? null,
+    status: row.status || 'active',
+    tokenVersion: Number(row.token_version ?? 0),
+    platformWide: row.platform_wide === 1 || row.platform_wide === true,
+  };
+};
+
+/**
+ * Authenticates a request and works out who is making it.
+ *
+ * A token that is waiting for a second factor is not a session. It may only
+ * be used to complete the verification it was issued for, and it is refused
+ * everywhere else: it used to be accepted as a full credential, which meant
+ * that knowing somebody's password was enough to read their patients.
+ */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const token = extractToken(req);
@@ -116,13 +186,12 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return;
     }
 
-    const decoded = jwt.verify(token, getSecret('JWT_SECRET', 'dev-only-jwt-secret')) as {
-      id: string;
-      email: string;
-      role: string;
-      hospital_id?: string;
-      department_id?: string;
-    };
+    const decoded = verifyToken(token);
+
+    if (decoded.mfa_pending) {
+      res.status(401).json({ error: 'Verification is not complete' });
+      return;
+    }
 
     // A token that was invalidated by logout must stop working immediately
     // instead of staying valid until its natural expiry.
@@ -131,6 +200,66 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return;
     }
 
+    const account = await accountState(decoded.id);
+    if (!account) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    // An account that has been suspended, locked or left in the background
+    // does not hold a session, whatever its token says.
+    if (account.status !== 'active') {
+      res.status(403).json({ error: 'This account is not active' });
+      return;
+    }
+
+    // A token minted before the account's credentials changed is stale, and
+    // stops being accepted the moment they do.
+    if (decoded.ver !== undefined && decoded.ver !== account.tokenVersion) {
+      res.status(401).json({ error: 'Session has been revoked' });
+      return;
+    }
+
+    req.user = {
+      ...decoded,
+      role: account.roleName,
+      hospital_id: account.hospitalCode ?? undefined,
+      hospital_ref: account.hospitalId ?? undefined,
+    };
+    req.tenant = {
+      hospitalId: account.hospitalId,
+      hospitalCode: account.hospitalCode,
+      platformWide: account.platformWide,
+    };
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+/**
+ * Authenticates a request that is allowed to present a token which is still
+ * waiting for its second factor.
+ *
+ * Only the endpoints that complete the verification use this. Everything else
+ * uses `authenticate`, which refuses such a token.
+ */
+export const authenticatePendingMfa = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = extractToken(req);
+    if (!token) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+    const decoded = verifyToken(token);
+    if (await isTokenRevoked(hashToken(token))) {
+      res.status(401).json({ error: 'Session has been revoked' });
+      return;
+    }
     req.user = decoded;
     next();
   } catch {
@@ -233,27 +362,60 @@ export const requirePermission = (module: string, action: 'view' | 'add' | 'edit
         return;
       }
 
-      const hospitalScopedModules = new Set(['patients', 'staff', 'appointments', 'purchaseOrder']);
+      const hospitalScopedModules = new Set([
+        'patients',
+        'staff',
+        'appointments',
+        'purchaseOrder',
+        'clinicalNotes',
+        'medicationAdministrations',
+        'vitals',
+        'prescriptions',
+        'dispensingEvents',
+        'documents',
+        'emergency',
+        'pharmacy',
+      ]);
       if (hospitalScopedModules.has(module)) {
-        const userHospital = req.user.hospital_id;
-        if (!userHospital) {
+        // The scope comes from the account's own row, worked out when the
+        // request was authenticated. A request that names a hospital is a
+        // request for a hospital inside that scope, never the scope itself:
+        // the check used to read the hospital out of the request and compare
+        // it with the caller's, which meant that a request that named no
+        // hospital passed the check and the query was then left to answer
+        // with every hospital's records.
+        const scope = req.tenant;
+        if (!scope?.hospitalId && !scope?.platformWide) {
           res.status(403).json({ error: 'Missing hospital context' });
           return;
         }
+
+        if (scope?.platformWide) {
+          next();
+          return;
+        }
+
         // The target hospital can arrive under either spelling: the clients
         // send `hospital_id` on some payloads and `hospitalId` on others, and
         // only reading one of them let a record be attached to a hospital
-        // outside the caller's own.
+        // outside the caller's own. The comparison accepts the hospital's
+        // numeric key and its public code, because the two are both in use.
         const targetHospital =
           (req.query.hospital as string) ||
           (req.query.hospitalId as string) ||
           (req.body?.hospitalId as string) ||
           (req.body?.hospital_id as string) ||
-          (req.params?.hospitalId as string) ||
-          userHospital;
-        if (targetHospital && String(targetHospital) !== String(userHospital)) {
-          res.status(403).json({ error: 'Hospital mismatch' });
-          return;
+          (req.params?.hospitalId as string);
+
+        if (targetHospital) {
+          const asNumber = Number(targetHospital);
+          const matches =
+            (Number.isInteger(asNumber) && asNumber === Number(scope?.hospitalId)) ||
+            String(targetHospital) === String(scope?.hospitalCode);
+          if (!matches) {
+            res.status(403).json({ error: 'Hospital mismatch' });
+            return;
+          }
         }
       }
       next();

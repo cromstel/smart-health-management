@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import express from 'express';
-import jwt from 'jsonwebtoken';
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
 
@@ -256,11 +256,7 @@ describe('gemini routes', () => {
 });
 
 describe('gemini HTTP surface', () => {
-  const secret = process.env.JWT_SECRET || 'dev-only-jwt-secret';
-  const token = jwt.sign(
-    { id: '1', email: 'doctor@smarthealth.com', role: 'Doctor', hospital_id: 'HOSP-001' },
-    secret
-  );
+  const token = mintSessionToken(1, 'doctor@smarthealth.com', 'Doctor', { hospital_id: 'HOSP-001' });
 
   const withServer = async (fn: (base: string) => Promise<void>): Promise<void> => {
     const app = express();
@@ -278,6 +274,10 @@ describe('gemini HTTP surface', () => {
 
   beforeEach(() => {
     queryMock.mockImplementation(async (sql: string) => {
+        if (sql.includes('AS platform_wide')) {
+          // The account behind the token, as the authentication middleware reads it.
+          return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+        }
       if (sql.includes('password_must_change')) {
         return [[{ password_must_change: 0, password_postpone_count: 0 }], []];
       }

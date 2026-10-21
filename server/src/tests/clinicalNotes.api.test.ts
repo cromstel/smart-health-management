@@ -7,11 +7,10 @@
  * refused.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import express from 'express';
 import type { Server } from 'http';
-import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
-import { getSecret } from '../config/env.js';
 import clinicalNotesRoutes from '../routes/clinicalNotes.routes.js';
 
 let dbAvailable = false;
@@ -34,11 +33,7 @@ let baseUrl = '';
 const HOSPITAL_CODE = 'HOSP-001';
 
 const mintToken = (userId: number, email: string, role: string): string =>
-  jwt.sign(
-    { id: String(userId), email, role, hospital_id: HOSPITAL_CODE },
-    getSecret('JWT_SECRET', 'dev-only-jwt-secret'),
-    { expiresIn: '15m' }
-  );
+  mintSessionToken(userId, email, role, { hospital_id: HOSPITAL_CODE });
 
 async function seedFixture(): Promise<void> {
   const [userResult] = await pool.query(

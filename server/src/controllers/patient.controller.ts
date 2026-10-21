@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
+import { belongsToTenant } from '../middleware/tenant.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 
 const sensitiveFields = ['first_name', 'last_name', 'phone', 'email', 'address'];
@@ -142,6 +143,30 @@ const hospitalExists = async (hospitalId: number): Promise<boolean> => {
   return (rows as any[]).length > 0;
 };
 
+/**
+ * The hospital's numeric key, from either the key or the public code.
+ *
+ * The records are keyed by the hospital's number, but the people and the
+ * clients use the hospital's public code — the one it is addressed by. Both
+ * are accepted, and both name the same hospital.
+ */
+const resolveHospitalKey = async (value: unknown): Promise<number | null> => {
+  const asString = String(value ?? '').trim();
+  if (asString === '') return null;
+
+  const asNumber = Number(asString);
+  if (Number.isInteger(asNumber) && asNumber > 0) {
+    return (await hospitalExists(asNumber)) ? asNumber : null;
+  }
+
+  const [rows] = await pool.query(
+    'SELECT id FROM hospitals WHERE hospital_id = ? LIMIT 1',
+    [asString]
+  );
+  const id = (rows as any[])[0]?.id;
+  return id === undefined || id === null ? null : Number(id);
+};
+
 /** Path parameters are strings; only a positive integer can address a row. */
 const parseId = (value: unknown): number | null => {
   const asString = String(value ?? '');
@@ -226,14 +251,10 @@ const buildPatientPayload = async (body: Record<string, unknown>): Promise<Patie
   const hospitalValue = readField(body, 'hospital_id');
   let hospitalId: number | null = null;
   if (hospitalValue !== undefined && hospitalValue !== null && hospitalValue !== '') {
-    const parsed = Number(hospitalValue);
-    if (!Number.isInteger(parsed) || parsed <= 0) {
-      throw new InvalidInputError('Invalid hospital id');
-    }
-    if (!(await hospitalExists(parsed))) {
+    hospitalId = await resolveHospitalKey(hospitalValue);
+    if (hospitalId === null) {
       throw new InvalidInputError('Hospital not found');
     }
-    hospitalId = parsed;
   }
 
   return {
@@ -386,9 +407,20 @@ const decryptPatientData = (patient: Record<string, any>) => {
 export const getAllPatients = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { search, status, hospital } = req.query;
-    
+    const scope = req.tenant;
+
     let query = 'SELECT * FROM patients WHERE 1=1';
     const params: any[] = [];
+
+    // The list is confined to the caller's hospital. The `hospital` filter is
+    // a request for a particular hospital inside that scope, not a way to
+    // choose one: a request for a hospital that is not the caller's is
+    // refused by the permission check before the query is built, and the
+    // query is narrowed to the caller's own hospital either way.
+    if (!scope?.platformWide) {
+      query += ' AND hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
 
     if (search) {
       query += ' AND (first_name LIKE ? OR last_name LIKE ? OR patient_id LIKE ?)';
@@ -402,11 +434,24 @@ export const getAllPatients = async (req: AuthRequest, res: Response): Promise<R
     }
 
     if (hospital) {
+      // The filter names a hospital by its public code or by its key. It is
+      // resolved to the key, because the column holds the key: a code that
+      // was compared with it as a string would match nothing at all.
+      const requested = await resolveHospitalKey(hospital);
+      if (requested === null) {
+        return res.status(404).json({ error: 'Hospital not found' });
+      }
       query += ' AND hospital_id = ?';
-      params.push(hospital);
+      params.push(requested);
     }
 
-    query += ' ORDER BY created_at DESC';
+    // The list is paged. A table of patients is a table of everybody, and
+    // answering with the whole of it in one response is how a single request
+    // becomes a copy of the installation's records.
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    query += ' ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
     const [patients] = await pool.query(query, params);
     const decryptedPatients = (patients as any[]).map(decryptPatientData);
@@ -434,6 +479,13 @@ export const getPatientById = async (req: AuthRequest, res: Response): Promise<R
     let patient = (patients as any[])[0];
 
     if (!patient) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    // A record that belongs to another hospital is absent for this caller,
+    // not forbidden: the answer should not tell a caller that a record
+    // exists somewhere it may not look.
+    if (!belongsToTenant(req.tenant, patient.hospital_id)) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
@@ -466,6 +518,16 @@ export const createPatient = async (req: AuthRequest, res: Response): Promise<Re
   try {
     const body = (req.body ?? {}) as Record<string, unknown>;
     const payload = await buildPatientPayload(body);
+
+    // A record is created in the caller's own hospital. The hospital in the
+    // request is not a choice of where the record belongs: a caller who may
+    // see one hospital's records may not write into another's, and the only
+    // caller for whom the hospital in the request is honoured is the one
+    // whose role is platform-wide.
+    const scope = req.tenant;
+    if (!scope?.platformWide) {
+      payload.hospitalId = scope?.hospitalId ?? null;
+    }
 
     // patients.id is a BIGINT UNSIGNED AUTO_INCREMENT column: a uuid cannot be
     // written to it. The public identifier lives in patients.patient_id, and
@@ -532,9 +594,21 @@ export const updatePatient = async (req: AuthRequest, res: Response): Promise<Re
     const fields = Object.keys(updates).map((key) => `${key} = ?`).join(', ');
     const values = Object.values(updates);
 
+    // The record is updated where it is AND where the caller's hospital
+    // allows. A record that belongs to another hospital is simply not
+    // updated, and the answer is the same as for a record that does not
+    // exist.
+    const scope = req.tenant;
+    const params: any[] = [...values, patientId];
+    let predicate = '';
+    if (!scope?.platformWide) {
+      predicate = ' AND hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
+
     const [result] = await pool.query(
-      `UPDATE patients SET ${fields} WHERE id = ?`,
-      [...values, patientId]
+      `UPDATE patients SET ${fields} WHERE id = ?${predicate}`,
+      params
     );
 
     if ((result as any).affectedRows === 0) {
@@ -560,7 +634,18 @@ export const deletePatient = async (req: AuthRequest, res: Response): Promise<Re
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    const [result] = await pool.query('DELETE FROM patients WHERE id = ?', [patientId]);
+    // The record is removed where it is AND where the caller's hospital
+    // allows. A record that belongs to another hospital is not removed, and
+    // the answer is the same as for a record that does not exist.
+    const scope = req.tenant;
+    const params: any[] = [patientId];
+    let predicate = '';
+    if (!scope?.platformWide) {
+      predicate = ' AND hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
+
+    const [result] = await pool.query(`DELETE FROM patients WHERE id = ?${predicate}`, params);
 
     if ((result as any).affectedRows === 0) {
       return res.status(404).json({ error: 'Patient not found' });

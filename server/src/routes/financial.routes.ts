@@ -76,22 +76,73 @@ router.get('/reports', requirePermission('financial', 'view'), generateReport);
 router.get('/reports/pdf', requirePermission('financial', 'view'), exportPdf);
 router.get('/reports/excel', requirePermission('financial', 'view'), exportExcel);
 // Billing & Invoices
-router.post('/invoices', requirePermission('financial', 'add'), createInvoice);
-router.post('/invoices/:id/finalize', requirePermission('financial', 'edit'), finalizeInvoice);
+router.post('/invoices', requirePermission('financial', 'add'), [
+  body('patientId').optional({ nullable: true }).isInt({ min: 1 }).withMessage('Patient ID must be an integer'),
+  body('dueDate').optional({ nullable: true }).isDate().withMessage('Valid due date is required'),
+  body('items').isArray({ min: 1, max: 200 }).withMessage('An invoice needs at least one line and at most 200'),
+  body('items.*.description').isString().isLength({ min: 1, max: 255 }).withMessage('Each line needs a description'),
+  body('items.*.qty').isFloat({ min: 0 }).withMessage('Each line needs a quantity of zero or more'),
+  body('items.*.unitPrice').isFloat({ min: 0 }).withMessage('Each line needs a price of zero or more'),
+  body('items.*.taxRate').optional().isFloat({ min: 0 }).withMessage('A tax rate cannot be negative'),
+  validate,
+], createInvoice);
+router.post('/invoices/:id/finalize', requirePermission('financial', 'edit'), [
+  param('id').isInt().withMessage('Invalid invoice ID'),
+  validate,
+], finalizeInvoice);
 // Payments
-router.post('/payments', requirePermission('financial', 'add'), recordPayment);
+router.post('/payments', requirePermission('financial', 'add'), [
+  body('invoiceId').isInt({ min: 1 }).withMessage('Invoice ID is required'),
+  body('amount').isFloat({ min: 0 }).withMessage('Amount must be zero or more'),
+  body('method').optional().isString().withMessage('Method must be a string'),
+  body('reference').optional().isString().withMessage('Reference must be a string'),
+  validate,
+], recordPayment);
 // Expenses
-router.post('/expenses', requirePermission('financial', 'add'), createExpense);
+router.post('/expenses', requirePermission('financial', 'add'), [
+  body('category').notEmpty().withMessage('Category is required'),
+  body('vendor').optional({ nullable: true }).isString().withMessage('Vendor must be a string'),
+  body('date').isDate().withMessage('Valid date is required'),
+  body('amount').isFloat({ min: 0 }).withMessage('Amount must be zero or more'),
+  body('description').optional({ nullable: true }).isString().withMessage('Description must be a string'),
+  validate,
+], createExpense);
 // Payroll
-router.post('/payroll', requirePermission('financial', 'add'), createPayroll);
+router.post('/payroll', requirePermission('financial', 'add'), [
+  body('staffId').isInt({ min: 1 }).withMessage('Staff ID is required'),
+  body('periodStart').isDate().withMessage('Valid start date is required'),
+  body('periodEnd').isDate().withMessage('Valid end date is required'),
+  body('gross').isFloat({ min: 0 }).withMessage('Gross pay must be zero or more'),
+  body('deductions').optional().isFloat({ min: 0 }).withMessage('Deductions cannot be negative'),
+  validate,
+], createPayroll);
 // Tax
-router.post('/tax-rules', requirePermission('financial', 'add'), createTaxRule);
-router.post('/tax/calculate', requirePermission('financial', 'view'), calculateTax);
+router.post('/tax-rules', requirePermission('financial', 'add'), [
+  body('name').notEmpty().withMessage('Name is required'),
+  body('rate').isFloat({ min: 0 }).withMessage('Rate must be zero or more'),
+  body('appliesTo').notEmpty().withMessage('Applies to is required'),
+  body('effectiveFrom').isDate().withMessage('Valid effective-from date is required'),
+  body('effectiveTo').optional({ nullable: true }).isDate().withMessage('Valid effective-to date is required'),
+  validate,
+], createTaxRule);
+router.post('/tax/calculate', requirePermission('financial', 'view'), [
+  body('amount').isFloat({ min: 0 }).withMessage('Amount must be zero or more'),
+  validate,
+], calculateTax);
 // Forecasting
 router.get('/forecast', requirePermission('financial', 'view'), forecast);
 // Exports
 // Stripe
-router.post('/customers', requirePermission('financial', 'add'), createCustomer);
-router.post('/charges', requirePermission('financial', 'add'), createCharge);
+router.post('/customers', requirePermission('financial', 'add'), [
+  body('email').isEmail().withMessage('A valid email is required'),
+  body('name').optional().isString().withMessage('Name must be a string'),
+  validate,
+], createCustomer);
+router.post('/charges', requirePermission('financial', 'add'), [
+  body('amount').isFloat({ min: 0 }).withMessage('Amount must be zero or more'),
+  body('currency').optional().isString().withMessage('Currency must be a string'),
+  body('customerId').optional().isString().withMessage('Customer ID must be a string'),
+  validate,
+], createCharge);
 
 export default router;

@@ -16,8 +16,20 @@ vi.mock('../../config/database.js', () => {
   }
 })
 
+/**
+ * A request as the authentication middleware leaves it.
+ *
+ * The tenant scope is worked out from the account's own row when the request
+ * is authenticated, and it is what the permission check confines the request
+ * to.
+ */
 function makeReq(user: any, extras: Partial<Request> = {}): any {
-  return { user, query: {}, body: {}, params: {}, ...extras }
+  const tenant = (extras as any).tenant ?? {
+    hospitalId: 1,
+    hospitalCode: 'h1',
+    platformWide: false,
+  }
+  return { user, tenant, query: {}, body: {}, params: {}, ...extras }
 }
 
 function makeRes() {
@@ -35,6 +47,14 @@ describe('requirePermission hospital scoping', () => {
   })
 
   it('allows when hospital matches', async () => {
+    const req = makeReq({ id: 'u1', hospital_id: 'h1' }, { query: { hospital: '1' } })
+    const res = makeRes()
+    const mw = requirePermission('patients', 'view')
+    await mw(req as any, res, next)
+    expect(next).toHaveBeenCalled()
+  })
+
+  it('allows when the request names the hospital by its code', async () => {
     const req = makeReq({ id: 'u1', hospital_id: 'h1' }, { query: { hospital: 'h1' } })
     const res = makeRes()
     const mw = requirePermission('patients', 'view')
@@ -43,15 +63,18 @@ describe('requirePermission hospital scoping', () => {
   })
 
   it('blocks when hospital mismatches', async () => {
-    const req = makeReq({ id: 'u1', hospital_id: 'h1' }, { query: { hospital: 'h2' } })
+    const req = makeReq({ id: 'u1', hospital_id: 'h1' }, { query: { hospital: '2' } })
     const res = makeRes()
     const mw = requirePermission('patients', 'view')
     await mw(req as any, res, next)
     expect((res.status as any)).toHaveBeenCalledWith(403)
   })
 
-  it('blocks when hospital missing', async () => {
-    const req = makeReq({ id: 'u1', hospital_id: undefined }, { query: { hospital: 'h1' } })
+  it('blocks when the caller belongs to no hospital', async () => {
+    const req = makeReq(
+      { id: 'u1', hospital_id: undefined },
+      { tenant: { hospitalId: null, hospitalCode: null, platformWide: false } }
+    )
     const res = makeRes()
     const mw = requirePermission('staff', 'edit')
     await mw(req as any, res, next)

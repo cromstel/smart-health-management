@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mintToken as mintSessionToken } from './helpers/mintToken.js';
 import express from 'express';
-import jwt from 'jsonwebtoken';
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
 
@@ -36,6 +36,11 @@ describe('createShareLink', () => {
   it('stores a URL safe, unguessable token with the patient name from the record', async () => {
     let insertParams: any[] = [];
     queryMock.mockImplementation(async (sql: string, params: any[]) => {
+        if (sql.includes('AS platform_wide')) {
+          // The account behind the token, as the authentication middleware reads it.
+          return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+        }
+      if (sql.includes('SELECT hospital_id FROM patients')) return [[{ hospital_id: 1 }], []];
       if (sql.includes('FROM patients WHERE patient_id')) return [[patientRow], []];
       if (sql.startsWith('INSERT INTO shared_summaries')) {
         insertParams = params;
@@ -63,6 +68,11 @@ describe('createShareLink', () => {
 
   it('generates a different token every time', async () => {
     queryMock.mockImplementation(async (sql: string) => {
+        if (sql.includes('AS platform_wide')) {
+          // The account behind the token, as the authentication middleware reads it.
+          return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+        }
+      if (sql.includes('SELECT hospital_id FROM patients')) return [[{ hospital_id: 1 }], []];
       if (sql.includes('FROM patients WHERE patient_id')) return [[patientRow], []];
       return [{ insertId: 1 }, []];
     });
@@ -113,6 +123,11 @@ describe('readSharedSummary', () => {
           [],
         ];
       }
+        if (sql.includes('AS platform_wide')) {
+          // The account behind the token, as the authentication middleware reads it.
+          return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+        }
+      if (sql.includes('SELECT hospital_id FROM patients')) return [[{ hospital_id: 1 }], []];
       if (sql.includes('FROM patients WHERE patient_id')) return [[patientRow], []];
       if (sql.includes('FROM vitals v')) return [[], []];
       return [[], []];
@@ -148,6 +163,11 @@ describe('shared summary controller', () => {
 
   it('answers 201 with the token, the expiry and the link', async () => {
     queryMock.mockImplementation(async (sql: string) => {
+        if (sql.includes('AS platform_wide')) {
+          // The account behind the token, as the authentication middleware reads it.
+          return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+        }
+      if (sql.includes('SELECT hospital_id FROM patients')) return [[{ hospital_id: 1 }], []];
       if (sql.includes('FROM patients WHERE patient_id')) return [[patientRow], []];
       if (sql.startsWith('INSERT INTO shared_summaries')) return [{ insertId: 1 }, []];
       return [[], []];
@@ -155,7 +175,12 @@ describe('shared summary controller', () => {
 
     const res = resMock();
     await sharedSummaryController.generateSharedSummary(
-      { body: { patientId: 'PAT-007', patientName: 'Ignored Name' }, user: { id: '2' } } as any,
+      {
+        body: { patientId: 'PAT-007', patientName: 'Ignored Name' },
+        user: { id: '2' },
+        // The tenant scope the authentication middleware works out.
+        tenant: { hospitalId: 1, hospitalCode: 'HOSP-001', platformWide: true },
+      } as any,
       res
     );
 
@@ -183,11 +208,7 @@ describe('shared summary routes', () => {
 });
 
 describe('shared summary HTTP surface', () => {
-  const secret = process.env.JWT_SECRET || 'dev-only-jwt-secret';
-  const token = jwt.sign(
-    { id: '1', email: 'doctor@smarthealth.com', role: 'Doctor', hospital_id: 'HOSP-001' },
-    secret
-  );
+  const token = mintSessionToken(1, 'doctor@smarthealth.com', 'Doctor', { hospital_id: 'HOSP-001' });
 
   const withServer = async (fn: (base: string) => Promise<void>): Promise<void> => {
     const app = express();
@@ -205,6 +226,11 @@ describe('shared summary HTTP surface', () => {
 
   beforeEach(() => {
     queryMock.mockImplementation(async (sql: string) => {
+      if (sql.includes('AS platform_wide')) {
+        // The account behind the token, as the authentication middleware reads it.
+        return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+      }
+      if (sql.includes('SELECT hospital_id FROM patients')) return [[{ hospital_id: 1 }], []];
       if (sql.includes('password_must_change')) {
         return [[{ password_must_change: 0, password_postpone_count: 0 }], []];
       }
@@ -229,6 +255,11 @@ describe('shared summary HTTP surface', () => {
       }
       if (sql.includes('UPDATE shared_summaries')) return [{ affectedRows: 1 }, []];
       if (sql.includes('FROM appointments a')) return [[], []];
+        if (sql.includes('AS platform_wide')) {
+          // The account behind the token, as the authentication middleware reads it.
+          return [[{ id: 1, role_id: 2, status: 'active', hospital_id: 1, token_version: 0, role_name: 'admin', hospital_code: 'HOSP-001', platform_wide: 1 }], []];
+        }
+      if (sql.includes('SELECT hospital_id FROM patients')) return [[{ hospital_id: 1 }], []];
       if (sql.includes('FROM patients WHERE patient_id')) return [[patientRow], []];
       if (sql.startsWith('INSERT INTO shared_summaries')) return [{ insertId: 1 }, []];
       if (sql.includes('FROM vitals v')) return [[], []];

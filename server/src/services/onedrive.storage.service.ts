@@ -4,6 +4,8 @@ import { refreshOneDriveToken } from './oauth.service.js';
 import pool from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
+import path from 'path';
+import { safeFileName, isInsideDirectory } from '../utils/files.js';
 
 export class OneDriveStorageProvider implements IStorageProvider {
   private userId: number;
@@ -85,12 +87,21 @@ export class OneDriveStorageProvider implements IStorageProvider {
         }
       );
 
-      // Create a temporary file to store the downloaded content
-      const tempDir = './temp'; // Or a more robust temporary directory solution
+      // Create a temporary file to store the downloaded content.
+      //
+      // The name is the document's name, and a document's name can be set by
+      // a client, so it is reduced to something that cannot mean anything to
+      // the filesystem before it is used as a path. A name carrying a parent
+      // reference would otherwise write outside the temporary directory.
+      const tempDir = path.resolve('./temp');
       if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir);
+        fs.mkdirSync(tempDir, { recursive: true });
       }
-      const tempFilePath = `${tempDir}/${fileName}`;
+      const storedName = safeFileName(fileName);
+      const tempFilePath = path.join(tempDir, storedName);
+      if (!isInsideDirectory(tempDir, tempFilePath)) {
+        throw new Error('Failed to download file from OneDrive');
+      }
       const writer = fs.createWriteStream(tempFilePath);
 
       downloadResponse.data.pipe(writer);

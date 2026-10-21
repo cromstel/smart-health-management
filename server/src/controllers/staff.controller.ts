@@ -445,6 +445,14 @@ export const getStaff = async (req: AuthRequest, res: Response): Promise<Respons
     `;
     const params: any[] = [];
 
+    // The list is confined to the caller's hospital. A caller who may see
+    // one hospital's records may not see another's staff.
+    const scope = req.tenant;
+    if (!scope?.platformWide) {
+      query += ' AND s.hospital_id = ?';
+      params.push(scope?.hospitalId ?? -1);
+    }
+
     if (role) {
       query += ' AND s.role = ?';
       params.push(role);
@@ -454,6 +462,13 @@ export const getStaff = async (req: AuthRequest, res: Response): Promise<Respons
       query += ' AND s.hospital_id = ?';
       params.push(hospitalId);
     }
+
+    // The list is paged: a table of staff is a table of everybody, and the
+    // answer should not be the whole of it in one response.
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    query += ' ORDER BY s.id LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
     const [staff] = await pool.query(query, params);
     const decryptedStaff = (staff as any[]).map(decryptStaffData);

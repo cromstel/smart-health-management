@@ -64,14 +64,25 @@ export const createBatch = async (req: AuthRequest, res: Response): Promise<Resp
   }
 };
 
-// Only these columns may be changed through the API. Without a whitelist any
-// request key became a column, which allowed writes to `id` and `medicine_id`.
-const ALLOWED_BATCH_UPDATES = new Set([
-  'batch_number',
-  'expiry_date',
-  'quantity',
-  'recalled',
-]);
+/**
+ * The names a client may use for a batch field.
+ *
+ * The route validates the names the client sends, and the client sends the
+ * camel-case spelling. The whitelist held the column names, so the batch
+ * number and the expiry date were dropped on every edit -- the client was
+ * told the edit had been saved, and the two fields it had changed were not.
+ *
+ * The values of this map are the columns that may be written. A key that is
+ * not in it is not a column of the batch and is ignored.
+ */
+const BATCH_FIELD_ALIASES: Record<string, string> = {
+  batchNumber: 'batch_number',
+  batch_number: 'batch_number',
+  expiryDate: 'expiry_date',
+  expiry_date: 'expiry_date',
+  quantity: 'quantity',
+  recalled: 'recalled',
+};
 
 export const updateBatch = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
@@ -81,8 +92,9 @@ export const updateBatch = async (req: AuthRequest, res: Response): Promise<Resp
     const fields: string[] = [];
     const values: unknown[] = [];
     for (const [key, value] of Object.entries(updates)) {
-      if (!ALLOWED_BATCH_UPDATES.has(key)) continue;
-      fields.push(`${key} = ?`);
+      const column = BATCH_FIELD_ALIASES[key];
+      if (!column) continue;
+      fields.push(`${column} = ?`);
       values.push(value);
     }
 

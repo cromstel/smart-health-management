@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,7 +59,9 @@ export default function SharedPatientSummaryPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/shared/patient-summary?token=${token}`);
+        const response = await fetch(
+          `${API_BASE_URL}/shared/patient-summary?token=${encodeURIComponent(token)}`
+        );
         if (!response.ok) {
           const errData = await response.json();
           throw new Error(errData.error || 'Failed to fetch shared health summary');

@@ -41,6 +41,13 @@ export interface MedicationAdministrationFilters {
   date?: string | null;
   assignedStaffId?: number | null;
   limit?: number | null;
+  /**
+   * The hospital the records are confined to.
+   *
+   * Undefined means no confinement, which is what the platform-wide caller
+   * gets. A number confines the records to that hospital.
+   */
+  hospitalId?: number | null;
 }
 
 /** The record shape the API returns -- the field names the UI already uses. */
@@ -176,6 +183,13 @@ export const listMedicationAdministrations = async (
   const where: string[] = [];
   const params: unknown[] = [];
 
+  // The records are the patient's, and the patient belongs to a hospital. A
+  // caller is confined to the records of their own hospital.
+  if (filters.hospitalId !== undefined) {
+    where.push('p.hospital_id = ?');
+    params.push(filters.hospitalId);
+  }
+
   if (filters.patientId) {
     where.push('ma.patient_id = ?');
     params.push(filters.patientId);
@@ -213,9 +227,12 @@ export const listMedicationAdministrations = async (
 
 /** Reads a single administration record, or null when it does not exist. */
 export const getMedicationAdministration = async (
-  id: number
+  id: number,
+  hospitalId?: number | null
 ): Promise<MedicationAdministrationRecord | null> => {
-  const [rows] = await pool.query(`${SELECT_RECORD} WHERE ma.id = ? LIMIT 1`, [id]);
+  const scope = hospitalId === undefined ? '' : ' AND p.hospital_id = ?';
+  const params = hospitalId === undefined ? [id] : [id, hospitalId];
+  const [rows] = await pool.query(`${SELECT_RECORD} WHERE ma.id = ?${scope} LIMIT 1`, params);
   const rows_ = rows as MedicationAdministrationRecord[];
   return rows_.length ? rows_[0] : null;
 };
@@ -224,21 +241,32 @@ export const getMedicationAdministration = async (
  * The data the schedule form needs: the patients that can be dosed and the
  * staff a dose can be assigned to.
  */
-export const getMedicationAdministrationOptions = async (): Promise<MedicationAdministrationOptions> => {
+export const getMedicationAdministrationOptions = async (
+  hospitalId?: number | null
+): Promise<MedicationAdministrationOptions> => {
+  // The schedule form offers the patients of the caller's own hospital and
+  // the staff of that hospital, and nobody else's.
+  const scope = hospitalId === undefined ? '' : ' AND hospital_id = ?';
+  const params = hospitalId === undefined ? [] : [hospitalId];
+
   const [patientRows] = await pool.query(
     `SELECT id AS patientId, patient_id AS patientCode,
             CONCAT(first_name, ' ', last_name) AS patientName, hospital_id AS hospitalId
      FROM patients
-     WHERE status = 'active'
-     ORDER BY last_name, first_name`
+     WHERE status = 'active'${scope}
+     ORDER BY last_name, first_name
+     LIMIT 500`,
+    params
   );
 
   const [staffRows] = await pool.query(
     `SELECT id AS staffId, staff_id AS staffCode,
             CONCAT(first_name, ' ', last_name) AS staffName, role, user_id AS userId, hospital_id AS hospitalId
      FROM staff
-     WHERE status = 'active'
-     ORDER BY last_name, first_name`
+     WHERE status = 'active'${scope}
+     ORDER BY last_name, first_name
+     LIMIT 500`,
+    params
   );
 
   return {
@@ -252,6 +280,7 @@ interface PatientRow extends RowDataPacket {
   patient_id: string;
   first_name: string;
   last_name: string;
+  hospital_id: number | null;
 }
 
 /** Resolves a patient by primary key, accepting the business code as well. */
@@ -260,7 +289,7 @@ const resolvePatient = async (
   patientId: number
 ): Promise<PatientRow> => {
   const [rows] = await executor.query(
-    'SELECT id, patient_id, first_name, last_name FROM patients WHERE id = ? LIMIT 1',
+    'SELECT id, patient_id, first_name, last_name, hospital_id FROM patients WHERE id = ? LIMIT 1',
     [patientId]
   );
   const patient = (rows as PatientRow[])[0];
@@ -319,7 +348,35 @@ export interface CreateMedicationAdministrationInput {
   scheduledTime: string;
   assignedStaffId?: number | null;
   criticalNotes?: string | null;
+  /** The hospital the record is confined to. Undefined means no confinement. */
+  hospitalId?: number | null;
 }
+
+/**
+ * The hospital the record's patient belongs to, refused when it is another.
+ *
+ * A record is reached by its own number, and a number is not a secret. The
+ * record therefore says whose it is, and a record that belongs to another
+ * hospital is not found.
+ */
+const assertRecordHospital = async (
+  id: number,
+  hospitalId: number | null | undefined
+): Promise<void> => {
+  if (hospitalId === undefined) return;
+  const [rows] = await pool.query(
+    `SELECT p.hospital_id AS hospitalId
+       FROM medication_administrations ma
+       JOIN patients p ON p.id = ma.patient_id
+      WHERE ma.id = ?
+      LIMIT 1`,
+    [id]
+  );
+  const row = (rows as any[])[0];
+  if (!row || Number(row.hospitalId) !== Number(hospitalId)) {
+    throw new MedicationAdministrationError('Medication administration not found', 404);
+  }
+};
 
 /** Schedules a dose. The medicine name is resolved from the inventory. */
 export const createMedicationAdministration = async (
@@ -331,6 +388,9 @@ export const createMedicationAdministration = async (
   }
 
   const patient = await resolvePatient(pool, input.patientId);
+  if (input.hospitalId !== undefined && Number((patient as any).hospital_id) !== Number(input.hospitalId)) {
+    throw new MedicationAdministrationError(`Patient ${input.patientId} was not found`, 404);
+  }
   const medicine = await resolveMedicine(pool, input.medicineId);
 
   let assignedStaffName: string | null = null;
@@ -382,8 +442,10 @@ export interface UpdateMedicationAdministrationInput {
  */
 export const updateMedicationAdministration = async (
   id: number,
-  input: UpdateMedicationAdministrationInput
+  input: UpdateMedicationAdministrationInput,
+  hospitalId?: number | null
 ): Promise<MedicationAdministrationRecord> => {
+  await assertRecordHospital(id, hospitalId);
   const existing = await getMedicationAdministration(id);
   if (!existing) {
     throw new MedicationAdministrationError('Medication administration not found', 404);
@@ -461,7 +523,11 @@ export const updateMedicationAdministration = async (
 };
 
 /** Removes a record. */
-export const deleteMedicationAdministration = async (id: number): Promise<void> => {
+export const deleteMedicationAdministration = async (
+  id: number,
+  hospitalId?: number | null
+): Promise<void> => {
+  await assertRecordHospital(id, hospitalId);
   const [result] = await pool.query('DELETE FROM medication_administrations WHERE id = ?', [id]);
   const affected = (result as { affectedRows?: number })?.affectedRows ?? 0;
   if (!affected) {
@@ -488,12 +554,14 @@ export interface SignOffResult {
 export const signOffMedicationAdministration = async (
   id: number,
   actorId: number | null,
-  requestedQuantity?: number | null
+  requestedQuantity?: number | null,
+  hospitalId?: number | null
 ): Promise<SignOffResult> => {
   let connection: PoolConnection | null = null;
   let committed = false;
 
   try {
+    await assertRecordHospital(id, hospitalId);
     connection = await pool.getConnection();
     await connection.beginTransaction();
 

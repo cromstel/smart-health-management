@@ -5,9 +5,7 @@ import { randomUUID } from 'crypto';
 import pool from '../config/database.js';
 import { refreshToken } from '../controllers/auth.controller.js';
 import { authenticate, hashToken, requirePermission } from '../middleware/auth.js';
-import { getSecret } from '../config/env.js';
-
-const JWT_SECRET = getSecret('JWT_SECRET', 'dev-only-jwt-secret');
+import { signToken } from '../config/tokens.js';
 
 function mockRes() {
   const res: any = {};
@@ -26,11 +24,16 @@ const DOCTOR_EMAIL = 'doctor@smarthealth.com';
  * the token digest, so a shared token would let one test's cached verdict
  * answer another test's question.
  */
-const signToken = (payload: Record<string, unknown> = {}) =>
-  jwt.sign(
-    { id: DOCTOR_ID, email: DOCTOR_EMAIL, role: 'doctor', hospital_id: 'HOSP-001', ...payload },
-    JWT_SECRET,
-    { expiresIn: '10m' } as jwt.SignOptions
+const signTestToken = (payload: Record<string, unknown> = {}) =>
+  signToken(
+    {
+      id: String(DOCTOR_ID),
+      email: DOCTOR_EMAIL,
+      role: 'doctor',
+      hospital_id: 'HOSP-001',
+      ...payload,
+    } as Parameters<typeof signToken>[0],
+    '10m'
   );
 
 beforeAll(async () => {
@@ -45,7 +48,7 @@ afterAll(async () => {
 
 describe('POST /auth/refresh', () => {
   it('rebuilds the payload from the database and keeps the hospital scope', async () => {
-    const original = signToken({ nonce: randomUUID() });
+    const original = signTestToken({ nonce: randomUUID() });
 
     const res = mockRes();
     await refreshToken({ body: { token: original } } as any, res);
@@ -66,7 +69,7 @@ describe('POST /auth/refresh', () => {
   });
 
   it('produces a token the scoped routes accept (no "Missing hospital context")', async () => {
-    const original = signToken({ nonce: randomUUID() });
+    const original = signTestToken({ nonce: randomUUID() });
 
     const refreshRes = mockRes();
     await refreshToken({ body: { token: original } } as any, refreshRes);
@@ -94,18 +97,14 @@ describe('POST /auth/refresh', () => {
   });
 
   it('rejects a token for a user that no longer exists', async () => {
-    const orphan = jwt.sign(
-      { id: 999999, email: 'ghost@test.local', role: 'doctor', nonce: randomUUID() },
-      JWT_SECRET,
-      { expiresIn: '10m' } as jwt.SignOptions
-    );
+    const orphan = signTestToken({ id: '999999', email: 'ghost@test.local', nonce: randomUUID() });
     const res = mockRes();
     await refreshToken({ body: { token: orphan } } as any, res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
   it('rejects a revoked token', async () => {
-    const revokedToken = signToken({ nonce: randomUUID() });
+    const revokedToken = signTestToken({ nonce: randomUUID() });
 
     await pool.query(
       'INSERT INTO revoked_tokens (token_hash, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))',

@@ -38,7 +38,13 @@ export const generateSharedSummary = async (req: AuthRequest, res: Response): Pr
     }
 
     const sharedBy = req.user?.id ? Number(req.user.id) : undefined;
-    const created = await sharedSummaryService.createShareLink(patientRef, sharedBy);
+    // The share is made for a patient of the caller's own hospital. The
+    // link is a bearer credential: whoever holds it reads the summary.
+    const created = await sharedSummaryService.createShareLink(
+      patientRef,
+      sharedBy,
+      req.tenant?.platformWide ? undefined : req.tenant?.hospitalId ?? -1
+    );
 
     if (!created) {
       res.status(404).json({ error: 'Patient not found' });

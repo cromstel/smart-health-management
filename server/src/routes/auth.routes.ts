@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authenticatePendingMfa } from '../middleware/auth.js';
 import { body } from 'express-validator';
 import { validate } from '../middleware/validator.js';
 import * as authController from '../controllers/auth.controller.js';
@@ -65,8 +65,22 @@ router.post(
   authController.login
 );
 
+// Registration is a public route, and it creates an account. Without a
+// limiter of its own it inherits the broad per-address ceiling, which is
+// high enough to sweep the address space of a clinic and create an account
+// for every address found.
+const registrationLimitMax = parseInt(process.env.REGISTRATION_RATE_LIMIT_MAX || '5', 10);
+const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: registrationLimitMax,
+  message: 'Too many registration attempts from this IP, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/register',
+  registrationLimiter,
   [
     body('email').trim().isEmail().withMessage('Valid email is required').escape(),
     body('password')
@@ -139,7 +153,7 @@ router.post(
 
 router.post(
   '/verify-2fa',
-  authenticate,
+  authenticatePendingMfa,
   twoFactorLimiter, // Apply brute-force protection
   [
     body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
@@ -153,7 +167,7 @@ router.post(
 // brute-force limiter; a valid code is burned (removed) server-side.
 router.post(
   '/verify-recovery',
-  authenticate,
+  authenticatePendingMfa,
   twoFactorLimiter,
   [
     body('code').matches(/^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/).withMessage('Recovery code must be in XXXXX-XXXXX format'),

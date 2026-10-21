@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import checkDiskSpace from 'check-disk-space';
+import { safeFileName, isInsideDirectory } from '../utils/files.js';
 
 export interface IStorageProvider {
   upload(file: Express.Multer.File, patientId: string | null, category: string | null): Promise<{ filePath: string; storageType: string; documentId: string }>;
@@ -65,7 +66,11 @@ export class LocalStorageProvider implements IStorageProvider {
       }
     }
 
-    const finalPath = path.join(docDir, originalname);
+    // The name a client sent is not used as a path. It is reduced to a name
+    // that cannot mean anything to the filesystem, so a name carrying a
+    // parent reference cannot write outside the document's own directory.
+    const storedName = safeFileName(originalname);
+    const finalPath = path.join(docDir, storedName);
     fs.writeFileSync(finalPath, buffer);
 
     return { filePath: finalPath, storageType: 'local', documentId: documentIdStr };
@@ -77,7 +82,7 @@ export class LocalStorageProvider implements IStorageProvider {
     if (!doc) {
       throw new Error('Document not found');
     }
-    return { filePath: doc.file_path as string, fileName: doc.name as string };
+    return { filePath: this.assertStoredPath(doc.file_path), fileName: doc.name as string };
   }
 
   async preview(documentId: string): Promise<{ filePath: string; fileName: string }> {
@@ -86,7 +91,23 @@ export class LocalStorageProvider implements IStorageProvider {
     if (!doc) {
       throw new Error('Document not found');
     }
-    return { filePath: doc.file_path as string, fileName: doc.name as string };
+    return { filePath: this.assertStoredPath(doc.file_path), fileName: doc.name as string };
+  }
+
+  /**
+   * The stored path, checked against the upload directory.
+   *
+   * The path in the database is written by the upload, which reduces the
+   * name to something that cannot climb out of the directory. A row that
+   * names a path outside it is refused rather than read: a document is
+   * served from the upload directory and nowhere else.
+   */
+  private assertStoredPath(filePath: unknown): string {
+    const candidate = String(filePath ?? '');
+    if (!candidate || !isInsideDirectory(this.getUploadsDir(), candidate)) {
+      throw new Error('Document not found');
+    }
+    return candidate;
   }
 
   async getMetadata(documentId: string): Promise<any> {
@@ -128,7 +149,8 @@ export const getStorageUsage = async (): Promise<any> => {
   const remainingQuota = quotaBytes ? Math.max(quotaBytes - usedBytes, 0) : null;
 
   return {
-    uploadsDir,
+    // The absolute path of the upload directory is a fact about the server's
+    // filesystem and says nothing to the person asking. It is not sent.
     usedBytes,
     diskTotal: diskInfo.size,
     diskFree: diskInfo.free,
