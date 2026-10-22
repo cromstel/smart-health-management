@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import pool from '../config/database.js';
+import { randomToken, isDuplicateEntry } from '../utils/identifiers.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 
@@ -99,20 +100,6 @@ const decryptField = (value: string): string => {
   const decrypted = decrypt(value);
   return decrypted ?? value;
 };
-
-/** Unambiguous alphabet for generated public identifiers (no I, O, 0 or 1). */
-const ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-const randomToken = (length: number): string => {
-  let token = '';
-  for (let i = 0; i < length; i += 1) {
-    token += ID_ALPHABET.charAt(Math.floor(Math.random() * ID_ALPHABET.length));
-  }
-  return token;
-};
-
-const isDuplicateEntry = (error: unknown): boolean =>
-  (error as { code?: string } | null)?.code === 'ER_DUP_ENTRY';
 
 /**
  * Reads a field from the request body, accepting either the canonical column

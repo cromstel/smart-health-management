@@ -14,11 +14,14 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import { errorHandler, PublicError } from './middleware/errorHandler.js';
+import pool from './config/database.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrf.js';
 import { getSecret } from './config/env.js';
-import { allowedFrontendOrigins, apiPort, optionalHttpsPort, trustProxyHops } from './config/runtime.js';
+import { corsOptions } from './middleware/cors.js';
+import { createSessionStore } from './config/session.js';
+import { apiPort, optionalHttpsPort, trustProxyHops } from './config/runtime.js';
 import { frontendDistDir } from './config/frontend.js';
 import { resolveConfiguredPath } from './config/paths.js';
 import { frontendFallback, frontendStatic } from './middleware/serveFrontend.js';
@@ -109,26 +112,10 @@ app.disable('x-powered-by');
 app.use(helmet());
 // FRONTEND_URL may list several origins, comma separated, so a developer whose
 // default app port is occupied by another process can run on a free port without
-// also having to edit code. Single value still behaves exactly as before.
-const allowedOrigins = allowedFrontendOrigins();
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // Same-origin and non-browser callers send no Origin header.
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // A request from an address that is not on the list is refused, and the
-    // refusal says nothing about which addresses are on the list or which one
-    // asked. It is a refusal, not a fault, so it is answered as one.
-    return callback(new PublicError('This request is not allowed from this address.', 403));
-  },
-  credentials: true,
-  // Required for the app to read the CSRF token: response headers other than
-  // the safelisted ones are withheld from cross-origin scripts unless listed.
-  // Without this the X-XSRF-Token header is invisible to the client even though
-  // the server sends it.
-  exposedHeaders: ['X-XSRF-Token']
-}));
+// also having to edit code. Single value still behaves exactly as before. The
+// list is read once, when the service starts, and every request is answered
+// against it.
+app.use(cors(corsOptions()));
 // The body limit is stated rather than left to the framework's default, so
 // that the limit a deployment has is the one its configuration says it has.
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
@@ -153,11 +140,24 @@ const proxyHops = trustProxyHops();
 if (proxyHops > 0) {
   app.set('trust proxy', proxyHops);
 }
+// The sessions are kept in the database, so that a restart does not sign
+// everybody out and so that the instances of the service share them. The store
+// is chosen before the service starts listening, and a database that cannot
+// be reached leaves the service running on the in-memory store rather than
+// stopping it: the sessions are a convenience, and the service's other work
+// must not stop because of them.
+//
+// The store is made without waiting for anything. A module that waits at the
+// top level turns the entry point into a promise, and the platform loads the
+// entry point with `require()`, which cannot load a module graph with a
+// top-level wait in it.
+const sessionStore = createSessionStore();
 app.use(session({
   secret: SESSION_SECRET,
   name: process.env.SESSION_COOKIE_NAME || 'shms_session',
   resave: process.env.SESSION_RESAVE === 'true',
   saveUninitialized: process.env.SESSION_SAVE_UNINITIALIZED !== 'false',
+  store: sessionStore.store,
   cookie: {
     secure: process.env.SESSION_SECURE
       ? process.env.SESSION_SECURE === 'true'
@@ -313,3 +313,32 @@ if (certificatesPresent && HTTPS_PORT !== null) {
     'ℹ️  No TLS certificate was found, so the server is serving plain HTTP. TLS is expected to be terminated upstream.'
   );
 }
+
+// The service is stopped by the platform that runs it, and a process that is
+// stopping has no use for the connections it is holding. The session store
+// keeps a timer running and shares the service's pool, so the store is closed
+// and the pool is ended on the way out instead of being dropped.
+//
+// The exit status is the one the process would have had if it had not caught
+// the signal at all, so that a platform watching the service is told the same
+// thing it was told before.
+const stop = async (signal: string, exitCode: number): Promise<void> => {
+  console.log(`ℹ️  ${signal} received: closing the session store and the database connections.`);
+
+  try {
+    await sessionStore.close();
+  } catch (error) {
+    console.warn('⚠️  The session store did not close cleanly:', error);
+  }
+
+  try {
+    await pool.end();
+  } catch (error) {
+    console.warn('⚠️  The database connections did not close cleanly:', error);
+  }
+
+  process.exit(exitCode);
+};
+
+process.on('SIGTERM', () => { void stop('SIGTERM', 143); });
+process.on('SIGINT', () => { void stop('SIGINT', 130); });

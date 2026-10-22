@@ -1,8 +1,11 @@
 import type { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
+import { createAuditLog } from '../services/auditLog.service.js';
+import type { RowDataPacket } from 'mysql2/promise';
 import { buildXlsx } from '../services/reportFormatters/xlsx.js';
 import { buildPDF } from '../services/reportFormatters/pdf.js';
+import { readPage, setPageHeaders } from '../utils/pagination.js';
 
 import type { AuthRequest } from '../middleware/auth.js';
 
@@ -59,18 +62,47 @@ const toTextOrNull = (value: unknown): string | null => {
 export const getPharmacyItems = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const { lowStock, expired } = req.query;
-    let query = 'SELECT * FROM medicines_inventory WHERE 1=1';
+    // The list used to answer with every row in the table, so one request
+    // carried the whole catalogue of the installation with it. It is now a
+    // page with a default and a ceiling, and the number of rows that exist
+    // is reported alongside the page so a client can ask for the rest.
+    const { limit, offset } = readPage(req.query);
+
+    let where = '';
     const params: any[] = [];
 
     if (lowStock === 'true') {
-      query += ' AND stock_level <= low_stock_threshold';
+      where += ' AND stock_level <= low_stock_threshold';
     }
 
     if (expired === 'true') {
-      query += ' AND expiry_date < CURDATE()';
+      where += ' AND expiry_date < CURDATE()';
     }
 
-    const [items] = await pool.query(query, params);
+    // The order is fixed so that a page is a page: an offset without a
+    // total order repeats and skips rows from one page to the next.
+    const [items] = await pool.query(
+      `SELECT * FROM medicines_inventory WHERE 1=1${where}
+        ORDER BY medicine_name ASC, id ASC
+        LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    // The number of rows that exist, so that a client knows there is more to
+    // ask for. It is counted with the same filter as the page, so the two
+    // numbers describe the same set.
+    const [countRows] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM medicines_inventory WHERE 1=1${where}`,
+      params
+    );
+    const total = Number(countRows?.[0]?.count ?? 0);
+
+    // The body is still the array of medicines: the browser reads this
+    // endpoint as a list, and changing the shape of the answer is not part of
+    // this change. The page is reported in the headers instead, which is
+    // where a client that has to page an array-shaped answer looks for it.
+    setPageHeaders(res, { total, limit, offset });
+
     res.json(items);
   } catch (error) {
     console.error('Get pharmacy items error:', error);
@@ -193,15 +225,70 @@ export const updatePharmacyItem = async (req: AuthRequest, res: Response): Promi
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
+    // A stock level that is changed by hand is a correction of a count, and a
+    // correction is exactly the kind of thing that has to be on the record.
+    // Every other movement of the stock -- a recall, a dispensing sign-off --
+    // is written to the audit trail; a hand-written one that was not was a
+    // way for the number on the shelf and the number in the system to part
+    // company without anybody noticing.
+    const stockChanged = usedColumns.has('stock_level');
+    let previousStock: number | null = null;
+    if (stockChanged) {
+      const [before] = await pool.query('SELECT stock_level FROM medicines_inventory WHERE id = ?', [id]);
+      previousStock = toNumberOrNull((before as any[])[0]?.stock_level) ?? null;
+    }
+
     await pool.query(
       `UPDATE medicines_inventory SET ${assignments.join(', ')} WHERE id = ?`,
       [...values, id]
     );
+
+    if (stockChanged) {
+      const newStock = toNumberOrNull(updates.stockLevel ?? updates.stock_level) ?? 0;
+      await createAuditLog({
+        userId: Number(req.user?.id ?? 0),
+        userName: req.user?.email ?? null,
+        action: 'stock-adjustment',
+        module: 'pharmacy',
+        recordId: String(id),
+        oldValue: previousStock === null ? null : String(previousStock),
+        newValue: String(newStock),
+        ipAddress: req.ip ?? null,
+        userAgent: req.get('user-agent') ?? null,
+      }).catch(() => {
+        // The adjustment has already been written. A failure to record it is
+        // worth knowing about, but it must not fail a correction the clerk
+        // has already made.
+        console.error('Pharmacy stock adjustment could not be written to the audit trail');
+      });
+    }
+
     res.json({ message: 'Pharmacy item updated successfully' });
   } catch (error) {
     console.error('Update pharmacy item error:', error);
     res.status(500).json({ error: 'Failed to update pharmacy item' });
   }
+};
+
+/**
+ * One cell of a spreadsheet.
+ *
+ * A value that begins with `=`, `+`, `-` or `@` is a formula when the file
+ * is opened, and a medicine named "=1+1" would be run as a formula by the
+ * spreadsheet of whoever opened the report. A value that begins with one of
+ * those is written with a leading apostrophe, which makes the spreadsheet
+ * read it as text.
+ *
+ * The value is also quoted, and the quotes inside it are doubled, so that a
+ * comma, a quote or a line break in the data cannot change the shape of the
+ * file.
+ */
+const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
+
+const csvCell = (value: string): string => {
+  const needsGuard = /^[=+\-@\t\r]/.test(value);
+  const guarded = needsGuard ? `'${value}` : value;
+  return `"${guarded.replace(/"/g, '""')}"`;
 };
 
 export const deletePharmacyItem = async (req: AuthRequest, res: Response): Promise<Response | void> => {
@@ -276,9 +363,14 @@ export const generatePharmacyReport = async (req: AuthRequest, res: Response): P
     }
     if (format === 'csv') {
       const headers = Object.keys(list[0] || {});
-      const lines = [headers.join(','), ...list.map((r) => headers.map((h) => String(r[h] ?? '').replace(/,/g, ';')).join(','))];
-      res.setHeader('Content-Type', 'text/csv');
-      res.send(lines.join('\n'));
+      const lines = [
+        headers.map((h) => csvCell(h)).join(','),
+        ...list.map((r) => headers.map((h) => csvCell(String(r[h] ?? ''))).join(',')),
+      ];
+      // The byte-order mark is what makes a spreadsheet read the file as
+      // UTF-8 rather than as the system's own encoding.
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.send(BYTE_ORDER_MARK + lines.join('\r\n'));
       return;
     }
     res.json(rows);

@@ -18,6 +18,26 @@ export class PublicError extends Error {
 }
 
 /**
+ * A request the service turned away, as opposed to one that failed.
+ *
+ * A refusal is the service working as intended: a request from an address the
+ * service does not accept is turned away, and being turned away says nothing
+ * about the service being unwell. Recording a refusal as a fault teaches the
+ * operator to read a line in the log as a problem when nothing has gone
+ * wrong, and it buries the failures that are real.
+ *
+ * The refusal is still answered with its message, so the caller learns that
+ * the request was refused and nothing else, and the access log still records
+ * that the request was turned away.
+ */
+export class RefusedRequest extends PublicError {
+  constructor(message: string, status = 403) {
+    super(message, status);
+    this.name = 'RefusedRequest';
+  }
+}
+
+/**
  * The database driver's failures, and what the caller is told instead.
  *
  * A driver message is written for a server operator: it names the table, the
@@ -107,13 +127,20 @@ export const errorHandler = (err: any, _req: Request, res: Response, next: NextF
   // The detail belongs to the operator, not to the caller. It is logged
   // where the operator can reach it and answered with a message that says
   // nothing about the inside of the system.
-  console.error('Unhandled request error:', {
-    name: err?.name,
-    code: err?.code,
-    status: err?.status || err?.statusCode,
-    message: err instanceof Error ? err.message : String(err),
-    stack: err instanceof Error ? err.stack : undefined,
-  });
+  //
+  // A refusal is not a failure and is not recorded as one. It is answered to
+  // the caller with its message and the access log already holds the fact
+  // that the request was turned away, so recording it again here would only
+  // make the log harder to read.
+  if (!(err instanceof RefusedRequest)) {
+    console.error('Unhandled request error:', {
+      name: err?.name,
+      code: err?.code,
+      status: err?.status || err?.statusCode,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+  }
 
   let status = 500;
   let message = 'Internal server error';

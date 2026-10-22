@@ -1,8 +1,9 @@
 import type { Response } from 'express';
 import pool from '../config/database.js';
+import { randomToken, isDuplicateEntry } from '../utils/identifiers.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { belongsToTenant } from '../middleware/tenant.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
+import { encryptForStorage, decryptField, PatientStorageError } from '../utils/patientStorage.js';
 
 const sensitiveFields = ['first_name', 'last_name', 'phone', 'email', 'address'];
 
@@ -50,76 +51,6 @@ const FIELD_ALIASES: Record<string, string> = {
 
 const GENDERS = ['male', 'female', 'other'];
 const PATIENT_STATUSES = ['active', 'inactive'];
-
-/**
- * Column widths the stored value has to fit into. The values are stored hex
- * encoded, so the ciphertext is twice the byte length of the plaintext plus
- * one cipher block.
- */
-const COLUMN_WIDTHS: Record<string, number> = {
-  first_name: 100,
-  last_name: 100,
-  email: 255,
-  phone: 255,
-  address: 65535,
-};
-
-/**
- * Every sensitive field is encrypted at rest.
- *
- * `phone` used to be listed here because the column was VARCHAR(20), which
- * could not hold the hex encoded ciphertext. The column has been widened to
- * VARCHAR(255), so the phone number is encrypted like the other fields
- * instead of being stored in the clear.
- */
-const PLAINTEXT_COLUMNS: string[] = [];
-
-/**
- * Encrypts a value for storage.
- *
- * A sensitive value is never silently downgraded to plaintext: when the
- * ciphertext does not fit its column the caller gets a clear error instead of
- * a database error.
- */
-const encryptForStorage = (value: string, column: string): string => {
-  if (PLAINTEXT_COLUMNS.includes(column)) return value;
-  const encrypted = encrypt(value);
-  if (!encrypted) return value;
-  const width = COLUMN_WIDTHS[column];
-  if (width !== undefined && encrypted.length > width) {
-    throw new InvalidInputError(`${column.replace('_', ' ')} is too long to store securely`);
-  }
-  return encrypted;
-};
-
-/**
- * Decrypts a stored value. A value that was not written as ciphertext (the
- * seeded rows hold plaintext) cannot be decrypted, so it is kept as it is
- * instead of being dropped.
- *
- * The ciphertext is hex encoded AES-256-CBC, so it is at least 32 characters
- * long (one 16 byte block) and has an even length. Checking that first keeps
- * plaintext rows from producing a decryption error for every single read.
- */
-const decryptField = (value: string): string => {
-  if (!/^[0-9a-f]+$/i.test(value) || value.length < 32 || value.length % 2 !== 0) return value;
-  const decrypted = decrypt(value);
-  return decrypted ?? value;
-};
-
-/** Unambiguous alphabet for generated public identifiers (no I, O, 0 or 1). */
-const ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-const randomToken = (length: number): string => {
-  let token = '';
-  for (let i = 0; i < length; i += 1) {
-    token += ID_ALPHABET.charAt(Math.floor(Math.random() * ID_ALPHABET.length));
-  }
-  return token;
-};
-
-const isDuplicateEntry = (error: unknown): boolean =>
-  (error as { code?: string } | null)?.code === 'ER_DUP_ENTRY';
 
 /**
  * Reads a field from the request body, accepting either the canonical column
@@ -567,7 +498,7 @@ export const createPatient = async (req: AuthRequest, res: Response): Promise<Re
 
     throw new Error('Unable to allocate a unique patient identifier');
   } catch (error) {
-    if (error instanceof InvalidInputError) {
+    if (error instanceof InvalidInputError || error instanceof PatientStorageError) {
       return res.status(400).json({ error: error.message });
     }
     console.error('Create patient error:', error);
@@ -617,7 +548,7 @@ export const updatePatient = async (req: AuthRequest, res: Response): Promise<Re
 
     res.json({ message: 'Patient updated successfully' });
   } catch (error) {
-    if (error instanceof InvalidInputError) {
+    if (error instanceof InvalidInputError || error instanceof PatientStorageError) {
       return res.status(400).json({ error: error.message });
     }
     console.error('Update patient error:', error);

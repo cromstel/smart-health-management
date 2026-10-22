@@ -19,6 +19,7 @@ import {
   runDatabaseBackup,
 } from '../services/backup.service.js';
 import { getScheduledJobStatuses } from '../services/cron.service.js';
+import { readPage, setPageHeaders } from '../utils/pagination.js';
 
 /** Version this build reports when nothing has been persisted yet. */
 const APP_VERSION = process.env.APP_VERSION || '1.0.0';
@@ -120,22 +121,41 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
 };
 
 // Get all users with their roles
-export const getAllUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const connection = await pool.getConnection();
-    
-    const [users] = await connection.query<RowDataPacket[]>(
-      `SELECT 
+    // The list used to answer with every account in the installation, which
+    // is every person who ever signed up. It is now a page with a default
+    // and a ceiling, and the number of accounts that exist is reported
+    // alongside it.
+    const { limit, offset } = readPage(req.query);
+
+    // `pool.query` borrows a connection and returns it on its own, so a
+    // failure between the two queries cannot leave a connection out of the
+    // pool.
+    //
+    // The order is fixed so that a page is a page: an offset without a total
+    // order repeats and skips rows from one page to the next.
+    const [users] = await pool.query<RowDataPacket[]>(
+      `SELECT
         u.id, u.email, u.name, u.status, u.last_login, u.created_at,
         r.name as role_name, r.description as role_description
        FROM users u
        LEFT JOIN roles r ON u.role_id = r.id
-       ORDER BY u.created_at DESC`
+       ORDER BY u.created_at DESC, u.id DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
     );
-    
-    connection.release();
-    
-    res.status(200).json({ users });
+
+    const [totalCount] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as count
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.id`
+    );
+    const total = Number(totalCount[0]?.count ?? 0);
+
+    setPageHeaders(res, { total, limit, offset });
+
+    res.status(200).json({ users, total, limit, offset });
   } catch (_error) {
     console.error('Error fetching users:', _error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -505,42 +525,67 @@ const upsertSuperAdminSetting = async (
  * identifiers are prefixed with their source table, because the two tables
  * have independent auto-increment sequences and a bare row id is ambiguous.
  */
-export const getSystemSettings = async (_req: Request, res: Response): Promise<void> => {
+export const getSystemSettings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const [settings] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM settings ORDER BY category, setting_key'
+    // The two settings stores hold one row per setting key, so the list is
+    // bounded by the configuration rather than by usage -- but it is still a
+    // list, and it is still answered in pages.
+    const { limit, offset } = readPage(req.query);
+
+    // Both stores are returned: `settings` holds the general system
+    // configuration, `super_admin_settings` holds the operator-owned values.
+    // The identifiers are prefixed with their source table, because the two
+    // tables have independent auto-increment sequences and a bare row id is
+    // ambiguous.
+    //
+    // The two stores are merged on the setting key, and the operator store
+    // wins: the row that is reported for a key is the one in
+    // `super_admin_settings` when that table holds the key, and the one in
+    // `settings` otherwise. The merge is done in the query rather than in
+    // the code, because a page has to be a page of the merged list: paging
+    // the two stores separately and merging the two pages afterwards would
+    // answer with a set of rows that is not a page of anything.
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT
+         COALESCE(sa.setting_key, s.setting_key) AS setting_key,
+         CASE WHEN sa.id IS NOT NULL THEN sa.setting_value ELSE s.setting_value END AS setting_value,
+         CASE WHEN sa.id IS NOT NULL THEN sa.category ELSE s.category END AS category,
+         CASE WHEN sa.id IS NOT NULL THEN sa.updated_by ELSE s.updated_by END AS updated_by,
+         CASE WHEN sa.id IS NOT NULL THEN sa.updated_at ELSE s.updated_at END AS updated_at,
+         CASE WHEN sa.id IS NOT NULL THEN CONCAT('super_admin_settings:', sa.id) ELSE CONCAT('settings:', s.id) END AS id,
+         CASE WHEN sa.id IS NOT NULL THEN 'super_admin_settings' ELSE 'settings' END AS source
+       FROM (
+         SELECT setting_key FROM settings
+         UNION
+         SELECT setting_key FROM super_admin_settings
+       ) k
+       LEFT JOIN settings s ON s.setting_key = k.setting_key
+       LEFT JOIN super_admin_settings sa ON sa.setting_key = k.setting_key
+       ORDER BY COALESCE(CASE WHEN sa.id IS NOT NULL THEN sa.category ELSE s.category END, ''), k.setting_key
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
     );
 
-    const [superSettings] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM super_admin_settings ORDER BY category, setting_key'
+    // The number of settings that exist in the merged list, so that a client
+    // knows there is more to ask for.
+    const [totalCount] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as count FROM (
+         SELECT setting_key FROM settings
+         UNION
+         SELECT setting_key FROM super_admin_settings
+       ) k`
     );
+    const total = Number(totalCount[0]?.count ?? 0);
 
-    const merged = new Map<string, any>();
+    const result = rows.map((row: any) => ({
+      ...row,
+      id: String(row.id),
+      source: row.source,
+    }));
 
-    for (const row of settings as any[]) {
-      merged.set(row.setting_key, {
-        ...row,
-        id: `settings:${row.id}`,
-        source: 'settings',
-      });
-    }
+    setPageHeaders(res, { total, limit, offset });
 
-    // The operator store wins when both tables hold the same key.
-    for (const row of superSettings as any[]) {
-      merged.set(row.setting_key, {
-        ...row,
-        id: `super_admin_settings:${row.id}`,
-        source: 'super_admin_settings',
-      });
-    }
-
-    const result = Array.from(merged.values()).sort(
-      (a, b) =>
-        String(a.category ?? '').localeCompare(String(b.category ?? '')) ||
-        String(a.setting_key).localeCompare(String(b.setting_key))
-    );
-
-    res.status(200).json({ settings: result });
+    res.status(200).json({ settings: result, total, limit, offset });
   } catch (_error) {
     console.error('Error fetching system settings:', _error);
     res.status(500).json({ error: 'Failed to fetch system settings' });

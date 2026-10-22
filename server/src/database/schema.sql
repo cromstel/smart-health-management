@@ -427,7 +427,12 @@ CREATE TABLE IF NOT EXISTS medicines_inventory (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_inventory_stock (low_stock_threshold, stock_level),
   INDEX idx_inventory_expiry (expiry_date),
-  INDEX idx_inventory_hospital (hospital_id)
+  INDEX idx_inventory_hospital (hospital_id),
+  -- The stock cannot be negative. A recall subtracts the recalled quantity
+  -- from the stock, and nothing stopped it from subtracting more than the
+  -- stock held. The invariant is stated here rather than in each of the
+  -- callers that can reach the column.
+  CONSTRAINT chk_medicines_inventory_stock_level CHECK (stock_level >= 0)
 );
 
 -- 20.0 Purchase Order Items table
@@ -475,7 +480,12 @@ CREATE TABLE IF NOT EXISTS prescriptions (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
   FOREIGN KEY (doctor_id) REFERENCES staff(id) ON DELETE SET NULL,
-  FOREIGN KEY (medicine_id) REFERENCES medicines_inventory(id) ON DELETE RESTRICT
+  FOREIGN KEY (medicine_id) REFERENCES medicines_inventory(id) ON DELETE RESTRICT,
+  -- The refill scan asks for the active prescriptions and orders them by
+  -- when they were written; the interaction check asks for the active ones
+  -- alone.
+  INDEX idx_prescriptions_status (status),
+  INDEX idx_prescriptions_status_created (status, created_at)
 );
 
 -- 22. Invoices table
@@ -640,7 +650,11 @@ CREATE TABLE IF NOT EXISTS vitals (
   FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_vitals_patient (patient_id),
   INDEX idx_vitals_recorded (recorded_at),
-  INDEX idx_vitals_status (status)
+  INDEX idx_vitals_status (status),
+  -- The "latest reading per patient" read groups the readings by patient and
+  -- takes the most recent one. With the patient first and the recording time
+  -- second, that is one index entry per patient instead of one per reading.
+  INDEX idx_vitals_patient_recorded (patient_id, recorded_at)
 );
 
 -- 32. Time-limited patient summary share links
@@ -828,3 +842,17 @@ CREATE TABLE IF NOT EXISTS dispensing_events (
   INDEX idx_dispense_patient (patient_id),
   INDEX idx_dispense_time (dispensed_at)
 );
+
+-- 40. Sessions
+--
+-- The sessions of the signed-in browsers. The shape of the table is the one
+-- the session store expects, so the store finds the table it was written for
+-- and does not have to change it. The index is on the expiry, which is what
+-- the store's cleanup of the expired sessions reads.
+CREATE TABLE IF NOT EXISTS sessions (
+  session_id VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
+  expires INT UNSIGNED NOT NULL,
+  data MEDIUMTEXT COLLATE utf8mb4_bin,
+  PRIMARY KEY (session_id),
+  INDEX idx_sessions_expires (expires)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

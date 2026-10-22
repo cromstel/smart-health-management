@@ -310,7 +310,6 @@ smart-health-management/
 │   │   ├── dashboard/           # TriageQueue, DiseaseTrends, AppointmentsAlert
 │   │   ├── layout/              # Header, Sidebar, AppLayout
 │   │   ├── ui/                  # shadcn/ui components (Button, Card, Input, Label, Select, Switch...)
-│   │   └── ShortcutManager.tsx  # Global keyboard shortcuts
 │   ├── contexts/                # React Context Providers
 │   │   ├── AuthContext.tsx      # User session, login, logout, WebAuthn
 │   │   ├── ThemeContext.tsx     # Dark / Light theme toggle & state

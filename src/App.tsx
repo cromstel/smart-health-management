@@ -13,7 +13,6 @@ import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminRoute } from './components/SuperAdminRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ScrollToTopButton } from './components/common/ScrollToTopButton';
-import { ShortcutManager } from './components/ShortcutManager';
 import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
 // Lazy-loaded route components for optimized PWA code-splitting.
@@ -261,7 +260,6 @@ function App() {
         <AuthProvider>
           <AuditProvider>
             <NotificationProvider>
-              <ShortcutManager />
               <ScrollToHash />
               <ErrorBoundary>
                 <AppRoutes />

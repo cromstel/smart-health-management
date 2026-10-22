@@ -65,6 +65,52 @@ function describe(data: unknown): string {
   return typeof data;
 }
 
+/**
+ * An error the API answered with.
+ *
+ * The status is part of the contract, not a convenience. The API confines
+ * every clinical record to the caller's own hospital and answers a record of
+ * another hospital as "not found" (404) rather than "forbidden" (403), so a
+ * caller has to be able to tell "that record is not yours to act on" apart
+ * from "the server broke". Without the status the only thing a page can do
+ * is show the message and hope.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+/**
+ * The message the API answered with.
+ *
+ * The server uses two shapes: `error` for a business failure and `errors`
+ * for the validator's list of field problems. Both are read here so a page
+ * shows what the server actually said rather than a generic "Request failed"
+ * that tells the user nothing about which field was wrong.
+ */
+function readErrorMessage(body: unknown): string {
+  if (body && typeof body === 'object') {
+    const record = body as Record<string, unknown>;
+    if (typeof record.error === 'string' && record.error.trim() !== '') return record.error;
+    if (Array.isArray(record.errors)) {
+      const messages = record.errors
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return '';
+          const message = (entry as { msg?: unknown }).msg;
+          return typeof message === 'string' ? message : '';
+        })
+        .filter((message) => message !== '');
+      if (messages.length > 0) return messages.join(', ');
+    }
+  }
+  return 'Request failed';
+}
+
 /** Super-admin hospital overview record (GET /super-admin/hospitals). */
 export interface SuperAdminHospital {
   id: string;
@@ -106,6 +152,164 @@ export interface SuperAdminBackup {
   name: string;
   size: string;
   createdAt: string;
+}
+
+// ── Emergency triage board and ER bay state ──────────────────────────────────
+//
+// The board is the clinical surface of the emergency department: the patients
+// who are admitted and the bays they occupy. The API returns raw values --
+// blood pressure as two numbers, the admission time as a timestamp, the bed
+// status as the database enum -- and the browser decides how they are shown,
+// so the display rules live in one place (src/components/emergency/triage.ts).
+
+/** The triage categories, most urgent first. */
+export type EmergencyTriageLevel = 'RED' | 'AMBER' | 'YELLOW' | 'GREEN';
+
+/** The state of a bay. */
+export type EmergencyBedStatus = 'occupied' | 'available' | 'cleaning';
+
+/** A patient on the board: an admission joined to its patient. */
+export interface EmergencyBoardPatient {
+  /** `patients.patient_id`, the human readable code (e.g. "P-1002"). */
+  id: string;
+  /** `patients.id`, the numeric key. */
+  patientId: number;
+  /** `emergency_admissions.id`. */
+  admissionId: number;
+  name: string;
+  age: number | null;
+  gender: string | null;
+  triageLevel: EmergencyTriageLevel;
+  /** The presenting condition, stored in the `condition_note` column. */
+  condition: string | null;
+  /** Bay id (e.g. "ER-BAY-01"), null while the patient waits for a bay. */
+  bed: string | null;
+  bedLabel: string | null;
+  systolicBp: number | null;
+  diastolicBp: number | null;
+  heartRate: number | null;
+  spo2: number | null;
+  /** Local ISO timestamp of the admission. */
+  admittedAt: string;
+}
+
+/** A bay of the resuscitation area. */
+export interface EmergencyBed {
+  id: string;
+  label: string;
+  status: EmergencyBedStatus;
+  /** The patient code of the occupant. */
+  patient: string | null;
+  patientName: string | null;
+  triage: EmergencyTriageLevel | null;
+}
+
+/** The whole board in one response. */
+export interface EmergencyTriageBoard {
+  patients: EmergencyBoardPatient[];
+  beds: EmergencyBed[];
+  hotline: string;
+  generatedAt: string;
+}
+
+/** A patient who can be admitted (GET /emergency/options). */
+export interface EmergencyPatientOption {
+  id: number;
+  /** `patients.patient_id` -- the value the API expects as `patientId`. */
+  patientId: string;
+  name: string;
+  age: number | null;
+  gender: string | null;
+}
+
+/** The admit form's options: the patients that can be admitted and the bays. */
+export interface EmergencyAdmissionOptions {
+  patients: EmergencyPatientOption[];
+  beds: EmergencyBed[];
+  hotline: string;
+}
+
+/** One episode of care in the emergency department. */
+export interface EmergencyAdmission {
+  id: number;
+  patientId: number;
+  patientCode: string;
+  patientName: string;
+  triageLevel: EmergencyTriageLevel;
+  condition: string | null;
+  bedId: string | null;
+  bedLabel: string | null;
+  systolicBp: number | null;
+  diastolicBp: number | null;
+  heartRate: number | null;
+  spo2: number | null;
+  status: 'admitted' | 'discharged' | 'deceased';
+  admittedAt: string;
+  dischargedAt: string | null;
+}
+
+/** The body of an admission write. */
+export interface EmergencyAdmissionInput {
+  /** The patient's code (e.g. "P-1002") or their numeric id. */
+  patientId: string;
+  triageLevel: EmergencyTriageLevel;
+  condition?: string | null;
+  systolicBp?: number | null;
+  diastolicBp?: number | null;
+  heartRate?: number | null;
+  spo2?: number | null;
+  /** The bay the patient is put in. */
+  bedId?: string | null;
+}
+
+/** The readings a clinician may record with an admission. */
+export interface EmergencyVitalsInput {
+  systolicBp?: number | null;
+  diastolicBp?: number | null;
+  heartRate?: number | null;
+  spo2?: number | null;
+}
+
+/**
+ * The record of a code-blue broadcast.
+ *
+ * `dispatched` is always false on this deployment: there is no outbound
+ * emergency-service integration, so no ambulance or paging gateway was
+ * contacted. The answer says so rather than implying a broadcast happened.
+ */
+export interface EmergencyCodeBlueResult {
+  /** The audit entry that records the event. */
+  auditId: number;
+  dispatched: boolean;
+  message: string;
+  hotline: string;
+  patientId: string | null;
+}
+
+// ── Roles and their permissions ─────────────────────────────────────────────
+
+/** The four capabilities a permission row carries. */
+export interface RolePermissionFlags {
+  view: boolean;
+  add: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+/** A role and the permissions it holds, keyed by module. */
+export interface RoleRecord {
+  /** `roles.id`. The service returns the numeric key. */
+  id: string | number;
+  name: string;
+  description: string | null;
+  /** The accounts that point at this role. */
+  user_count: number;
+  permissions: Record<string, RolePermissionFlags>;
+}
+
+/** One entry of the permission payload the editor sends. */
+export interface RolePermissionInput extends RolePermissionFlags {
+  module: string;
 }
 
 // The API base URL is resolved in one place (`src/config/api.ts`) from the
@@ -199,8 +403,8 @@ class ApiService {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || 'Request failed');
+      const body = await response.json().catch(() => null);
+      throw new ApiError(readErrorMessage(body), response.status);
     }
     return response.json();
   }
@@ -499,20 +703,6 @@ class ApiService {
     }
   }
 
-  async getPatient(id: string) {
-    const url = API_BASE_URL + '/patients/' + id;
-    if (this.cache[url]) {
-      console.log('Returning cached response for ' + url);
-      return Promise.resolve(this.cache[url]);
-    }
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
-    const data = await this.handleResponse(response);
-    this.cache[url] = data;
-    return data;
-  }
-
   async createPatient(data: any) {
     try {
       const response = await fetch(`${API_BASE_URL}/patients`, {
@@ -630,25 +820,6 @@ class ApiService {
   // Dashboard endpoints
   async getDashboardStats() {
     const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-  async getFinancialForecast() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/financial-forecast`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-  async getResourceOptimization() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/resource-optimization`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-  async importGhanaHealthData() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/ghana-health-import`, {
-      method: 'POST',
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
@@ -859,15 +1030,6 @@ class ApiService {
     return data;
   }
 
-  async createDocument(data: any) {
-    const response = await fetch(`${API_BASE_URL}/documents`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
   async uploadDocument(formData: FormData) {
     const headers: HeadersInit = {};
     const token = localStorage.getItem('token');
@@ -899,14 +1061,6 @@ class ApiService {
       throw new Error(text || `Failed to ${action} document`);
     }
     return response.blob();
-  }
-
-  async downloadDocument(id: string): Promise<Blob> {
-    return this.getDocumentBlob(id, 'download');
-  }
-
-  async previewDocument(id: string): Promise<Blob> {
-    return this.getDocumentBlob(id, 'preview');
   }
 
   // Predictions & Ghana Health
@@ -1018,13 +1172,6 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getPrescription(id: string) {
-    const response = await fetch(`${API_BASE_URL}/prescriptions/${id}`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
   async createPrescription(data: {
     patient_id: string | number;
     doctor_id: string | number;
@@ -1047,14 +1194,6 @@ class ApiService {
       method: 'PUT',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async deletePrescription(id: string) {
-    const response = await fetch(`${API_BASE_URL}/prescriptions/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -1145,18 +1284,6 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getPharmacyForecast(params: { surgeMultiplier?: number; lookbackDays?: number; targetCoverDays?: number } = {}) {
-    const query = new URLSearchParams();
-    if (params.surgeMultiplier) query.set('surgeMultiplier', String(params.surgeMultiplier));
-    if (params.lookbackDays) query.set('lookbackDays', String(params.lookbackDays));
-    if (params.targetCoverDays) query.set('targetCoverDays', String(params.targetCoverDays));
-    const suffix = query.toString();
-    const response = await fetch(`${API_BASE_URL}/pharmacy/forecast${suffix ? `?${suffix}` : ''}`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
   // Vitals.
   async getVitals(params: { patientId?: string; from?: string; to?: string; limit?: number } = {}) {
     const query = new URLSearchParams();
@@ -1218,42 +1345,10 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Clinical notes.
-  async getClinicalNotes(patientId: string) {
-    const response = await fetch(`${API_BASE_URL}/clinical-notes?patientId=${encodeURIComponent(patientId)}`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async createClinicalNote(data: { patientId: string | number; content: string; tags?: string[] }) {
-    const response = await fetch(`${API_BASE_URL}/clinical-notes`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.handleResponse(response);
-  }
-
-  async deleteClinicalNote(id: string) {
-    const response = await fetch(`${API_BASE_URL}/clinical-notes/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
   // Medicine batches (lot / expiry tracking).
   async getBatches(medicineId?: string) {
     const query = medicineId ? `?medicineId=${encodeURIComponent(medicineId)}` : '';
     const response = await fetch(`${API_BASE_URL}/batches${query}`, {
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async getBatch(id: string) {
-    const response = await fetch(`${API_BASE_URL}/batches/${id}`, {
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
@@ -1280,14 +1375,6 @@ class ApiService {
   async deleteBatch(id: string) {
     const response = await fetch(`${API_BASE_URL}/batches/${id}`, {
       method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
-  async recallBatch(id: string) {
-    const response = await fetch(`${API_BASE_URL}/batches/${id}/recall`, {
-      method: 'POST',
       headers: this.getHeaders(),
     });
     return this.handleResponse(response);
@@ -1360,13 +1447,157 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createRole(data: any) {
+  /**
+   * One role with the permissions it holds.
+   *
+   * The editor reads the role through this rather than through the list: the
+   * list is a summary for the picker, and the record that is about to be
+   * changed deserves to be the one the server read back.
+   */
+  async getRole(id: string | number): Promise<RoleRecord> {
+    const response = await fetch(`${API_BASE_URL}/roles/${encodeURIComponent(String(id))}`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<RoleRecord>(response);
+  }
+
+  async createRole(data: { name: string; description?: string }): Promise<{ message: string; id: number }> {
     const response = await fetch(`${API_BASE_URL}/roles`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
     return this.handleResponse(response);
+  }
+
+  /**
+   * Writes the permission rows of a role.
+   *
+   * The payload is the flat list the route validates: one entry per module
+   * with its four capabilities. A module that is not in the list is left
+   * alone; a module that is in it is replaced.
+   */
+  async updateRolePermissions(
+    id: string | number,
+    permissions: RolePermissionInput[]
+  ): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/roles/${encodeURIComponent(String(id))}/permissions`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ permissions }),
+    });
+    return this.handleResponse<{ message: string }>(response);
+  }
+
+  /**
+   * Deletes a role. Its permission rows go with it; the accounts that pointed
+   * at it lose their access, which is why the page states the consequence
+   * before it asks for confirmation.
+   */
+  async deleteRole(id: string | number): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/roles/${encodeURIComponent(String(id))}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<{ message: string }>(response);
+  }
+
+  // ── Emergency triage board and ER bay state ───────────────────────────────
+
+  /** The board: the active admissions and the bay list in one response. */
+  async getEmergencyTriageBoard(): Promise<EmergencyTriageBoard> {
+    const response = await fetch(`${API_BASE_URL}/emergency/triage-board`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<EmergencyTriageBoard>(response);
+  }
+
+  /**
+   * The patients that can be admitted and the bays, for the admit form.
+   *
+   * The server narrows the patient list to the caller's own hospital, so a
+   * patient of another hospital is never offered in the first place.
+   */
+  async getEmergencyOptions(): Promise<EmergencyAdmissionOptions> {
+    const response = await fetch(`${API_BASE_URL}/emergency/options`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<EmergencyAdmissionOptions>(response);
+  }
+
+  /** Admits a patient, optionally into a bay. */
+  async createEmergencyAdmission(data: EmergencyAdmissionInput): Promise<EmergencyAdmission> {
+    const response = await fetch(`${API_BASE_URL}/emergency/admissions`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    const payload = await this.handleResponse<{ admission: EmergencyAdmission }>(response);
+    return payload.admission;
+  }
+
+  /** Changes the triage level, the condition note or the recorded vitals. */
+  async updateEmergencyAdmission(
+    id: number | string,
+    data: EmergencyVitalsInput & { triageLevel?: EmergencyTriageLevel; condition?: string | null }
+  ): Promise<EmergencyAdmission> {
+    const response = await fetch(
+      `${API_BASE_URL}/emergency/admissions/${encodeURIComponent(String(id))}`,
+      {
+        method: 'PATCH',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
+    const payload = await this.handleResponse<{ admission: EmergencyAdmission }>(response);
+    return payload.admission;
+  }
+
+  /** Discharges a patient; the bay they were in goes to `cleaning`. */
+  async dischargeEmergencyAdmission(
+    id: number | string
+  ): Promise<{ admission: EmergencyAdmission; bed: EmergencyBed | null }> {
+    const response = await fetch(
+      `${API_BASE_URL}/emergency/admissions/${encodeURIComponent(String(id))}/discharge`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(),
+      }
+    );
+    return this.handleResponse<{ admission: EmergencyAdmission; bed: EmergencyBed | null }>(response);
+  }
+
+  /** Allocates a bay to a patient, releases it, or puts it back in service. */
+  async updateEmergencyBed(
+    id: string,
+    data: { status: EmergencyBedStatus; patientId?: string | null; triage?: EmergencyTriageLevel | null }
+  ): Promise<EmergencyBed> {
+    const response = await fetch(`${API_BASE_URL}/emergency/beds/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    const payload = await this.handleResponse<{ bed: EmergencyBed }>(response);
+    return payload.bed;
+  }
+
+  /**
+   * Records a code-blue broadcast in the audit trail.
+   *
+   * The answer states plainly that nothing was dispatched, because nothing
+   * was: this deployment has no emergency-service integration.
+   */
+  async recordEmergencyCodeBlue(
+    patientId?: string | null,
+    note?: string | null
+  ): Promise<EmergencyCodeBlueResult> {
+    const response = await fetch(`${API_BASE_URL}/emergency/code-blue`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ patientId, note }),
+    });
+    const payload = await this.handleResponse<{ codeBlue: EmergencyCodeBlueResult }>(response);
+    return payload.codeBlue;
   }
 
   // Settings endpoints

@@ -475,10 +475,21 @@ export const forecast = async (req: AuthRequest, res: Response): Promise<Respons
     const { metric, periods } = req.query as any;
     const count = Number(periods) || 3;
     let baseQuery = '';
-    if (metric === 'income') baseQuery = 'SELECT DATE_FORMAT(date, "%Y-%m") AS period, SUM(credit - debit) AS value FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type="income" GROUP BY period ORDER BY period DESC LIMIT 6';
-    else if (metric === 'expense') baseQuery = 'SELECT DATE_FORMAT(date, "%Y-%m") AS period, SUM(debit - credit) AS value FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type="expense" GROUP BY period ORDER BY period DESC LIMIT 6';
-    else baseQuery = 'SELECT DATE_FORMAT(date, "%Y-%m") AS period, SUM(credit - debit) AS value FROM transactions GROUP BY period ORDER BY period DESC LIMIT 6';
-    const [rows] = await pool.query(baseQuery);
+    // The account type is a parameter rather than part of the statement: a
+    // double-quoted literal is a string in MySQL but an identifier in a
+    // session running with ANSI_QUOTES, so the same statement meant two
+    // different things on two servers.
+    const params: unknown[] = [];
+    if (metric === 'income') {
+      baseQuery = "SELECT DATE_FORMAT(date, '%Y-%m') AS period, SUM(credit - debit) AS value FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? GROUP BY period ORDER BY period DESC LIMIT 6";
+      params.push('income');
+    } else if (metric === 'expense') {
+      baseQuery = "SELECT DATE_FORMAT(date, '%Y-%m') AS period, SUM(debit - credit) AS value FROM transactions t JOIN accounts a ON t.account_id=a.id WHERE a.type = ? GROUP BY period ORDER BY period DESC LIMIT 6";
+      params.push('expense');
+    } else {
+      baseQuery = "SELECT DATE_FORMAT(date, '%Y-%m') AS period, SUM(credit - debit) AS value FROM transactions GROUP BY period ORDER BY period DESC LIMIT 6";
+    }
+    const [rows] = await pool.query(baseQuery, params);
     const values = (rows as any[]).map(r => Number(r.value) || 0).reverse();
 
     // Calculate simple moving average (SMA) with a window of 3

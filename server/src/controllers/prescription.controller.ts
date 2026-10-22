@@ -13,6 +13,17 @@ const toStatus = (s: string) => {
 }
 
 /**
+ * The statuses a client may set on a prescription.
+ *
+ * `dispensed` is not one of them. That status is what the dispensing record
+ * is made of, and the dispensing record is the only path that moves the
+ * stock off the shelf. A prescription that could be marked as dispensed
+ * without one left the inventory showing the medicine as still on the shelf
+ * while the prescription said it had been given out.
+ */
+const CLIENT_SETTABLE_STATUSES = ['new', 'cancelled'] as const
+
+/**
  * Columns a client may write on `prescriptions`.
  * The request body is never used to build the SET clause directly -- the old
  * code copied every key, including the internal `_warnings` marker, straight
@@ -141,7 +152,20 @@ export const updatePrescription = async (req: AuthRequest, res: Response): Promi
 
     const updates: Record<string, any> = {}
     for (const field of allowedFields) updates[field] = body[field]
-    if (updates.status) updates.status = toStatus(updates.status)
+    if (updates.status) {
+      const requested = toStatus(updates.status)
+      if (!(CLIENT_SETTABLE_STATUSES as readonly string[]).includes(requested)) {
+        // The dispensing record is what moves the stock. A prescription
+        // cannot be marked as dispensed on its own, or the inventory would
+        // say the medicine is still on the shelf while the prescription said
+        // it had been given out.
+        res.status(400).json({
+          error: `Status cannot be set to ${requested}. A prescription is marked as dispensed by the dispensing record.`,
+        })
+        return
+      }
+      updates.status = requested
+    }
 
     // Re-run the contraindication check whenever the medicine or the patient
     // changes. The patient and medicine of the stored record are used when

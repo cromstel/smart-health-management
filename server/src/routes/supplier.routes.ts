@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { validate } from '../middleware/validator.js';
 import { authenticate, requirePermission, enforcePasswordChange } from '../middleware/auth.js';
+import { pageValidators } from '../utils/pagination.js';
 import {
   getSuppliers,
   createSupplier,
@@ -14,7 +15,18 @@ const router = Router();
 router.use(authenticate);
 router.use(enforcePasswordChange);
 
-router.get('/', requirePermission('supplier', 'view'), getSuppliers);
+router.get(
+  '/',
+  requirePermission('supplier', 'view'),
+  [
+    // The list is a page, so the page size is bounded. A request for a page
+    // that is not a page is refused rather than quietly answered with
+    // something the caller did not ask for.
+    ...pageValidators(),
+    validate,
+  ],
+  getSuppliers
+);
 router.post(
   '/',
   [

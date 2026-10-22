@@ -126,7 +126,70 @@
   device for reduced motion sees the finished layout immediately with no
   animation at all. No content, route, or form behaviour changed.
 
+- **The records that only ever grew are now pruned on a schedule.** The audit
+  trail, the product analytics, the notification markers and the patient
+  summary share links were all kept forever, so an installation that ran for a
+  year carried a year of rows that nothing would ever read again. They are
+  pruned now, each with its own window, and the windows are configuration: an
+  operator with a different record-keeping obligation states it in the
+  environment rather than waiting for a code change. The audit trail is the
+  exception that proves the rule — its window is never shorter than the period
+  the audit report schedule covers, so a scheduled report is never produced
+  from a trail with a hole in it. A window that is not a whole number of days
+  is reported and the default is used, so a mistyped setting can never empty a
+  table. Operator impact: the four tables stop growing without bound, and a
+  deployment that has to keep its audit trail for longer states the longer
+  window.
+
+- **The emergency board can be worked, not only read.** A clinician can now
+  admit a patient, record the readings taken on arrival, re-triage an
+  admission, discharge a patient and put a bay back into service, and every
+  one of those actions is written to the clinical record by the service rather
+  than held in the browser. The triage level of every patient and the state of
+  every bay are stated in words as well as in colour, so the board can be read
+  at a glance and by a reader who cannot distinguish the colours. A patient is
+  never put into a bay by a rule alone: the pairing is confirmed before it is
+  written, because the wrong patient in a bay is a clinical safety error that
+  no automatic rule should be allowed to make on its own. A bay that a patient
+  has just left is queued for turnover and cannot receive the next patient
+  until it is marked ready, which is the same rule the service applies when a
+  patient is discharged. A record belonging to another hospital is reported as
+  not available to the caller rather than as a failure worth retrying, and the
+  actions that need a permission the caller does not hold are not offered at
+  all.
+
+- **Role permissions can be granted and withdrawn from the screen.** The roles
+  screen could list roles and create them, and nothing else: the capability
+  switches were not connected to anything, the save button did nothing, and
+  the delete button only wrote a note about itself. A role is now read from
+  the service before it is changed, its capabilities are shown as they are
+  actually held rather than as a default guess, and the changes are written
+  back and confirmed by the service. A part of the system the role does not
+  cover yet can be granted, and a capability that was switched off is
+  withdrawn rather than quietly left behind. The grant that reaches every
+  part of the system at once is reserved for the platform administrator and
+  cannot be handed out from the ordinary editor. Deleting a role asks first
+  and says how many accounts would lose their access.
+
+- **The browser now agrees with the service about what a person may do.** The
+  service issues a person's capabilities as a part of the system and an action
+  on it, and checks exactly that. The browser was looking for a different
+  spelling of the same grant, so every permission-gated control read as "not
+  allowed" for every account except the platform owner's — adding a patient,
+  adding a member of staff, working the emergency board and editing a role
+  were all dead ends for the clinical workforce. The two answers now agree, so
+  a control is offered to the people who may use it and withheld from the
+  people who may not.
+
 ### Fixed
+
+- **The pharmacy stock can no longer go negative.** A batch recall subtracted
+  the recalled quantity from the stock without checking what the stock held,
+  so recalling more than was in stock left the medicine with a negative
+  quantity. A negative quantity is not something that can be dispensed, and
+  it made the low-stock warning fire for stock that did not exist. The stock
+  is now held to a non-negative quantity by the database itself, and the
+  records that were already below zero have been brought back to zero.
 
 - **Records can no longer be created or edited through a broken request.**
   Creating a hospital, a patient, a member of staff, a supplier, a purchase
@@ -215,6 +278,18 @@
   than posted against the wrong supplier.
 
 ### Changed
+
+- **The list endpoints answer with a page instead of with the whole table.**
+  The medicine catalogue, the supplier list, the account list and the settings
+  list were each read in full and sent in full, so a single request carried a
+  copy of the installation's records with it and the answer grew with the
+  installation. Each of them now answers with a page of at most two hundred
+  rows and reports how many rows exist, so a client can ask for the rest. A
+  request for a page size that is not a page is refused rather than quietly
+  answered with something the caller did not ask for, and the order of the
+  rows is fixed so that paging through them does not repeat or skip records.
+  The shape of the answer is unchanged where the console reads it as a list,
+  so nothing in the browser had to change.
 
 - **The product name is configuration, not source.** The name shown to people —
   in the browser tab, the installable app, the screens, the emails, the
@@ -626,6 +701,23 @@ Contrast was **measured in the rendered output**, not inferred from class names:
 each text node's effective foreground is resolved against its nearest opaque
 backdrop, in both themes, and checked against WCAG AA.
 
+- **The role list is now reachable with the keyboard.** The roles were
+  click-only panels, so a person who does not use a pointer could not choose a
+  role at all and therefore could not reach the permission editor. They are
+  real buttons now, with the selected role announced.
+- **The triage level and the state of a bay are no longer carried by colour
+  alone.** Every patient states its triage level and every bay states whether
+  it is occupied, ready or being turned over, in words, so the board is
+  readable by a person who cannot distinguish the colours, and the colour is
+  an addition rather than the message.
+- **Filled status surfaces use their own foreground in both themes.** The
+  emergency badges and the bay states pair a status colour with the matching
+  foreground the theme defines, instead of a hand-picked white or black.
+- **Every control on the two screens has a name**, the board's search field is
+  labelled, the admission form reports which reading is out of range and in
+  which direction, and the permission switches say which module and which
+  capability they belong to.
+
 - **A previously reported "all clear" was wrong and has been corrected.** The
   automated audit itself had two defects: it could not interpret the modern
   wide-gamut colour notation the UI framework emits, so it was blind to a large
@@ -921,12 +1013,45 @@ steps, across both themes.
 
 ### Fixed
 
-- **Signing in works through the platform's proxy.** The service was being
-  published through a proxy that terminates the connection, and it did not
-  know it was behind one. The consequence was that it believed every request
-  arrived over an insecure connection, so it refused to set the secure
-  session cookie — and with no session, no one could sign in. It now
-  recognises the proxy it sits behind.
+- **The keyboard cheatsheet is gone from the pages.** A floating "Hotkeys"
+  control sat in the corner of every page, including the public ones, and
+  opened a dialog listing the clinical navigation shortcuts. It has been
+  removed from the interface and from the code.
+
+- **Two records created in the same second no longer collide.** The public
+  identifier of an appointment was built from the last few digits of the
+  clock, so two appointments made in the same second asked for the same
+  identifier and one of them failed with an error nobody could do anything
+  about. Identifiers are now random, and a collision is retried.
+
+- **A prescription can no longer be marked as dispensed on its own.** The
+  dispensing record is the only thing that moves a medicine off the shelf. A
+  prescription that could be marked as dispensed directly left the inventory
+  saying the medicine was still there while the prescription said it had been
+  given out.
+
+- **The records brought in from another system are stored the way this one
+  stores them.** The import wrote the patient's name, phone, email and address
+  in the clear, into columns that are ciphertext everywhere else, and left the
+  records belonging to no hospital — which, now that every clinical record is
+  confined to a hospital, made them invisible to everybody. The import now
+  writes them the way the application does, puts them in the hospital the
+  deployment states, reads the external table a page at a time, and cannot
+  collide with a record created here.
+
+- **The migration ledger exists in the production database.** The production
+  database was provisioned by applying the schema and the migrations directly,
+  so the table that records what has been applied was never created. It is
+  there now, with every applied migration recorded, so a later run of the
+  runner knows what it has already done.
+
+- **The signing in works again through the platform's proxy.** The service
+  was being published through a proxy that terminates the connection, and it
+  did not know it was behind one. It believed every request arrived over an
+  insecure connection, so it refused to set the secure session cookie — and
+  with no session, no one could sign in. It now recognises the proxy it sits
+  behind, and the sessions are kept in the database rather than in the memory
+  of the process, so a restart no longer signs everybody out at once.
 
 - **Every visitor is counted separately.** Rate limiting identified clients by
   the proxy's address rather than by theirs, so the whole hospital shared one
@@ -944,6 +1069,37 @@ steps, across both themes.
   replaced with the default instead of preventing the service from starting.
   The daily backup also runs on the schedule the deployment states, rather
   than on one written into the code.
+
+- **The database is no longer read end to end for one answer.** The lists of
+  medicines, suppliers, staff, patients, prescriptions, appointments and
+  purchase orders are paged, the stock and the prescriptions have the indexes
+  their queries need, the stock cannot go negative, and the tables that grew
+  without bound — the trail, the events, the notices and the shared summaries —
+  are now kept for a stated period and swept.
+
+- **A request from an unknown origin is refused quietly.** It was refused
+  correctly, but it was recorded as a server fault, so a routine refusal
+  looked like an outage in the log.
+
+### Added
+
+- **The emergency board can be worked.** The board could be read but not
+  acted on: a patient could be shown on it and never admitted, and a bay could
+  never be allocated or released through the interface. Admitting a patient,
+  changing their triage level, allocating a bay and discharging them are now
+  available, and the interface shows the triage level and the bay's state at a
+  glance.
+
+- **A role's permissions can be edited.** The backend has always been able to
+  change what a role may do; there was no way to reach it from the interface.
+
+- **A notification inbox that is real.** Staff now receive notifications from
+  the system rather than from a fixed list built in the browser: appointments
+  starting shortly, prescriptions approaching the end of their course, stock
+  that has fallen to its reorder level, and observations that came back
+  abnormal. Each alert is raised once, is remembered per person, and can be
+  read, confirmed or dismissed. The notification list starts empty until the
+  real conditions are met.
 
 ### Security and integrity
 

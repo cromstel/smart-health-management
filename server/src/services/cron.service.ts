@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
 import { cleanupExpiredAuthRecords, runDatabaseBackup } from './backup.service.js';
+import { purgeExpiredRecords } from './retention.service.js';
 
 /**
  * Status of one scheduled job, surfaced by the super-admin health endpoint
@@ -24,6 +25,9 @@ const scheduledTasks: ScheduledTask[] = [];
 /** The schedule used when none is configured, or when the configured one is not a schedule. */
 export const DEFAULT_BACKUP_SCHEDULE = '0 2 * * *';
 
+/** The daily schedule used when the retention schedule is not configured. */
+export const DEFAULT_RETENTION_SCHEDULE = '30 3 * * *';
+
 /**
  * The daily backup schedule.
  *
@@ -41,6 +45,25 @@ export const backupSchedule = (): string => {
     `[cron] BACKUP_CRON ("${configured}") is not a valid schedule. Using ${DEFAULT_BACKUP_SCHEDULE} instead.`
   );
   return DEFAULT_BACKUP_SCHEDULE;
+};
+
+/**
+ * The daily retention schedule.
+ *
+ * The purge reads the same way as the backup schedule does, and for the same
+ * reason: `cron.schedule` throws on an expression it cannot parse, and a job
+ * scheduled at start-up takes the process down with it. The expression is
+ * therefore checked before it is handed over, and the default is used when
+ * it is not one.
+ */
+export const retentionSchedule = (): string => {
+  const configured = (process.env.RETENTION_CRON ?? '').trim();
+  if (configured === '') return DEFAULT_RETENTION_SCHEDULE;
+  if (cron.validate(configured)) return configured;
+  console.error(
+    `[cron] RETENTION_CRON ("${configured}") is not a valid schedule. Using ${DEFAULT_RETENTION_SCHEDULE} instead.`
+  );
+  return DEFAULT_RETENTION_SCHEDULE;
 };
 
 /** Snapshot of every job this scheduler owns. */
@@ -133,6 +156,24 @@ export const scheduleBackups = (): void => {
     if (removed.revokedTokens > 0 || removed.passwordResets > 0) {
       console.log(
         `Auth record cleanup removed ${removed.revokedTokens} revoked token(s) and ${removed.passwordResets} password reset row(s)`
+      );
+    }
+  });
+
+  // The tables that only ever grow are pruned here. The purge is allowed to
+  // fail: a database that cannot be reached must not take the service down
+  // with it, and the job's own status records the failure for the health
+  // endpoint to report. The next tick tries again.
+  registerJob('data-retention-purge', retentionSchedule(), async () => {
+    const purged = await purgeExpiredRecords();
+    const removed =
+      purged.auditLogs +
+      purged.analyticsEvents +
+      purged.notificationDedupe +
+      purged.sharedSummaries;
+    if (removed > 0) {
+      console.log(
+        `Retention purge removed ${purged.auditLogs} audit row(s), ${purged.analyticsEvents} analytics event(s), ${purged.notificationDedupe} notification dedupe row(s) and ${purged.sharedSummaries} shared summary row(s)`
       );
     }
   });

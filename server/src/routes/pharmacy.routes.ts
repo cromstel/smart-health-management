@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import { validate } from '../middleware/validator.js';
 import { authenticate, requirePermission, enforcePasswordChange } from '../middleware/auth.js';
+import { pageValidators } from '../utils/pagination.js';
 import * as pharmacyController from '../controllers/pharmacy.controller.js';
 
 const router = Router();
@@ -22,6 +23,10 @@ router.get(
   [
     query('lowStock').optional().isIn(['true', 'false']).withMessage('lowStock must be true or false'),
     query('expired').optional().isIn(['true', 'false']).withMessage('expired must be true or false'),
+    // The list is a page, so the page size is bounded. A request for a page
+    // that is not a page is refused rather than quietly answered with
+    // something the caller did not ask for.
+    ...pageValidators(),
     validate,
   ],
   pharmacyController.getPharmacyItems
