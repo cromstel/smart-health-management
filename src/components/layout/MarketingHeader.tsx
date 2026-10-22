@@ -41,6 +41,7 @@ export function MarketingHeader() {
               {link.label}
             </a>
           ))}
+          <Link to="/" aria-current={pathname === '/' || pathname === '/landing' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">Home</Link>
           <Link to="/about-us/" aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
             About Us
           </Link>
@@ -75,6 +76,7 @@ export function MarketingHeader() {
                 {link.label}
               </a>
             ))}
+            <Link to="/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/' || pathname === '/landing' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">Home</Link>
             <Link to="/about-us/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
               About Us
             </Link>
