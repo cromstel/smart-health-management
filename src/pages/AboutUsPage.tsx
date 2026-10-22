@@ -83,7 +83,7 @@ export default function AboutUsPage() {
       <main id="main-content">
         <section className="relative isolate min-h-[40rem] overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 sm:py-24 lg:flex lg:min-h-[43rem] lg:items-center lg:py-28">
           <motion.img
-            src="/images/medicare-about-us-hero-banner.webp"
+            src="/images/hero-banner/medicare-about-us-hero-banner.webp"
             alt="A diverse healthcare team standing together in a bright clinical setting"
             initial={reduce ? false : { opacity: 0, scale: 1.06 }}
             animate={{ opacity: 1, scale: 1 }}

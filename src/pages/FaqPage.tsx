@@ -93,6 +93,15 @@ export default function FaqPage() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">Skip to main content</a>
       <main id="main-content">
         <section className="relative isolate overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 text-primary-foreground sm:py-24">
+          <motion.img
+            src="/images/medicare-faq-hero-banner.avif"
+            alt="A diverse healthcare team standing together in a bright clinical setting"
+            initial={reduce ? false : { opacity: 0, scale: 1.06 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 -z-20 h-full w-full select-none object-cover object-[62%_center] sm:object-[58%_center]"
+          />
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/68" aria-hidden="true" />
           <HeroGridLines columns={4} />
           <HeroScanLine delay={0.4} />
           <motion.div initial={reduce ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative mx-auto grid w-full gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:items-end lg:px-8">

@@ -7,7 +7,7 @@
 .kiro/
 .qoder/
 .augment/
-# Logs
+# Log files
 logs
 *.log
 npm-debug.log*
