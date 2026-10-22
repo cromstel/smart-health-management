@@ -92,7 +92,7 @@ export default function FaqPage() {
     <div className="min-h-screen bg-background text-foreground">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">Skip to main content</a>
       <main id="main-content">
-        <section className="relative isolate overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 text-primary-foreground sm:py-24">
+        <section className="relative isolate overflow-hidden border-b border-primary-foreground/15 bg-primary min-h-[40rem] py-16 text-primary-foreground sm:py-24 lg:min-h-[43rem] lg:flex lg:items-center lg:py-28">
           <motion.img
             src="/images/medicare-faq-hero-banner.avif"
             alt="A diverse healthcare team standing together in a bright clinical setting"
