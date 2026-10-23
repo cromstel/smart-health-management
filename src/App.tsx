@@ -71,6 +71,7 @@ const SuperAdminAuditLogs = timedLazy('super-admin-audit-logs', () => import('./
 const SuperAdminSettings = timedLazy('super-admin-settings', () => import('./pages/SuperAdminSettings'));
 const SuperAdminOperations = timedLazy('super-admin-operations', () => import('./pages/SuperAdminOperations'));
 const SharedPatientSummaryPage = timedLazy('shared-patient-summary', () => import('./pages/SharedPatientSummaryPage'));
+const PatientPortalPage = timedLazy('patient-portal', () => import('./pages/PatientPortalPage'));
 
 function PageLoader() {
   return (
@@ -202,6 +203,7 @@ function AppRoutes() {
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/patient-portal" element={<PatientPortalPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

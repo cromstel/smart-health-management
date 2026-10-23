@@ -1322,3 +1322,8 @@ steps, across both themes.
 - Core React + Vite + Express full-stack architecture.
 - Patient management, appointment scheduling and vitals logging.
 - Role-based access control authorisation layer.
+
+## 2026-10-23 — Patient Portal (feat/patient-portal)
+- /patient-portal full RBAC portal (patient role, patient_id scope), backend routes/controller, frontend PatientPortalPage, App.tsx lazy route.
+- Billing/invoicing verified robust (invoice schema + financial controller + audit + ledger).
+- Build/type-clean; deploy bundle rebuild blocked by .env NODE_ENV restriction (operator gate).
