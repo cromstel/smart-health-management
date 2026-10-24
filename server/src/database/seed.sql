@@ -129,8 +129,8 @@ INSERT INTO permissions (role_id, module, can_view, can_add, can_edit, can_delet
 -- only worked because FOREIGN_KEY_CHECKS was disabled for the whole script.
 -- Seeding in dependency order is correct on its own terms rather than relying
 -- on a session setting that a strict SQL mode may reject.
-INSERT INTO hospitals (id, hospital_id, name, address, phone, email) VALUES
-(1, 'HOSP-001', 'General Hospital', '123 Main St, Anytown, USA', '555-1234', 'contact@generalhospital.com');
+INSERT INTO hospitals (id, hospital_id, name, address, phone, email, subdomain, domain) VALUES
+(1, 'HOSP-001', 'General Hospital', '123 Main St, Anytown, USA', '555-1234', 'contact@generalhospital.com', 'medicare', 'medicare.cromstelit.com');
 
 -- 4. Seed Departments
 INSERT INTO departments (id, hospital_id, name, head_of_department) VALUES

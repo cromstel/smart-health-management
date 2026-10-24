@@ -120,6 +120,8 @@ export interface SuperAdminHospital {
   phone: string;
   email: string;
   status: 'active' | 'inactive';
+  subdomain?: string | null;
+  domain?: string | null;
   beds: number;
   occupancy: number;
   departments: number;
@@ -953,6 +955,22 @@ class ApiService {
   async updateHospital(id: string, data: any) {
     const response = await fetch(`${API_BASE_URL}/hospitals/${id}`, {
       method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Changes a hospital's subdomain and/or custom domain.
+   *
+   * A dedicated endpoint rather than a field of updateHospital: both columns
+   * are unique across every hospital, so the server re-validates the shape
+   * and re-checks the value against the other rows on each write.
+   */
+  async updateHospitalSubdomain(id: string, data: { subdomain?: string; domain?: string }) {
+    const response = await fetch(`${API_BASE_URL}/hospitals/${id}/subdomain`, {
+      method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });

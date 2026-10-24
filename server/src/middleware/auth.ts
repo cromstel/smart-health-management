@@ -375,6 +375,7 @@ export const requirePermission = (module: string, action: 'view' | 'add' | 'edit
         'documents',
         'emergency',
         'pharmacy',
+        'patient', // portal module
       ]);
       if (hospitalScopedModules.has(module)) {
         // The scope comes from the account's own row, worked out when the

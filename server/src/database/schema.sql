@@ -74,12 +74,20 @@ CREATE TABLE IF NOT EXISTS hospitals (
   zip_code VARCHAR(20),
   phone VARCHAR(20),
   email VARCHAR(255),
+  -- The tenant address: `<subdomain>.medicare.example.com`, or a custom
+  -- `domain` when one is pointed at the platform. NULL means the hospital is
+  -- not addressable by that route. Both are UNIQUE, and MySQL permits many
+  -- NULLs in a unique index, so "not addressable" is the normal state.
+  subdomain VARCHAR(100) NULL,
+  domain VARCHAR(255) NULL,
   departments INT DEFAULT 0,
   staff_count INT DEFAULT 0,
   beds INT DEFAULT 0,
   status ENUM('active', 'inactive') DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_hospitals_subdomain (subdomain),
+  UNIQUE KEY uq_hospitals_domain (domain),
   INDEX idx_hospital_id (hospital_id),
   INDEX idx_status (status)
 );
@@ -186,6 +194,9 @@ CREATE TABLE IF NOT EXISTS patients (
   -- The index the tenant filter needs: the list of a hospital's patients,
   -- newest first.
   INDEX idx_patients_hospital_created (hospital_id, created_at, id),
+  -- The portal looks a patient up by their account's email within their
+  -- hospital; without this the lookup scans the whole table.
+  INDEX idx_patients_hospital_email (hospital_id, email),
   FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL
 );
 

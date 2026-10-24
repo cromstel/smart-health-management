@@ -37,6 +37,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { startWebAuthnRegistration, isWebAuthnSupported } from '@/utils/webauthn';
 import { APP_NAME_SLUG } from '@/config/app';
+import SubdomainSettings from '@/components/hospitals/SubdomainSettings';
 
 interface Settings {
   systemName?: string;
@@ -414,6 +415,7 @@ export default function SettingsPage() {
           <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="backup">Backup</TabsTrigger>
+          <TabsTrigger value="hospital">Hospital</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
@@ -1351,6 +1353,10 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="hospital" className="space-y-4">
+          <SubdomainSettings />
         </TabsContent>
       </Tabs>
 		</>

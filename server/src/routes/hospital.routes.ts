@@ -10,6 +10,11 @@ router.get('/', requirePermission('hospitals', 'view'), hospitalController.getHo
 router.get('/:id', requirePermission('hospitals', 'view'), hospitalController.getHospitalById);
 router.post('/', requirePermission('hospitals', 'add'), hospitalController.createHospital);
 router.put('/:id', requirePermission('hospitals', 'edit'), hospitalController.updateHospital);
+router.patch(
+  '/:id/subdomain',
+  requirePermission('hospitals', 'edit'),
+  hospitalController.updateSubdomain
+);
 router.delete('/:id', requirePermission('hospitals', 'delete'), hospitalController.deleteHospital);
 
 router.get(

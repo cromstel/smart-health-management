@@ -11,7 +11,7 @@ export default function PatientPortalPage() {
   const [summaries, setSummaries] = useState<{ id: number; title?: string; created_at: string }[]>([]);
 
   useEffect(() => {
-    apiRequest('/api/patient-portal').then((r: any) => setPortal(r.records?.[0] || null)).catch(() => setPortal(null));
+    apiRequest('/api/patient-portal').then((r: any) => setPortal(r.record || null)).catch(() => setPortal(null));
     apiRequest('/api/patient-portal/appointments').then((r: any) => setAppointments(r.appointments || [])).catch(() => setAppointments([]));
     apiRequest('/api/patient-portal/summaries').then((r: any) => setSummaries(r.summaries || [])).catch(() => setSummaries([]));
   }, []);

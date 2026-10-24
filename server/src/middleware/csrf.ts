@@ -31,7 +31,18 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
 };
 
 export const validateCsrfToken = (req: Request, res: Response, next: NextFunction): void => {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/api/analytics/event' || req.path === '/api/demo-requests') {
+  // Exempt paths carry no ambient credential to abuse:
+  //  - /api/analytics/event and /api/demo-requests are public writes;
+  //  - /api/onboard is the public hospital-registration form. It is
+  //    unauthenticated by design (a prospective hospital has no account), so
+  //    there is no session for a forged request to ride, and the row it
+  //    creates stays inactive until a super administrator confirms it.
+  if (
+    ['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
+    req.path === '/api/analytics/event' ||
+    req.path === '/api/demo-requests' ||
+    req.path === '/api/onboard'
+  ) {
     return next();
   }
 

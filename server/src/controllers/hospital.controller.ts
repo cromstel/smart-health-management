@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import pool from '../config/database.js';
 import { randomToken, isDuplicateEntry } from '../utils/identifiers.js';
+import { hasSubdomainShape, isReservedSubdomain } from '../utils/subdomains.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 /**
@@ -80,6 +81,70 @@ const readOptionalText = (value: unknown, maxLength: number, label: string): str
   return text === '' ? null : text;
 };
 
+/**
+ * The shape of a subdomain.
+ *
+ * A subdomain becomes the first label of a hostname (`<sub>.medicare.example.com`),
+ * so it may only hold letters, numbers and hyphens, and may not start or end
+ * with a hyphen. The platform's own names are refused too: a hospital holding
+ * one would sit in front of the route it shadows.
+ */
+const readSubdomain = (value: unknown, label: string): string | null => {
+  if (value === undefined || value === null || value === '') return null;
+  const text = String(value).trim().toLowerCase();
+  if (!hasSubdomainShape(text)) {
+    throw new InvalidInputError(
+      `${label} must be 2-100 characters of letters, numbers and hyphens, and cannot start or end with a hyphen`
+    );
+  }
+  if (isReservedSubdomain(text)) {
+    throw new InvalidInputError(`${label} is reserved by the platform`);
+  }
+  return text;
+};
+
+/** The shape of a full custom domain (`portal.example.org`). */
+const DOMAIN_PATTERN =
+  /^(?=.{4,253}$)([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i;
+
+const readDomain = (value: unknown, label: string): string | null => {
+  if (value === undefined || value === null || value === '') return null;
+  const text = String(value).trim().toLowerCase();
+  if (!DOMAIN_PATTERN.test(text)) {
+    throw new InvalidInputError(`${label} must be a valid domain, for example portal.example.org`);
+  }
+  return text;
+};
+
+/**
+ * Whether a subdomain is already claimed by a different hospital.
+ *
+ * The column carries a UNIQUE index, so the check mirrors it: the value must
+ * belong to no other row. `excludeHospitalId` is the row being edited.
+ */
+const subdomainInUse = async (
+  subdomain: string,
+  excludeHospitalId: number | null
+): Promise<boolean> => {
+  const [rows] = await pool.query(
+    'SELECT id FROM hospitals WHERE subdomain = ? AND (? IS NULL OR id != ?) LIMIT 1',
+    [subdomain, excludeHospitalId, excludeHospitalId]
+  );
+  return (rows as any[]).length > 0;
+};
+
+/** Whether a custom domain is already claimed by a different hospital. */
+const domainInUse = async (
+  domain: string,
+  excludeHospitalId: number | null
+): Promise<boolean> => {
+  const [rows] = await pool.query(
+    'SELECT id FROM hospitals WHERE domain = ? AND (? IS NULL OR id != ?) LIMIT 1',
+    [domain, excludeHospitalId, excludeHospitalId]
+  );
+  return (rows as any[]).length > 0;
+};
+
 export const getHospitals = async (_req: AuthRequest, res: Response): Promise<Response | void> => {
   try {
     const [hospitals] = await pool.query('SELECT * FROM hospitals ORDER BY id');
@@ -146,6 +211,17 @@ export const createHospital = async (req: AuthRequest, res: Response): Promise<R
     const zipCode = readOptionalText(readField(body, 'zip_code'), 20, 'Zip code');
     const phone = readOptionalText(readField(body, 'phone'), 20, 'Phone');
     const email = readOptionalText(readField(body, 'email'), 255, 'Email');
+    const subdomain = readSubdomain(readField(body, 'subdomain'), 'Subdomain');
+    const domain = readDomain(readField(body, 'domain'), 'Domain');
+
+    // Both columns carry a UNIQUE index. Claiming a value another hospital
+    // already holds is a conflict the caller can correct, not a server fault.
+    if (subdomain !== null && (await subdomainInUse(subdomain, null))) {
+      return res.status(409).json({ error: 'That subdomain is already taken' });
+    }
+    if (domain !== null && (await domainInUse(domain, null))) {
+      return res.status(409).json({ error: 'That domain is already taken' });
+    }
 
     const statusValue = readField(body, 'status');
     let status = 'active';
@@ -160,8 +236,8 @@ export const createHospital = async (req: AuthRequest, res: Response): Promise<R
     // be written to it. The public identifier lives in hospitals.hospital_id
     // and is generated here, because that column is NOT NULL and UNIQUE.
     const insertSql = `INSERT INTO hospitals
-        (hospital_id, name, address, city, state, zip_code, phone, email, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        (hospital_id, name, address, city, state, zip_code, phone, email, status, subdomain, domain)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const hospitalId = `HOSP-${randomToken(6)}`;
@@ -176,6 +252,8 @@ export const createHospital = async (req: AuthRequest, res: Response): Promise<R
           phone,
           email,
           status,
+          subdomain,
+          domain,
         ]);
 
         res.status(201).json({
@@ -185,9 +263,20 @@ export const createHospital = async (req: AuthRequest, res: Response): Promise<R
         });
         return;
       } catch (error) {
-        // hospital_id is UNIQUE. A collision is unlikely but not impossible, so
-        // retry with a fresh identifier instead of failing the request.
-        if (isDuplicateEntry(error) && attempt < 4) continue;
+        // hospital_id is UNIQUE. A collision is unlikely but not impossible,
+        // so retry with a fresh identifier instead of failing the request.
+        // A subdomain or domain collision is different: it is a real conflict
+        // the caller must resolve, and a fresh hospital identifier will not
+        // change it — answer 409 instead of retrying.
+        if (isDuplicateEntry(error)) {
+          if (subdomain !== null && (await subdomainInUse(subdomain, null))) {
+            return res.status(409).json({ error: 'That subdomain is already taken' });
+          }
+          if (domain !== null && (await domainInUse(domain, null))) {
+            return res.status(409).json({ error: 'That domain is already taken' });
+          }
+          if (attempt < 4) continue;
+        }
         throw error;
       }
     }
@@ -313,5 +402,68 @@ export const deleteHospital = async (req: AuthRequest, res: Response): Promise<R
   } catch (error) {
     console.error('Delete hospital error:', error);
     res.status(500).json({ error: 'Failed to delete hospital' });
+  }
+};
+
+/**
+ * Updates a hospital's subdomain and/or custom domain.
+ *
+ * A dedicated endpoint rather than a field of PUT /api/hospitals/:id: both
+ * columns carry a UNIQUE index, so every write has to re-validate the shape
+ * and re-check the value against every other row. Keeping it here means that
+ * logic lives in one place and the general update path cannot reach it.
+ */
+export const updateSubdomain = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+  try {
+    const { id } = req.params;
+    const hospitalId = parseId(id);
+
+    if (hospitalId === null) {
+      return res.status(404).json({ error: 'Hospital not found' });
+    }
+
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const subdomain = readSubdomain(body.subdomain, 'Subdomain');
+    const domain = readDomain(body.domain, 'Domain');
+
+    if (subdomain === null && domain === null) {
+      return res.status(400).json({ error: 'Provide a subdomain, a domain, or both' });
+    }
+
+    const [existing] = await pool.query('SELECT id FROM hospitals WHERE id = ?', [hospitalId]);
+    if ((existing as any[]).length === 0) {
+      return res.status(404).json({ error: 'Hospital not found' });
+    }
+
+    if (subdomain !== null && (await subdomainInUse(subdomain, hospitalId))) {
+      return res.status(409).json({ error: 'That subdomain is already taken' });
+    }
+    if (domain !== null && (await domainInUse(domain, hospitalId))) {
+      return res.status(409).json({ error: 'That domain is already taken' });
+    }
+
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    if (subdomain !== null) {
+      updates.push('subdomain = ?');
+      values.push(subdomain);
+    }
+    if (domain !== null) {
+      updates.push('domain = ?');
+      values.push(domain);
+    }
+
+    await pool.query(`UPDATE hospitals SET ${updates.join(', ')} WHERE id = ?`, [
+      ...values,
+      hospitalId,
+    ]);
+
+    res.json({ message: 'Hospital addressing updated successfully' });
+  } catch (error) {
+    if (error instanceof InvalidInputError) {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error('Update hospital subdomain error:', error);
+    res.status(500).json({ error: 'Failed to update hospital addressing' });
   }
 };

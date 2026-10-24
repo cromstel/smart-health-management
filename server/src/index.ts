@@ -55,6 +55,8 @@ import medicationAdministrationRoutes from './routes/medicationAdministration.ro
 import dispensingEventRoutes from './routes/dispensingEvent.routes.js';
 import forecastRoutes from './routes/forecast.routes.js';
 import emergencyRoutes from './routes/emergency.routes.js';
+import onboardRoutes from './routes/onboard.routes.js';
+import patientPortalRoutes from './routes/patientPortal.routes.js';
 import './jobs/inventory.job.js';
 import './jobs/backup.job.js';
 import { scheduleBackups } from './services/cron.service.js';
@@ -234,6 +236,11 @@ app.use('/api/dispensing-events', dispensingEventRoutes);
 // the pharmacy prefix rather than at the full path.
 app.use('/api/pharmacy', forecastRoutes);
 app.use('/api/emergency', emergencyRoutes);
+// Public hospital registration (no account yet; the row it creates is
+// inactive until confirmed) and the per-hospital patient portal, which
+// resolves its tenant from the request hostname.
+app.use('/api/onboard', onboardRoutes);
+app.use('/api/patient-portal', patientPortalRoutes);
 
 // ---------------------------------------------------------------------------
 // The front-end

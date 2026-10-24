@@ -72,6 +72,7 @@ const SuperAdminSettings = timedLazy('super-admin-settings', () => import('./pag
 const SuperAdminOperations = timedLazy('super-admin-operations', () => import('./pages/SuperAdminOperations'));
 const SharedPatientSummaryPage = timedLazy('shared-patient-summary', () => import('./pages/SharedPatientSummaryPage'));
 const PatientPortalPage = timedLazy('patient-portal', () => import('./pages/PatientPortalPage'));
+const HospitalRegistrationPage = timedLazy('hospital-registration', () => import('./pages/HospitalRegistrationPage'));
 
 function PageLoader() {
   return (
@@ -119,6 +120,7 @@ function AppRoutes() {
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/auth/request-demo" element={<RequestDemoPage />} />
+          <Route path="/register-hospital" element={<HospitalRegistrationPage />} />
         </Route>
 
         {/* Account and account-adjacent flows stay focused, without marketing navigation. */}
