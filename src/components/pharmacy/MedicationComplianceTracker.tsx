@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as apiConfig from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Pill, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  Bell, 
-  Plus, 
-  User, 
+import {
+  Pill,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Bell,
+  Plus,
+  User,
   ShieldAlert,
   Calendar
 } from 'lucide-react';
@@ -31,18 +32,37 @@ interface Medicine {
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }
 
+/**
+ * The API keeps the status lower case (the same shape every other enum in
+ * this API uses); the table below is rendered in Title Case.
+ */
+type AdministrationStatus = 'Pending' | 'Administered' | 'Overdue' | 'Missed';
+
 interface MedicationAdministration {
   id: string;
   patientId: string;
+  patientCode?: string;
   patientName: string;
   medicineId: string;
   medicineName: string;
   dosage: string;
-  scheduledTime: string; // e.g. "08:00 AM", "12:00 PM"
-  status: 'Pending' | 'Administered' | 'Overdue';
+  scheduledTime: string;
+  status: AdministrationStatus;
   assignedStaff: string;
   criticalNotes?: string;
   administeredAt?: string;
+}
+
+interface PatientOption {
+  patientId: number;
+  patientCode: string;
+  patientName: string;
+}
+
+interface StaffOption {
+  staffId: number;
+  staffName: string;
+  role: string;
 }
 
 interface MedicationComplianceTrackerProps {
@@ -50,57 +70,117 @@ interface MedicationComplianceTrackerProps {
   onDeductStock: (medicineId: string, quantity: number) => void;
 }
 
-const INITIAL_ADMINISTRATIONS: MedicationAdministration[] = [
-  {
-    id: 'admin-1',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    medicineId: '1', // Paracetamol
-    medicineName: 'Paracetamol 500mg',
-    dosage: '2 Tablets',
-    scheduledTime: '08:00 AM',
-    status: 'Administered',
-    assignedStaff: 'Nurse Gifty Adjei',
-    administeredAt: 'Today, 08:05 AM',
-    criticalNotes: 'Given post-breakfast with warm water.'
-  },
-  {
-    id: 'admin-2',
-    patientId: 'P-1002',
-    patientName: 'John Doe',
-    medicineId: '2', // Insulin
-    medicineName: 'Insulin Glargine',
-    dosage: '10 Units',
-    scheduledTime: '07:30 AM',
-    status: 'Overdue',
-    assignedStaff: 'Nurse Kwame Boateng',
-    criticalNotes: 'Pre-meal injection required. Patient was sleeping.'
-  },
-  {
-    id: 'admin-3',
-    patientId: 'P-1003',
-    patientName: 'David Mensah',
-    medicineId: '3', // Lisinopril
-    medicineName: 'Lisinopril 10mg',
-    dosage: '1 Tablet',
-    scheduledTime: '12:00 PM',
-    status: 'Pending',
-    assignedStaff: 'Nurse Mary Appiah',
-    criticalNotes: 'Check blood pressure prior to administration.'
-  },
-  {
-    id: 'admin-4',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    medicineId: '4', // Amoxicillin
-    medicineName: 'Amoxicillin 500mg',
-    dosage: '1 Capsule',
-    scheduledTime: '02:00 PM',
-    status: 'Pending',
-    assignedStaff: 'Nurse Gifty Adjei',
-    criticalNotes: 'Antibiotic cycle day 3 of 7.'
+/** The raw record the API returns. */
+interface ApiAdministration {
+  id: number;
+  patientId: number;
+  patientCode: string;
+  patientName: string;
+  medicineId: string | null;
+  medicineName: string;
+  dosage: string;
+  scheduledTime: string;
+  status: 'pending' | 'administered' | 'overdue' | 'missed';
+  assignedStaff: string | null;
+  criticalNotes: string | null;
+  administeredAt: string | null;
+  quantity?: number;
+  stockAfter?: number;
+}
+
+const STATUS_LABEL: Record<ApiAdministration['status'], AdministrationStatus> = {
+  pending: 'Pending',
+  administered: 'Administered',
+  overdue: 'Overdue',
+  missed: 'Missed',
+};
+
+/**
+ * The API base URL.
+ *
+ * Resolved by the shared resolver in `src/config/api.ts`, from the
+ * environment, so this module cannot drift away from the rest of the app.
+ */
+const { API_BASE_URL } = apiConfig;
+
+/** A thin authenticated fetch. The server skips the CSRF check for bearer requests. */
+const request = async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: 'Request failed' }));
+    const message =
+      body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
+        ? body.error
+        : 'Request failed';
+    throw new Error(message);
   }
-];
+
+  return (await response.json()) as T;
+};
+
+/** "2026-10-20 08:00:00" -> "Oct 20, 08:00 AM" */
+const formatDateTime = (value?: string | null): string => {
+  if (!value) return '--';
+  const parsed = new Date(value.replace(' ', 'T'));
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString(undefined, {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+/**
+ * "08:00 AM" -> today at that time.
+ *
+ * The intake time field stays free text, so the value is turned into a real
+ * timestamp here. Anything that cannot be read falls back to an hour from
+ * now rather than scheduling a dose in the past by accident.
+ */
+const parseClockTime = (value: string): Date => {
+  const match = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/i.exec(value.trim());
+  if (match) {
+    let hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const meridiem = match[3]?.toLowerCase();
+    if (meridiem === 'pm' && hours < 12) hours += 12;
+    if (meridiem === 'am' && hours === 12) hours = 0;
+    if (hours <= 23 && minutes <= 59) {
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return date;
+    }
+  }
+  const fallback = new Date();
+  fallback.setHours(fallback.getHours() + 1, 0, 0, 0);
+  return fallback;
+};
+
+/** Maps the API record onto the shape the table renders. */
+const toFrontendRecord = (record: ApiAdministration): MedicationAdministration => ({
+  id: String(record.id),
+  patientId: String(record.patientId),
+  patientCode: record.patientCode,
+  patientName: record.patientName,
+  medicineId: record.medicineId ?? '',
+  medicineName: record.medicineName,
+  dosage: record.dosage,
+  scheduledTime: formatDateTime(record.scheduledTime),
+  status: STATUS_LABEL[record.status] ?? 'Pending',
+  assignedStaff: record.assignedStaff ?? 'Unassigned',
+  criticalNotes: record.criticalNotes ?? undefined,
+  administeredAt: record.administeredAt ? formatDateTime(record.administeredAt) : undefined,
+});
 
 export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerProps> = ({
   medicines,
@@ -108,76 +188,163 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
 }) => {
   const { addNotification } = useNotifications();
   const { logAction } = useAudit();
-  const [administrations, setAdministrations] = useState<MedicationAdministration[]>(INITIAL_ADMINISTRATIONS);
-  
+  const [administrations, setAdministrations] = useState<MedicationAdministration[]>([]);
+  const [patients, setPatients] = useState<PatientOption[]>([]);
+  const [staff, setStaff] = useState<StaffOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [signingOffId, setSigningOffId] = useState<string | null>(null);
+  const [liveStock, setLiveStock] = useState<Record<string, number>>({});
+
   // Schedule state
   const [showScheduleForm, setShowScheduleForm] = useState(false);
-  const [targetPatient, setTargetPatient] = useState('Sarah Johnson');
+  const [targetPatient, setTargetPatient] = useState('');
   const [selectedMedId, setSelectedMedId] = useState('');
   const [targetDosage, setTargetDosage] = useState('1 Tablet');
   const [targetTime, setTargetTime] = useState('02:00 PM');
-  const [assignedStaff, setAssignedStaff] = useState('Nurse Gifty Adjei');
+  const [assignedStaff, setAssignedStaff] = useState('');
   const [notes, setNotes] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
 
-  // Automatically check and trigger push-style notification alerts for Overdue administrations on load
-  useEffect(() => {
-    const overdues = administrations.filter(a => a.status === 'Overdue');
-    if (overdues.length > 0) {
-      overdues.forEach(overdue => {
-        // Send internal notification alert
-        addNotification({
-          type: 'inventory_alert',
-          priority: 'urgent',
-          title: `CRITICAL: Overdue Medication Alert`,
-          message: `${overdue.patientName} is overdue for ${overdue.dosage} of ${overdue.medicineName} (Scheduled: ${overdue.scheduledTime}). Attending: ${overdue.assignedStaff}.`,
-          timestamp: 'Just Now',
-          patientName: overdue.patientName,
-          patientId: overdue.patientId
-        });
+  /** Remembers which overdue records were already announced. */
+  const notifiedRef = useRef<Set<string>>(new Set());
 
-        // Push standard visual EMR browser notification to staff
-        toast.error(`⚠️ OVERDUE MEDICATION: ${overdue.patientName} is overdue for ${overdue.medicineName}!`, {
-          description: `Assigned: ${overdue.assignedStaff} (Scheduled: ${overdue.scheduledTime})`,
-          duration: 6000
-        });
-      });
+  /**
+   * The authoritative stock, read back from the inventory ledger.
+   *
+   * The sign-off decrements the stock on the server; the local copy is only
+   * a mirror for the dropdown, so it is refreshed from the API instead of
+   * being guessed.
+   */
+  const refreshStock = useCallback(async () => {
+    try {
+      const rows = await request<Array<{ id: string; stock_level: number }>>('/pharmacy/medicines');
+      const next: Record<string, number> = {};
+      for (const row of rows ?? []) {
+        next[String(row.id)] = Number(row.stock_level ?? 0);
+      }
+      setLiveStock(next);
+    } catch {
+      // The dropdown falls back to the stock the parent already holds.
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAdminister = (id: string) => {
+  const loadAdministrations = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const rows = await request<ApiAdministration[]>('/medication-administrations');
+      setAdministrations((rows ?? []).map(toFrontendRecord));
+      setLoadError(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load administrations';
+      setAdministrations([]);
+      setLoadError(message);
+      toast.error(`Failed to load medication administrations: ${message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadOptions = useCallback(async () => {
+    try {
+      const options = await request<{ patients: PatientOption[]; staff: StaffOption[] }>(
+        '/medication-administrations/options'
+      );
+      setPatients(options?.patients ?? []);
+      setStaff(options?.staff ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load options';
+      setPatients([]);
+      setStaff([]);
+      toast.error(`Failed to load scheduling options: ${message}`);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAdministrations();
+    loadOptions();
+    refreshStock();
+  }, [loadAdministrations, loadOptions, refreshStock]);
+
+  // Keep the stock mirror in step with the inventory the parent loaded.
+  useEffect(() => {
+    setLiveStock((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const medicine of medicines ?? []) {
+        if (next[medicine.id] === undefined) {
+          next[medicine.id] = medicine.stock;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [medicines]);
+
+  // Overdue alerts. The status itself is decided by the server; this only
+  // reacts to it, once per record.
+  useEffect(() => {
+    const overdues = administrations.filter(a => a.status === 'Overdue');
+    if (overdues.length === 0) return;
+
+    overdues.forEach((overdue) => {
+      if (notifiedRef.current.has(overdue.id)) return;
+      notifiedRef.current.add(overdue.id);
+
+      addNotification({
+        type: 'inventory_alert',
+        priority: 'urgent',
+        title: `CRITICAL: Overdue Medication Alert`,
+        message: `${overdue.patientName} is overdue for ${overdue.dosage} of ${overdue.medicineName} (Scheduled: ${overdue.scheduledTime}). Attending: ${overdue.assignedStaff}.`,
+        timestamp: 'Just Now',
+        patientName: overdue.patientName,
+        patientId: overdue.patientId
+      });
+
+      toast.error(`⚠️ OVERDUE MEDICATION: ${overdue.patientName} is overdue for ${overdue.medicineName}!`, {
+        description: `Assigned: ${overdue.assignedStaff} (Scheduled: ${overdue.scheduledTime})`,
+        duration: 6000
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [administrations]);
+
+  const handleAdminister = async (id: string) => {
     const administration = administrations.find(a => a.id === id);
     if (!administration) return;
 
-    // Deduct stock if corresponding medicine is found in Pharmacy
-    const matchedMed = medicines.find(m => m.id === administration.medicineId || m.name.toLowerCase().includes(administration.medicineName.split(' ')[0].toLowerCase()));
-    
-    if (matchedMed) {
-      if (matchedMed.stock <= 0) {
-        toast.error(`Stockout alert: Cannot administer ${administration.medicineName}. Current stock is 0.`);
-        return;
+    setSigningOffId(id);
+    try {
+      const updated = await request<ApiAdministration>(
+        `/medication-administrations/${id}/sign-off`,
+        { method: 'PATCH', body: JSON.stringify({}) }
+      );
+
+      setAdministrations(prev => prev.map(a => (a.id === id ? toFrontendRecord(updated) : a)));
+
+      // The stock moved on the server. The parent mirror is updated with the
+      // quantity the server actually deducted, and the authoritative figure
+      // is read back from the inventory ledger.
+      if (updated.medicineId && typeof updated.quantity === 'number') {
+        if (typeof onDeductStock === 'function') {
+          onDeductStock(updated.medicineId, updated.quantity);
+        }
+        await refreshStock();
       }
-      onDeductStock(matchedMed.id, 1);
+
+      logAction('MEDICINE_ADMINISTERED', 'pharmacy', {
+        recordId: administration.patientId,
+        oldValue: 'Pending',
+        newValue: `Administered: ${administration.medicineName} (${administration.dosage}) for ${administration.patientName}`
+      });
+
+      toast.success(`Marked as Administered: ${administration.dosage} of ${administration.medicineName} signed off for ${administration.patientName}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign-off failed';
+      toast.error(`Could not sign off ${administration.medicineName}: ${message}`);
+    } finally {
+      setSigningOffId(null);
     }
-
-    setAdministrations(prev => prev.map(a => {
-      if (a.id === id) {
-        return {
-          ...a,
-          status: 'Administered',
-          administeredAt: `Today, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-        };
-      }
-      return a;
-    }));
-
-    logAction('MEDICINE_ADMINISTERED', 'pharmacy', {
-      recordId: administration.patientId,
-      oldValue: 'Pending',
-      newValue: `Administered: ${administration.medicineName} (${administration.dosage}) for ${administration.patientName}`
-    });
-
-    toast.success(`Marked as Administered: ${administration.dosage} of ${administration.medicineName} signed off for ${administration.patientName}.`);
   };
 
   const handleNudgeStaff = (id: string) => {
@@ -199,8 +366,13 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
     });
   };
 
-  const handleScheduleAdministration = (e: React.FormEvent) => {
+  const handleScheduleAdministration = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!targetPatient) {
+      toast.error('Please select a patient');
+      return;
+    }
 
     if (!selectedMedId) {
       toast.error("Please select a medication from the Pharmacy list");
@@ -210,33 +382,41 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
     const selectedMed = medicines.find(m => m.id === selectedMedId);
     if (!selectedMed) return;
 
-    const newAdmin: MedicationAdministration = {
-      id: `admin-${Date.now()}`,
-      patientId: targetPatient === 'Sarah Johnson' ? 'P-1001' : targetPatient === 'John Doe' ? 'P-1002' : 'P-1003',
-      patientName: targetPatient,
-      medicineId: selectedMed.id,
-      medicineName: selectedMed.name,
-      dosage: targetDosage,
-      scheduledTime: targetTime,
-      status: 'Pending',
-      assignedStaff,
-      criticalNotes: notes
-    };
+    setIsScheduling(true);
+    try {
+      const scheduledTime = parseClockTime(targetTime);
+      const created = await request<ApiAdministration>('/medication-administrations', {
+        method: 'POST',
+        body: JSON.stringify({
+          patientId: Number(targetPatient),
+          medicineId: selectedMed.id,
+          dosage: targetDosage,
+          scheduledTime: scheduledTime.toISOString(),
+          assignedStaffId: assignedStaff ? Number(assignedStaff) : null,
+          criticalNotes: notes,
+        }),
+      });
 
-    setAdministrations(prev => [...prev, newAdmin]);
-    setShowScheduleForm(false);
-    
-    // Create audit log
-    logAction('MED_ADMINISTRATION_SCHEDULED', 'pharmacy', {
-      recordId: selectedMed.id,
-      newValue: `Scheduled: ${targetPatient} - ${selectedMed.name} at ${targetTime}`
-    });
+      setAdministrations(prev => [toFrontendRecord(created), ...prev]);
+      setShowScheduleForm(false);
 
-    toast.success(`Successfully scheduled ${targetDosage} of ${selectedMed.name} for ${targetPatient} at ${targetTime}.`);
+      // Create audit log
+      logAction('MED_ADMINISTRATION_SCHEDULED', 'pharmacy', {
+        recordId: selectedMed.id,
+        newValue: `Scheduled: ${created.patientName} - ${selectedMed.name} at ${targetTime}`
+      });
 
-    // Reset fields
-    setSelectedMedId('');
-    setNotes('');
+      toast.success(`Successfully scheduled ${targetDosage} of ${selectedMed.name} for ${created.patientName} at ${targetTime}.`);
+
+      // Reset fields
+      setSelectedMedId('');
+      setNotes('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Scheduling failed';
+      toast.error(`Could not schedule the dose: ${message}`);
+    } finally {
+      setIsScheduling(false);
+    }
   };
 
   // Stats summaries
@@ -244,6 +424,15 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
   const completedDoses = administrations.filter(a => a.status === 'Administered').length;
   const pendingDoses = administrations.filter(a => a.status === 'Pending').length;
   const overdueDoses = administrations.filter(a => a.status === 'Overdue').length;
+
+  /** The medicines the tracker is actually tracking, for the advisory card. */
+  const trackedMedicines = Array.from(
+    new Map(
+      administrations
+        .filter(a => Boolean(a.medicineId))
+        .map(a => [a.medicineId, a.medicineName])
+    ).values()
+  ).slice(0, 3);
 
   return (
     <div className="space-y-6" id="medication-compliance-section">
@@ -309,7 +498,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                   <CardTitle className="text-base font-bold text-foreground">Patient Administration Timelines</CardTitle>
                   <CardDescription className="text-xs">Monitor medication schedules and verify clinical intakes on-time.</CardDescription>
                 </div>
-                <Button 
+                <Button
                   onClick={() => setShowScheduleForm(!showScheduleForm)}
                   className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold h-8 shrink-0 flex items-center gap-1 cursor-pointer"
                 >
@@ -318,87 +507,103 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
               </div>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border/60 text-muted-foreground font-semibold text-[10px] uppercase tracking-wider">
-                    <th className="p-3">Patient</th>
-                    <th className="p-3">Medication</th>
-                    <th className="p-3">Schedule</th>
-                    <th className="p-3">Assigned Staff</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40 font-medium">
-                  {administrations.map((admin) => (
-                    <tr key={admin.id} className="hover:bg-muted/20 transition-all">
-                      <td className="p-3">
-                        <div className="font-semibold text-foreground">{admin.patientName}</div>
-                        <div className="text-[10px] text-muted-foreground">{admin.patientId}</div>
-                      </td>
-                      <td className="p-3">
-                        <div className="text-slate-900 dark:text-slate-200 flex items-center gap-1.5 font-bold">
-                          <Pill className="h-3 w-3 text-info shrink-0" /> {admin.medicineName}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">Dosage: {admin.dosage}</div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1 text-slate-800 dark:text-slate-300">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground" /> {admin.scheduledTime}
-                        </div>
-                        {admin.administeredAt && (
-                          <div className="text-[9px] text-success font-semibold mt-0.5">Given: {admin.administeredAt}</div>
-                        )}
-                      </td>
-                      <td className="p-3 text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <User className="h-3 w-3" /> {admin.assignedStaff}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <Badge className={`text-[10px] font-bold py-0.5 px-2 capitalize shrink-0 ${
-                          admin.status === 'Administered' ? 'bg-success/5 hover:bg-success/5 text-success border-success/20' :
-                          admin.status === 'Overdue' ? 'bg-destructive/5 hover:bg-destructive/5 text-destructive border-destructive/20 animate-pulse' :
-                          'bg-warning/5 hover:bg-warning/5 text-warning border-warning/20'
-                        }`} variant="outline">
-                          {admin.status}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex gap-1.5 justify-end">
-                          {admin.status !== 'Administered' && (
-                            <>
-                              {admin.status === 'Overdue' && (
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleNudgeStaff(admin.id)}
-                                  className="h-7 w-7 text-warning hover:text-warning hover:bg-warning/5 border-warning/20 shrink-0"
-                                  title="Broadcast Urgency Pager Alert"
-                                >
-                                  <Bell className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                onClick={() => handleAdminister(admin.id)}
-                                className="bg-success hover:bg-success text-success-foreground font-semibold text-[10px] h-7 px-2 shrink-0 cursor-pointer"
-                              >
-                                Sign-off
-                              </Button>
-                            </>
-                          )}
-                          {admin.status === 'Administered' && (
-                            <span className="text-success font-bold flex items-center gap-1 text-[10px] pr-1.5 py-1">
-                              <CheckCircle className="h-3.5 w-3.5" /> Checked
-                            </span>
-                          )}
-                        </div>
-                      </td>
+              {isLoading ? (
+                <p className="p-6 text-xs text-muted-foreground">Loading medication administrations…</p>
+              ) : loadError ? (
+                <div className="p-6 space-y-3">
+                  <p className="text-xs text-destructive">{loadError}</p>
+                  <Button variant="outline" size="sm" className="text-xs" onClick={loadAdministrations}>
+                    Retry
+                  </Button>
+                </div>
+              ) : administrations.length === 0 ? (
+                <p className="p-6 text-xs text-muted-foreground">
+                  No medication administrations have been scheduled yet.
+                </p>
+              ) : (
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-muted/40 border-b border-border/60 text-muted-foreground font-semibold text-[10px] uppercase tracking-wider">
+                      <th className="p-3">Patient</th>
+                      <th className="p-3">Medication</th>
+                      <th className="p-3">Schedule</th>
+                      <th className="p-3">Assigned Staff</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border/40 font-medium">
+                    {administrations.map((admin) => (
+                      <tr key={admin.id} className="hover:bg-muted/20 transition-all">
+                        <td className="p-3">
+                          <div className="font-semibold text-foreground">{admin.patientName}</div>
+                          <div className="text-[10px] text-muted-foreground">{admin.patientCode ?? admin.patientId}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-slate-900 dark:text-slate-200 flex items-center gap-1.5 font-bold">
+                            <Pill className="h-3 w-3 text-info shrink-0" /> {admin.medicineName}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">Dosage: {admin.dosage}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1 text-slate-800 dark:text-slate-300">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" /> {admin.scheduledTime}
+                          </div>
+                          {admin.administeredAt && (
+                            <div className="text-[9px] text-success font-semibold mt-0.5">Given: {admin.administeredAt}</div>
+                          )}
+                        </td>
+                        <td className="p-3 text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3" /> {admin.assignedStaff}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={`text-[10px] font-bold py-0.5 px-2 capitalize shrink-0 ${
+                            admin.status === 'Administered' ? 'bg-success/5 hover:bg-success/5 text-success border-success/20' :
+                            admin.status === 'Overdue' || admin.status === 'Missed' ? 'bg-destructive/5 hover:bg-destructive/5 text-destructive border-destructive/20 animate-pulse' :
+                            'bg-warning/5 hover:bg-warning/5 text-warning border-warning/20'
+                          }`} variant="outline">
+                            {admin.status}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex gap-1.5 justify-end">
+                            {admin.status !== 'Administered' && (
+                              <>
+                                {admin.status === 'Overdue' && (
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleNudgeStaff(admin.id)}
+                                    className="h-7 w-7 text-warning hover:text-warning hover:bg-warning/5 border-warning/20 shrink-0"
+                                    title="Broadcast Urgency Pager Alert"
+                                  >
+                                    <Bell className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  disabled={signingOffId === admin.id}
+                                  onClick={() => handleAdminister(admin.id)}
+                                  className="bg-success hover:bg-success text-success-foreground font-semibold text-[10px] h-7 px-2 shrink-0 cursor-pointer"
+                                >
+                                  {signingOffId === admin.id ? 'Signing off…' : 'Sign-off'}
+                                </Button>
+                              </>
+                            )}
+                            {admin.status === 'Administered' && (
+                              <span className="text-success font-bold flex items-center gap-1 text-[10px] pr-1.5 py-1">
+                                <CheckCircle className="h-3.5 w-3.5" /> Checked
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -420,10 +625,14 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                       className="w-full border border-border bg-card p-2 rounded text-xs text-foreground focus:ring-1 focus:ring-primary"
                       value={targetPatient}
                       onChange={(e) => setTargetPatient(e.target.value)}
+                      required
                     >
-                      <option value="Sarah Johnson">Sarah Johnson (P-1001)</option>
-                      <option value="John Doe">John Doe (P-1002)</option>
-                      <option value="David Mensah">David Mensah (P-1003)</option>
+                      <option value="">-- Choose Patient --</option>
+                      {patients.map(patient => (
+                        <option key={patient.patientId} value={patient.patientId}>
+                          {patient.patientName} ({patient.patientCode})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -439,7 +648,7 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                       <option value="">-- Choose Medicine --</option>
                       {medicines.map(m => (
                         <option key={m.id} value={m.id}>
-                          {m.name} (Stock: {m.stock} available)
+                          {m.name} (Stock: {liveStock[m.id] ?? m.stock} available)
                         </option>
                       ))}
                     </select>
@@ -478,9 +687,12 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                       value={assignedStaff}
                       onChange={(e) => setAssignedStaff(e.target.value)}
                     >
-                      <option value="Nurse Gifty Adjei">Nurse Gifty Adjei</option>
-                      <option value="Nurse Kwame Boateng">Nurse Kwame Boateng</option>
-                      <option value="Nurse Mary Appiah">Nurse Mary Appiah</option>
+                      <option value="">-- Unassigned --</option>
+                      {staff.map(member => (
+                        <option key={member.staffId} value={member.staffId}>
+                          {member.staffName} ({member.role})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -496,19 +708,20 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                   </div>
 
                   <div className="flex gap-2 justify-end pt-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setShowScheduleForm(false)}
                       className="text-xs h-8"
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
+                      disabled={isScheduling}
                       className="bg-info hover:bg-info text-info-foreground text-xs h-8 font-semibold cursor-pointer"
                     >
-                      Confirm Schedule
+                      {isScheduling ? 'Scheduling…' : 'Confirm Schedule'}
                     </Button>
                   </div>
                 </form>
@@ -531,14 +744,16 @@ export const MedicationComplianceTracker: React.FC<MedicationComplianceTrackerPr
                 </p>
                 <div className="border-t border-border/60 pt-3 flex flex-col gap-1 text-[11px]">
                   <span className="font-semibold text-foreground uppercase tracking-wide text-[9px] mb-1">Stock Integration Handlers:</span>
-                  <div className="flex justify-between">
-                    <span>Paracetamol 500mg:</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-300">Tied to Stock</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Insulin Glargine:</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-300">Tied to Stock</span>
-                  </div>
+                  {trackedMedicines.length === 0 ? (
+                    <span className="text-muted-foreground">No stock-linked administrations yet.</span>
+                  ) : (
+                    trackedMedicines.map(name => (
+                      <div key={name} className="flex justify-between">
+                        <span>{name}:</span>
+                        <span className="font-mono font-bold text-slate-800 dark:text-slate-300">Tied to Stock</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

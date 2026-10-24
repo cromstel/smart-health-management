@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Server, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { API_BASE_URL } from '@/config/api';
 
 export function ApiHealthWidget() {
   const [status, setStatus] = useState<'online' | 'degraded' | 'offline'>('online');
@@ -15,11 +16,19 @@ export function ApiHealthWidget() {
     setLoading(true);
     const start = performance.now();
     try {
-      // Ping the server health endpoint (using relative /api for server health, or /)
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'test_health_ping@smarthealth.com' })
+      // The probe goes to the configured API base. It used to use a relative
+      // path, which assumed the app and the API share an origin -- true in
+      // production behind one host, false in development, where it made the
+      // widget report the API as unreachable.
+      //
+      // The probe asks the service whether it is alive. It used to post to
+      // the sign-in route, which is refused before it runs -- the sign-in
+      // route requires a request token, and a probe has none -- so the probe
+      // measured a refusal and called it healthy. The health route answers
+      // exactly the question being asked.
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
       }).catch(() => null);
 
       const end = performance.now();

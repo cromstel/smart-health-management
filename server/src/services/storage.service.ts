@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import { resolveConfiguredPath } from '../config/paths.js';
 import { OneDriveStorageProvider } from './onedrive.storage.service.js';
 import { GoogleDriveStorageProvider } from './googledrive.storage.service.js';
 
@@ -6,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import checkDiskSpace from 'check-disk-space';
+import { safeFileName, isInsideDirectory } from '../utils/files.js';
 
 export interface IStorageProvider {
   upload(file: Express.Multer.File, patientId: string | null, category: string | null): Promise<{ filePath: string; storageType: string; documentId: string }>;
@@ -25,7 +27,15 @@ export interface IStorageProvider {
  */
 export class LocalStorageProvider implements IStorageProvider {
   private getUploadsDir(): string {
-    return path.join(__dirname, '../../uploads');
+    // The directory is configuration. It was fixed relative to this file, so a
+    // deployment could not move its document store without editing the code.
+    // A configured path is resolved against the repository root, so the same
+    // setting names the same directory whether the API was started from
+    // `server/` or from the repository root.
+    return resolveConfiguredPath(
+      process.env.UPLOAD_DIR,
+      path.join(__dirname, '../../uploads')
+    );
   }
 
   public calculateDirectorySize(dir: string): number {
@@ -56,7 +66,11 @@ export class LocalStorageProvider implements IStorageProvider {
       }
     }
 
-    const finalPath = path.join(docDir, originalname);
+    // The name a client sent is not used as a path. It is reduced to a name
+    // that cannot mean anything to the filesystem, so a name carrying a
+    // parent reference cannot write outside the document's own directory.
+    const storedName = safeFileName(originalname);
+    const finalPath = path.join(docDir, storedName);
     fs.writeFileSync(finalPath, buffer);
 
     return { filePath: finalPath, storageType: 'local', documentId: documentIdStr };
@@ -68,7 +82,7 @@ export class LocalStorageProvider implements IStorageProvider {
     if (!doc) {
       throw new Error('Document not found');
     }
-    return { filePath: doc.file_path as string, fileName: doc.name as string };
+    return { filePath: this.assertStoredPath(doc.file_path), fileName: doc.name as string };
   }
 
   async preview(documentId: string): Promise<{ filePath: string; fileName: string }> {
@@ -77,7 +91,23 @@ export class LocalStorageProvider implements IStorageProvider {
     if (!doc) {
       throw new Error('Document not found');
     }
-    return { filePath: doc.file_path as string, fileName: doc.name as string };
+    return { filePath: this.assertStoredPath(doc.file_path), fileName: doc.name as string };
+  }
+
+  /**
+   * The stored path, checked against the upload directory.
+   *
+   * The path in the database is written by the upload, which reduces the
+   * name to something that cannot climb out of the directory. A row that
+   * names a path outside it is refused rather than read: a document is
+   * served from the upload directory and nowhere else.
+   */
+  private assertStoredPath(filePath: unknown): string {
+    const candidate = String(filePath ?? '');
+    if (!candidate || !isInsideDirectory(this.getUploadsDir(), candidate)) {
+      throw new Error('Document not found');
+    }
+    return candidate;
   }
 
   async getMetadata(documentId: string): Promise<any> {
@@ -119,7 +149,8 @@ export const getStorageUsage = async (): Promise<any> => {
   const remainingQuota = quotaBytes ? Math.max(quotaBytes - usedBytes, 0) : null;
 
   return {
-    uploadsDir,
+    // The absolute path of the upload directory is a fact about the server's
+    // filesystem and says nothing to the person asking. It is not sent.
     usedBytes,
     diskTotal: diskInfo.size,
     diskFree: diskInfo.free,

@@ -46,6 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     // Global super admin: can do anything (only this role holds 'all:*')
     if (user.role === 'super_admin' || user.role === 'Super Admin') return true;
+    // The plain grant the server actually issues.
+    //
+    // The API builds the caller's permission list from the permissions row of
+    // their role as "<module>:<action>" (server/src/controllers/auth.controller.ts
+    // reads can_view/can_add/can_edit/can_delete and writes them out that
+    // way), and requirePermission(module, action) checks exactly that row.
+    // Matching the plain form is therefore what makes the client's answer
+    // agree with the server's. Without it every permission-gated control in
+    // the app reads as "not allowed" for every role except the super admin,
+    // because the only forms checked below are the prefixed ones this
+    // deployment no longer issues.
+    if (user.permissions.includes(perm)) return true;
     // Hospital-scoped admin/doctor/nurse/pharmacist: must have hospital assignment
     if (user.scope === 'hospital' || (user.hospital_id && user.permissions.some((p) => !p.startsWith('all:')))) {
       const hospPrefix = user.hospital_id || '';
@@ -197,7 +209,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Tell the server first, so the token it issued is actually revoked.
+    // Clearing local storage on its own left the token usable until it
+    // expired, which meant a logout did not end the session.
+    try {
+      await api.logout();
+    } catch (error) {
+      // A failed revocation must not stop the user from leaving the app.
+      console.warn('Failed to revoke the session on the server:', error);
+    }
     localStorage.removeItem('token');
     setUser(null);
     setMfaPending(false);

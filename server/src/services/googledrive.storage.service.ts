@@ -3,6 +3,7 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
+import { safeFileName, isInsideDirectory } from '../utils/files.js';
 
 
 import { refreshGoogleDriveToken } from './oauth.service.js';
@@ -96,7 +97,15 @@ export class GoogleDriveStorageProvider implements IStorageProvider {
         }
       );
 
-      const tempFilePath = path.join(process.cwd(), 'uploads', fileName);
+      // The name is the document's name, and a document's name can be set by
+      // a client, so it is reduced to something that cannot mean anything to
+      // the filesystem before it is used as a path.
+      const uploadsDir = path.resolve(process.cwd(), 'uploads');
+      const storedName = safeFileName(fileName);
+      const tempFilePath = path.join(uploadsDir, storedName);
+      if (!isInsideDirectory(uploadsDir, tempFilePath)) {
+        throw new Error('Failed to download file from Google Drive');
+      }
       const writer = fs.createWriteStream(tempFilePath);
 
       response.data.pipe(writer);

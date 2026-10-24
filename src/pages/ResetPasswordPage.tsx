@@ -18,8 +18,10 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { AuthLayout, PasswordStrength, computePasswordStrength } from '@/components/auth';
+import AdminRecoveryLinks from '@/components/auth/AdminRecoveryLinks';
 import Logo from '@/components/Logo';
 import { api } from '@/services/api';
+import { CLINICAL_AUTH_ROUTES, SITE_ADMIN_AUTH_ROUTES } from '@/lib/authRoutes';
 
 export default function ResetPasswordPage() {
   const { user } = useAuth();
@@ -59,6 +61,9 @@ export default function ResetPasswordPage() {
   );
 
   if (user?.role === 'Super Admin' || user?.role === 'super_admin') {
+    // The site owner recovers on their own URL. The token is carried across,
+    // so a link that was issued before the split still works.
+    const adminResetUrl = `${SITE_ADMIN_AUTH_ROUTES.resetPassword}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
     return (
       <AuthLayout>
         <div className="space-y-8">
@@ -68,14 +73,17 @@ export default function ResetPasswordPage() {
               <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive border border-destructive/30 flex items-center justify-center mx-auto">
                 <AlertCircle className="h-6 w-6" aria-hidden="true" />
               </div>
-              <CardTitle className="text-xl font-bold text-foreground">Super Admin Restriction</CardTitle>
+              <CardTitle className="text-xl font-bold text-foreground">Administrator Accounts Recover Separately</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Super Admins cannot reset passwords via token. Please use the privileged console security settings.
+                This is the reset flow for patients and hospital staff. The tenant administrator has its own reset page, so the two never share a URL.
               </CardDescription>
             </CardHeader>
-            <CardFooter className="pt-2">
-              <Button onClick={() => navigate('/super-admin/dashboard')} className="w-full bg-accent text-accent-foreground">
-                Go to Super Admin Console
+            <CardFooter className="pt-2 flex flex-col gap-3">
+              <Button onClick={() => navigate(adminResetUrl)} className="w-full bg-accent text-accent-foreground">
+                Go to Administrator Reset
+              </Button>
+              <Button variant="ghost" onClick={() => navigate(SITE_ADMIN_AUTH_ROUTES.login)} className="w-full text-xs text-muted-foreground hover:text-foreground">
+                Back to the Administrator Portal
               </Button>
             </CardFooter>
           </Card>
@@ -103,18 +111,20 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const effectiveToken = token || (import.meta.env.DEV ? 'demo-reset-token' : '');
-    if (!effectiveToken) {
+    // There is no mock token. The recovery flow is real, and a development
+    // shortcut that pretends a reset is authorised would only ever fail
+    // confusingly.
+    if (!token) {
       setError('No active reset authorization was found. Please request a new reset link.');
       return;
     }
 
     setLoading(true);
     try {
-      await api.resetPassword(effectiveToken, password);
+      await api.resetPassword(token, password);
       setSuccess(true);
       setTimeout(() => {
-        navigate('/auth/login');
+        navigate(CLINICAL_AUTH_ROUTES.login);
       }, 2500);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Password reset failed. The token may be expired.';
@@ -140,15 +150,9 @@ export default function ResetPasswordPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-3">
-              {import.meta.env.DEV && (
-                <Button
-                  type="button"
-                  className="w-full bg-accent text-accent-foreground text-xs"
-                  onClick={() => setToken('demo-token-hospital-2026')}
-                >
-                  Continue With Demo Reset Token
-                </Button>
-              )}
+              {/* No demo token. A fake reset token is authentication
+                  material, and the recovery flow is real: the only way in
+                  is a link the account owner received. */}
               <Button
                 type="button"
                 variant="outline"
@@ -286,10 +290,14 @@ export default function ResetPasswordPage() {
                 {loading ? 'Securing Credentials...' : 'Save New Password & Continue'}
               </Button>
             </form>
+
+            {/* A signed-out administrator cannot be recognised from this page,
+                so the two administrator recovery routes are offered here. */}
+            <AdminRecoveryLinks className="mt-5" />
           </CardContent>
 
           <CardFooter className="flex items-center justify-center border-t border-border pt-4 text-xs">
-            <Link to="/auth/login" className="text-accent hover:text-accent/80 transition-colors">
+            <Link to={CLINICAL_AUTH_ROUTES.login} className="text-accent hover:text-accent/80 transition-colors">
               Cancel & Return to Sign In
             </Link>
           </CardFooter>

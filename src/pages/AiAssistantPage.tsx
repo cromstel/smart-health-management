@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -188,10 +189,14 @@ export default function AiAssistantPage() {
         newValue: `Queried Clinical AI (${selectedPersona.name}) using model type ${modelType} with search grounding ${enableSearchGrounding ? 'ON' : 'OFF'}`
       });
 
-      const response = await fetch('/api/gemini/chat', {
+      const response = await fetch(`${API_BASE_URL}/gemini/chat`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          // The endpoint is authenticated. The request used to go out with no
+          // credential, so every message was rejected before it reached the
+          // model.
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
         body: JSON.stringify({
           messages: apiMessages,

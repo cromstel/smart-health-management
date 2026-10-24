@@ -1,164 +1,97 @@
 import type { VitalsRecord, VitalStatus, VitalsSummary, CriticalHealthAlert } from '@/types/vitals';
+import { API_BASE_URL } from '@/config/api';
 
-const VITALS_STORAGE_KEY = 'health_manager_patient_vitals';
+/**
+ * Patient vitals client.
+ *
+ * The readings used to live in localStorage under
+ * "health_manager_patient_vitals" and were seeded with ten hardcoded records,
+ * so every browser had its own private copy of the vitals history and a
+ * reading taken on one device was invisible on another. They are now read
+ * from and written to the API.
+ *
+ * The exported names and the `VitalsRecord` shape are unchanged, so the
+ * existing consumers (src/components/vitals/*, src/pages/PatientsPage.tsx,
+ * src/pages/SharedPatientSummaryPage.tsx) keep working.
+ *
+ * The server is the authority on the clinical status: it derives and stores
+ * it. `computeVitalStatus` and `computeVitalsSummary` are kept here only for
+ * the instant preview in the log-vitals dialog and as a display fallback;
+ * they mirror the server thresholds (server/src/services/vitals.service.ts).
+ */
 
+interface ApiEnvelope<T> {
+  vitals?: T[];
+  alerts?: T[];
+  vital?: T;
+  summary?: T | null;
+  error?: string;
+  errors?: { msg?: string }[];
+}
 
-// Realistic sample history across multiple patients & dates
-const INITIAL_VITALS_DATA: VitalsRecord[] = [
-  {
-    id: 'vit-1',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    recordedAt: '2025-01-10 09:15',
-    recordedBy: 'Dr. Michael Chen',
-    systolicBp: 118,
-    diastolicBp: 78,
-    heartRate: 72,
-    temperature: 36.6,
-    respiratoryRate: 16,
-    oxygenSaturation: 98,
-    notes: 'Routine checkup. Resting vitals normal.',
-    status: 'normal',
-  },
-  {
-    id: 'vit-2',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    recordedAt: '2025-01-17 10:30',
-    recordedBy: 'Nurse Clara Doe',
-    systolicBp: 122,
-    diastolicBp: 81,
-    heartRate: 76,
-    temperature: 36.8,
-    respiratoryRate: 17,
-    oxygenSaturation: 99,
-    notes: 'Mild post-exercise elevation.',
-    status: 'elevated',
-  },
-  {
-    id: 'vit-3',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    recordedAt: '2025-01-24 14:00',
-    recordedBy: 'Dr. Michael Chen',
-    systolicBp: 128,
-    diastolicBp: 84,
-    heartRate: 80,
-    temperature: 37.1,
-    respiratoryRate: 18,
-    oxygenSaturation: 97,
-    notes: 'Follow-up consultation after prescription renewal.',
-    status: 'elevated',
-  },
-  {
-    id: 'vit-4',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    recordedAt: '2025-02-01 11:20',
-    recordedBy: 'Dr. Michael Chen',
-    systolicBp: 119,
-    diastolicBp: 79,
-    heartRate: 71,
-    temperature: 36.7,
-    respiratoryRate: 16,
-    oxygenSaturation: 99,
-    notes: 'Blood pressure stabilized with diet modifications.',
-    status: 'normal',
-  },
-  {
-    id: 'vit-5',
-    patientId: 'P-1001',
-    patientName: 'Sarah Johnson',
-    recordedAt: '2025-02-15 08:45',
-    recordedBy: 'Nurse Clara Doe',
-    systolicBp: 121,
-    diastolicBp: 80,
-    heartRate: 74,
-    temperature: 36.9,
-    respiratoryRate: 16,
-    oxygenSaturation: 98,
-    notes: 'Morning fasting vitals log.',
-    status: 'normal',
-  },
-  // Patient 2 - John Doe
-  {
-    id: 'vit-6',
-    patientId: 'P-1002',
-    patientName: 'John Doe',
-    recordedAt: '2025-01-12 11:00',
-    recordedBy: 'Dr. Emily Davis',
-    systolicBp: 138,
-    diastolicBp: 88,
-    heartRate: 84,
-    temperature: 37.2,
-    respiratoryRate: 19,
-    oxygenSaturation: 96,
-    notes: 'Stage 1 hypertension noted. Salt reduction advised.',
-    status: 'elevated',
-  },
-  {
-    id: 'vit-7',
-    patientId: 'P-1002',
-    patientName: 'John Doe',
-    recordedAt: '2025-01-20 09:30',
-    recordedBy: 'Dr. Emily Davis',
-    systolicBp: 146,
-    diastolicBp: 92,
-    heartRate: 90,
-    temperature: 37.4,
-    respiratoryRate: 20,
-    oxygenSaturation: 95,
-    notes: 'Hypertension Stage 2. Antihypertensive therapy initiated.',
-    status: 'high',
-  },
-  {
-    id: 'vit-8',
-    patientId: 'P-1002',
-    patientName: 'John Doe',
-    recordedAt: '2025-02-05 15:15',
-    recordedBy: 'Dr. Emily Davis',
-    systolicBp: 132,
-    diastolicBp: 85,
-    heartRate: 78,
-    temperature: 36.8,
-    respiratoryRate: 17,
-    oxygenSaturation: 98,
-    notes: 'Medication effective. Pressure decreasing towards normal range.',
-    status: 'elevated',
-  },
-  // Patient 3 - David Mensah
-  {
-    id: 'vit-9',
-    patientId: 'P-1003',
-    patientName: 'David Mensah',
-    recordedAt: '2025-01-15 10:00',
-    recordedBy: 'Dr. Michael Chen',
-    systolicBp: 115,
-    diastolicBp: 75,
-    heartRate: 68,
-    temperature: 38.3,
-    respiratoryRate: 21,
-    oxygenSaturation: 97,
-    notes: 'Acute fever. Paracetamol prescribed.',
-    status: 'high',
-  },
-  {
-    id: 'vit-10',
-    patientId: 'P-1003',
-    patientName: 'David Mensah',
-    recordedAt: '2025-01-18 16:30',
-    recordedBy: 'Dr. Michael Chen',
-    systolicBp: 116,
-    diastolicBp: 76,
-    heartRate: 70,
-    temperature: 36.8,
-    respiratoryRate: 16,
-    oxygenSaturation: 99,
-    notes: 'Fever resolved completely.',
-    status: 'normal',
-  },
-];
+function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem('token');
+  } catch {
+    return null;
+  }
+}
 
+async function request<T>(
+  path: string,
+  options: { method?: string; body?: unknown; auth?: boolean } = {}
+): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  if (options.auth !== false) {
+    const token = getAuthToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    try {
+      const data = (await response.json()) as ApiEnvelope<unknown>;
+      if (data?.error) {
+        message = String(data.error);
+      } else if (Array.isArray(data?.errors) && data.errors.length > 0) {
+        message = data.errors.map((e) => e.msg || 'Invalid value').join(', ');
+      }
+    } catch {
+      // Keep the generic message when the body is not JSON.
+    }
+    throw new Error(message);
+  }
+
+  return (await response.json()) as T;
+}
+
+/**
+ * The share token of the public shared-summary page, when the app is being
+ * viewed through a shared link. That page is not authenticated, so the shared
+ * summary endpoint is the only way to read the vitals there.
+ */
+function getShareToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const match = window.location.pathname.match(/\/shared\/patient-summary\/([^/?#]+)/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+/**
+ * Clinical status of a reading. Mirrors the server thresholds so the live
+ * preview matches what the server will store.
+ */
 export function computeVitalStatus(
   systolic: number,
   diastolic: number,
@@ -177,10 +110,13 @@ export function computeVitalStatus(
   return 'normal';
 }
 
+/**
+ * Alerts derived from a reading. The server derives the same alerts; this
+ * copy is the display fallback for a record that was loaded from the API.
+ */
 export function extractRecordAlerts(record: VitalsRecord): CriticalHealthAlert[] {
   const alerts: CriticalHealthAlert[] = [];
 
-  // 1. Blood Pressure Check
   if (record.systolicBp >= 180 || record.diastolicBp >= 120) {
     alerts.push({
       id: `alert-bp-${record.id}`,
@@ -237,7 +173,6 @@ export function extractRecordAlerts(record: VitalsRecord): CriticalHealthAlert[]
     });
   }
 
-  // 2. Heart Rate Check
   if (record.heartRate >= 125) {
     alerts.push({
       id: `alert-hr-${record.id}`,
@@ -294,7 +229,6 @@ export function extractRecordAlerts(record: VitalsRecord): CriticalHealthAlert[]
     });
   }
 
-  // 3. Body Temperature Check
   if (record.temperature >= 39.5) {
     alerts.push({
       id: `alert-temp-${record.id}`,
@@ -351,7 +285,6 @@ export function extractRecordAlerts(record: VitalsRecord): CriticalHealthAlert[]
     });
   }
 
-  // 4. Oxygen Saturation Check
   if (record.oxygenSaturation !== undefined && record.oxygenSaturation > 0) {
     if (record.oxygenSaturation < 90) {
       alerts.push({
@@ -395,10 +328,14 @@ export function extractRecordAlerts(record: VitalsRecord): CriticalHealthAlert[]
   return alerts;
 }
 
+/**
+ * Summarise a set of readings. The server computes the same summary
+ * (GET /api/vitals/:patientId/summary); this copy is the display fallback for
+ * the list already loaded in the browser.
+ */
 export function computeVitalsSummary(records: VitalsRecord[]): VitalsSummary | null {
   if (!records || records.length === 0) return null;
 
-  // Sort by date descending
   const sorted = [...records].sort(
     (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
   );
@@ -438,112 +375,110 @@ export function computeVitalsSummary(records: VitalsRecord[]): VitalsSummary | n
 }
 
 class VitalsService {
-  private getStored(): VitalsRecord[] {
-    try {
-      const data = localStorage.getItem(VITALS_STORAGE_KEY);
-      if (data) {
-        const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    // Seed initial
-    this.saveStored(INITIAL_VITALS_DATA);
-    return INITIAL_VITALS_DATA;
-  }
-
-  private saveStored(records: VitalsRecord[]): void {
-    try {
-      localStorage.setItem(VITALS_STORAGE_KEY, JSON.stringify(records));
-    } catch (e) {
-      console.warn('Failed to save vitals to storage', e);
-    }
-  }
-
+  /**
+   * Every reading the caller may see, newest first.
+   */
   async getAllVitals(): Promise<VitalsRecord[]> {
-    return this.getStored();
+    const data = await request<ApiEnvelope<VitalsRecord>>('/vitals');
+    return Array.isArray(data?.vitals) ? data.vitals : [];
   }
 
+  /**
+   * The readings of one patient, newest first. An empty array is a valid
+   * answer: the UI renders its "no readings yet" state.
+   */
   async getPatientVitals(patientId?: string): Promise<VitalsRecord[]> {
-    const all = this.getStored();
-    if (!patientId || patientId === 'all') {
-      return all;
-    }
-    return all.filter(
-      (v) =>
-        v.patientId.toLowerCase() === patientId.toLowerCase() ||
-        v.patientName.toLowerCase().includes(patientId.toLowerCase())
-    );
-  }
-
-  async getPatientLatestAlerts(patientId?: string): Promise<CriticalHealthAlert[]> {
-    const vitals = await this.getPatientVitals(patientId);
-    if (!vitals || vitals.length === 0) return [];
-    
-    // Sort descending by date
-    const sorted = [...vitals].sort(
-      (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
-    );
-    
-    // Get alerts from the latest reading
-    const latest = sorted[0];
-    return extractRecordAlerts(latest);
-  }
-
-  async getAllActiveCriticalAlerts(): Promise<CriticalHealthAlert[]> {
-    const all = this.getStored();
-    if (!all || all.length === 0) return [];
-
-    // Group by patient ID to get each patient's latest record
-    const latestByPatient: { [patientId: string]: VitalsRecord } = {};
-    for (const record of all) {
-      const existing = latestByPatient[record.patientId];
-      if (!existing || new Date(record.recordedAt).getTime() > new Date(existing.recordedAt).getTime()) {
-        latestByPatient[record.patientId] = record;
+    // The shared summary page is not authenticated. It reads the vitals that
+    // belong to the shared summary instead of the patient endpoint.
+    const shareToken = getShareToken();
+    if (shareToken) {
+      try {
+        const shared = await request<ApiEnvelope<VitalsRecord> & { vitals?: VitalsRecord[] }>(
+          `/shared/patient-summary?token=${encodeURIComponent(shareToken)}`,
+          { auth: false }
+        );
+        return Array.isArray(shared?.vitals) ? shared.vitals : [];
+      } catch {
+        // A failed public read must not break the page: show no vitals.
+        return [];
       }
     }
 
-    const allAlerts: CriticalHealthAlert[] = [];
-    for (const record of Object.values(latestByPatient)) {
-      const alerts = extractRecordAlerts(record);
-      allAlerts.push(...alerts);
+    if (!patientId || patientId === 'all') {
+      return this.getAllVitals();
     }
 
-    // Sort so critical alerts are first, then high, then by date
-    return allAlerts.sort((a, b) => {
-      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
-      if (b.severity === 'critical' && a.severity !== 'critical') return 1;
-      return new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime();
-    });
+    const data = await request<ApiEnvelope<VitalsRecord>>(
+      `/vitals?patientId=${encodeURIComponent(patientId)}`
+    );
+    return Array.isArray(data?.vitals) ? data.vitals : [];
   }
 
+  /**
+   * The alerts of the latest reading of one patient.
+   */
+  async getPatientLatestAlerts(patientId?: string): Promise<CriticalHealthAlert[]> {
+    if (!patientId || patientId === 'all' || getShareToken()) {
+      return this.getAllActiveCriticalAlerts();
+    }
+
+    try {
+      const data = await request<ApiEnvelope<CriticalHealthAlert>>(
+        `/vitals/${encodeURIComponent(patientId)}/alerts`
+      );
+      return Array.isArray(data?.alerts) ? data.alerts : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * The active critical alerts across every patient.
+   */
+  async getAllActiveCriticalAlerts(): Promise<CriticalHealthAlert[]> {
+    try {
+      const data = await request<ApiEnvelope<CriticalHealthAlert>>('/vitals/alerts');
+      return Array.isArray(data?.alerts) ? data.alerts : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Record a reading. The server derives and stores the clinical status, so
+   * the status returned here is the stored one.
+   */
   async addVitalRecord(
     record: Omit<VitalsRecord, 'id' | 'status'>
   ): Promise<VitalsRecord> {
-    const all = this.getStored();
-    const status = computeVitalStatus(
-      record.systolicBp,
-      record.diastolicBp,
-      record.heartRate,
-      record.temperature
-    );
-    const newRecord: VitalsRecord = {
-      ...record,
-      id: `vit-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      status,
-    };
-    const updated = [newRecord, ...all];
-    this.saveStored(updated);
-    return newRecord;
+    const data = await request<ApiEnvelope<VitalsRecord> & { vital?: VitalsRecord }>('/vitals', {
+      method: 'POST',
+      body: {
+        patientId: record.patientId,
+        patientName: record.patientName,
+        recordedAt: record.recordedAt,
+        recordedBy: record.recordedBy,
+        systolicBp: record.systolicBp,
+        diastolicBp: record.diastolicBp,
+        heartRate: record.heartRate,
+        temperature: record.temperature,
+        respiratoryRate: record.respiratoryRate,
+        oxygenSaturation: record.oxygenSaturation,
+        notes: record.notes,
+      },
+    });
+
+    if (!data?.vital) {
+      throw new Error('The vitals reading could not be saved');
+    }
+    return data.vital;
   }
 
+  /**
+   * Remove a reading.
+   */
   async deleteVitalRecord(id: string): Promise<void> {
-    const all = this.getStored();
-    const updated = all.filter((r) => r.id !== id);
-    this.saveStored(updated);
+    await request(`/vitals/${encodeURIComponent(id)}`, { method: 'DELETE' });
   }
 }
 

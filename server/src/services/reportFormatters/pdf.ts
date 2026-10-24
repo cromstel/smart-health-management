@@ -1,11 +1,18 @@
 import PDFDocument from 'pdfkit'
+import { APP_NAME } from '../../config/app.js'
 
-export function buildPDF(reportTitle: string, rows: any[], options?: { author?: string }): any {
+export function buildPDF(reportTitle: string, rows: any[], options?: { author?: string; subject?: string }): any {
   const doc = new PDFDocument({ size: 'A4', margin: 40 })
+  // The existing info object is spread, not replaced. pdfkit fills in
+  // CreationDate and Creator when the document is finalised, and replacing
+  // the object dropped them -- `doc.end()` then threw
+  // "Cannot read properties of undefined (reading 'toISOString')" and every
+  // PDF export failed.
   doc.info = {
+    ...doc.info,
     Title: reportTitle,
-    Author: options?.author || 'Smart MediCare',
-    Subject: `Pharmacy Report: ${reportTitle}`
+    Author: options?.author || APP_NAME,
+    Subject: options?.subject || `Pharmacy Report: ${reportTitle}`
   } as any
 
   doc.fontSize(16).text(`Pharmacy Report — ${reportTitle}`, { align: 'center' })

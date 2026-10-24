@@ -14,6 +14,18 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
+    // The application name is required configuration and is not written into
+    // the source. The test environment supplies one, so the module under test
+    // resolves it the same way it does in a deployment.
+    env: {
+      VITE_APP_NAME: 'Test Application',
+    },
+    // Interaction-heavy integration suites (Radix dialogs/selects, typed forms)
+    // routinely take several seconds per test; the 5s default turns ordinary
+    // worker contention into timeout flakes. 20s keeps genuine hangs loud
+    // while absorbing loaded-machine jitter.
+    testTimeout: 20000,
+    hookTimeout: 20000,
     include: ['src/tests/**/*.test.tsx', 'src/tests/**/*.test.ts', 'src/components/ui/**/*.test.tsx', 'src/pages/**/*.test.tsx', 'src/components/layout/**/*.test.tsx'],
     exclude: [
       'server/**',

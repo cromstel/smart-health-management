@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,9 +44,14 @@ export function AiClinicalInsightsSidebar({
     const toastId = toast.loading('Consulting medical LLM diagnostics models...');
 
     try {
-      const response = await fetch('/api/gemini/insights', {
+      const response = await fetch(`${API_BASE_URL}/gemini/insights`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // The endpoint is authenticated. The request used to go out with no
+          // credential, so every call was rejected before it reached the model.
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+        },
         body: JSON.stringify({
           patientId,
           patientName,
