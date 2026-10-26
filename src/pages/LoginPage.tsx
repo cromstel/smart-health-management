@@ -58,7 +58,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const savedEmail = localStorage.getItem('remember_email') || '';
-  const initialRemember = !!savedEmail;
   const {
     register,
     handleSubmit,
@@ -67,12 +66,7 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
-    defaultValues: {
-      email: savedEmail,
-      password: '',
-      rememberMe: initialRemember,
-    },
-  });
+      });
   const {
     register: registerForgot,
     handleSubmit: handleSubmitForgot,
@@ -81,10 +75,7 @@ export default function LoginPage() {
   } = useForm<ForgotFormValues>({
     resolver: zodResolver(forgotSchema),
     mode: 'onChange',
-    defaultValues: {
-      email: '',
-    },
-  });
+});
   useEffect(() => {
     if (savedEmail) {
       setValue('email', savedEmail);
@@ -323,7 +314,7 @@ export default function LoginPage() {
                     id="forgot-email"
                     type="email"
                     placeholder="name@smarthealth.com"
-                    autoComplete="email"
+                    autoComplete="off"
                     {...registerForgot('email')}
                     className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
                       errorsForgot.email ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -396,7 +387,7 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     placeholder="name@smarthealth.com"
-                    autoComplete="email"
+                    autoComplete="off"
                     {...register('email')}
                     className={`pl-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
                       errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -420,7 +411,7 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Password"
-                    autoComplete="current-password"
+                    autoComplete="off"
                     {...register('password')}
                     className={`pl-10 pr-10 h-11 bg-muted/40 border-border focus-visible:ring-accent transition-all duration-200 ${
                       errors.password ? 'border-destructive focus-visible:ring-destructive' : ''

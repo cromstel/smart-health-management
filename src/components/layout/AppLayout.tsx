@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
 import { PasswordChangeModal } from '@/components/security/PasswordChangeModal';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { TwoFactorReminder } from '@/components/TwoFactorReminder';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
@@ -45,6 +46,7 @@ export function AppLayout() {
           <main className="flex-1 p-6 transition-all duration-300 ease-in-out" id="main-content" role="main">
             <PasswordChangeModal />
             <OfflineIndicator />
+            <TwoFactorReminder />
             <Outlet />
           </main>
         </div>

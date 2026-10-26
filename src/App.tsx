@@ -12,6 +12,8 @@ import { PublicLayout } from './components/layout/PublicLayout';
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminRoute } from './components/SuperAdminRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ClinicalRoute } from './components/ClinicalRoute';
+import { PatientPortalRoute } from './components/PatientPortalRoute';
 import { ScrollToTopButton } from './components/common/ScrollToTopButton';
 import { ApiDebugOverlay } from './components/common/ApiDebugOverlay';
 
@@ -181,12 +183,12 @@ function AppRoutes() {
           <Route path="operations" element={<SuperAdminOperations />} />
         </Route>
         
-        {/* Regular App Routes (Protected — layout route, no path prefix) */}
+        {/* Clinical workstation — employee roles only (separate from patients/admin) */}
         <Route
           element={
-            <ProtectedRoute>
+            <ClinicalRoute>
               <AppLayout />
-            </ProtectedRoute>
+            </ClinicalRoute>
           }
         >
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -195,7 +197,6 @@ function AppRoutes() {
           <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/hospitals" element={<HospitalsPage />} />
           <Route path="/staff" element={<StaffPage />} />
-          <Route path="/staff-dashboard" element={<CompanyStaffDashboardPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/pharmacy" element={<PharmacyPage />} />
           <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
@@ -205,7 +206,18 @@ function AppRoutes() {
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/patient-portal" element={<PatientPortalPage />} />
+        </Route>
+
+        {/* Staff/admin and patient portal — kept off the shared clinical path */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/staff-dashboard" element={<CompanyStaffDashboardPage />} />
+          <Route path="/patient-portal" element={<PatientPortalRoute><PatientPortalPage /></PatientPortalRoute>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,5 +1,6 @@
 import type { VitalsRecord, VitalStatus, VitalsSummary, CriticalHealthAlert } from '@/types/vitals';
 import { API_BASE_URL } from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 
 /**
  * Patient vitals client.
@@ -31,7 +32,7 @@ interface ApiEnvelope<T> {
 
 function getAuthToken(): string | null {
   try {
-    return localStorage.getItem('token');
+    return getCookieToken();
   } catch {
     return null;
   }

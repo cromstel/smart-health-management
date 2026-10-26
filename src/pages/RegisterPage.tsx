@@ -104,19 +104,7 @@ export default function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      confirmEmail: '',
-      role: '',
-      hospital: '',
-      department: '',
-      password: '',
-      confirmPassword: '',
-      agreedToTerms: false,
-    },
-  });
+      });
 
   const passwordValue = watch('password') || '';
 
@@ -307,7 +295,7 @@ export default function RegisterPage() {
                           type="text"
                           placeholder="First name"
                           {...register('firstName')}
-                          autoComplete="given-name"
+                          autoComplete="off"
                           className={`${fieldBox} bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.firstName ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
@@ -334,7 +322,7 @@ export default function RegisterPage() {
                           type="text"
                           placeholder="Last name"
                           {...register('lastName')}
-                          autoComplete="family-name"
+                          autoComplete="off"
                           className={`${fieldBox} bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.lastName ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
@@ -364,7 +352,7 @@ export default function RegisterPage() {
                           type="email"
                           placeholder="Work email"
                           {...register('email')}
-                          autoComplete="email"
+                          autoComplete="off"
                           className={`${fieldBox} bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
@@ -391,7 +379,7 @@ export default function RegisterPage() {
                           type="email"
                           placeholder="Confirm email"
                           {...register('confirmEmail')}
-                          autoComplete="email"
+                          autoComplete="off"
                           className={`${fieldBox} bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.confirmEmail ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
@@ -550,7 +538,7 @@ export default function RegisterPage() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Create password"
                           {...register('password')}
-                          autoComplete="new-password"
+                          autoComplete="off"
                           className={`${fieldBox} pr-10 bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}
@@ -585,7 +573,7 @@ export default function RegisterPage() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="Confirm password"
                           {...register('confirmPassword')}
-                          autoComplete="new-password"
+                          autoComplete="off"
                           className={`${fieldBox} pr-10 bg-background border-border focus-visible:ring-accent transition-all duration-200 ${
                             errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''
                           }`}

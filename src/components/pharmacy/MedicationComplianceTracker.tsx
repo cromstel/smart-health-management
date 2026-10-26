@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as apiConfig from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -105,7 +106,7 @@ const { API_BASE_URL } = apiConfig;
 
 /** A thin authenticated fetch. The server skips the CSRF check for bearer requests. */
 const request = async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
-  const token = localStorage.getItem('token');
+  const token = getCookieToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {

@@ -17,5 +17,9 @@ export const isSuperAdmin = (user: Roleish): boolean =>
   user?.role === 'Super Admin' || user?.role === 'super_admin';
 
 /** Landing route for a user who has just authenticated. */
-export const postAuthRoute = (user: Roleish): string =>
-  isSuperAdmin(user) ? '/super-admin/dashboard' : '/dashboard';
+export const postAuthRoute = (user: Roleish): string => {
+  const role = user?.role ?? '';
+  if (isSuperAdmin(user)) return '/super-admin/dashboard';
+  if (role === 'admin' || role === 'Admin' || role === 'staff' || role === 'Staff') return '/staff-dashboard';
+  return '/dashboard';
+};

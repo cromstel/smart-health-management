@@ -2,12 +2,13 @@ import { patientListApiSchema, patientApiSchema, type PatientApiResponse } from 
 import { safeApiCall } from '@/lib/api';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 
 export const patientService = {
   async getPatients(params?: { search?: string; status?: string; hospital?: string }): Promise<PatientApiResponse[]> {
     toast.info('Syncing patient records...', { id: 'patient-sync', duration: 1500, position: 'bottom-right' });
     return safeApiCall(async () => {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
       const response = await fetch(`${API_BASE_URL}/patients${queryString}`, {
         headers: {
@@ -29,7 +30,7 @@ export const patientService = {
 
   async getPatientById(id: string): Promise<PatientApiResponse> {
     return safeApiCall(async () => {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       const response = await fetch(`${API_BASE_URL}/patients/${id}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ export const patientService = {
 
   async createPatient(patientData: Partial<PatientApiResponse>): Promise<PatientApiResponse> {
     return safeApiCall(async () => {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       const response = await fetch(`${API_BASE_URL}/patients`, {
         method: 'POST',
         headers: {

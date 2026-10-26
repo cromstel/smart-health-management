@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -185,7 +186,7 @@ export function PatientVitalsModule({
           'Content-Type': 'application/json',
           // Minting a share link is an authenticated action. The request used
           // to go out with no credential, so the link was never created.
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+          Authorization: `Bearer ${getCookieToken() ?? ''}`,
         },
         body: JSON.stringify({
           patientId: selectedPatientId,

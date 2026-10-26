@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '@/services/api';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getCookieToken } from '@/contexts/AuthContext';
 
 /**
  * A medicine without any movement inside the lookback window has no burn
@@ -70,7 +70,7 @@ const { API_BASE_URL } = apiConfig;
 
 /** A thin authenticated fetch. The server skips the CSRF check for bearer requests. */
 const request = async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
-  const token = localStorage.getItem('token');
+  const token = getCookieToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {

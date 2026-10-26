@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +51,7 @@ export function AiClinicalInsightsSidebar({
           'Content-Type': 'application/json',
           // The endpoint is authenticated. The request used to go out with no
           // credential, so every call was rejected before it reached the model.
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+          Authorization: `Bearer ${getCookieToken() ?? ''}`,
         },
         body: JSON.stringify({
           patientId,

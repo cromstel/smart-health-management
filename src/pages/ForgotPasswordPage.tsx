@@ -273,6 +273,7 @@ export default function ForgotPasswordPage() {
                 >
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   Back to Workstation Sign In
+                <p className="text-xs text-muted-foreground">If the email is registered, we'll send a reset link.</p>
                 </Button>
               </div>
 

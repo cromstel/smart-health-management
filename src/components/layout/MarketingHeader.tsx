@@ -36,15 +36,13 @@ export function MarketingHeader() {
             up; between md and lg the compact trigger is used instead, so the
             header cannot overflow its own row at tablet width. */}
         <div className="hidden items-center gap-1 lg:flex">
+          <Link to="/" aria-current={pathname === '/' || pathname === '/landing' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">Home</Link>
+          <Link to="/about-us/" aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">About Us</Link>
           {sectionLinks.map((link) => (
             <a key={link.hash} href={sectionHref(link.hash, isLandingPage)} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground">
               {link.label}
             </a>
           ))}
-          <Link to="/" aria-current={pathname === '/' || pathname === '/landing' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">Home</Link>
-          <Link to="/about-us/" aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
-            About Us
-          </Link>
           <Link to="/contact-us" aria-current={pathname === '/contact-us' ? 'page' : undefined} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
             Contact
           </Link>
@@ -71,15 +69,13 @@ export function MarketingHeader() {
           className="border-t border-border bg-background px-4 pb-4 lg:hidden"
         >
           <div className="flex flex-col gap-1 pt-2">
+            <Link to="/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/' || pathname === '/landing' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">Home</Link>
+            <Link to="/about-us/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">About Us</Link>
             {sectionLinks.map((link) => (
               <a key={link.hash} href={sectionHref(link.hash, isLandingPage)} onClick={() => setMobileOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground">
                 {link.label}
               </a>
             ))}
-            <Link to="/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/' || pathname === '/landing' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">Home</Link>
-            <Link to="/about-us/" onClick={() => setMobileOpen(false)} aria-current={pathname === '/about-us/' || pathname === '/about-us' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
-              About Us
-            </Link>
             <Link to="/contact-us" onClick={() => setMobileOpen(false)} aria-current={pathname === '/contact-us' ? 'page' : undefined} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground">
               Contact
             </Link>

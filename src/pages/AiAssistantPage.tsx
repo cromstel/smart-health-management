@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getCookieToken } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
 import { VoiceDictationButton } from '@/components/VoiceDictationButton';
 import {
@@ -196,7 +196,7 @@ export default function AiAssistantPage() {
           // The endpoint is authenticated. The request used to go out with no
           // credential, so every message was rejected before it reached the
           // model.
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+          Authorization: `Bearer ${getCookieToken() ?? ''}`,
         },
         body: JSON.stringify({
           messages: apiMessages,

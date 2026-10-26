@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { api, API_ORIGIN } from '@/services/api';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/browser';
 
+export const getCookieToken = () => { for (const part of document.cookie.split(';')) { const p=part.trim(); if(!p) continue; const [k,v]=p.split('='); if(k==='token') return decodeURIComponent(v||''); } return ''; };
+
 export interface User {
   id: string;
   name: string;
@@ -101,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMfaPendingToken(response.tempToken);
         return { requiresMfa: true, user: response.user ?? null };
       } else {
-        localStorage.setItem('token', response.token ?? '');
+        // token stored in httpOnly server cookie
         setUser(response.user ?? null);
         if (!response.token) {
           throw new Error('Login succeeded but no session token was returned');
@@ -135,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const mfaResponse = await api.verifyTwoFactor(cleanCode, mfaPendingToken) as { token?: string; user?: User };
 
     // Complete authentication with the verified full-token response
-    localStorage.setItem('token', mfaResponse.token ?? '');
+    // token stored in httpOnly server cookie
     const resolved: User = mfaResponse.user ?? mfaPendingUser;
     setUser(resolved);
     setMfaPending(false);
@@ -162,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // fresh full JWT and burns the code (single-use).
     const mfaResponse = await api.verifyRecovery(cleanCode, mfaPendingToken) as { token?: string; user?: User };
 
-    localStorage.setItem('token', mfaResponse.token ?? '');
+    // token stored in httpOnly server cookie
     const resolved: User = mfaResponse.user ?? mfaPendingUser;
     setUser(resolved);
     setMfaPending(false);
@@ -184,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // full-scope JWT, mirroring the TOTP/recovery success path.
     const mfaResponse = await api.webauthnLoginVerify(assertion, challengeToken, mfaPendingToken) as { token?: string; user?: User };
 
-    localStorage.setItem('token', mfaResponse.token ?? '');
+    // token stored in httpOnly server cookie
     const resolved: User = mfaResponse.user ?? mfaPendingUser;
     setUser(resolved);
     setMfaPending(false);
@@ -219,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A failed revocation must not stop the user from leaving the app.
       console.warn('Failed to revoke the session on the server:', error);
     }
-    localStorage.removeItem('token');
+    // token revoked server-side (logout);
     setUser(null);
     setMfaPending(false);
     setMfaPendingUser(null);
@@ -228,14 +230,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       if (token) {
         try {
           const data: { user: User } = await api.getMe();
           setUser(data.user);
         } catch (error) {
           console.error('Failed to fetch user on mount:', error);
-          localStorage.removeItem('token');
+          // token revoked server-side (logout);
           setUser(null);
         }
       }
@@ -249,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only open the role stream for a real session. Without a token the
       // server answers 401, EventSource retries on an interval, and an
       // unauthenticated visitor accumulated a stream of failed requests.
-      const streamToken = localStorage.getItem('token');
+      const streamToken = getCookieToken();
       if (typeof window !== 'undefined' && 'EventSource' in window && streamToken) {
         const streamUrl = `${API_ORIGIN}/api/roles/stream?token=${encodeURIComponent(streamToken)}`;
         es = new EventSource(streamUrl);

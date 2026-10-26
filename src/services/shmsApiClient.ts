@@ -8,12 +8,14 @@
  *
  *  - the API base URL comes from the shared resolver in `src/config/api.ts`
  *    and falls back to '/api';
- *  - the bearer token is read from localStorage, exactly like the main
- *    service does, so the server's CSRF check is skipped for non-GET calls;
+ *  - the bearer token is read from a secure httpOnly cookie (`token`),
+ *    exactly like the main service does, so the server's CSRF check is
+ *    skipped for non-GET calls;
  *  - a failed response rejects with an Error carrying the server's message.
  */
 
 import * as apiConfig from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 
 export const API_BASE_URL = apiConfig.API_BASE_URL;
 
@@ -63,7 +65,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-  const token = localStorage.getItem('token');
+  const token = getCookieToken();
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }

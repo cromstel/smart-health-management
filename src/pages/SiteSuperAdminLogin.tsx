@@ -77,7 +77,7 @@ function SiteSuperAdminLogin() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
-                    autoComplete="username"
+                    autoComplete="off"
                     className="h-10 text-sm bg-(--navy-dark-form-field) border-(--navy-dark-border) text-(--industrial-text) focus-visible:ring-red-500/40 focus-visible:border-red-400/60 font-mono"
                   />
                 </div>
@@ -91,7 +91,7 @@ function SiteSuperAdminLogin() {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required
-                      autoComplete="current-password"
+                      autoComplete="off"
                       className="h-10 pr-10 text-sm bg-(--navy-dark-form-field) border-(--navy-dark-border) text-(--industrial-text) focus-visible:ring-red-500/40 focus-visible:border-red-400/60 font-mono"
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-(--industrial-subtle) hover:text-(--industrial-text)" aria-label="Toggle password" title="Toggle visibility">

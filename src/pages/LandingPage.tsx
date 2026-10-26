@@ -212,7 +212,7 @@ function Hero() {
                 asChild
               >
                 <Link to="/auth/signup" className="gap-2">
-                  Start free trial
+                  START FREE TRIAL
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
@@ -223,7 +223,7 @@ function Hero() {
                 asChild
               >
                 <Link to="/auth/request-demo" className="gap-2">
-                  Request a demo
+                  REQUEST A DEMO
                 </Link>
               </Button>
             </motion.div>

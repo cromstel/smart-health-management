@@ -61,6 +61,13 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
   try {
     const { email, password } = req.body;
 
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
     // Get user from database (with affiliation hospital code for hospital scoping)
     const [users] = await pool.query(
       `SELECT u.*, h.hospital_id AS hospital_code
@@ -205,8 +212,11 @@ export const login = async (req: Request, res: Response): Promise<Response | voi
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('Login error:', error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.message?.includes('ECONNREFUSED')) {
+      return res.status(503).json({ error: 'Service temporarily unavailable' });
+    }
+    return res.status(500).json({ error: 'Login failed' });
   }
 };
 

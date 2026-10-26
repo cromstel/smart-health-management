@@ -330,7 +330,7 @@ export default function TwoFactorPage() {
                             setError('');
                           }}
                           placeholder="XXXXX-XXXXX"
-                          autoComplete="one-time-code"
+                          autoComplete="off"
                           autoFocus
                           className="h-11 text-center font-mono tracking-widest"
                           aria-label="Enter recovery code"

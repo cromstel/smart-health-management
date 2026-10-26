@@ -1,3 +1,4 @@
+import { getCookieToken } from "@/contexts/AuthContext";
 import type { User } from "@/contexts/AuthContext";
 import * as apiConfig from '@/config/api';
 import type {
@@ -10,6 +11,9 @@ import type {
 // Re-exported so existing consumers keep importing the origin from the API
 // service. The value itself is resolved in `src/config/api.ts`.
 export const { API_ORIGIN } = apiConfig;
+
+// Session-scoped offline patient queue (PHI-at-rest: never localStorage).
+const offlinePatientQueue: any[] = [];
 
 
 interface SystemHealthResponse { status: string; }
@@ -387,7 +391,7 @@ class ApiService {
     };
 
     if (includeAuth) {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`; // Include auth header only if token exists
       }
@@ -396,7 +400,7 @@ class ApiService {
     // Only needed when there is no Bearer credential: the server skips the
     // check for authenticated requests, since a header cannot ride along
     // cross-origin on its own.
-    if (!localStorage.getItem('token') && this.csrfToken) {
+    if (!getCookieToken() && this.csrfToken) {
       headers['x-xsrf-token'] = this.csrfToken;
     }
 
@@ -481,7 +485,7 @@ class ApiService {
       headers['Authorization'] = `Bearer ${mfaToken}`;
       hasBearer = true;
     } else {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
         hasBearer = true;
@@ -505,7 +509,7 @@ class ApiService {
     if (mfaToken) {
       headers['Authorization'] = `Bearer ${mfaToken}`;
     } else {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       if (token) headers['Authorization'] = `Bearer ${token}`;
     }
     const response = await fetch(`${API_BASE_URL}/auth/verify-recovery`, {
@@ -633,7 +637,7 @@ class ApiService {
       headers['Authorization'] = `Bearer ${mfaToken}`;
       hasBearer = true;
     } else {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
         hasBearer = true;
@@ -718,10 +722,8 @@ class ApiService {
       // Generate a temporary ID for offline creation
       const offlineId = this.generateOfflineId();
       const offlinePatient = { ...data, id: offlineId, isOffline: true, offlineAction: 'CREATE', clientUpdatedAt: new Date().toISOString() };
-      // Store the patient data in localStorage
-      const offlinePatients = JSON.parse(localStorage.getItem('offlinePatients') || '[]') as any[];
-      offlinePatients.push(offlinePatient);
-      localStorage.setItem('offlinePatients', JSON.stringify(offlinePatients));
+      // Session-scoped only (PHI-at-rest): never persisted to localStorage.
+      offlinePatientQueue.push(offlinePatient);
       return { message: 'Patient created offline', patient: offlinePatient };
     }
   }
@@ -736,15 +738,12 @@ class ApiService {
       return this.handleResponse(response);
     } catch (error: any) {
       console.error('Failed to update patient (offline):', error);
-      // Store the update action in localStorage
-      const offlinePatients = JSON.parse(localStorage.getItem('offlinePatients') || '[]') as any[];
-      const existingPatientIndex = offlinePatients.findIndex(patient => patient.id === id);
+      const existingPatientIndex = offlinePatientQueue.findIndex(p => p.id === id);
       if (existingPatientIndex !== -1) {
-        offlinePatients[existingPatientIndex] = { ...offlinePatients[existingPatientIndex], ...data, offlineAction: 'UPDATE', clientUpdatedAt: new Date().toISOString() };
+        offlinePatientQueue[existingPatientIndex] = { ...offlinePatientQueue[existingPatientIndex], ...data, offlineAction: 'UPDATE', clientUpdatedAt: new Date().toISOString() };
       } else {
-        offlinePatients.push({ id: id, ...data, offlineAction: 'UPDATE', clientUpdatedAt: new Date().toISOString() });
+        offlinePatientQueue.push({ id: id, ...data, offlineAction: 'UPDATE', clientUpdatedAt: new Date().toISOString() });
       }
-      localStorage.setItem('offlinePatients', JSON.stringify(offlinePatients));
       return { message: 'Patient updated offline', id: id };
     }
   }
@@ -758,15 +757,12 @@ class ApiService {
       return this.handleResponse(response);
     } catch (error: any) {
       console.error('Failed to delete patient (offline):', error);
-      // Store the deletion action in localStorage
-      const offlinePatients = JSON.parse(localStorage.getItem('offlinePatients') || '[]') as any[];
-      const existingPatientIndex = offlinePatients.findIndex(patient => patient.id === id);
+      const existingPatientIndex = offlinePatientQueue.findIndex(p => p.id === id);
       if (existingPatientIndex !== -1) {
-        offlinePatients.splice(existingPatientIndex, 1);
+        offlinePatientQueue.splice(existingPatientIndex, 1);
       } else {
-        offlinePatients.push({ id: id, offlineAction: 'DELETE' });
+        offlinePatientQueue.push({ id: id, offlineAction: 'DELETE' });
       }
-      localStorage.setItem('offlinePatients', JSON.stringify(offlinePatients));
       return { message: 'Patient deleted offline', id: id };
     }
   }
@@ -780,12 +776,7 @@ class ApiService {
    * the entries that the server accepted are removed.
    */
   async syncOfflinePatients(): Promise<{ applied: number; failed: number }> {
-    let queued: any[];
-    try {
-      queued = JSON.parse(localStorage.getItem('offlinePatients') || '[]');
-    } catch {
-      queued = [];
-    }
+    const queued: any[] = [...offlinePatientQueue];
     if (!Array.isArray(queued) || queued.length === 0) {
       return { applied: 0, failed: 0 };
     }
@@ -813,7 +804,7 @@ class ApiService {
     const remaining = queued.filter((entry) => !acceptedIds.has(String(entry.id)));
 
     if (remaining.length !== queued.length) {
-      localStorage.setItem('offlinePatients', JSON.stringify(remaining));
+      offlinePatientQueue.length = 0; offlinePatientQueue.push(...remaining);
     }
 
     return { applied: acceptedIds.size, failed: queued.length - acceptedIds.size };
@@ -1050,7 +1041,7 @@ class ApiService {
 
   async uploadDocument(formData: FormData) {
     const headers: HeadersInit = {};
-    const token = localStorage.getItem('token');
+    const token = getCookieToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
     const response = await fetch(`${API_BASE_URL}/documents`, {
       method: 'POST',
