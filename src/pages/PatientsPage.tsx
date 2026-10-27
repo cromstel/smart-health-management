@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '@/services/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,10 +31,19 @@ import { Plus, Search, Filter, Download, MoreHorizontal, Heart, Users, Printer, 
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { exportToCSV } from '@/utils/csv';
-import PatientVitalsModule from '@/components/vitals/PatientVitalsModule';
-import { PatientVitalsTrendsDashboard } from '@/components/patients/PatientVitalsTrendsDashboard';
-import { PostDischargeFollowupModule } from '@/components/patients/PostDischargeFollowupModule';
-import { ClinicalNotesVoiceModal } from '@/components/patients/ClinicalNotesVoiceModal';
+// Heavy conditional modules are lazy-loaded: they render only on their own
+// tab (or when a modal opens), so loading them eagerly put ~180 kB of
+// rarely-visited code into the page chunk every patient-roster visit.
+const PatientVitalsModule = lazy(() => import('@/components/vitals/PatientVitalsModule'));
+const PatientVitalsTrendsDashboard = lazy(() =>
+  import('@/components/patients/PatientVitalsTrendsDashboard').then((m) => ({ default: m.PatientVitalsTrendsDashboard }))
+);
+const PostDischargeFollowupModule = lazy(() =>
+  import('@/components/patients/PostDischargeFollowupModule').then((m) => ({ default: m.PostDischargeFollowupModule }))
+);
+const ClinicalNotesVoiceModal = lazy(() =>
+  import('@/components/patients/ClinicalNotesVoiceModal').then((m) => ({ default: m.ClinicalNotesVoiceModal }))
+);
 import { vitalsService } from '@/services/vitalsService';
 import { evaluateTriagePriority } from '@/utils/triage';
 import type { VitalsRecord } from '@/types/vitals';
@@ -834,18 +843,24 @@ export default function PatientsPage() {
 
     {activeTab === 'vitals' ? (
       <ErrorBoundary fallbackTitle="Error loading Patient Vitals Module">
-        <PatientVitalsModule
-          patients={patients}
-          initialPatientId={selectedPatientForVitals}
-        />
+        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+          <PatientVitalsModule
+            patients={patients}
+            initialPatientId={selectedPatientForVitals}
+          />
+        </Suspense>
       </ErrorBoundary>
     ) : activeTab === 'trends' ? (
       <ErrorBoundary fallbackTitle="Error loading Patient Vitals Trends Dashboard">
-        <PatientVitalsTrendsDashboard />
+        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+          <PatientVitalsTrendsDashboard />
+        </Suspense>
       </ErrorBoundary>
     ) : activeTab === 'followup' ? (
       <ErrorBoundary fallbackTitle="Error loading Post-Discharge Followup Module">
-        <PostDischargeFollowupModule />
+        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+          <PostDischargeFollowupModule />
+        </Suspense>
       </ErrorBoundary>
     ) : (
       <ErrorBoundary fallbackTitle="Error loading Patient Records">
@@ -1037,12 +1052,14 @@ export default function PatientsPage() {
       </ErrorBoundary>
     )}
 
-    <ClinicalNotesVoiceModal
-      open={isVoiceNotesOpen}
-      onOpenChange={setIsVoiceNotesOpen}
-      patientId={selectedPatientForNotes}
-      patientsList={patients.map((p) => ({ id: p.id, name: p.name }))}
-    />
+    <Suspense fallback={null}>
+      <ClinicalNotesVoiceModal
+        open={isVoiceNotesOpen}
+        onOpenChange={setIsVoiceNotesOpen}
+        patientId={selectedPatientForNotes}
+        patientsList={patients.map((p) => ({ id: p.id, name: p.name }))}
+      />
+    </Suspense>
   </div>
 );
 }

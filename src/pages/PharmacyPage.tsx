@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Package, Barcode, Plus, Pill, AlertTriangle, TrendingDown, Search, List, Clock, Sparkles } from 'lucide-react';
 import { api } from '@/services/api';
@@ -26,8 +26,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAudit } from '@/contexts/AuditContext';
-import { MedicationComplianceTracker } from '@/components/pharmacy/MedicationComplianceTracker';
-import { InventoryForecastingModule } from '@/components/pharmacy/InventoryForecastingModule';
+// Tab-conditional modules are lazy-loaded: each renders only on its own tab,
+// so eager import put both modules into the pharmacy page chunk regardless of
+// which tab the pharmacist actually opened.
+const MedicationComplianceTracker = lazy(() =>
+  import('@/components/pharmacy/MedicationComplianceTracker').then((m) => ({ default: m.MedicationComplianceTracker }))
+);
+const InventoryForecastingModule = lazy(() =>
+  import('@/components/pharmacy/InventoryForecastingModule').then((m) => ({ default: m.InventoryForecastingModule }))
+);
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Medicine {
@@ -309,7 +316,9 @@ export default function PharmacyPage() {
 
           {activeTab === 'forecasting' ? (
             <ErrorBoundary fallbackTitle="Error loading Inventory Forecasting">
-              <InventoryForecastingModule />
+              <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                <InventoryForecastingModule />
+              </Suspense>
             </ErrorBoundary>
           ) : activeTab === 'inventory' ? (
             <>
@@ -585,7 +594,9 @@ export default function PharmacyPage() {
             </>
           ) : (
             <ErrorBoundary fallbackTitle="Error loading Medication Compliance Tracker">
-              <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+              <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+              </Suspense>
             </ErrorBoundary>
           )}
         </>

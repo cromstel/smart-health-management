@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
 import { PasswordChangeModal } from '@/components/security/PasswordChangeModal';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { ScrollProgress } from '@/components/common/ScrollProgress';
 import { TwoFactorReminder } from '@/components/TwoFactorReminder';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,9 @@ export function AppLayout() {
   }, [location]);
 
   return (
-    <SidebarProvider defaultOpen>
+    <>
+      <ScrollProgress />
+      <SidebarProvider defaultOpen>
       <div className="flex min-h-screen w-full bg-background transition-colors duration-300 ease-in-out">
         <div className="transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0">
           <AppSidebar />
@@ -92,5 +95,6 @@ export function AppLayout() {
         )}
       </div>
     </SidebarProvider>
+    </>
   );
 }

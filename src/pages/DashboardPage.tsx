@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,11 +43,20 @@ import { D3PatientVitalsTrendChart } from '@/components/dashboard/D3PatientVital
 import { AuditLogOperationsChart } from '@/components/dashboard/AuditLogOperationsChart';
 import { Patient7DayVitalsTrendWidget } from '@/components/dashboard/Patient7DayVitalsTrendWidget';
 import { ApiHealthWidget } from '@/components/dashboard/ApiHealthWidget';
-import { EmergencyModeModule } from '@/components/emergency/EmergencyModeModule';
-import { ShiftHandoverModal } from '@/components/handover/ShiftHandoverModal';
-import { LogVitalsDialog } from '@/components/vitals/LogVitalsDialog';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { APP_NAME } from '@/config/app';
+
+// Emergency board, handover and vitals-logging render on demand (mode toggle
+// or modal open), so they are split out of the dashboard's first paint chunk.
+const EmergencyModeModule = lazy(() =>
+  import('@/components/emergency/EmergencyModeModule').then((m) => ({ default: m.EmergencyModeModule }))
+);
+const ShiftHandoverModal = lazy(() =>
+  import('@/components/handover/ShiftHandoverModal').then((m) => ({ default: m.ShiftHandoverModal }))
+);
+const LogVitalsDialog = lazy(() =>
+  import('@/components/vitals/LogVitalsDialog').then((m) => ({ default: m.LogVitalsDialog }))
+);
 
 const chartConfig = {
   patients: { label: 'Patients', color: 'var(--chart-1)' },
@@ -420,10 +429,12 @@ export default function DashboardPage() {
       )}
 
       {isEmergencyMode && (
-        <EmergencyModeModule
-          onOpenLogVitals={() => setIsLogVitalsOpen(true)}
-          onOpenHandover={() => setIsHandoverModalOpen(true)}
-        />
+        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+          <EmergencyModeModule
+            onOpenLogVitals={() => setIsLogVitalsOpen(true)}
+            onOpenHandover={() => setIsHandoverModalOpen(true)}
+          />
+        </Suspense>
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -770,22 +781,26 @@ export default function DashboardPage() {
         })}
       </div>
 
-      <ShiftHandoverModal
-        open={isHandoverModalOpen}
-        onOpenChange={setIsHandoverModalOpen}
-      />
+      <Suspense fallback={null}>
+        <ShiftHandoverModal
+          open={isHandoverModalOpen}
+          onOpenChange={setIsHandoverModalOpen}
+        />
+      </Suspense>
 
-      <LogVitalsDialog
-        open={isLogVitalsOpen}
-        onOpenChange={setIsLogVitalsOpen}
-        patientId="P-1002"
-        patientName="Sarah Connor"
-        patientsList={[
-          { id: 'P-1002', name: 'Sarah Connor' },
-          { id: 'P-1005', name: 'Kwame Mensah' },
-          { id: 'P-1009', name: 'Amina Yeboah' },
-        ]}
-      />
+      <Suspense fallback={null}>
+        <LogVitalsDialog
+          open={isLogVitalsOpen}
+          onOpenChange={setIsLogVitalsOpen}
+          patientId="P-1002"
+          patientName="Sarah Connor"
+          patientsList={[
+            { id: 'P-1002', name: 'Sarah Connor' },
+            { id: 'P-1005', name: 'Kwame Mensah' },
+            { id: 'P-1009', name: 'Amina Yeboah' },
+          ]}
+        />
+      </Suspense>
     </div>
   );
 }
