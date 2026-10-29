@@ -5,10 +5,13 @@ import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
 import { PasswordChangeModal } from '@/components/security/PasswordChangeModal';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { ScrollProgress } from '@/components/common/ScrollProgress';
+import { TwoFactorReminder } from '@/components/TwoFactorReminder';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { analyticsService } from '@/services/analytics';
+import { APP_NAME } from '@/config/app';
 
 export function AppLayout() {
   const location = useLocation();
@@ -34,7 +37,9 @@ export function AppLayout() {
   }, [location]);
 
   return (
-    <SidebarProvider defaultOpen>
+    <>
+      <ScrollProgress />
+      <SidebarProvider defaultOpen>
       <div className="flex min-h-screen w-full bg-background transition-colors duration-300 ease-in-out">
         <div className="transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0">
           <AppSidebar />
@@ -44,6 +49,7 @@ export function AppLayout() {
           <main className="flex-1 p-6 transition-all duration-300 ease-in-out" id="main-content" role="main">
             <PasswordChangeModal />
             <OfflineIndicator />
+            <TwoFactorReminder />
             <Outlet />
           </main>
         </div>
@@ -61,7 +67,7 @@ export function AppLayout() {
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-foreground">Updates Available</h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                A new and improved version of Smart MediCare workstation is ready for your clinical session.
+                {`A new and improved version of ${APP_NAME} workstation is ready for your clinical session.`}
               </p>
               <div className="flex items-center gap-2 mt-3">
                 <Button
@@ -89,5 +95,6 @@ export function AppLayout() {
         )}
       </div>
     </SidebarProvider>
+    </>
   );
 }

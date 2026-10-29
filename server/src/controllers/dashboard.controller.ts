@@ -34,14 +34,20 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response): Promi
     const monthlyRevenue = (revenueData as any[])[0].revenue || 0;
 
     // Get patient growth data (last 6 months)
+    //
+    // The month is grouped by year and month, and ordered by the same
+    // expression. Ordering by the raw creation date was neither grouped nor
+    // functionally dependent on the grouping, which MySQL 8 refuses under its
+    // default ONLY_FULL_GROUP_BY mode. Grouping by the year and month also
+    // stops the same month in two different years collapsing into one point.
     const [patientGrowth] = await pool.query(
-      `SELECT 
+      `SELECT
         DATE_FORMAT(created_at, '%b') as month,
         COUNT(*) as patients
        FROM patients
        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-       GROUP BY MONTH(created_at), DATE_FORMAT(created_at, '%b')
-       ORDER BY created_at`
+       GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
+       ORDER BY DATE_FORMAT(created_at, '%Y-%m')`
     );
 
     // Get weekly appointments

@@ -36,6 +36,8 @@ import type { WebAuthnCredentialRecord } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { startWebAuthnRegistration, isWebAuthnSupported } from '@/utils/webauthn';
+import { APP_NAME_SLUG } from '@/config/app';
+import SubdomainSettings from '@/components/hospitals/SubdomainSettings';
 
 interface Settings {
   systemName?: string;
@@ -281,7 +283,7 @@ export default function SettingsPage() {
   // Data Management & Archiving Panel states
   const [automaticBackups, setAutomaticBackups] = useState(true);
   const [backupFrequency, setBackupFrequency] = useState('daily');
-  const [backupLocation, setBackupLocation] = useState('C:\\SmartMediCare\\Backups');
+  const [backupLocation, setBackupLocation] = useState(`C:\\${APP_NAME_SLUG}\\Backups`);
   const [retentionDays, setRetentionDays] = useState(30);
   const [backupScheduleEnabled, setBackupScheduleEnabled] = useState(true);
   const [exportScheduleTime, setExportScheduleTime] = useState('02:00 AM');
@@ -413,6 +415,7 @@ export default function SettingsPage() {
           <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="backup">Backup</TabsTrigger>
+          <TabsTrigger value="hospital">Hospital</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
@@ -1060,7 +1063,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="localPath">Storage Path</Label>
-                  <Input id="localPath" defaultValue="C:\SmartMediCare\Storage" />
+                  <Input id="localPath" defaultValue={`C:\\${APP_NAME_SLUG}\\Storage`} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
@@ -1350,6 +1353,10 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="hospital" className="space-y-4">
+          <SubdomainSettings />
         </TabsContent>
       </Tabs>
 		</>

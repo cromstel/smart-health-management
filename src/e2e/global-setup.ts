@@ -1,4 +1,5 @@
 import type { FullConfig } from '@playwright/test';
+import { DEFAULT_LOCAL_HOST } from '../../server/src/config/runtime';
 
 /**
  * Global setup: refuse to run against whatever happens to be answering the port.
@@ -21,8 +22,13 @@ import type { FullConfig } from '@playwright/test';
  *      client entry, and does not look like some other SPA.
  */
 
-const PORT = Number(process.env.VITE_PORT || 5175);
-const BASE_URL = `http://localhost:${PORT}`;
+// The port comes from the environment. There is no written-down default: a
+// port in the source has to be changed in the source to be changed at all.
+const PORT = Number(process.env.VITE_PORT);
+if (!Number.isInteger(PORT) || PORT < 1) {
+  throw new Error('Missing or invalid environment variable: VITE_PORT.');
+}
+const BASE_URL = `http://${DEFAULT_LOCAL_HOST}:${PORT}`;
 
 export default async function globalSetup(config: FullConfig) {
   // `config` is required by the Playwright hook signature. Mark it used so the

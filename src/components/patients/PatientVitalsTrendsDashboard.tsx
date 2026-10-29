@@ -28,7 +28,10 @@ export function PatientVitalsTrendsDashboard() {
         const data = await patientService.getPatients();
         setPatients(data);
         if (data.length > 0) {
-          setSelectedPatientId(data[0].id);
+          // The key of a patient is a number on the wire. It is kept as a
+          // string here so that it can be compared with the selected value
+          // without the two spellings disagreeing.
+          setSelectedPatientId(String(data[0].id));
         }
       } catch (err) {
         console.error('Failed to load patients for vitals trends', err);
@@ -39,7 +42,8 @@ export function PatientVitalsTrendsDashboard() {
     loadPatients();
   }, []);
 
-  const selectedPatient = patients.find((p) => p.id === selectedPatientId) || patients[0];
+  const selectedPatient =
+    patients.find((p) => String(p.id) === selectedPatientId) || patients[0];
 
   if (loading) {
     return (

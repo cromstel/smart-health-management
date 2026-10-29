@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
   Stethoscope,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '@/services/shmsApiClient';
 
 export interface ClinicalNoteRecord {
   id: string;
@@ -69,20 +70,33 @@ export function ClinicalNotesVoiceModal({
     }
   }, [initialPatientId, patientsList, selectedPatientId]);
 
-  // Load existing clinical notes from storage
-  useEffect(() => {
-    if (!selectedPatientId) return;
+  // Load the patient's clinical notes from the API.
+  //
+  // These notes used to be read from and written to a per-patient key in the
+  // browser's local storage. A clinical note is PHI: it must not sit in
+  // plaintext browser storage on a shared workstation, and it must not be
+  // editable or removable by anyone who can open DevTools.
+  const loadNotes = useCallback(async (patientId: string) => {
     try {
-      const stored = localStorage.getItem(`clinical_notes_${selectedPatientId}`);
-      if (stored) {
-        setSavedNotes(JSON.parse(stored));
-      } else {
-        setSavedNotes([]);
-      }
-    } catch {
+      const response = await apiRequest<{ notes?: ClinicalNoteRecord[] }>('/clinical-notes', {
+        query: { patientId },
+      });
+      const notes = Array.isArray(response?.notes) ? response.notes : [];
+      setSavedNotes(notes);
+    } catch (error) {
+      console.warn('Failed to load clinical notes:', error);
       setSavedNotes([]);
+      toast.error('Failed to load clinical notes');
     }
-  }, [selectedPatientId]);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedPatientId) {
+      setSavedNotes([]);
+      return;
+    }
+    void loadNotes(selectedPatientId);
+  }, [selectedPatientId, loadNotes]);
 
   // Initialize SpeechRecognition if available
   useEffect(() => {
@@ -210,7 +224,7 @@ export function ClinicalNotesVoiceModal({
     toast.success(`Inserted "${text}"`);
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!noteContent.trim()) {
       toast.error('Clinical note content cannot be empty.');
       return;
@@ -224,37 +238,47 @@ export function ClinicalNotesVoiceModal({
     const patientObj = patientsList.find((p) => p.id === selectedPatientId);
     const patientName = patientObj ? patientObj.name : selectedPatientId;
 
-    const newNote: ClinicalNoteRecord = {
-      id: `NOTE-${Date.now()}`,
-      patientId: selectedPatientId,
-      patientName,
-      doctorName: 'Dr. Michael Chen',
-      content: noteContent.trim(),
-      timestamp: new Date().toLocaleString(),
-      tags: [activeTag],
-    };
-
-    const updated = [newNote, ...savedNotes];
-    setSavedNotes(updated);
     try {
-      localStorage.setItem(`clinical_notes_${selectedPatientId}`, JSON.stringify(updated));
-    } catch (e) {
-      console.warn('Failed to persist clinical note', e);
-    }
+      const created = await apiRequest<ClinicalNoteRecord>('/clinical-notes', {
+        method: 'POST',
+        body: {
+          patientId: selectedPatientId,
+          content: noteContent.trim(),
+          tags: [activeTag],
+        },
+      });
 
-    toast.success(`Clinical note saved for ${patientName}`);
-    setNoteContent('');
+      const newNote: ClinicalNoteRecord = {
+        id: String(created.id),
+        patientId: created.patientId ?? selectedPatientId,
+        patientName: created.patientName || patientName,
+        doctorName: created.doctorName || 'Current Clinician',
+        content: created.content ?? noteContent.trim(),
+        timestamp: created.timestamp ?? new Date().toLocaleString(),
+        tags: created.tags ?? [activeTag],
+      };
+
+      setSavedNotes((prev) => [newNote, ...prev]);
+      toast.success(`Clinical note saved for ${patientName}`);
+      setNoteContent('');
+    } catch (error) {
+      console.warn('Failed to save clinical note:', error);
+      toast.error('Failed to save the clinical note');
+    }
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    const updated = savedNotes.filter((n) => n.id !== noteId);
-    setSavedNotes(updated);
+  const handleDeleteNote = async (noteId: string) => {
+    const previous = savedNotes;
+    setSavedNotes((prev) => prev.filter((n) => n.id !== noteId));
+
     try {
-      localStorage.setItem(`clinical_notes_${selectedPatientId}`, JSON.stringify(updated));
-    } catch (err) {
-      console.debug('Failed to delete note from storage:', err);
+      await apiRequest(`/clinical-notes/${encodeURIComponent(noteId)}`, { method: 'DELETE' });
+      toast.success('Clinical note deleted');
+    } catch (error) {
+      console.warn('Failed to delete clinical note:', error);
+      setSavedNotes(previous);
+      toast.error('Failed to delete the clinical note');
     }
-    toast.success('Clinical note deleted');
   };
 
   const handleCopyNote = (text: string) => {

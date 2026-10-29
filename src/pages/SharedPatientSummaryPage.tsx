@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { vitalsService } from '@/services/vitalsService';
 import type { VitalsRecord } from '@/types/vitals';
+import { APP_NAME } from '@/config/app';
 import {
   ResponsiveContainer,
   LineChart,
@@ -57,7 +59,9 @@ export default function SharedPatientSummaryPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/shared/patient-summary?token=${token}`);
+        const response = await fetch(
+          `${API_BASE_URL}/shared/patient-summary?token=${encodeURIComponent(token)}`
+        );
         if (!response.ok) {
           const errData = await response.json();
           throw new Error(errData.error || 'Failed to fetch shared health summary');
@@ -174,7 +178,7 @@ export default function SharedPatientSummaryPage() {
               </Badge>
               <span className="text-slate-400 text-xs">Expires in: {timeLeft || 'Calculating...'}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight" id="banner-heading">Smart MediCare Patient Summary</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight" id="banner-heading">{`${APP_NAME} Patient Summary`}</h1>
             <p className="text-xs sm:text-sm text-slate-400">Official, view-only health record summary compiled directly from clinical observations.</p>
           </div>
           <div className="text-right sm:text-left self-stretch sm:self-auto pt-2 sm:pt-0 border-t border-slate-800 sm:border-0" id="banner-meta-block">

@@ -1,6 +1,7 @@
-// Check if analytics is enabled via configuration flag
-const ANALYTICS_ENABLED = 
-  import.meta.env.VITE_ANALYTICS_ENABLED !== 'false' && 
+import { API_BASE_URL } from '@/config/api';
+
+const ANALYTICS_ENABLED =
+  import.meta.env.VITE_ANALYTICS_ENABLED !== 'false' &&
   import.meta.env.VITE_ANALYTICS_ENABLED !== undefined;
 
 export interface AnalyticsEvent {
@@ -11,25 +12,21 @@ export interface AnalyticsEvent {
 }
 
 class AnalyticsService {
-  private offlineQueueKey = 'offline_analytics_events';
+  // Session-scoped only: never persisted to localStorage (PHI-at-rest rule).
+  private offlineQueue: AnalyticsEvent[] = [];
 
   isEnabled(): boolean {
     return ANALYTICS_ENABLED;
   }
 
-  // Queue event for sync
   trackEvent(type: string, payload: any) {
-    if (!this.isEnabled()) {
-      return;
-    }
-
+    if (!this.isEnabled()) return;
     const event: AnalyticsEvent = {
       id: 'evt-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9),
       type,
       payload,
       timestamp: Date.now(),
     };
-
     if (navigator.onLine) {
       this.sendEventToServer(event);
     } else {
@@ -39,67 +36,48 @@ class AnalyticsService {
 
   private async sendEventToServer(event: AnalyticsEvent) {
     try {
-      await fetch('/api/analytics/event', {
+      const response = await fetch(`${API_BASE_URL}/analytics/event`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(event)
-      }).catch(() => {
-        this.queueOfflineEvent(event);
+        body: JSON.stringify(event),
       });
+      if (!response.ok) this.queueOfflineEvent(event);
     } catch (e) {
       this.queueOfflineEvent(event);
     }
   }
 
   private queueOfflineEvent(event: AnalyticsEvent) {
-    try {
-      const queue = this.getOfflineQueue();
-      queue.push(event);
-      localStorage.setItem(this.offlineQueueKey, JSON.stringify(queue));
-    } catch (e) {
-      console.error('Failed to queue analytics event offline:', e);
-    }
+    this.offlineQueue.push(event);
   }
 
   private getOfflineQueue(): AnalyticsEvent[] {
-    try {
-      const data = localStorage.getItem(this.offlineQueueKey);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+    return [...this.offlineQueue];
   }
 
-  // Sync queued events when network is restored
   async syncPendingEvents() {
     if (!this.isEnabled()) return;
-
     const queue = this.getOfflineQueue();
     if (queue.length === 0) return;
-
-    const remainingEvents: AnalyticsEvent[] = [];
-
+    const remaining: AnalyticsEvent[] = [];
     for (const event of queue) {
       try {
-        await fetch('/api/analytics/event', {
+        const response = await fetch(`${API_BASE_URL}/analytics/event`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(event)
+          body: JSON.stringify(event),
         });
+        if (!response.ok) remaining.push(event);
       } catch (e) {
-        remainingEvents.push(event);
+        remaining.push(event);
       }
     }
-
-    localStorage.setItem(this.offlineQueueKey, JSON.stringify(remainingEvents));
+    this.offlineQueue = remaining;
   }
 }
 
 export const analyticsService = new AnalyticsService();
 
-// Set up online restore listener
 if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    analyticsService.syncPendingEvents();
-  });
+  window.addEventListener('online', () => analyticsService.syncPendingEvents());
 }

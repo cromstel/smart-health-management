@@ -2,12 +2,17 @@ import cron from 'node-cron'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { backupSchedule } from '../services/cron.service.js'
+import { resolveConfiguredPath } from '../config/paths.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const uploadsDir = path.join(__dirname, '../../uploads')
-const backupsDir = path.join(__dirname, '../../backups')
+// The directories are configuration, so a deployment can say where its
+// uploads and its backups live instead of having them written into the
+// source. The defaults keep the shape a repository has.
+const uploadsDir = resolveConfiguredPath(process.env.UPLOAD_DIR, path.join(__dirname, '../../uploads'))
+const backupsDir = resolveConfiguredPath(process.env.BACKUP_DIR, path.join(__dirname, '../../backups'))
 
 const copyRecursive = (src: string, dest: string) => {
   if (!fs.existsSync(src)) return
@@ -20,7 +25,10 @@ const copyRecursive = (src: string, dest: string) => {
   }
 }
 
-const schedule = process.env.BACKUP_CRON || '0 3 * * *'
+// The schedule is configuration. A schedule that cannot be parsed is
+// reported and the job is not scheduled: a mistyped expression must not stop
+// the service from starting.
+const schedule = backupSchedule()
 
 cron.schedule(schedule, () => {
   try {

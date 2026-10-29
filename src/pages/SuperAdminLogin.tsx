@@ -19,16 +19,12 @@ import {
   ArrowLeft,
   KeyRound,
   FileCheck,
-  Server,
   Loader2,
 } from 'lucide-react';
 
-const DEMO_EMAIL = 'superadmin@smarthealth.com';
-const DEMO_PASSWORD = 'April--2024!!!!';
-
 const SuperAdminLogin = React.memo(() => {
-  const [email, setEmail] = useState(() => (import.meta.env.DEV ? DEMO_EMAIL : ''));
-  const [password, setPassword] = useState(() => (import.meta.env.DEV ? DEMO_PASSWORD : ''));
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,9 +40,10 @@ const SuperAdminLogin = React.memo(() => {
       const res = await login(email, password);
 
       if (res.requiresMfa) {
-        // The pending MFA session is now active in AuthContext; the standard
-        // workstation sign-in page renders the TOTP step to complete it.
-        navigate('/auth/login');
+        // The pending MFA session is now active in AuthContext. The two-factor
+        // page is the shared surface that completes it, and it returns a
+        // person to the portal they came from.
+        navigate('/auth/two-factor');
         return;
       }
 
@@ -63,12 +60,6 @@ const SuperAdminLogin = React.memo(() => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickFill = () => {
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
-    setError('');
   };
 
   return (
@@ -203,22 +194,6 @@ const SuperAdminLogin = React.memo(() => {
                 )}
               </Button>
             </form>
-
-            {/* Quick Demo Helper (development only) */}
-            {import.meta.env.DEV && (
-              <div className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleQuickFill}
-                  className="w-full text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                  <span>Autofill Super Admin Demo Credentials</span>
-                </Button>
-              </div>
-            )}
 
             {/* Audit Advisory */}
             <motion.div

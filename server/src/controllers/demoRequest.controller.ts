@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { sendEmail } from '../utils/mail.js';
+import { APP_NAME } from '../config/app.js';
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (character) => ({
   '&': '&amp;',
@@ -13,7 +14,7 @@ export const submitDemoRequest = async (req: Request, res: Response): Promise<vo
   const recipient = process.env.DEMO_REQUEST_RECIPIENT;
 
   if (!recipient) {
-    res.status(503).json({ error: 'Demo requests are not configured yet. Please contact the Smart MediCare team directly.' });
+    res.status(503).json({ error: `Demo requests are not configured yet. Please contact the ${APP_NAME} team directly.` });
     return;
   }
 
@@ -37,7 +38,7 @@ export const submitDemoRequest = async (req: Request, res: Response): Promise<vo
   ] as const;
 
   const text = fields.map(([label, value]) => `${label}: ${value}`).join('\n');
-  const html = `<h2>New Smart MediCare demo request</h2><dl>${fields.map(([label, value]) => (
+  const html = `<h2>New ${APP_NAME} demo request</h2><dl>${fields.map(([label, value]) => (
     `<dt><strong>${escapeHtml(label)}</strong></dt><dd>${escapeHtml(value)}</dd>`
   )).join('')}</dl>`;
 

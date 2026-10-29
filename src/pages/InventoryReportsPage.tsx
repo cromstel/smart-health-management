@@ -18,8 +18,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { APP_NAME } from '@/config/app';
 
 type ReportType = 'stock_levels' | 'expiry_dates' | 'low_stock';
+
+// Batch rows come from the API in database column names; the editor works in
+// the camelCase names the form fields use.
+const mapBatches = (rows: any[]) =>
+  (rows || []).map((row) => ({
+    id: String(row.id),
+    batchNumber: row.batch_number ?? '',
+    expiryDate: row.expiry_date ?? '',
+    quantity: Number(row.quantity ?? 0),
+    recalled: !!row.recalled,
+  }));
 
 export default function InventoryReportsPage() {
   const [reportType, setReportType] = useState<ReportType>('stock_levels');
@@ -30,7 +42,7 @@ export default function InventoryReportsPage() {
 
   const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
   const [preferredFormat, setPreferredFormat] = useState<string>('PDF');
-  const [systemName, setSystemName] = useState('Smart MediCare Hospital');
+  const [systemName, setSystemName] = useState(`${APP_NAME} Hospital`);
 
   useEffect(() => {
     const saved = localStorage.getItem('preferred_inventory_export');
@@ -66,9 +78,29 @@ export default function InventoryReportsPage() {
   }, [loadReport]);
 
   useEffect(() => {
+    // The selected medicine is a navigation hand-off, not domain data. The
+    // batches themselves are loaded from the API.
     const bv = localStorage.getItem('batchView');
     if (bv) setBatchView(JSON.parse(bv));
   }, []);
+
+  // Load the real batches for the selected medicine.
+  useEffect(() => {
+    const medicineId = batchView?.medicine?.id;
+    if (!medicineId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = (await api.getBatches(String(medicineId))) as any[];
+        if (cancelled) return;
+        setBatchView((prev) => (prev ? { medicine: prev.medicine, batches: mapBatches(rows) } : prev));
+      } catch (e) {
+        console.error('Failed to load batches:', e);
+        toast.error('Failed to load batches');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [batchView?.medicine?.id]);
 
   const exportCSV = useCallback(() => {
     if (!rows.length) {
@@ -131,7 +163,7 @@ export default function InventoryReportsPage() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Smart MediCare — ${reportTitle}</title>
+          <title>${APP_NAME} — ${reportTitle}</title>
           <style>
             @page { size: A4 portrait; margin: 12mm; }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 20px; }
@@ -151,7 +183,7 @@ export default function InventoryReportsPage() {
         <body>
           <div class="header">
             <div>
-              <div class="logo">Smart MediCare</div>
+              <div class="logo">${APP_NAME}</div>
               <div class="sub-logo">Pharmacy & Medical Inventory System</div>
             </div>
             <div class="meta">
@@ -187,7 +219,7 @@ export default function InventoryReportsPage() {
           </table>
 
           <div class="footer">
-            CONFIDENTIAL — Smart MediCare • Internal Clinical & Pharmacy Report
+            CONFIDENTIAL — ${APP_NAME} • Internal Clinical & Pharmacy Report
           </div>
 
           <script>
@@ -222,10 +254,43 @@ export default function InventoryReportsPage() {
     return () => clearInterval(interval);
   }, [exportCSV]);
 
-  const saveBatch = (medicineId: string, batches: any[]) => {
-    localStorage.setItem(`inventoryBatches:${medicineId}`, JSON.stringify(batches));
-    setBatchView((prev) => (prev ? { medicine: prev.medicine, batches } : prev));
-    toast.success('Batches saved');
+  const saveBatch = async (medicineId: string, batches: any[]) => {
+    // Batches are persisted server-side. The rows are keyed by their database
+    // id: a row that already has one is updated, a row without one is
+    // created, and a persisted row that is no longer present is deleted.
+    const persistedIds = new Set(
+      batches.filter((b) => b.id).map((b) => String(b.id))
+    );
+
+    try {
+      // Delete the ones that were removed in the editor.
+      const existing = (await api.getBatches(medicineId)) as any[];
+      for (const row of existing) {
+        if (!persistedIds.has(String(row.id))) {
+          await api.deleteBatch(String(row.id));
+        }
+      }
+
+      for (const b of batches) {
+        const payload = {
+          batchNumber: b.batchNumber,
+          expiryDate: b.expiryDate,
+          quantity: Number(b.quantity) || 0,
+        };
+        if (b.id) {
+          await api.updateBatch(String(b.id), { ...payload, recalled: !!b.recalled });
+        } else {
+          await api.createBatch({ medicineId, ...payload });
+        }
+      }
+
+      const refreshed = (await api.getBatches(medicineId)) as any[];
+      setBatchView((prev) => (prev ? { medicine: prev.medicine, batches: mapBatches(refreshed) } : prev));
+      toast.success('Batches saved');
+    } catch (e) {
+      console.error('Failed to save batches:', e);
+      toast.error('Failed to save batches');
+    }
   };
 
   const batchExpiredCount = useMemo(() => {
@@ -372,7 +437,7 @@ export default function InventoryReportsPage() {
             <CardContent>
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Expired batches: {batchExpiredCount}</p>
-                <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: [...batchView.batches, { batchNumber: '', expiryDate: '', quantity: 0, recalled: false }] })}>Add Batch</Button>
+                <Button variant="outline" onClick={() => setBatchView({ medicine: batchView.medicine, batches: [...batchView.batches, { id: undefined, batchNumber: '', expiryDate: '', quantity: 0, recalled: false }] })}>Add Batch</Button>
                 <div className="space-y-2">
                   {batchView.batches.map((b, idx) => (
                     <div key={idx} className="grid grid-cols-5 gap-2">

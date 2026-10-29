@@ -11,7 +11,9 @@
     "test": "vitest",
     "lint": "eslint .",
     "verify": "npm run lint && npm run build && npm run test -- --run",
-    "db:setup": "tsx src/database/run-sql.ts"
+    "db:setup": "tsx src/database/run-sql.ts",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "db:migrate:status": "tsx src/database/migrate.ts --status"
   },
   "keywords": [
     "healthcare",
@@ -29,8 +31,10 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "esbuild": "^0.28.2",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "express-mysql-session": "^3.0.3",
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.19.0",
     "express-validator": "^7.3.2",

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import * as apiConfig from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,14 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '@/services/api';
+import { useAuth, getCookieToken } from '@/contexts/AuthContext';
+
+/**
+ * A medicine without any movement inside the lookback window has no burn
+ * rate that can be derived, so it is reported as UNKNOWN instead of being
+ * given an invented number.
+ */
+type RiskLevel = 'CRITICAL' | 'HIGH' | 'HEALTHY' | 'UNKNOWN';
 
 interface ForecastItem {
   id: string;
@@ -27,151 +36,119 @@ interface ForecastItem {
   currentStock: number;
   minStock: number;
   dailyBurnRate: number; // units per day
-  daysOfSupply: number;
+  daysOfSupply: number | null;
   predictedDepletionDate: string;
-  riskLevel: 'CRITICAL' | 'HIGH' | 'HEALTHY';
+  riskLevel: RiskLevel;
   suggestedReorderQty: number;
   unitPrice: number;
   supplier: string;
+  /** `suppliers.id` of the medicine, or null when no supplier is on file. */
+  supplierId: number | null;
   historicalTrend: { day: string; usage: number; projectedStock: number }[];
+  dataStatus: 'ok' | 'insufficient_history';
 }
 
-const INITIAL_FORECAST_ITEMS: ForecastItem[] = [
-  {
-    id: 'MED-101',
-    name: 'Amoxicillin 500mg Capsules',
-    category: 'Antibiotics',
-    currentStock: 140,
-    minStock: 200,
-    dailyBurnRate: 35, // 4 days left
-    daysOfSupply: 4,
-    predictedDepletionDate: '2026-09-12 (In 4 Days)',
-    riskLevel: 'CRITICAL',
-    suggestedReorderQty: 850,
-    unitPrice: 1.25,
-    supplier: 'Ghana Pharma Corp',
-    historicalTrend: [
-      { day: 'Day -10', usage: 30, projectedStock: 490 },
-      { day: 'Day -5', usage: 38, projectedStock: 315 },
-      { day: 'Today', usage: 35, projectedStock: 140 },
-      { day: 'In 3 Days', usage: 35, projectedStock: 35 },
-      { day: 'In 5 Days', usage: 35, projectedStock: 0 },
-    ],
-  },
-  {
-    id: 'MED-104',
-    name: 'Paracetamol 1000mg IV Infusion',
-    category: 'Analgesics / ER',
-    currentStock: 60,
-    minStock: 150,
-    dailyBurnRate: 18, // 3.3 days left
-    daysOfSupply: 3.3,
-    predictedDepletionDate: '2026-09-11 (In 3 Days)',
-    riskLevel: 'CRITICAL',
-    suggestedReorderQty: 500,
-    unitPrice: 4.80,
-    supplier: 'Apex Biotech Ltd',
-    historicalTrend: [
-      { day: 'Day -10', usage: 16, projectedStock: 220 },
-      { day: 'Day -5', usage: 20, projectedStock: 140 },
-      { day: 'Today', usage: 18, projectedStock: 60 },
-      { day: 'In 3 Days', usage: 18, projectedStock: 6 },
-      { day: 'In 5 Days', usage: 18, projectedStock: 0 },
-    ],
-  },
-  {
-    id: 'MED-202',
-    name: 'Insulin Glargine 100U/ml Pen',
-    category: 'Endocrinology',
-    currentStock: 95,
-    minStock: 100,
-    dailyBurnRate: 8, // 11.8 days left
-    daysOfSupply: 11.8,
-    predictedDepletionDate: '2026-09-20 (In 12 Days)',
-    riskLevel: 'HIGH',
-    suggestedReorderQty: 300,
-    unitPrice: 18.50,
-    supplier: 'MedPlus Supplies',
-    historicalTrend: [
-      { day: 'Day -10', usage: 7, projectedStock: 175 },
-      { day: 'Day -5', usage: 9, projectedStock: 135 },
-      { day: 'Today', usage: 8, projectedStock: 95 },
-      { day: 'In 5 Days', usage: 8, projectedStock: 55 },
-      { day: 'In 10 Days', usage: 8, projectedStock: 15 },
-    ],
-  },
-  {
-    id: 'MED-305',
-    name: 'Salbutamol Inhaler 100mcg',
-    category: 'Respiratory',
-    currentStock: 210,
-    minStock: 120,
-    dailyBurnRate: 12,
-    daysOfSupply: 17.5,
-    predictedDepletionDate: '2026-09-26 (In 18 Days)',
-    riskLevel: 'HEALTHY',
-    suggestedReorderQty: 0,
-    unitPrice: 6.50,
-    supplier: 'Ghana Pharma Corp',
-    historicalTrend: [
-      { day: 'Day -10', usage: 11, projectedStock: 330 },
-      { day: 'Day -5', usage: 13, projectedStock: 270 },
-      { day: 'Today', usage: 12, projectedStock: 210 },
-      { day: 'In 5 Days', usage: 12, projectedStock: 150 },
-      { day: 'In 10 Days', usage: 12, projectedStock: 90 },
-    ],
-  },
-  {
-    id: 'MED-408',
-    name: 'Epinephrine Auto-Injector 0.3mg',
-    category: 'Emergency / Trauma',
-    currentStock: 25,
-    minStock: 50,
-    dailyBurnRate: 5, // 5 days left
-    daysOfSupply: 5,
-    predictedDepletionDate: '2026-09-13 (In 5 Days)',
-    riskLevel: 'CRITICAL',
-    suggestedReorderQty: 150,
-    unitPrice: 42.00,
-    supplier: 'Apex Biotech Ltd',
-    historicalTrend: [
-      { day: 'Day -10', usage: 4, projectedStock: 75 },
-      { day: 'Day -5', usage: 6, projectedStock: 50 },
-      { day: 'Today', usage: 5, projectedStock: 25 },
-      { day: 'In 3 Days', usage: 5, projectedStock: 10 },
-      { day: 'In 5 Days', usage: 5, projectedStock: 0 },
-    ],
-  },
-];
+interface ForecastResponse {
+  items: ForecastItem[];
+  meta?: {
+    surgeMultiplier: number;
+    lookbackDays: number;
+    targetCoverDays: number;
+    generatedAt: string;
+    withUsageHistory: number;
+    withoutUsageHistory: number;
+  };
+}
+
+/**
+ * The API base URL.
+ *
+ * Resolved by the shared resolver in `src/config/api.ts`, from the
+ * environment, so this module cannot drift away from the rest of the app.
+ */
+const { API_BASE_URL } = apiConfig;
+
+/** A thin authenticated fetch. The server skips the CSRF check for bearer requests. */
+const request = async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
+  const token = getCookieToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: 'Request failed' }));
+    const message =
+      body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
+        ? body.error
+        : 'Request failed';
+    throw new Error(message);
+  }
+
+  return (await response.json()) as T;
+};
 
 export function InventoryForecastingModule() {
-  const [items] = useState<ForecastItem[]>(INITIAL_FORECAST_ITEMS);
+  const { hasPermission } = useAuth();
+  const [items, setItems] = useState<ForecastItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('ALL');
   const [seasonalSurgeMultiplier, setSeasonalSurgeMultiplier] = useState<number>(1.2); // 20% surge factor
-  const [selectedItemForChart, setSelectedItemForChart] = useState<ForecastItem>(INITIAL_FORECAST_ITEMS[0]);
+  const [selectedItemForChart, setSelectedItemForChart] = useState<ForecastItem | null>(null);
   const [isGeneratingOrders, setIsGeneratingOrders] = useState(false);
+  const requestRef = useRef(0);
 
-  // Apply seasonal multiplier dynamically to daily burn rates
-  const adjustedItems = items.map((item) => {
-    const adjustedBurn = Math.round(item.dailyBurnRate * seasonalSurgeMultiplier * 10) / 10;
-    const adjustedSupply = Math.round((item.currentStock / adjustedBurn) * 10) / 10;
-    let risk: 'CRITICAL' | 'HIGH' | 'HEALTHY' = 'HEALTHY';
-    if (adjustedSupply <= 5) risk = 'CRITICAL';
-    else if (adjustedSupply <= 14) risk = 'HIGH';
+  /**
+   * The forecast is computed on the server from the real movement history.
+   * The surge factor is a query parameter, not a browser side multiplier.
+   */
+  const loadForecast = useCallback(async (multiplier: number) => {
+    const requestId = ++requestRef.current;
+    try {
+      setIsLoading(true);
+      const data = await request<ForecastResponse>(
+        `/pharmacy/forecast?surgeMultiplier=${encodeURIComponent(String(multiplier))}`
+      );
+      if (requestId !== requestRef.current) return;
 
-    const suggested = risk !== 'HEALTHY' ? Math.max(0, Math.round(adjustedBurn * 30 - item.currentStock)) : 0;
+      const next = data?.items ?? [];
+      setItems(next);
+      setSelectedItemForChart((previous) => {
+        if (previous) {
+          const refreshed = next.find((item) => item.id === previous.id);
+          if (refreshed) return refreshed;
+        }
+        return next[0] ?? null;
+      });
+      setLoadError(null);
+    } catch (error) {
+      if (requestId !== requestRef.current) return;
+      const message = error instanceof Error ? error.message : 'Failed to load the forecast';
+      setItems([]);
+      setSelectedItemForChart(null);
+      setLoadError(message);
+      toast.error(`Failed to load the inventory forecast: ${message}`);
+    } finally {
+      if (requestId === requestRef.current) setIsLoading(false);
+    }
+  }, []);
 
-    return {
-      ...item,
-      dailyBurnRate: adjustedBurn,
-      daysOfSupply: adjustedSupply,
-      riskLevel: risk,
-      suggestedReorderQty: suggested,
-    };
-  });
+  // Re-fetch when the surge factor changes. The slider is debounced so a
+  // drag does not fire a request per step.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadForecast(seasonalSurgeMultiplier);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [seasonalSurgeMultiplier, loadForecast]);
 
-  const filteredItems = adjustedItems.filter((item) => {
+  const filteredItems = items.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -181,47 +158,104 @@ export function InventoryForecastingModule() {
     return matchesSearch && item.riskLevel === riskFilter;
   });
 
-  const criticalCount = adjustedItems.filter((i) => i.riskLevel === 'CRITICAL').length;
-  const highCount = adjustedItems.filter((i) => i.riskLevel === 'HIGH').length;
-  const totalSuggestedCost = adjustedItems.reduce((sum, i) => sum + i.suggestedReorderQty * i.unitPrice, 0);
+  const criticalCount = items.filter((i) => i.riskLevel === 'CRITICAL').length;
+  const highCount = items.filter((i) => i.riskLevel === 'HIGH').length;
+  const unknownCount = items.filter((i) => i.riskLevel === 'UNKNOWN').length;
+  const totalSuggestedCost = items.reduce((sum, i) => sum + i.suggestedReorderQty * i.unitPrice, 0);
+  const reorderableCount = items.filter((i) => i.suggestedReorderQty > 0).length;
 
   const handleAutoGeneratePurchaseOrders = async () => {
+    if (!hasPermission('purchaseOrder:add')) {
+      toast.error('You are not allowed to create purchase orders');
+      return;
+    }
+
+    const reorderItems = items.filter((i) => i.suggestedReorderQty > 0);
+    if (reorderItems.length === 0) {
+      toast.info('No restock orders are required');
+      return;
+    }
+
     setIsGeneratingOrders(true);
     const toastId = toast.loading('Calculating optimal stock levels and generating Purchase Orders...');
 
-    setTimeout(async () => {
-      try {
-        const reorderItems = adjustedItems.filter((i) => i.suggestedReorderQty > 0);
-        
-        // Attempt to call backend API if possible
+    try {
+      // One purchase order per supplier, using the supplier the inventory
+      // row actually points at.
+      const bySupplier = new Map<number, ForecastItem[]>();
+      const withoutSupplier: ForecastItem[] = [];
+
+      for (const item of reorderItems) {
+        if (item.supplierId === null || item.supplierId === undefined) {
+          withoutSupplier.push(item);
+          continue;
+        }
+        const bucket = bySupplier.get(item.supplierId);
+        if (bucket) bucket.push(item);
+        else bySupplier.set(item.supplierId, [item]);
+      }
+
+      const order_date = new Date().toISOString().slice(0, 10);
+      const expected_delivery_date = new Date(
+        Date.now() + 5 * 24 * 60 * 60 * 1000
+      ).toISOString().slice(0, 10);
+
+      const failures: string[] = [];
+      let createdOrders = 0;
+
+      for (const [supplierId, supplierItems] of bySupplier) {
         try {
           await api.createPurchaseOrder({
-            supplier_id: 'SUP-01',
-            order_date: new Date().toISOString().slice(0, 10),
-            expected_delivery_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-            items: reorderItems.map((r) => ({
+            supplier_id: supplierId,
+            order_date,
+            expected_delivery_date,
+            items: supplierItems.map((r) => ({
               medicine_id: r.id,
               quantity: r.suggestedReorderQty,
               unit_price: r.unitPrice,
             })),
           });
-        } catch (_err) {
-          // Fallback handled gracefully
+          createdOrders += 1;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'unknown error';
+          failures.push(`${supplierItems[0]?.supplier ?? `Supplier ${supplierId}`}: ${message}`);
         }
-
-        toast.success(`Generated ${reorderItems.length} Restock Purchase Orders!`, {
-          id: toastId,
-          description: `Total estimated procurement cost: $${totalSuggestedCost.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}. Transferred to Purchase Orders queue.`,
-        });
-      } catch (_e) {
-        toast.error('Failed to dispatch purchase orders', { id: toastId });
-      } finally {
-        setIsGeneratingOrders(false);
       }
-    }, 1200);
+
+      if (failures.length > 0) {
+        toast.error(
+          `Failed to create ${failures.length} purchase order${failures.length === 1 ? '' : 's'}`,
+          { id: toastId, description: failures.join(' · ') }
+        );
+        return;
+      }
+
+      if (withoutSupplier.length > 0) {
+        toast.warning(
+          `Created ${createdOrders} purchase order${createdOrders === 1 ? '' : 's'}`,
+          {
+            id: toastId,
+            description: `${withoutSupplier.length} item(s) skipped — no supplier on file: ${withoutSupplier
+              .map((i) => i.name)
+              .join(', ')}`,
+          }
+        );
+        return;
+      }
+
+      toast.success(`Generated ${reorderItems.length} Restock Purchase Orders!`, {
+        id: toastId,
+        description: `Total estimated procurement cost: $${totalSuggestedCost.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}. Transferred to Purchase Orders queue.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      toast.error(`Failed to dispatch purchase orders: ${message}`, { id: toastId });
+    } finally {
+      setIsGeneratingOrders(false);
+    }
   };
 
   return (
@@ -247,7 +281,7 @@ export function InventoryForecastingModule() {
 
         <Button
           onClick={handleAutoGeneratePurchaseOrders}
-          disabled={isGeneratingOrders || criticalCount + highCount === 0}
+          disabled={isGeneratingOrders || reorderableCount === 0}
           className="bg-info hover:bg-info text-info-foreground font-bold text-xs h-10 px-4 shadow-lg gap-2 shrink-0 border border-info/30"
         >
           <ShoppingCart className="h-4 w-4" />
@@ -260,7 +294,7 @@ export function InventoryForecastingModule() {
         <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-destructive uppercase tracking-wider">Critical Shortages (&lt;5 Days)</p>
+              <p className="text-[11px] font-semibold text-destructive uppercase tracking-wider">Critical Shortages (≤3 Days)</p>
               <p className="text-2xl font-black text-destructive dark:text-destructive">{criticalCount} Medications</p>
             </div>
             <AlertTriangle className="h-7 w-7 text-destructive animate-bounce" />
@@ -270,7 +304,7 @@ export function InventoryForecastingModule() {
         <Card className="border-warning/30 bg-warning/10">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-warning uppercase tracking-wider">High Risk Stock (&lt;14 Days)</p>
+              <p className="text-[11px] font-semibold text-warning uppercase tracking-wider">High Risk Stock (≤7 Days)</p>
               <p className="text-2xl font-black text-warning">{highCount} Medications</p>
             </div>
             <TrendingDown className="h-7 w-7 text-warning" />
@@ -333,9 +367,10 @@ export function InventoryForecastingModule() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Risk Levels</SelectItem>
-                      <SelectItem value="CRITICAL">🔴 Critical (&lt;5d)</SelectItem>
-                      <SelectItem value="HIGH">🟡 High (&lt;14d)</SelectItem>
-                      <SelectItem value="HEALTHY">🟢 Healthy (&gt;14d)</SelectItem>
+                      <SelectItem value="CRITICAL">🔴 Critical (≤3d)</SelectItem>
+                      <SelectItem value="HIGH">🟡 High (≤7d)</SelectItem>
+                      <SelectItem value="HEALTHY">🟢 Healthy (&gt;7d)</SelectItem>
+                      <SelectItem value="UNKNOWN">⚪ Unknown</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -377,62 +412,92 @@ export function InventoryForecastingModule() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredItems.map((item) => (
-                    <TableRow
-                      key={item.id}
-                      onClick={() => setSelectedItemForChart(item)}
-                      className={`cursor-pointer transition-colors ${
-                        selectedItemForChart.id === item.id ? 'bg-info/10' : ''
-                      }`}
-                    >
-                      <TableCell>
-                        <div className="space-y-0.5">
-                          <span className="font-bold text-xs text-foreground block">{item.name}</span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Building2 className="h-3 w-3 text-muted-foreground" /> {item.supplier} • {item.category}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-right font-mono font-semibold text-xs">
-                        {item.currentStock} units
-                      </TableCell>
-
-                      <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                        {item.dailyBurnRate}/day
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <Badge
-                          className={`font-bold font-mono text-[10px] ${
-                            item.riskLevel === 'CRITICAL'
-                              ? 'bg-destructive text-destructive-foreground animate-pulse'
-                              : item.riskLevel === 'HIGH'
-                              ? 'bg-warning text-black'
-                              : 'bg-success text-success-foreground'
-                          }`}
-                        >
-                          {item.daysOfSupply} Days
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-xs text-muted-foreground font-mono">
-                        {item.predictedDepletionDate}
-                      </TableCell>
-
-                      <TableCell className="text-right font-mono text-xs">
-                        {item.suggestedReorderQty > 0 ? (
-                          <span className="font-bold text-info dark:text-info">
-                            +{item.suggestedReorderQty} units
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">Optimal</span>
-                        )}
+                  {isLoading && items.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-xs text-muted-foreground">
+                        Loading the inventory forecast…
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : loadError ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-xs text-destructive">
+                        {loadError}
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-xs text-muted-foreground">
+                        {items.length === 0
+                          ? 'No medicines are in the inventory yet.'
+                          : 'No medication matches the current filter.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <TableRow
+                        key={item.id}
+                        onClick={() => setSelectedItemForChart(item)}
+                        className={`cursor-pointer transition-colors ${
+                          selectedItemForChart?.id === item.id ? 'bg-info/10' : ''
+                        }`}
+                      >
+                        <TableCell>
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-xs text-foreground block">{item.name}</span>
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Building2 className="h-3 w-3 text-muted-foreground" /> {item.supplier || 'No supplier'} • {item.category}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="text-right font-mono font-semibold text-xs">
+                          {item.currentStock} units
+                        </TableCell>
+
+                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          {item.dailyBurnRate}/day
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <Badge
+                            className={`font-bold font-mono text-[10px] ${
+                              item.riskLevel === 'CRITICAL'
+                                ? 'bg-destructive text-destructive-foreground animate-pulse'
+                                : item.riskLevel === 'HIGH'
+                                ? 'bg-warning text-black'
+                                : item.riskLevel === 'UNKNOWN'
+                                ? 'bg-muted text-muted-foreground'
+                                : 'bg-success text-success-foreground'
+                            }`}
+                          >
+                            {item.daysOfSupply === null ? 'No history' : `${item.daysOfSupply} Days`}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell className="text-xs text-muted-foreground font-mono">
+                          {item.predictedDepletionDate}
+                        </TableCell>
+
+                        <TableCell className="text-right font-mono text-xs">
+                          {item.suggestedReorderQty > 0 ? (
+                            <span className="font-bold text-info dark:text-info">
+                              +{item.suggestedReorderQty} units
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Optimal</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
+              {unknownCount > 0 && (
+                <p className="px-4 py-2 text-[10px] text-muted-foreground">
+                  {unknownCount} medication(s) had no movement in the lookback window, so no burn rate could be
+                  derived. They are excluded from the risk ranking and from restock suggestions.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -444,17 +509,17 @@ export function InventoryForecastingModule() {
               <CardTitle className="text-sm font-bold flex items-center justify-between">
                 <span>Depletion Trajectory</span>
                 <Badge variant="outline" className="text-[10px] border-info text-info">
-                  {selectedItemForChart.id}
+                  {selectedItemForChart?.id ?? '--'}
                 </Badge>
               </CardTitle>
               <CardDescription className="text-xs">
-                Projected stock curve for <strong>{selectedItemForChart.name}</strong>
+                Projected stock curve for <strong>{selectedItemForChart?.name ?? 'no medication selected'}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="h-44 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={selectedItemForChart.historicalTrend}>
+                  <LineChart data={selectedItemForChart?.historicalTrend ?? []}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                     <XAxis dataKey="day" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} />
@@ -476,17 +541,19 @@ export function InventoryForecastingModule() {
               <div className="p-3 rounded-lg bg-muted/40 border text-xs space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Supplier:</span>
-                  <span className="font-semibold text-foreground">{selectedItemForChart.supplier}</span>
+                  <span className="font-semibold text-foreground">{selectedItemForChart?.supplier || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Unit Cost:</span>
-                  <span className="font-mono font-bold text-foreground">${selectedItemForChart.unitPrice.toFixed(2)}</span>
+                  <span className="font-mono font-bold text-foreground">
+                    ${(selectedItemForChart?.unitPrice ?? 0).toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Recommended Order:</span>
                   <span className="font-mono font-bold text-info dark:text-info">
-                    {selectedItemForChart.suggestedReorderQty} units ($
-                    {(selectedItemForChart.suggestedReorderQty * selectedItemForChart.unitPrice).toFixed(2)})
+                    {selectedItemForChart?.suggestedReorderQty ?? 0} units ($
+                    {((selectedItemForChart?.suggestedReorderQty ?? 0) * (selectedItemForChart?.unitPrice ?? 0)).toFixed(2)})
                   </span>
                 </div>
               </div>
@@ -494,7 +561,9 @@ export function InventoryForecastingModule() {
               <Button
                 size="sm"
                 className="w-full text-xs font-bold bg-info hover:bg-info text-info-foreground gap-1.5"
+                disabled={!selectedItemForChart || selectedItemForChart.suggestedReorderQty <= 0}
                 onClick={() => {
+                  if (!selectedItemForChart) return;
                   toast.success(`Drafted order for ${selectedItemForChart.name} (${selectedItemForChart.suggestedReorderQty} units)`);
                 }}
               >

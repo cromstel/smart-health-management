@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '@/services/api';
+import { apiRequest } from '@/services/shmsApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -35,6 +36,8 @@ interface NotificationContextType {
   notifications: NotificationItem[];
   unreadCount: number;
   pendingCount: number;
+  /** True while an inbox refresh is in flight. */
+  isLoading: boolean;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   confirmAppointment: (notificationId: string, appointmentId?: string) => Promise<void>;
@@ -46,500 +49,236 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const NOTIFICATIONS_STORAGE_KEY = 'health_manager_notifications';
+/**
+ * The inbox is server-side now.
+ *
+ * It used to be seeded with five fabricated records and kept in the
+ * browser's local storage, which meant a fresh browser showed appointments
+ * and patients that did not exist, and a user could edit or delete the trail
+ * with one DevTools call. The server owns the inbox: it derives the
+ * notifications from real appointments, prescriptions, pharmacy inventory and
+ * vitals, and stores them per user.
+ */
+interface NotificationsResponse {
+  notifications?: NotificationItem[];
+  total?: number;
+  limit?: number;
+  offset?: number;
+}
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-pending-1',
-    type: 'pending_confirmation',
-    priority: 'high',
-    title: 'Pending Appointment Confirmation',
-    message: 'Sarah Johnson has requested a Cardiology Consultation for tomorrow at 10:30 AM.',
-    timestamp: '15 mins ago',
-    createdAt: Date.now() - 15 * 60 * 1000,
-    read: false,
-    appointmentId: 'appt-101',
-    patientName: 'Sarah Johnson',
-    doctorName: 'Dr. Michael Chen',
-    appointmentTime: 'Tomorrow, 10:30 AM',
-    status: 'pending',
-    actionUrl: '/appointments?search=Sarah',
-  },
-  {
-    id: 'notif-upcoming-1',
-    type: 'upcoming_appointment',
-    priority: 'high',
-    title: 'Upcoming Appointment (in 45 mins)',
-    message: 'David Mensah - General Checkup with Dr. Emily Davis at Room 302.',
-    timestamp: '30 mins ago',
-    createdAt: Date.now() - 30 * 60 * 1000,
-    read: false,
-    appointmentId: 'appt-102',
-    patientName: 'David Mensah',
-    doctorName: 'Dr. Emily Davis',
-    appointmentTime: 'Today, 02:00 PM',
-    status: 'confirmed',
-    actionUrl: '/appointments?search=David',
-  },
-  {
-    id: 'notif-pending-2',
-    type: 'pending_confirmation',
-    priority: 'normal',
-    title: 'New Online Booking Awaiting Approval',
-    message: 'Kwame Boateng booked a Pediatrics Follow-up with Dr. Michael Chen.',
-    timestamp: '1 hour ago',
-    createdAt: Date.now() - 60 * 60 * 1000,
-    read: false,
-    appointmentId: 'appt-103',
-    patientName: 'Kwame Boateng',
-    doctorName: 'Dr. Michael Chen',
-    appointmentTime: 'Oct 28, 09:00 AM',
-    status: 'pending',
-    actionUrl: '/appointments?search=Kwame',
-  },
-  {
-    id: 'notif-vitals-1',
-    type: 'vitals_alert',
-    priority: 'urgent',
-    title: 'High Blood Pressure Alert',
-    message: 'Patient John Doe logged elevated BP reading (148/95 mmHg) in Ward B.',
-    timestamp: '2 hours ago',
-    createdAt: Date.now() - 120 * 60 * 1000,
-    read: true,
-    patientName: 'John Doe',
-    patientId: 'P-1001',
-    status: 'resolved',
-    actionUrl: '/patients?search=John',
-  },
-  {
-    id: 'notif-inventory-1',
-    type: 'inventory_alert',
-    priority: 'normal',
-    title: 'Low Stock Alert: Amoxicillin 500mg',
-    message: 'Pharmacy inventory below 15 units. Purchase order recommendation generated.',
-    timestamp: '3 hours ago',
-    createdAt: Date.now() - 180 * 60 * 1000,
-    read: true,
-    status: 'resolved',
-    actionUrl: '/inventory-reports',
-  },
-];
+/**
+ * Dismissed notifications stay in the database (they are part of the record)
+ * but are not part of the inbox the user works from.
+ */
+const isVisible = (item: NotificationItem): boolean => item.status !== 'dismissed';
+
+const toNotificationItem = (raw: any): NotificationItem => ({
+  id: String(raw.id),
+  type: (raw.type ?? 'system') as NotificationType,
+  priority: (raw.priority ?? 'normal') as NotificationPriority,
+  title: raw.title ?? '',
+  message: raw.message ?? '',
+  timestamp: raw.timestamp ?? new Date().toISOString(),
+  createdAt: Number(raw.createdAt) || new Date(raw.timestamp ?? Date.now()).getTime(),
+  read: Boolean(raw.read),
+  appointmentId: raw.appointmentId ?? undefined,
+  patientName: raw.patientName ?? undefined,
+  patientId: raw.patientId ?? undefined,
+  doctorName: raw.doctorName ?? undefined,
+  appointmentTime: raw.appointmentTime ?? undefined,
+  status: raw.status ?? undefined,
+  actionUrl: raw.actionUrl ?? undefined,
+});
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to load notifications from storage', e);
-    }
-    return INITIAL_NOTIFICATIONS;
-  });
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const saveNotifications = useCallback((updated: NotificationItem[]) => {
-    setNotifications(updated);
-    try {
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.warn('Failed to persist notifications', e);
-    }
-  }, []);
+  // Ids already announced with a toast, so a refresh does not re-announce
+  // the same urgent appointment on every poll.
+  const announcedIdsRef = useRef<Set<string>>(new Set());
 
   const refreshNotifications = useCallback(async () => {
+    setIsLoading(true);
     try {
-      // 1. Fetch latest appointments to build alerts
-      const appts = (await api.getAppointments()) as any[];
-      
-      // 2. Fetch medicines to check stock for prescription refill alert integration
-      let medicinesList: any[] = [];
-      try {
-        medicinesList = await api.getMedicines() as any[];
-      } catch (err) {
-        console.warn('Could not fetch medicines for prescription notifications:', err);
-      }
+      const response = await apiRequest<NotificationsResponse>('/notifications');
+      const list = Array.isArray(response?.notifications)
+        ? response.notifications
+        : Array.isArray(response)
+          ? (response as unknown as NotificationItem[])
+          : [];
 
-      // Initialize simulated prescriptions in localStorage if not exists
-      const PRESCRIPTIONS_KEY = 'health_manager_prescriptions';
-      let prescriptions: any[] = [];
-      try {
-        const storedPrescriptions = localStorage.getItem(PRESCRIPTIONS_KEY);
-        if (storedPrescriptions) {
-          prescriptions = JSON.parse(storedPrescriptions);
-        } else {
-          prescriptions = [
-            {
-              id: 'pr-1',
-              patientId: 'P-1002',
-              patientName: 'Sarah Johnson',
-              medicineId: 'med-1',
-              medicineName: 'Metformin 500mg',
-              prescribedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-              durationDays: 30,
-              doctorName: 'Dr. Michael Chen'
-            },
-            {
-              id: 'pr-2',
-              patientId: 'P-1003',
-              patientName: 'David Mensah',
-              medicineId: 'med-2',
-              medicineName: 'Lisinopril 10mg',
-              prescribedDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
-              durationDays: 30,
-              doctorName: 'Dr. Emily Davis'
-            },
-            {
-              id: 'pr-3',
-              patientId: 'P-1004',
-              patientName: 'Kwame Boateng',
-              medicineId: 'med-3',
-              medicineName: 'Amoxicillin 500mg',
-              prescribedDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-              durationDays: 10,
-              doctorName: 'Dr. Michael Chen'
-            }
-          ];
-          localStorage.setItem(PRESCRIPTIONS_KEY, JSON.stringify(prescriptions));
-        }
-      } catch (e) {
-        console.warn('Prescriptions handling failed:', e);
-      }
+      const items = list.map(toNotificationItem).filter(isVisible);
 
-      setNotifications((prev) => {
-        const updated = [...prev];
-
-        // Process pending appointments (existing logic)
-        if (Array.isArray(appts)) {
-          const pendingAppts = appts.filter(
-            (a) => a.status === 'Pending' || a.status === 'pending'
-          );
-          pendingAppts.forEach((a) => {
-            const existing = updated.find(
-              (n) => n.appointmentId === (a.id || a.appointment_id)
-            );
-            if (!existing) {
-              const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
-              const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
-              updated.unshift({
-                id: `notif-${a.id || Date.now()}`,
-                type: 'pending_confirmation',
-                priority: 'high',
-                title: 'Pending Appointment Confirmation',
-                message: `${pName} requested an appointment with ${dName} (${a.type || 'Consultation'}).`,
-                timestamp: 'Just now',
-                createdAt: Date.now(),
-                read: false,
-                appointmentId: a.id || a.appointment_id,
-                patientName: pName,
-                doctorName: dName,
-                appointmentTime: `${a.appointment_date || 'Upcoming'} ${a.appointment_time || ''}`,
-                status: 'pending',
-                actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
-              });
-            }
-          });
-
-          // Process upcoming confirmed/scheduled appointments to alert staff
-          const upcomingAppts = appts.filter(
-            (a) => a.status === 'Confirmed' || a.status === 'confirmed' || a.status === 'Scheduled' || a.status === 'scheduled'
-          );
-          upcomingAppts.forEach((a) => {
-            const notifId = `notif-upcoming-${a.id || a.appointment_id}`;
-            const existing = updated.find((n) => n.id === notifId);
-            if (!existing) {
-              const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
-              const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
-              const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || 'Scheduled Time'}`;
-              
-              updated.unshift({
-                id: notifId,
-                type: 'upcoming_appointment',
-                priority: 'high',
-                title: `Upcoming Appointment Alert: ${pName}`,
-                message: `${pName} has a scheduled ${a.type || 'Clinical Consultation'} with ${dName} at ${a.department_name || a.hospital_name || 'Room 302'} (${apptTimeStr}).`,
-                timestamp: 'Upcoming Alert',
-                createdAt: Date.now(),
-                read: false,
-                appointmentId: a.id || a.appointment_id,
-                patientName: pName,
-                doctorName: dName,
-                appointmentTime: apptTimeStr,
-                status: 'confirmed',
-                actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
-              });
-            }
-          });
-        }
-
-        // Process prescription refill notifications (nearing refill time <= 5 days remaining)
-        prescriptions.forEach((p) => {
-          const elapsedMs = Date.now() - new Date(p.prescribedDate).getTime();
-          const elapsedDays = Math.floor(elapsedMs / (24 * 60 * 60 * 1000));
-          const remainingDays = p.durationDays - elapsedDays;
-
-          if (remainingDays <= 5 && remainingDays >= 0) {
-            const refillNotifId = `notif-refill-${p.id}`;
-            const existingNotif = updated.find((n) => n.id === refillNotifId);
-
-            if (!existingNotif) {
-              // Check pharmacy inventory stock for this medicine
-              const dbMed = Array.isArray(medicinesList) 
-                ? medicinesList.find((m) => m.id === p.medicineId || (m.medicine_name && m.medicine_name.toLowerCase().includes(p.medicineName.toLowerCase().split(' ')[0])))
-                : null;
-              
-              let stockStatus = 'In Stock';
-              if (dbMed) {
-                if (dbMed.stock_level === 0) stockStatus = 'OUT OF STOCK';
-                else if (dbMed.stock_level <= dbMed.low_stock_threshold) stockStatus = `LOW STOCK (${dbMed.stock_level} left)`;
-                else stockStatus = `In Stock (${dbMed.stock_level} units)`;
-              }
-
-              updated.unshift({
-                id: refillNotifId,
-                type: 'prescription_refill',
-                priority: remainingDays <= 2 ? 'high' : 'normal',
-                title: `Prescription Refill Warning (${remainingDays}d remaining)`,
-                message: `${p.patientName}'s prescription of ${p.medicineName} is nearing refill time. Pharmacy Stock: ${stockStatus}.`,
-                timestamp: 'System Alert',
-                createdAt: Date.now(),
-                read: false,
-                patientName: p.patientName,
-                patientId: p.patientId,
-                actionUrl: `/prescriptions?search=${encodeURIComponent(p.patientName)}`,
-              });
-            }
-          }
-        });
-
-        try {
-          localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
-        } catch {
-          // Ignore storage write failures
-        }
-        return updated;
-      });
-    } catch {
-      // Ignore API fetch errors in background
-    }
-  }, []);
-
-  const check15MinApproachingAppointments = useCallback(async () => {
-    try {
-      const appts = (await api.getAppointments()) as any[];
-      if (!Array.isArray(appts) || appts.length === 0) return;
-
-      const ALERTED_15MIN_KEY = 'health_manager_alerted_15min_appts';
-      let alertedIds: string[] = [];
-      try {
-        const stored = localStorage.getItem(ALERTED_15MIN_KEY);
-        if (stored) alertedIds = JSON.parse(stored);
-      } catch {
-        alertedIds = [];
-      }
-
-      const now = Date.now();
-      const fifteenMinsMs = 15 * 60 * 1000;
-
-      appts.forEach((a) => {
-        const apptId = String(a.id || a.appointment_id || '');
-        if (!apptId || alertedIds.includes(apptId)) return;
-
-        const isScheduled = ['confirmed', 'scheduled', 'pending'].includes(
-          (a.status || '').toLowerCase()
-        );
-        if (!isScheduled) return;
-
-        // Determine appointment timestamp
-        let apptTimestamp: number | null = null;
-        if (a.appointment_date && a.appointment_time) {
-          const dateStr = a.appointment_date;
-          const timeStr = a.appointment_time;
-          const fullStr = `${dateStr} ${timeStr}`;
-          const parsed = new Date(fullStr).getTime();
-          if (!isNaN(parsed)) {
-            apptTimestamp = parsed;
-          }
-        }
-
-        // If the date does not parse, fall back to matching an explicit relative
-        // time string. There is deliberately no random "simulated" case here.
-        const isApproaching = apptTimestamp
-          ? (apptTimestamp - now > 0 && apptTimestamp - now <= fifteenMinsMs)
-          : (a.appointment_time?.toLowerCase().includes('15') || a.appointment_time?.toLowerCase().includes('soon'));
-
-        // Alert only on a genuinely approaching appointment.
-        //
-        // This previously fired for 5% of appointments that were NOT within 15
-        // minutes, purely at random. A time-critical clinical alert that appears
-        // without cause trains staff to dismiss the real ones, and invites acting on
-        // a fabricated one. If the appointment time cannot be parsed there is no
-        // basis to claim it is approaching.
-        if (isApproaching) {
-          const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
-          const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
-          const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || '15 mins from now'}`;
-
-          const notifId = `notif-15min-${apptId}`;
-
-          setNotifications((prev) => {
-            const exists = prev.some((n) => n.id === notifId);
-            if (exists) return prev;
-
-            const newNotif: NotificationItem = {
-              id: notifId,
-              type: 'upcoming_appointment',
-              priority: 'urgent',
-              title: `🚨 15-Min Alert: ${pName}`,
-              message: `Appointment with ${dName} is starting in 15 minutes (${apptTimeStr}). Please prepare clinical room.`,
-              timestamp: '15 Mins Away',
-              createdAt: Date.now(),
-              read: false,
-              appointmentId: apptId,
-              patientName: pName,
-              doctorName: dName,
-              appointmentTime: apptTimeStr,
-              status: 'confirmed',
-              actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
-            };
-
-            const updated = [newNotif, ...prev];
-            try {
-              localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
-            } catch {
-              // Ignore
-            }
-            return updated;
-          });
-
-          // Pop up staff alert toast banner
-          toast.warning(`🚨 Appointment Alert (15 Mins Away): ${pName} with ${dName} at ${a.appointment_time || 'Room 302'}`, {
+      // Announce a newly arrived, time-critical appointment alert.
+      for (const item of items) {
+        if (
+          item.priority === 'urgent' &&
+          item.type === 'upcoming_appointment' &&
+          !announcedIdsRef.current.has(item.id)
+        ) {
+          announcedIdsRef.current.add(item.id);
+          toast.warning(`Appointment starting soon: ${item.patientName || 'Patient'}`, {
             duration: 8000,
-            description: 'Patient is scheduled to arrive shortly. Workstation notification dispatched.',
+            description: item.message,
           });
-
-          alertedIds.push(apptId);
-          try {
-            localStorage.setItem(ALERTED_15MIN_KEY, JSON.stringify(alertedIds));
-          } catch {
-            // Ignore
-          }
         }
-      });
-    } catch (e) {
-      console.warn('Background 15-min appointment check error:', e);
+      }
+
+      setNotifications(items);
+    } catch (error) {
+      // A failed poll must not clear the inbox the user is looking at.
+      console.warn('Failed to load notifications:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Wait for a real session before polling. These two helpers hit authenticated
-  // endpoints (/api/appointments), and this provider wraps the whole app
-  // including the public landing and auth pages, so an unauthenticated visitor
-  // accumulated a 401 every 30 seconds -- logged to the console as a failed
-  // resource and visible to anyone with devtools open on a marketing page.
-  const { isAuthenticated, isAuthLoading } = useAuth();
+  /**
+   * Creates a notification through the API and returns the stored record.
+   */
+  const createRemote = useCallback(
+    async (item: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>): Promise<NotificationItem | null> => {
+      // The server stores the appointment reference as the numeric primary
+      // key. The client sometimes holds the public appointment code
+      // ("APP-001") instead, which the API cannot resolve, so it is left out
+      // rather than sent as a value the server would reject.
+      const numericAppointmentId = Number(item.appointmentId);
+      const appointmentId =
+        Number.isInteger(numericAppointmentId) && numericAppointmentId > 0
+          ? numericAppointmentId
+          : undefined;
 
-  useEffect(() => {
-    if (isAuthLoading || !isAuthenticated) return;
-
-    // Initial fetch and check
-    refreshNotifications();
-    check15MinApproachingAppointments();
-
-    // Polling background mechanism every 30 seconds
-    const interval = setInterval(() => {
-      refreshNotifications();
-      check15MinApproachingAppointments();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [refreshNotifications, check15MinApproachingAppointments, isAuthenticated, isAuthLoading]);
-
-  const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) => {
-      const updated = prev.map((item) =>
-        item.id === id ? { ...item, read: true } : item
-      );
-      saveNotifications(updated);
-      return updated;
-    });
-  }, [saveNotifications]);
-
-  const markAllAsRead = useCallback(() => {
-    setNotifications((prev) => {
-      const updated = prev.map((item) => ({ ...item, read: true }));
-      saveNotifications(updated);
-      toast.success('All notifications marked as read');
-      return updated;
-    });
-  }, [saveNotifications]);
-
-  const confirmAppointment = useCallback(
-    async (notificationId: string, appointmentId?: string) => {
       try {
-        if (appointmentId) {
-          try {
-            await api.updateAppointment(appointmentId, { status: 'Confirmed' });
-          } catch {
-            // Handled
-          }
-        }
-
-        setNotifications((prev) => {
-          const updated = prev.map((n) => {
-            if (n.id === notificationId || (appointmentId && n.appointmentId === appointmentId)) {
-              return {
-                ...n,
-                status: 'confirmed' as const,
-                read: true,
-                title: 'Appointment Confirmed',
-                message: `Confirmed appointment for ${n.patientName || 'Patient'} with ${n.doctorName || 'Doctor'}.`,
-              };
-            }
-            return n;
-          });
-          saveNotifications(updated);
-          return updated;
+        const created = await apiRequest<NotificationItem>('/notifications', {
+          method: 'POST',
+          body: {
+            type: item.type,
+            priority: item.priority,
+            title: item.title,
+            message: item.message,
+            status: item.status,
+            appointmentId,
+            patientName: item.patientName,
+            doctorName: item.doctorName,
+            appointmentTime: item.appointmentTime,
+            actionUrl: item.actionUrl,
+            data: { createdFrom: 'client' },
+          },
         });
 
-        toast.success('Appointment confirmed successfully! Notification status updated.');
-      } catch (err: any) {
-        toast.error(`Failed to confirm appointment: ${err.message || 'Error'}`);
+        const normalised = toNotificationItem(created);
+        setNotifications((prev) => [normalised, ...prev.filter((n) => n.id !== normalised.id)]);
+        return normalised;
+      } catch (error) {
+        console.warn('Failed to create notification:', error);
+        return null;
       }
     },
-    [saveNotifications]
-  );
-
-  const dismissNotification = useCallback(
-    (id: string) => {
-      setNotifications((prev) => {
-        const updated = prev.filter((n) => n.id !== id);
-        saveNotifications(updated);
-        toast.info('Notification dismissed');
-        return updated;
-      });
-    },
-    [saveNotifications]
+    []
   );
 
   const addNotification = useCallback(
     (item: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
-      const newItem: NotificationItem = {
-        ...item,
-        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        createdAt: Date.now(),
-        read: false,
-      };
-      setNotifications((prev) => {
-        const updated = [newItem, ...prev];
-        saveNotifications(updated);
-        return updated;
-      });
+      void createRemote(item);
     },
-    [saveNotifications]
+    [createRemote]
   );
+
+  const markAsRead = useCallback((id: string) => {
+    // Optimistic: the badge must not lag behind the click.
+    setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+
+    void (async () => {
+      try {
+        const updated = await apiRequest<NotificationItem>(`/notifications/${encodeURIComponent(id)}/read`, {
+          method: 'PATCH',
+        });
+        const normalised = toNotificationItem(updated);
+        setNotifications((prev) => prev.map((item) => (item.id === normalised.id ? normalised : item)));
+      } catch (error) {
+        console.warn('Failed to mark notification as read:', error);
+      }
+    })();
+  }, []);
+
+  const markAllAsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+
+    void (async () => {
+      try {
+        await apiRequest('/notifications/read-all', { method: 'PATCH' });
+        toast.success('All notifications marked as read');
+      } catch (error) {
+        console.warn('Failed to mark all notifications as read:', error);
+        toast.error('Failed to mark notifications as read');
+      }
+    })();
+  }, []);
+
+  const confirmAppointment = useCallback(
+    async (notificationId: string, appointmentId?: string) => {
+      try {
+        let appointmentUpdated = true;
+        if (appointmentId) {
+          try {
+            await api.updateAppointment(appointmentId, { status: 'confirmed' });
+          } catch {
+            // The appointment update is best effort: the notification state
+            // must still be recorded if the appointment service refuses. The
+            // message says which of the two happened, because saying
+            // "confirmed" for an appointment that was not confirmed is not
+            // true.
+            appointmentUpdated = false;
+          }
+        }
+
+        const updated = await apiRequest<NotificationItem>(
+          `/notifications/${encodeURIComponent(notificationId)}`,
+          { method: 'PATCH', body: { status: 'confirmed' } }
+        );
+
+        const normalised = toNotificationItem(updated);
+        setNotifications((prev) =>
+          prev.map((item) =>
+            item.id === normalised.id || (appointmentId && item.appointmentId === appointmentId)
+              ? { ...item, status: 'confirmed', read: true }
+              : item
+          )
+        );
+
+        if (appointmentUpdated) {
+          toast.success('Appointment confirmed successfully! Notification status updated.');
+        } else {
+          toast.warning(
+            'The notification was confirmed, but the appointment itself could not be updated.'
+          );
+        }
+      } catch (err: any) {
+        toast.error(`Failed to confirm appointment: ${err?.message || 'Error'}`);
+      }
+    },
+    []
+  );
+
+  const dismissNotification = useCallback((id: string) => {
+    // Removed from the inbox immediately; the row stays on the server with
+    // the status 'dismissed'.
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
+
+    void (async () => {
+      try {
+        await apiRequest(`/notifications/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: { status: 'dismissed' },
+        });
+        toast.info('Notification dismissed');
+      } catch (error) {
+        console.warn('Failed to dismiss notification:', error);
+        toast.error('Failed to dismiss notification');
+      }
+    })();
+  }, []);
 
   const alertStaffForUpcomingAppointments = useCallback(async (): Promise<number> => {
     try {
@@ -549,17 +288,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return 0;
       }
 
-      const upcoming = appts.filter(
-        (a) => a.status === 'Confirmed' || a.status === 'confirmed' || a.status === 'Scheduled' || a.status === 'scheduled' || a.status === 'Pending' || a.status === 'pending'
-      );
+      const upcoming = appts.filter((a) => {
+        const status = String(a.status ?? '').toLowerCase();
+        return ['confirmed', 'scheduled', 'pending'].includes(status);
+      });
 
       let alertedCount = 0;
-      upcoming.forEach((a) => {
+
+      for (const a of upcoming) {
         const pName = `${a.patient_first_name || ''} ${a.patient_last_name || a.patientName || 'Patient'}`.trim();
         const dName = `Dr. ${a.doctor_first_name || ''} ${a.doctor_last_name || a.doctorName || 'Doctor'}`.trim();
         const apptTimeStr = `${a.appointment_date || 'Today'}, ${a.appointment_time || 'Scheduled Time'}`;
-        
-        addNotification({
+
+        const created = await createRemote({
           type: 'upcoming_appointment',
           priority: 'high',
           title: `Staff Alert: Upcoming ${a.type || 'Appointment'}`,
@@ -572,8 +313,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           status: 'confirmed',
           actionUrl: `/appointments?search=${encodeURIComponent(pName)}`,
         });
-        alertedCount++;
-      });
+
+        if (created) alertedCount += 1;
+      }
 
       toast.success(`Dispatched notifications for ${alertedCount} upcoming appointments to medical staff!`);
       return alertedCount;
@@ -581,7 +323,25 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       toast.error('Failed to trigger staff appointment alerts');
       return 0;
     }
-  }, [addNotification]);
+  }, [createRemote]);
+
+  // Wait for a real session before polling. These helpers hit authenticated
+  // endpoints (/api/notifications), and this provider wraps the whole app
+  // including the public landing and auth pages, so an unauthenticated
+  // visitor would accumulate a 401 every 30 seconds.
+  const { isAuthenticated, isAuthLoading } = useAuth();
+
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) return;
+
+    refreshNotifications();
+
+    const interval = setInterval(() => {
+      refreshNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshNotifications, isAuthenticated, isAuthLoading]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const pendingCount = notifications.filter(
@@ -594,6 +354,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         notifications,
         unreadCount,
         pendingCount,
+        isLoading,
         markAsRead,
         markAllAsRead,
         confirmAppointment,

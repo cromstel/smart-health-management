@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useRef, type ReactNode } from 'react';
+import { HeroGridLines, HeroScanLine } from '@/components/common/HeroAccents';
 import {
   ArrowRight,
   Compass,
@@ -11,7 +12,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MarketingHeader } from '@/components/layout/MarketingHeader';
+import { APP_NAME } from '@/config/app';
 
 const principles = [
   {
@@ -79,12 +80,10 @@ export default function AboutUsPage() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none">
         Skip to main content
       </a>
-      <MarketingHeader />
-
       <main id="main-content">
         <section className="relative isolate min-h-[40rem] overflow-hidden border-b border-primary-foreground/15 bg-primary py-16 sm:py-24 lg:flex lg:min-h-[43rem] lg:items-center lg:py-28">
           <motion.img
-            src="/images/medicare-about-us-hero-banner.webp"
+            src="/images/hero-banner/medicare-about-us-hero-banner.webp"
             alt="A diverse healthcare team standing together in a bright clinical setting"
             initial={reduce ? false : { opacity: 0, scale: 1.06 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -92,12 +91,9 @@ export default function AboutUsPage() {
             className="absolute inset-0 -z-20 h-full w-full select-none object-cover object-[62%_center] sm:object-[58%_center]"
           />
           <div className="pointer-events-none absolute inset-0 -z-10 bg-hero-overlay/68" aria-hidden="true" />
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <div className="mx-auto grid h-full max-w-7xl grid-cols-4 border-x border-primary-foreground/15">
-              {[0, 1, 2, 3].map((line) => <div key={line} className="border-r border-primary-foreground/15 last:border-r-0" />)}
-            </div>
-          </div>
-          <div className="relative mx-auto w-full max-w-7xl px-4 text-left sm:px-6 lg:px-8">
+          <HeroGridLines columns={4} />
+          <HeroScanLine delay={0.4} />
+          <div className="relative mx-auto w-full px-4 text-left sm:px-6 lg:px-8">
             <motion.p initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mb-6 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/90">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
               Our purpose
@@ -105,7 +101,7 @@ export default function AboutUsPage() {
             <motion.div initial={reduce ? false : { opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="max-w-2xl">
               <div className="border-y border-primary-foreground/30 py-8 sm:py-10">
                 <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-tight text-primary-foreground sm:text-6xl lg:text-7xl">Better systems make room for better care.</h1>
-                <p className="mt-7 max-w-xl text-lg leading-relaxed text-primary-foreground/90">Smart MediCare helps healthcare teams coordinate the work behind every meaningful patient moment.</p>
+                <p className="mt-7 max-w-xl text-lg leading-relaxed text-primary-foreground/90">{`${APP_NAME} helps healthcare teams coordinate the work behind every meaningful patient moment.`}</p>
                 <motion.div initial={reduce ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.6 }} className="mt-8 flex items-center gap-3 border-l-2 border-accent pl-4 text-sm text-primary-foreground/85">
                   <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
                   Built around the people doing the work
@@ -115,8 +111,8 @@ export default function AboutUsPage() {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
-          <Reveal className="lg:col-span-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Why we exist</p><h2 className="mt-4 font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">Healthcare is already complex enough.</h2></Reveal>
+        <section className="mx-auto grid w-full gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
+          <Reveal className="lg:col-span-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Why we exist</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Healthcare is already complex enough.</h2></Reveal>
           <Reveal delay={0.12} className="space-y-6 text-lg leading-relaxed text-muted-foreground lg:col-span-7 lg:col-start-6">
             <p>Every day, care teams reconcile appointments, records, inventory, compliance, and the needs of real people. When those systems are disconnected, the cost is felt in every handoff.</p>
             <p>We are building a calmer operational foundation: a secure, connected workspace where clinical insight and practical coordination can live side by side.</p>
@@ -125,8 +121,8 @@ export default function AboutUsPage() {
         </section>
 
         <section className="border-y border-border bg-muted/45 py-20 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="mb-12 max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">The way we work</p><h2 className="mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl">Principles that guide every decision.</h2></Reveal>
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <Reveal className="mb-12 max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">The way we work</p><h2 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl">Principles that guide every decision.</h2></Reveal>
             <div className="grid gap-5 md:grid-cols-3 lg:gap-7">
               {principles.map(({ icon: Icon, title, description }, index) => (
                 <Reveal key={title} delay={index * 0.1} className="group relative min-h-72 border border-border bg-background p-8 transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:bg-card hover:shadow-lg hover:shadow-primary/10 sm:p-9">
@@ -139,14 +135,14 @@ export default function AboutUsPage() {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
+        <section className="mx-auto grid w-full gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:py-28">
           <Reveal className="lg:col-span-5"><div className="flex h-full min-h-72 flex-col justify-between border border-border bg-card p-8 sm:p-10"><UsersRound className="h-8 w-8 text-accent" aria-hidden="true" /><div><p className="font-display text-3xl font-medium leading-tight tracking-tight">Designed for the whole care team.</p><p className="mt-4 leading-relaxed text-muted-foreground">From first appointment to finance review, each role deserves tools that respect its expertise.</p></div></div></Reveal>
           <Reveal delay={0.1} className="lg:col-span-6 lg:col-start-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">What we are committed to</p><ol className="mt-5 divide-y divide-border border-y border-border">{commitments.map(([title, description], index) => <li key={title} className="grid grid-cols-[2.5rem_1fr] gap-4 py-6 sm:grid-cols-[3.5rem_1fr]"><span className="font-mono text-sm tabular-nums text-accent">0{index + 1}</span><div><h3 className="font-semibold">{title}</h3><p className="mt-1.5 leading-relaxed text-muted-foreground">{description}</p></div></li>)}</ol></Reveal>
         </section>
 
         <section className="overflow-hidden border-y border-border bg-card py-20 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="grid gap-8 lg:grid-cols-12 lg:items-end"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Our team</p><h2 className="mt-4 font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">Different disciplines. One care-minded standard.</h2></div><p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">Our work brings clinical, operational, technical, and safety perspectives into the same room—because good healthcare software is a team sport.</p></Reveal>
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <Reveal className="grid gap-8 lg:grid-cols-12 lg:items-end"><div className="lg:col-span-7"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Our team</p><h2 className="mt-4 font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">Different disciplines. One care-minded standard.</h2></div><p className="max-w-xl leading-relaxed text-muted-foreground lg:col-span-4 lg:col-start-9">Our work brings clinical, operational, technical, and safety perspectives into the same room—because good healthcare software is a team sport.</p></Reveal>
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {teamDisciplines.map((discipline, index) => (
                 <Reveal key={discipline.title} delay={index * 0.08}>
@@ -168,7 +164,7 @@ export default function AboutUsPage() {
         </section>
 
         <section className="border-t border-border bg-primary py-20 text-center sm:py-24">
-          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-4xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-5xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">See how Smart MediCare can support your hospital, clinic, or care network.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90" asChild><Link to="/request-demo">Request a demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore the platform</Link></Button></div></Reveal>
+          <Reveal className="mx-auto max-w-3xl px-4 sm:px-6"><h2 className="font-display text-3xl font-medium leading-tight tracking-tight text-primary-foreground sm:text-4xl">Let’s make the work of care feel more connected.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-primary-foreground/80">{`See how ${APP_NAME} can support your hospital, clinic, or care network.`}</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" className="gap-2 bg-accent text-accent-foreground uppercase tracking-[0.12em] hover:bg-accent/90 hover:text-accent-foreground" asChild><Link to="/auth/request-demo">Request Demo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></Button><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground uppercase tracking-[0.12em] hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild><Link to="/">Explore Platform</Link></Button></div></Reveal>
         </section>
       </main>
     </div>

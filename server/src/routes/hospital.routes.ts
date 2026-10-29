@@ -10,17 +10,17 @@ router.get('/', requirePermission('hospitals', 'view'), hospitalController.getHo
 router.get('/:id', requirePermission('hospitals', 'view'), hospitalController.getHospitalById);
 router.post('/', requirePermission('hospitals', 'add'), hospitalController.createHospital);
 router.put('/:id', requirePermission('hospitals', 'edit'), hospitalController.updateHospital);
+router.patch(
+  '/:id/subdomain',
+  requirePermission('hospitals', 'edit'),
+  hospitalController.updateSubdomain
+);
 router.delete('/:id', requirePermission('hospitals', 'delete'), hospitalController.deleteHospital);
 
-router.get('/:id/departments', requirePermission('hospitals', 'view'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [departments] = await import('../config/database.js').then(m => m.default.query('SELECT * FROM departments WHERE hospital_id = ?', [id]));
-    res.json(departments);
-  } catch (error) {
-    console.error('Get departments error:', error);
-    res.status(500).json({ error: 'Failed to fetch departments' });
-  }
-});
+router.get(
+  '/:id/departments',
+  requirePermission('hospitals', 'view'),
+  hospitalController.getHospitalDepartments
+);
 
 export default router;

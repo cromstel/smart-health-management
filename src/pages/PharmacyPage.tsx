@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Package, Barcode, Plus, Pill, AlertTriangle, TrendingDown, Search, List, Clock, Sparkles } from 'lucide-react';
 import { api } from '@/services/api';
@@ -26,8 +26,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAudit } from '@/contexts/AuditContext';
-import { MedicationComplianceTracker } from '@/components/pharmacy/MedicationComplianceTracker';
-import { InventoryForecastingModule } from '@/components/pharmacy/InventoryForecastingModule';
+// Tab-conditional modules are lazy-loaded: each renders only on its own tab,
+// so eager import put both modules into the pharmacy page chunk regardless of
+// which tab the pharmacist actually opened.
+const MedicationComplianceTracker = lazy(() =>
+  import('@/components/pharmacy/MedicationComplianceTracker').then((m) => ({ default: m.MedicationComplianceTracker }))
+);
+const InventoryForecastingModule = lazy(() =>
+  import('@/components/pharmacy/InventoryForecastingModule').then((m) => ({ default: m.InventoryForecastingModule }))
+);
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 interface Medicine {
@@ -85,16 +92,22 @@ export default function PharmacyPage() {
     try {
       setLoading(true);
       const data = await api.getMedicines() as any[];
+      // The numeric columns are DECIMAL and INT in the database, and the
+      // driver returns a DECIMAL as a string. Coerced here, at the boundary,
+      // so the arithmetic and the money formatting further down work on
+      // numbers instead of throwing on `.toFixed()`.
       const transformedData = data.map((med: any) => ({
         id: med.id,
         name: med.medicine_name,
         category: med.category,
-        stock: med.stock_level,
-        minStock: med.low_stock_threshold,
-        price: med.unit_price,
+        stock: Number(med.stock_level) || 0,
+        minStock: Number(med.low_stock_threshold) || 0,
+        price: Number(med.unit_price) || 0,
         expiryDate: med.expiry_date,
         supplier: med.supplier,
-        status: med.stock_level <= med.low_stock_threshold ? (med.stock_level === 0 ? 'Out of Stock' : 'Low Stock') : 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
+        status: (Number(med.stock_level) || 0) <= (Number(med.low_stock_threshold) || 0)
+          ? ((Number(med.stock_level) || 0) === 0 ? 'Out of Stock' : 'Low Stock')
+          : 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
       }));
       setMedicines(transformedData);
     } catch (error: any) {
@@ -303,7 +316,9 @@ export default function PharmacyPage() {
 
           {activeTab === 'forecasting' ? (
             <ErrorBoundary fallbackTitle="Error loading Inventory Forecasting">
-              <InventoryForecastingModule />
+              <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                <InventoryForecastingModule />
+              </Suspense>
             </ErrorBoundary>
           ) : activeTab === 'inventory' ? (
             <>
@@ -579,7 +594,9 @@ export default function PharmacyPage() {
             </>
           ) : (
             <ErrorBoundary fallbackTitle="Error loading Medication Compliance Tracker">
-              <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+              <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                <MedicationComplianceTracker medicines={medicines} onDeductStock={handleDeductStock} />
+              </Suspense>
             </ErrorBoundary>
           )}
         </>

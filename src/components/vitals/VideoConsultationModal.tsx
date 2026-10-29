@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAudit } from '@/contexts/AuditContext';
+import { ICE_SERVERS } from '@/config/app';
 
 interface VideoConsultationModalProps {
   isOpen: boolean;
@@ -233,7 +234,9 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       }
 
       // 2. Establish Real Local peer-to-peer WebRTC connections
-      const configuration = { iceServers: [{ urls: 'ice:localhost' }] };
+      // The ICE servers are configuration: a deployment behind a network that
+      // hides the client address needs a server to say what address it has.
+      const configuration = { iceServers: ICE_SERVERS };
       const pc1 = new RTCPeerConnection(configuration);
       const pc2 = new RTCPeerConnection(configuration);
       

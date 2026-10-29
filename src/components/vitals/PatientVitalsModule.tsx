@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { API_BASE_URL } from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,7 @@ import { api } from '@/services/api';
 import { vitalsService, computeVitalsSummary } from '@/services/vitalsService';
 import { evaluateTriagePriority } from '@/utils/triage';
 import type { VitalsRecord, VitalStatus, CriticalHealthAlert } from '@/types/vitals';
+import { APP_NAME } from '@/config/app';
 import { LogVitalsDialog } from './LogVitalsDialog';
 import { CriticalHealthAlertsSection } from './CriticalHealthAlertsSection';
 import { AlertsSummary } from './AlertsSummary';
@@ -177,9 +180,14 @@ export function PatientVitalsModule({
     const toastId = toast.loading('Generating secure digital health token...');
 
     try {
-      const response = await fetch('/api/shared/patient-summary/generate', {
+      const response = await fetch(`${API_BASE_URL}/shared/patient-summary/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Minting a share link is an authenticated action. The request used
+          // to go out with no credential, so the link was never created.
+          Authorization: `Bearer ${getCookieToken() ?? ''}`,
+        },
         body: JSON.stringify({
           patientId: selectedPatientId,
           patientName: currentPatient.name,
@@ -614,7 +622,7 @@ export function PatientVitalsModule({
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
         doc.text(
-          `Smart MediCare (QA/QC Dept) | Patient: ${currentPatient.name} | Page ${i} of ${totalPages}`,
+          `${APP_NAME} (QA/QC Dept) | Patient: ${currentPatient.name} | Page ${i} of ${totalPages}`,
           margin,
           pageHeight - 8
         );

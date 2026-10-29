@@ -1,16 +1,16 @@
 import { patientListApiSchema, patientApiSchema, type PatientApiResponse } from '../schemas/patient';
 import { safeApiCall } from '@/lib/api';
 import { toast } from 'sonner';
-
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE_URL } from '@/config/api';
+import { getCookieToken } from '@/contexts/AuthContext';
 
 export const patientService = {
   async getPatients(params?: { search?: string; status?: string; hospital?: string }): Promise<PatientApiResponse[]> {
     toast.info('Syncing patient records...', { id: 'patient-sync', duration: 1500, position: 'bottom-right' });
     return safeApiCall(async () => {
-      const token = localStorage.getItem('token');
+      const token = getCookieToken();
       const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      const response = await fetch(`${API_BASE}/patients${queryString}`, {
+      const response = await fetch(`${API_BASE_URL}/patients${queryString}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -30,8 +30,8 @@ export const patientService = {
 
   async getPatientById(id: string): Promise<PatientApiResponse> {
     return safeApiCall(async () => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/patients/${id}`, {
+      const token = getCookieToken();
+      const response = await fetch(`${API_BASE_URL}/patients/${id}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -51,8 +51,8 @@ export const patientService = {
 
   async createPatient(patientData: Partial<PatientApiResponse>): Promise<PatientApiResponse> {
     return safeApiCall(async () => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/patients`, {
+      const token = getCookieToken();
+      const response = await fetch(`${API_BASE_URL}/patients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
