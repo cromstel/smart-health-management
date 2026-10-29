@@ -456,6 +456,27 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /**
+   * Public platform statistics for the request-a-demo page.
+   *
+   * No auth: the page is rendered before the visitor signs in, and the
+   * numbers are counts of records, not a record. The endpoint is rate-limited
+   // like every other /api route and answers with 503 if the database is
+   // unreachable rather than with a fabricated figure.
+   */
+  async getPlatformStats(): Promise<{
+    hospitals: number;
+    staff: number;
+    patients: number;
+    appointments: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/platform-stats`, {
+      headers: this.getHeaders(false),
+    });
+    const data = await this.handleResponse<{ data: { hospitals: number; staff: number; patients: number; appointments: number } }>(response);
+    return data.data;
+  }
+
   async forgotPassword(email: string) {
     await this.ensureCsrfToken();
     const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {

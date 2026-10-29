@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { useForm } from 'react-hook-form';
@@ -20,10 +20,10 @@ import {
   Phone,
   ShieldCheck,
   Sparkles,
-  Stethoscope,
   TrendingUp,
   User,
   Users,
+  AlertTriangle,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { APP_NAME } from '@/config/app';
@@ -76,12 +76,19 @@ const trustBenefits = [
   },
 ];
 
-const stats = [
-  { icon: Hospital, value: '250+', label: 'Hospitals Trust Us' },
-  { icon: Users, value: '50,000+', label: 'Patients Managed Daily' },
-  { icon: Stethoscope, value: '5,000+', label: 'Healthcare Professionals' },
-  { icon: Activity, value: '99.9%', label: 'System Uptime' },
-];
+const STATS_ICONS = {
+  hospitals: Hospital,
+  staff: Users,
+  patients: Activity,
+  appointments: CalendarCheck,
+} as const;
+
+type PlatformStats = {
+  hospitals: number;
+  staff: number;
+  patients: number;
+  appointments: number;
+};
 
 const benefitItems = [
   {
@@ -105,10 +112,31 @@ export default function RequestDemoPage() {
   const reduce = useReducedMotion();
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DemoRequestValues>({
-    resolver: zodResolver(demoRequestSchema),
-    defaultValues: { preferredContact: 'email', role: 'Demo Request', website: '' },
-  });
+  const [stats, setStats] = useState<{
+    hospitals: number
+    staff: number
+    patients: number
+    appointments: number
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+
+  // Fetch stats on mount
+  useEffect(() => {
+    async function loadStats() {
+      setStatsLoading(true);
+      setStatsError('');
+      try {
+        const data = await api.getPlatformStats();
+        setStats(data);
+      } catch (error) {
+        setStatsError(error instanceof Error ? error.message : 'Failed to load platform statistics');
+      } finally {
+        setStatsLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
 
   const onSubmit = async (values: DemoRequestValues) => {
     setServerError('');
@@ -119,6 +147,11 @@ export default function RequestDemoPage() {
       setServerError(error instanceof Error ? error.message : 'We could not send your request. Please try again.');
     }
   };
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DemoRequestValues>({
+    resolver: zodResolver(demoRequestSchema),
+    defaultValues: { preferredContact: 'email', role: 'Demo Request', website: '' },
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -261,21 +294,54 @@ export default function RequestDemoPage() {
             <div className="mb-8 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Platform at a glance</p>
               <h2 className="mt-3 font-display text-2xl font-medium tracking-tight text-foreground sm:text-3xl">{`Numbers that reflect how teams use ${APP_NAME}`}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Illustrative figures — replace with verified organisational metrics before launch.</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {stats.map(({ icon: Icon, value, label }) => (
-                <div key={label} className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="font-display text-2xl font-semibold tabular-nums text-accent">{value}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
+              {statsLoading ? (
+                // Loading skeletons
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 animate-pulse">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10" />
+                    <div className="space-y-2">
+                      <div className="h-8 w-24 bg-muted/50 rounded" />
+                      <div className="h-4 w-32 bg-muted/50 rounded" />
+                    </div>
                   </div>
+                ))
+              ) : statsError ? (
+                // Error state
+                <div className="lg:col-span-4 flex items-center justify-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-6">
+                  <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+                  <p className="text-sm text-destructive">{statsError}</p>
                 </div>
-              ))}
-</div>
+              ) : stats ? (
+                // Data state
+                [
+                  { key: 'hospitals', label: 'Hospitals' },
+                  { key: 'staff', label: 'Healthcare Professionals' },
+                  { key: 'patients', label: 'Patients Managed' },
+                  { key: 'appointments', label: 'Appointments Scheduled' },
+                ].map(({ key, label }) => {
+                  const Icon = STATS_ICONS[key as keyof typeof STATS_ICONS];
+                  const value = stats[key as keyof PlatformStats];
+                  return (
+                    <div key={key} className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent">
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <div>
+                        <p className="font-display text-2xl font-semibold tabular-nums text-accent">{value.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{label}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                // Empty state (shouldn't happen but defensive)
+                <div className="lg:col-span-4 flex items-center justify-center text-muted-foreground">
+                  No platform statistics available.
+                </div>
+              )}
+            </div>
           </div>
         </section>
       </main>
