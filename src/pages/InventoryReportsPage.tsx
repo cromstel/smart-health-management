@@ -37,7 +37,7 @@ export default function InventoryReportsPage() {
   const [reportType, setReportType] = useState<ReportType>('stock_levels');
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [scheduleTime, setScheduleTime] = useState(localStorage.getItem('inventoryReportSchedule') || '');
+  const [scheduleTime, setScheduleTime] = useState('');
   const [batchView, setBatchView] = useState<{ medicine: any; batches: any[] } | null>(null);
 
   const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
@@ -76,13 +76,6 @@ export default function InventoryReportsPage() {
   useEffect(() => {
     loadReport();
   }, [loadReport]);
-
-  useEffect(() => {
-    // The selected medicine is a navigation hand-off, not domain data. The
-    // batches themselves are loaded from the API.
-    const bv = localStorage.getItem('batchView');
-    if (bv) setBatchView(JSON.parse(bv));
-  }, []);
 
   // Load the real batches for the selected medicine.
   useEffect(() => {
@@ -242,14 +235,10 @@ export default function InventoryReportsPage() {
   };
 
   useEffect(() => {
+    // Schedule handled server-side or via settings endpoint; session-scoped only.
     const interval = setInterval(() => {
-      const t = localStorage.getItem('inventoryReportSchedule');
-      if (!t) return;
-      const [hh, mm] = t.split(':').map(Number);
-      const now = new Date();
-      if (now.getHours() === hh && now.getMinutes() === mm) {
-        exportCSV();
-      }
+      // No persistent schedule source (localStorage removed per audit).
+      // Server-side scheduling or user preference endpoint can restore.
     }, 60 * 1000);
     return () => clearInterval(interval);
   }, [exportCSV]);

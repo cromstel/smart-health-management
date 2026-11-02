@@ -184,7 +184,7 @@ export function ShiftSchedulerModule() {
               <h2 className="text-xl font-bold tracking-tight text-primary-foreground">
                 Algorithmic Shift Scheduler & Workload Balancer
               </h2>
-              <Badge className="bg-accent text-white font-mono text-[10px]">AUTO-OPTIMIZER V2.4</Badge>
+              <Badge className="bg-accent text-accent-foreground font-mono text-[10px]">AUTO-OPTIMIZER V2.4</Badge>
             </div>
             <p className="text-xs text-accent/80 mt-0.5">
               Auto-balances clinician shift assignments matching availability, fatigue prevention rules, and historical departmental workload curves
@@ -195,7 +195,7 @@ export function ShiftSchedulerModule() {
         <Button
           onClick={handleAutoBalanceAlgorithm}
           disabled={isAutoBalancing}
-          className="bg-accent hover:bg-accent text-white font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-accent/30 shrink-0"
+          className="bg-accent hover:bg-accent text-accent-foreground font-bold text-xs h-10 px-4 shadow-lg gap-2 border border-accent/30 shrink-0"
         >
           <RefreshCw className={`h-4 w-4 ${isAutoBalancing ? 'animate-spin' : ''}`} />
           <span>Auto-Balance Shifts ({balanceScore}% Score)</span>

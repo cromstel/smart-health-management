@@ -65,8 +65,8 @@ export function PublicFooter() {
 
   return (
     <footer className="border-t border-primary-foreground/15 bg-primary text-primary-foreground" role="contentinfo">
-      <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
-        <div className="grid gap-12 border-b border-primary-foreground/15 pb-12 lg:grid-cols-12 lg:gap-8 lg:pb-16">
+      <div className="mx-auto w-full px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
+        <div className="grid gap-12 border-b border-primary-foreground/15 pb-8 lg:grid-cols-12 lg:gap-8 lg:pb-12">
           <div className="max-w-sm lg:col-span-4">
             <Link to="/" className="inline-flex items-center gap-2.5" aria-label={`${APP_NAME} — Home`}>
               <Logo size="sm" variant="light" />
@@ -91,7 +91,7 @@ export function PublicFooter() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 pt-7 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono text-xs tabular-nums text-primary-foreground/55">© {new Date().getFullYear()} {APP_NAME}. Built for accountable care.</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <Link to="/auth/super-admin/login" className="inline-flex items-center gap-1.5 text-xs text-primary-foreground/65 transition-colors hover:text-primary-foreground focus-visible:text-primary-foreground"><Lock className="h-3.5 w-3.5" aria-hidden="true" /> Super admin</Link>

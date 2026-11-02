@@ -272,8 +272,8 @@ function ScrollToHash() {
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <AuditProvider>
             <NotificationProvider>
               <ScrollToHash />
@@ -286,8 +286,8 @@ function App() {
               <ApiDebugOverlay />
             </NotificationProvider>
           </AuditProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

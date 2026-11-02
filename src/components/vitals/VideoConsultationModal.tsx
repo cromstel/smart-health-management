@@ -427,7 +427,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                                 variant={isCurrent ? "default" : "outline"}
                                 className={`h-7 text-[11px] font-bold ${
                                   isCurrent 
-                                    ? 'bg-accent hover:bg-accent text-white' 
+                                    ? 'bg-accent hover:bg-accent text-accent-foreground' 
                                     : 'border-slate-800 text-slate-300 hover:bg-slate-900'
                                 }`}
                                 onClick={() => {
@@ -632,7 +632,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       key={idx} 
                       className={`flex flex-col max-w-[85%] ${msg.sender === 'clinician' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                     >
-                      <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${msg.sender === 'clinician' ? 'bg-accent text-white rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'}`}>
+                      <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${msg.sender === 'clinician' ? 'bg-accent text-accent-foreground rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'}`}>
                         {msg.text}
                       </div>
                       <span className="text-[9px] text-slate-500 mt-1">{msg.time}</span>

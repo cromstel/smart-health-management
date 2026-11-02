@@ -145,32 +145,16 @@ export default function DashboardPage() {
   const [patientLoadPredictions, setPatientLoadPredictions] = useState<any[]>([]);
   const [ghanaHealthData, setGhanaHealthData] = useState<any[]>([]);
 
-  const [modules, setModules] = useState<DashboardModule[]>(() => {
-    const saved = localStorage.getItem('dashboard_layout');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const parsedIds = parsed.map((m: any) => m.id);
-        const missing = DEFAULT_MODULES.filter((m) => !parsedIds.includes(m.id));
-        return [...parsed, ...missing];
-      } catch {
-        return DEFAULT_MODULES;
-      }
-    }
-    return DEFAULT_MODULES;
-  });
+  const [modules, setModules] = useState<DashboardModule[]>(DEFAULT_MODULES);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  const [isEmergencyMode, setIsEmergencyMode] = useState<boolean>(() => {
-    return localStorage.getItem('emergency_mode_active') === 'true';
-  });
+  const [isEmergencyMode, setIsEmergencyMode] = useState<boolean>(false);
   const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
   const [isLogVitalsOpen, setIsLogVitalsOpen] = useState(false);
 
   const toggleEmergencyMode = useCallback((checked: boolean) => {
     setIsEmergencyMode(checked);
-    localStorage.setItem('emergency_mode_active', String(checked));
   }, []);
 
   const handleMove = useCallback((id: string, direction: 'up' | 'down') => {
@@ -214,13 +198,11 @@ export default function DashboardPage() {
   }, []);
 
   const handleSaveLayout = useCallback(() => {
-    localStorage.setItem('dashboard_layout', JSON.stringify(modules));
     setIsCustomizing(false);
   }, [modules]);
 
   const handleResetLayout = useCallback(() => {
     setModules(DEFAULT_MODULES);
-    localStorage.removeItem('dashboard_layout');
     setIsCustomizing(false);
   }, []);
 
@@ -285,8 +267,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
-    const intervalSetting = localStorage.getItem('dashboard_refresh_interval');
-    const intervalSeconds = intervalSetting ? parseInt(intervalSetting, 10) : 30;
+    const intervalSeconds = 30;
     if (intervalSeconds > 0) {
       const timer = setInterval(() => {
         loadDashboardData();

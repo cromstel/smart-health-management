@@ -148,9 +148,7 @@ export default function PatientsPage() {
     isAutoSaving: isPatientAutoSaving,
     clearDraft: clearPatientDraft,
     discardDraft: discardPatientDraft,
-  } = useFormAutoSave('add_patient_modal', newPatient, isDialogOpen, (restored) => {
-    if (restored) setNewPatient(restored);
-  });
+  } = useFormAutoSave('add_patient_modal', newPatient, isDialogOpen);
 
   const handleDiscardPatientDraft = () => {
     discardPatientDraft();

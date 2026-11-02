@@ -574,9 +574,6 @@ export default function PharmacyPage() {
                               <div className="flex gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => handleAdjustStock(med)}>Adjust</Button>
                                 <Button variant="ghost" size="sm" onClick={() => {
-                                  const key = `inventoryBatches:${med.id}`;
-                                  const batches = JSON.parse(localStorage.getItem(key) || '[]');
-                                  localStorage.setItem('batchView', JSON.stringify({ medicine: med, batches }));
                                   toast.info('Open Inventory Reports to manage batches');
                                 }}>
                                   <List className="h-4 w-4" aria-hidden="true" /> Batches

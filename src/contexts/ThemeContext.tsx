@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserPreferences, saveUserPreference } from '@/services/userPreferences.service';
 
 export type Theme = 'dark' | 'light';
 
@@ -11,31 +14,28 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'health_manager_theme';
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    try {
-      const saved = localStorage.getItem(THEME_STORAGE_KEY);
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
-      }
-    } catch {
-      // Fallback
-    }
-    return 'dark'; // Default to dark as per requirements
-  });
+  const [theme, setThemeState] = useState<Theme>('dark');
+  const { user } = useAuth();
 
   useEffect(() => {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch (e) {
-      console.warn('Failed to save theme to localStorage', e);
-    }
+    const load = async () => {
+      try {
+        const prefs = await getUserPreferences();
+        const savedTheme = prefs.theme?.theme as Theme | undefined;
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          setThemeState(savedTheme);
+        }
+      } catch {
+        // Fallback: no server-side preference set yet
+      }
+    };
+    if (user) load();
+  }, [user]);
 
+  useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
-
     if (theme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
@@ -49,6 +49,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       body.classList.remove('dark');
       body.classList.add('light');
     }
+    // Persist theme server-side instead of localStorage (PHI-at-rest rule).
+    saveUserPreference({ category: 'theme', key: 'theme', value: theme }).catch(() => {
+      // Best-effort: server unavailable; theme remains session-scoped.
+    });
   }, [theme]);
 
   const toggleTheme = () => {
@@ -70,6 +74,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     >
       <div className={theme === 'dark' ? 'dark min-h-screen bg-background text-foreground' : 'light min-h-screen bg-background text-foreground'}>
         {children}
+        <Toaster />
       </div>
     </ThemeContext.Provider>
   );

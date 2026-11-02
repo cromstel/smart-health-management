@@ -21,7 +21,7 @@ function HospitalAdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(() => Boolean(localStorage.getItem('remember_email')));
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const { login, logout } = useAuth();
 

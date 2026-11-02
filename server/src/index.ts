@@ -57,6 +57,7 @@ import dispensingEventRoutes from './routes/dispensingEvent.routes.js';
 import forecastRoutes from './routes/forecast.routes.js';
 import emergencyRoutes from './routes/emergency.routes.js';
 import onboardRoutes from './routes/onboard.routes.js';
+import userPreferencesRoutes from './routes/userPreferences.routes.js';
 import patientPortalRoutes from './routes/patientPortal.routes.js';
 import './jobs/inventory.job.js';
 import './jobs/backup.job.js';
@@ -242,6 +243,7 @@ app.use('/api/emergency', emergencyRoutes);
 // inactive until confirmed) and the per-hospital patient portal, which
 // resolves its tenant from the request hostname.
 app.use('/api/onboard', onboardRoutes);
+app.use('/api/user-preferences', userPreferencesRoutes);
 app.use('/api/patient-portal', patientPortalRoutes);
 
 // ---------------------------------------------------------------------------

@@ -370,7 +370,7 @@ export function ClinicalNotesVoiceModal({
                 className={`h-12 px-5 gap-2.5 font-bold transition-all shadow-md ${
                   isListening
                     ? 'bg-destructive hover:bg-destructive text-destructive-foreground animate-pulse'
-                    : 'bg-accent hover:bg-accent text-white'
+                    : 'bg-accent hover:bg-accent text-accent-foreground'
                 }`}
               >
                 {isListening ? (
@@ -486,7 +486,7 @@ export function ClinicalNotesVoiceModal({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button onClick={handleSaveNote} className="gap-2 bg-accent hover:bg-accent text-white font-semibold">
+            <Button onClick={handleSaveNote} className="gap-2 bg-accent hover:bg-accent text-accent-foreground font-semibold">
               <Save className="h-4 w-4" />
               <span>Save Clinical Note</span>
             </Button>

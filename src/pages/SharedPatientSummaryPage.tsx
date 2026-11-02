@@ -143,7 +143,7 @@ export default function SharedPatientSummaryPage() {
             </p>
             <div className="pt-4" id="error-action-wrapper">
               <Link to="/auth/login">
-                <Button className="w-full bg-slate-950 hover:bg-slate-850 text-white" id="error-login-button">
+                <Button className="w-full bg-slate-950 hover:bg-slate-850 text-slate-100" id="error-login-button">
                   Access Portal Login
                 </Button>
               </Link>
@@ -162,7 +162,7 @@ export default function SharedPatientSummaryPage() {
           <span className="text-xs text-slate-500 font-medium">Need physical chart logs? Print an officially-formatted physical medical summary.</span>
           <Button
             onClick={() => window.print()}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm transition-all self-stretch sm:self-auto justify-center"
+            className="bg-slate-900 hover:bg-slate-800 text-slate-100 font-semibold text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm transition-all self-stretch sm:self-auto justify-center"
             id="print-summary-btn"
           >
             <Printer className="w-4 h-4 text-accent animate-pulse" /> Print Summary Report
@@ -170,7 +170,7 @@ export default function SharedPatientSummaryPage() {
         </div>
 
         {/* Verification & Banner Header */}
-        <div className="bg-slate-900 text-white p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm" id="banner-header">
+        <div className="bg-slate-900 text-slate-100 p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm" id="banner-header">
           <div className="space-y-1" id="banner-title-block">
             <div className="flex items-center gap-2" id="banner-badge-row">
               <Badge className="bg-success hover:bg-success text-slate-950 font-bold px-2 py-0.5 rounded flex items-center gap-1 text-xs" id="secure-badge">

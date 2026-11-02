@@ -57,7 +57,7 @@ export default function LoginPage() {
   const { login, mfaPending, mfaPendingUser, verifyMfaTotp, cancelMfa } = useAuth();
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
-  const savedEmail = localStorage.getItem('remember_email') || '';
+  const savedEmail = ''; // Server-side preference endpoint replaces localStorage; session-only fallback.
   const {
     register,
     handleSubmit,
