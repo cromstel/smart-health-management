@@ -208,7 +208,7 @@ function Hero() {
             >
               <Button
                 size="lg"
-                className="h-12 px-7 text-sm font-semibold tracking-wide bg-accent text-accent-foreground hover:bg-accent/90"
+                className="h-12 px-7 rounded-none text-sm font-semibold tracking-wide bg-accent text-accent-foreground hover:bg-accent/90"
                 asChild
               >
                 <Link to="/auth/signup" className="gap-2">
@@ -219,7 +219,7 @@ function Hero() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-12 px-7 text-sm font-semibold tracking-wide border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/50"
+                className="h-12 px-7 rounded-none text-sm font-semibold tracking-wide border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/50"
                 asChild
               >
                 <Link to="/auth/request-demo" className="gap-2">
