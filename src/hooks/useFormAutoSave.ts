@@ -55,7 +55,7 @@ export function useFormAutoSave<T extends Record<string, any>>(
   const clearDraft = useCallback(() => {
     setHasRestoredDraft(false);
     setDraftSavedAt(null);
-  }, [storageKey]);
+  }, []);
 
   // Discard draft and reset form to initial values
   const discardDraft = useCallback(() => {

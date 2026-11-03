@@ -199,7 +199,7 @@ export default function DashboardPage() {
 
   const handleSaveLayout = useCallback(() => {
     setIsCustomizing(false);
-  }, [modules]);
+  }, []);
 
   const handleResetLayout = useCallback(() => {
     setModules(DEFAULT_MODULES);
