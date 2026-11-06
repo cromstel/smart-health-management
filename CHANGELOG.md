@@ -56,3 +56,8 @@
 - Design rules intact: flat tokens, no gradients, reduced-motion safe; skeleton placeholders shown while a split module loads.
 - Verified: type-check clean, lint clean, 131 tests passing (1 environmental skip), production build succeeds.
 
+
+## 2026-10-29 — Document upload hardening (BE-005) and related fixes
+- Document upload now validates patient, category, storage provider, notes, tags and file extension/MIME before opening a transaction; cross-tenant patient attachment refused.
+- Upload, update and delete are confined to the caller's hospital; storage-OAuth initiators require the documents permission and use single-use, expiring, PKCE-bound state transactions.
+- PWA no longer caches external fonts (self-hosted); dev demo password fallback removed; analytics payload bounded.
