@@ -161,7 +161,7 @@ export function evaluateTriagePriority(
   } else if (score >= 2.0) {
     classification = 'ESI-4';
     levelColor = 'bg-accent/10 text-accent border-accent/20 dark:bg-accent/40 dark:text-blue-300 dark:border-accent';
-    badgeColor = 'bg-accent text-white';
+    badgeColor = 'bg-accent text-accent-foreground';
     label = 'Less Urgent';
     recommendedWard = 'ED Lounge / Rapid Assessment Zone';
   } else {

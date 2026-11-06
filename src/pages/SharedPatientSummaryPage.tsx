@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/config/api';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { vitalsService } from '@/services/vitalsService';
 import type { VitalsRecord } from '@/types/vitals';
+import { APP_NAME } from '@/config/app';
 import {
   ResponsiveContainer,
   LineChart,
@@ -57,7 +59,9 @@ export default function SharedPatientSummaryPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/shared/patient-summary?token=${token}`);
+        const response = await fetch(
+          `${API_BASE_URL}/shared/patient-summary?token=${encodeURIComponent(token)}`
+        );
         if (!response.ok) {
           const errData = await response.json();
           throw new Error(errData.error || 'Failed to fetch shared health summary');
@@ -139,7 +143,7 @@ export default function SharedPatientSummaryPage() {
             </p>
             <div className="pt-4" id="error-action-wrapper">
               <Link to="/auth/login">
-                <Button className="w-full bg-slate-950 hover:bg-slate-850 text-white" id="error-login-button">
+                <Button className="w-full bg-slate-950 hover:bg-slate-850 text-slate-100" id="error-login-button">
                   Access Portal Login
                 </Button>
               </Link>
@@ -158,7 +162,7 @@ export default function SharedPatientSummaryPage() {
           <span className="text-xs text-slate-500 font-medium">Need physical chart logs? Print an officially-formatted physical medical summary.</span>
           <Button
             onClick={() => window.print()}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm transition-all self-stretch sm:self-auto justify-center"
+            className="bg-slate-900 hover:bg-slate-800 text-slate-100 font-semibold text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm transition-all self-stretch sm:self-auto justify-center"
             id="print-summary-btn"
           >
             <Printer className="w-4 h-4 text-accent animate-pulse" /> Print Summary Report
@@ -166,7 +170,7 @@ export default function SharedPatientSummaryPage() {
         </div>
 
         {/* Verification & Banner Header */}
-        <div className="bg-slate-900 text-white p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm" id="banner-header">
+        <div className="bg-slate-900 text-slate-100 p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm" id="banner-header">
           <div className="space-y-1" id="banner-title-block">
             <div className="flex items-center gap-2" id="banner-badge-row">
               <Badge className="bg-success hover:bg-success text-slate-950 font-bold px-2 py-0.5 rounded flex items-center gap-1 text-xs" id="secure-badge">
@@ -174,7 +178,7 @@ export default function SharedPatientSummaryPage() {
               </Badge>
               <span className="text-slate-400 text-xs">Expires in: {timeLeft || 'Calculating...'}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight" id="banner-heading">Smart MediCare Patient Summary</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight" id="banner-heading">{`${APP_NAME} Patient Summary`}</h1>
             <p className="text-xs sm:text-sm text-slate-400">Official, view-only health record summary compiled directly from clinical observations.</p>
           </div>
           <div className="text-right sm:text-left self-stretch sm:self-auto pt-2 sm:pt-0 border-t border-slate-800 sm:border-0" id="banner-meta-block">

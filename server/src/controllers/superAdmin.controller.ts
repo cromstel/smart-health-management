@@ -1,10 +1,10 @@
 // server/src/controllers/superAdmin.controller.ts
 
 import { Request, Response } from 'express';
-import child_process from 'child_process';
-const { exec } = child_process;
+import { spawn } from 'child_process';
 
 import fs from 'fs/promises';
+import { createReadStream } from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
@@ -12,15 +12,32 @@ import { validationResult } from 'express-validator';
 import type { AuthRequest } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+import {
+  getBackupDirectory,
+  getDbConfig,
+  listBackups,
+  runDatabaseBackup,
+} from '../services/backup.service.js';
+import { getScheduledJobStatuses } from '../services/cron.service.js';
+import { readPage, setPageHeaders } from '../utils/pagination.js';
 
-// DB coordinates for backup/restore tooling (env-only; no hardcoded credentials).
-const getDbConfig = (): { username: string; password: string; database: string; host: string; port: number } => ({
-  username: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'smart_medicare',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306', 10)
-});
+/** Version this build reports when nothing has been persisted yet. */
+const APP_VERSION = process.env.APP_VERSION || '1.0.0';
+
+/** Setting key under which the running version is persisted. */
+const SYSTEM_VERSION_KEY = 'system.version';
+
+/**
+ * The steps a real upgrade would perform. They are reported as a plan only:
+ * the endpoint does not run them.
+ */
+const UPGRADE_STEPS = [
+  'Take a verified database backup and confirm that it restores',
+  'Apply the pending migrations from server/migrations/ in order',
+  'Build and install the target application version',
+  'Restart the API and worker processes',
+  'Run the post-upgrade smoke checks (health, login, clinical read paths)',
+];
 
 // Aliases charsets that avoid visually ambiguous glyphs (no 0/O/1/I/l).
 const TEMP_PW_ALPHABETS = {
@@ -104,22 +121,41 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
 };
 
 // Get all users with their roles
-export const getAllUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const connection = await pool.getConnection();
-    
-    const [users] = await connection.query<RowDataPacket[]>(
-      `SELECT 
+    // The list used to answer with every account in the installation, which
+    // is every person who ever signed up. It is now a page with a default
+    // and a ceiling, and the number of accounts that exist is reported
+    // alongside it.
+    const { limit, offset } = readPage(req.query);
+
+    // `pool.query` borrows a connection and returns it on its own, so a
+    // failure between the two queries cannot leave a connection out of the
+    // pool.
+    //
+    // The order is fixed so that a page is a page: an offset without a total
+    // order repeats and skips rows from one page to the next.
+    const [users] = await pool.query<RowDataPacket[]>(
+      `SELECT
         u.id, u.email, u.name, u.status, u.last_login, u.created_at,
         r.name as role_name, r.description as role_description
        FROM users u
        LEFT JOIN roles r ON u.role_id = r.id
-       ORDER BY u.created_at DESC`
+       ORDER BY u.created_at DESC, u.id DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
     );
-    
-    connection.release();
-    
-    res.status(200).json({ users });
+
+    const [totalCount] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as count
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.id`
+    );
+    const total = Number(totalCount[0]?.count ?? 0);
+
+    setPageHeaders(res, { total, limit, offset });
+
+    res.status(200).json({ users, total, limit, offset });
   } catch (_error) {
     console.error('Error fetching users:', _error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -181,58 +217,31 @@ export const getAuditLogs = async (req: Request, res: Response): Promise<void> =
 // Trigger system backup
 export const triggerBackup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, password, database, host, port } = getDbConfig();
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupDir = path.join(process.cwd(), 'backups');
-    await fs.mkdir(backupDir, { recursive: true });
-    const backupPath = path.join(backupDir, `backup_${timestamp}.sql`);
+    const authReq = req as AuthRequest;
 
-    // Password passed via MYSQL_PWD env (never on the command line / process list).
-    const command = `mysqldump -h ${host} -P ${port} -u ${username} ${database} > "${backupPath}"`;
-
-    await new Promise<void>((resolve, reject) => {
-      exec(command, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          return reject(error);
-        }
-        if (stderr) {
-          console.error(`stderr: ${stderr}`);
-        }
-        console.log(`stdout: ${_stdout}`);
-        resolve();
-      });
+    // The actual work lives in the backup service so the scheduler can run
+    // exactly the same routine without faking an HTTP request.
+    const result = await runDatabaseBackup({
+      triggeredBy: authReq.user?.id ?? null,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] || null,
     });
 
-    const authReq = req as AuthRequest;
-    if (authReq.user) {
-      const connection = await pool.getConnection();
-      await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
-         VALUES (?, 'backup', 'system', ?, ?)`,
-        [authReq.user.id, `System backup created: ${backupPath}`, req.ip]
-      );
-      connection.release();
+    if (!result.success) {
+      res.status(500).json({ error: 'Failed to trigger backup', details: result.error });
+      return;
     }
 
     res.status(200).json({
       message: 'System backup created successfully',
-      backupPath,
-      timestamp: new Date().toISOString()
+      backupPath: result.backupPath,
+      fileName: result.fileName,
+      sizeBytes: result.sizeBytes,
+      timestamp: result.timestamp
     });
   } catch (_error) {
     console.error('Error triggering backup:', _error);
     res.status(500).json({ error: 'Failed to trigger backup' });
-    const authReq = req as AuthRequest;
-    if (authReq.user) {
-      const connection = await pool.getConnection();
-      await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)` +
-        ` VALUES (?, ?, ?, ?, ?)`,
-        [authReq.user.id, 'backup_failed', 'system', `System backup failed: ${(_error as Error).message}`, req.ip]
-      );
-      connection.release();
-    }
   }
 };
 
@@ -251,7 +260,7 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     }
 
     const { username, password, database, host, port } = getDbConfig();
-    const backupPath = path.join(process.cwd(), 'backups', backupFileName);
+    const backupPath = path.join(getBackupDirectory(), backupFileName);
 
     // Check if backup file exists
     try {
@@ -262,35 +271,59 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
     }
 
     // Drop existing database and then restore.
-    // Password passed via MYSQL_PWD env (never on the command line / process list).
-    const dropDbCommand = `mysql -h ${host} -P ${port} -u ${username} -e "DROP DATABASE IF EXISTS \`${database}\`; CREATE DATABASE \`${database}\`;"`;
-    const restoreCommand = `mysql -h ${host} -P ${port} -u ${username} ${database} < "${backupPath}"`;
+    //
+    // The command is built as an argument list and run without a shell. It
+    // used to be a command line assembled by interpolation and handed to a
+    // shell, which meant a value carrying a backtick, a quote or a `$()`
+    // became part of the command rather than part of the argument.
+    //
+    // The password is passed through MYSQL_PWD, so it never appears in the
+    // command or in the process list.
+    const databaseName = String(database);
+    if (!/^[A-Za-z0-9_]+$/.test(databaseName)) {
+      res.status(400).json({ error: 'The database name is not a valid identifier' });
+      return;
+    }
 
-    await new Promise<void>((resolve, reject) => {
-      exec(dropDbCommand, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
-        if (error) {
-          console.error(`exec error (dropDb): ${error}`);
-          return reject(error);
-        }
-        if (stderr) {
-          console.error(`stderr (dropDb): ${stderr}`);
-        }
-        resolve();
-      });
-    });
+    const mysqlArgs = ['--host', String(host), '--port', String(port), '--user', String(username)];
+    const mysqlEnv = { ...process.env, MYSQL_PWD: password };
 
-    await new Promise<void>((resolve, reject) => {
-      exec(restoreCommand, { env: { ...process.env, MYSQL_PWD: password } }, (error, _stdout, stderr) => {
-        if (error) {
-          console.error(`exec error (restore): ${error}`);
-          return reject(error);
+    const runMysql = (args: string[], stdinFile?: string): Promise<void> =>
+      new Promise<void>((resolve, reject) => {
+        const child = spawn('mysql', [...mysqlArgs, ...args], {
+          env: mysqlEnv,
+          shell: false,
+        });
+        let stderr = '';
+        child.stderr.on('data', (chunk) => {
+          stderr += String(chunk);
+        });
+        child.on('error', reject);
+        child.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+            return;
+          }
+          reject(new Error(`mysql exited with code ${code}: ${stderr.slice(0, 400)}`));
+        });
+        if (stdinFile) {
+          const source = createReadStream(stdinFile);
+          source.on('error', reject);
+          source.pipe(child.stdin);
         }
-        if (stderr) {
-          console.error(`stderr (restore): ${stderr}`);
-        }
-        resolve();
       });
-    });
+
+    try {
+      await runMysql([
+        '--execute',
+        `DROP DATABASE IF EXISTS \`${databaseName}\`; CREATE DATABASE \`${databaseName}\`;`,
+      ]);
+      await runMysql([databaseName], backupPath);
+    } catch (error) {
+      console.error('Restore failed:', error instanceof Error ? error.message : error);
+      res.status(500).json({ error: 'Failed to restore the database from the backup' });
+      return;
+    }
 
     const authReq = req as AuthRequest;
     if (authReq.user) {
@@ -314,52 +347,69 @@ export const restoreBackup = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+/**
+ * Real health report.
+ *
+ * The old implementation returned a hardcoded "OK" and acquired a pool
+ * connection it never released, so every call leaked one of the ten pool
+ * slots. The report now measures the database round trip, the process
+ * footprint and the scheduled jobs, and it says "degraded" when the database
+ * cannot be reached.
+ */
 export const getSystemHealth = async (_req: Request, res: Response): Promise<void> => {
-  try {
-    // Basic health check: database connection
-    await pool.getConnection();
+  let database: { status: string; latencyMs: number | null; error: string | null };
 
-    // Placeholder for more advanced health metrics
-    // In a real application, you might check CPU, memory, disk, other services
-    res.status(200).json({
-      status: 'OK',
-      database: 'Connected',
-      message: 'System is healthy',
-      timestamp: new Date().toISOString()
-    });
-  } catch (_error) {
-    console.error('Error getting system health:', _error);
-    res.status(500).json({ error: 'Failed to get system health', details: (_error as Error).message });
+  try {
+    // `pool.query` borrows and returns a connection on its own, so no slot
+    // is held and none can leak.
+    const startedAt = Date.now();
+    await pool.query('SELECT 1');
+    database = { status: 'connected', latencyMs: Date.now() - startedAt, error: null };
+  } catch (error) {
+    database = {
+      status: 'unreachable',
+      latencyMs: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
+
+  const memory = process.memoryUsage();
+  const jobs = getScheduledJobStatuses();
+  const healthy = database.status === 'connected';
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'OK' : 'DEGRADED',
+    database: healthy ? 'Connected' : 'Unreachable',
+    message: healthy
+      ? 'System is healthy'
+      : 'System is degraded: the database is unreachable',
+    timestamp: new Date().toISOString(),
+    checks: {
+      database,
+      server: {
+        uptimeSeconds: Math.round(process.uptime()),
+        nodeVersion: process.version,
+        platform: process.platform,
+        memory: {
+          rssMb: Math.round((memory.rss / 1024 / 1024) * 10) / 10,
+          heapUsedMb: Math.round((memory.heapUsed / 1024 / 1024) * 10) / 10,
+          heapTotalMb: Math.round((memory.heapTotal / 1024 / 1024) * 10) / 10,
+        },
+      },
+      scheduler: {
+        started: jobs.length > 0,
+        jobCount: jobs.length,
+      },
+      scheduledJobs: jobs,
+    },
+  });
 };
 
 export const getBackups = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const backupDir = path.join(process.cwd(), 'backups');
-
     // A missing backup directory means no backups have been taken yet, which is
-    // a normal state for a fresh install -- not a failure. readdir threw ENOENT
-    // and the endpoint answered 500 on every load of the super-admin console.
-    // (fs here is fs/promises, so this is a try/catch rather than existsSync.)
-    let files: string[];
-    try {
-      files = await fs.readdir(backupDir);
-    } catch {
-      res.status(200).json({ backups: [] });
-      return;
-    }
-    const backups = await Promise.all(
-      files
-        .filter(file => file.endsWith('.sql'))
-        .map(async file => {
-          const stats = await fs.stat(path.join(backupDir, file));
-          return {
-            name: file,
-            size: String(stats.size),
-            createdAt: stats.birthtime,
-          };
-        })
-    );
+    // a normal state for a fresh install -- not a failure.
+    const backups = await listBackups();
     res.status(200).json({ backups });
   } catch (error) {
     console.error('Error getting backups:', error);
@@ -369,102 +419,355 @@ export const getBackups = async (_req: Request, res: Response): Promise<void> =>
 
 
 
-// Trigger system upgrade
-export const triggerUpgrade = async (req: Request, res: Response): Promise<void> => {
+/**
+ * Reports an upgrade plan.
+ *
+ * The old implementation wrote an audit row and answered "System upgrade
+ * initiated" without upgrading anything: no version was applied, no state
+ * was persisted and there was no rollback. The endpoint is now honest about
+ * what it does -- it persists the version that is actually running, reports
+ * the steps a real upgrade would perform, and labels the response as a dry
+ * run so nobody reads it as a completed upgrade.
+ */
+export const triggerUpgrade = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { version, description } = req.body;
-    
-    if (!version) {
+    const { version, description } = req.body as { version?: string; description?: string };
+
+    if (!version || typeof version !== 'string' || !version.trim()) {
       res.status(400).json({ error: 'Version is required' });
       return;
     }
-    
-    // Log the upgrade action
+
     const authReq = req as AuthRequest;
-    if (authReq.user) {
-      const connection = await pool.getConnection();
-      await connection.query(
-        `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
-         VALUES (?, 'upgrade', 'system', ?, ?)`,
-        [
-          authReq.user.id,
-          `System upgrade initiated to version ${version}: ${description || 'No description'}`,
-          req.ip
-        ]
-      );
-      connection.release();
-    }
-    
+    const currentVersion = await persistCurrentVersion(authReq.user?.id ?? null);
+
+    await pool.query(
+      `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
+       VALUES (?, 'upgrade_plan', 'system', ?, ?)`,
+      [
+        authReq.user?.id ?? null,
+        `Upgrade plan generated: running version ${currentVersion}, requested target ${version}. No upgrade was applied.`,
+        req.ip ?? null,
+      ]
+    );
+
     res.status(200).json({
-      message: 'System upgrade initiated',
-      version,
-      timestamp: new Date().toISOString()
+      message: 'Upgrade plan generated. No upgrade was performed (dry run).',
+      dryRun: true,
+      applied: false,
+      currentVersion,
+      targetVersion: version.trim(),
+      description: description || null,
+      steps: UPGRADE_STEPS,
+      timestamp: new Date().toISOString(),
     });
   } catch (_error) {
-    console.error('Error triggering upgrade:', _error);
-    res.status(500).json({ error: 'Failed to trigger upgrade' });
+    console.error('Error generating upgrade plan:', _error);
+    res.status(500).json({ error: 'Failed to generate upgrade plan' });
   }
 };
 
-// Get system settings
-export const getSystemSettings = async (_req: Request, res: Response): Promise<void> => {
+/**
+ * Reads the running version and stores it under `system.version` so it can
+ * be read back later.
+ */
+const persistCurrentVersion = async (userId: string | null): Promise<string> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT setting_value FROM super_admin_settings WHERE setting_key = ? LIMIT 1',
+    [SYSTEM_VERSION_KEY]
+  );
+
+  const stored = (rows as any[])[0]?.setting_value;
+  const currentVersion = typeof stored === 'string' && stored.trim() ? stored.trim() : APP_VERSION;
+
+  await upsertSuperAdminSetting(SYSTEM_VERSION_KEY, currentVersion, 'system', userId);
+
+  return currentVersion;
+};
+
+/**
+ * Upserts a super-admin setting.
+ *
+ * `updated_by` is a foreign key to users, so a reference to a user that no
+ * longer exists falls back to NULL instead of failing the write.
+ */
+const upsertSuperAdminSetting = async (
+  settingKey: string,
+  settingValue: string,
+  category: string,
+  userId: string | null
+): Promise<void> => {
+  const sql =
+    `INSERT INTO super_admin_settings (setting_key, setting_value, category, updated_by, updated_at)
+     VALUES (?, ?, ?, ?, NOW())
+     ON DUPLICATE KEY UPDATE
+       setting_value = VALUES(setting_value),
+       category = VALUES(category),
+       updated_by = VALUES(updated_by),
+       updated_at = NOW()`;
+
   try {
-    const connection = await pool.getConnection();
-    
-    const [settings] = await connection.query<RowDataPacket[]>(
-      'SELECT * FROM settings ORDER BY category, setting_key'
+    await pool.query(sql, [settingKey, settingValue, category, userId]);
+  } catch (error) {
+    console.error(
+      'Could not attribute the setting update to a user, retrying without it:',
+      error instanceof Error ? error.message : String(error)
     );
-    
-    connection.release();
-    
-    res.status(200).json({ settings });
+    await pool.query(sql, [settingKey, settingValue, category, null]);
+  }
+};
+
+/**
+ * Get system settings.
+ *
+ * Both stores are returned: `settings` holds the general system
+ * configuration, `super_admin_settings` holds the operator-owned values. The
+ * identifiers are prefixed with their source table, because the two tables
+ * have independent auto-increment sequences and a bare row id is ambiguous.
+ */
+export const getSystemSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // The two settings stores hold one row per setting key, so the list is
+    // bounded by the configuration rather than by usage -- but it is still a
+    // list, and it is still answered in pages.
+    const { limit, offset } = readPage(req.query);
+
+    // Both stores are returned: `settings` holds the general system
+    // configuration, `super_admin_settings` holds the operator-owned values.
+    // The identifiers are prefixed with their source table, because the two
+    // tables have independent auto-increment sequences and a bare row id is
+    // ambiguous.
+    //
+    // The two stores are merged on the setting key, and the operator store
+    // wins: the row that is reported for a key is the one in
+    // `super_admin_settings` when that table holds the key, and the one in
+    // `settings` otherwise. The merge is done in the query rather than in
+    // the code, because a page has to be a page of the merged list: paging
+    // the two stores separately and merging the two pages afterwards would
+    // answer with a set of rows that is not a page of anything.
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT
+         COALESCE(sa.setting_key, s.setting_key) AS setting_key,
+         CASE WHEN sa.id IS NOT NULL THEN sa.setting_value ELSE s.setting_value END AS setting_value,
+         CASE WHEN sa.id IS NOT NULL THEN sa.category ELSE s.category END AS category,
+         CASE WHEN sa.id IS NOT NULL THEN sa.updated_by ELSE s.updated_by END AS updated_by,
+         CASE WHEN sa.id IS NOT NULL THEN sa.updated_at ELSE s.updated_at END AS updated_at,
+         CASE WHEN sa.id IS NOT NULL THEN CONCAT('super_admin_settings:', sa.id) ELSE CONCAT('settings:', s.id) END AS id,
+         CASE WHEN sa.id IS NOT NULL THEN 'super_admin_settings' ELSE 'settings' END AS source
+       FROM (
+         SELECT setting_key FROM settings
+         UNION
+         SELECT setting_key FROM super_admin_settings
+       ) k
+       LEFT JOIN settings s ON s.setting_key = k.setting_key
+       LEFT JOIN super_admin_settings sa ON sa.setting_key = k.setting_key
+       ORDER BY COALESCE(CASE WHEN sa.id IS NOT NULL THEN sa.category ELSE s.category END, ''), k.setting_key
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+
+    // The number of settings that exist in the merged list, so that a client
+    // knows there is more to ask for.
+    const [totalCount] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as count FROM (
+         SELECT setting_key FROM settings
+         UNION
+         SELECT setting_key FROM super_admin_settings
+       ) k`
+    );
+    const total = Number(totalCount[0]?.count ?? 0);
+
+    const result = rows.map((row: any) => ({
+      ...row,
+      id: String(row.id),
+      source: row.source,
+    }));
+
+    setPageHeaders(res, { total, limit, offset });
+
+    res.status(200).json({ settings: result, total, limit, offset });
   } catch (_error) {
     console.error('Error fetching system settings:', _error);
     res.status(500).json({ error: 'Failed to fetch system settings' });
   }
 };
 
-// Update system setting
+/**
+ * Updates a system setting by its row id.
+ *
+ * The existing PATCH /settings/:id route keeps working against the
+ * `settings` table.
+ */
 export const updateSystemSetting = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { setting_value } = req.body;
-    
-    if (!setting_value) {
+
+    if (setting_value === undefined || setting_value === null) {
       res.status(400).json({ error: 'Setting value is required' });
       return;
     }
-    
+
     const connection = await pool.getConnection();
-    
+
     const [result] = await connection.query<ResultSetHeader>(
       'UPDATE settings SET setting_value = ? WHERE id = ?',
-      [setting_value, id]
+      [String(setting_value), id]
     );
-    
+
     if (result.affectedRows === 0) {
       connection.release();
       res.status(404).json({ error: 'Setting not found' });
       return;
     }
-    
+
     // Log the action
     const authReq = req as AuthRequest;
     if (authReq.user) {
       await connection.query(
         `INSERT INTO audit_logs (user_id, action, module, new_value, ip_address)
-         VALUES (?, 'update', 'settings', ?, ?)`,
-        [authReq.user.id, `Updated setting ${id} to ${setting_value}`, req.ip]
+         VALUES (?, ?, ?, ?, ?)`,
+        [authReq.user.id, 'update', 'settings', `Updated setting ${id} to ${setting_value}`, req.ip]
       );
     }
-    
+
     connection.release();
-    
+
     res.status(200).json({ message: 'Setting updated successfully' });
   } catch (_error) {
     console.error('Error updating system setting:', _error);
     res.status(500).json({ error: 'Failed to update system setting' });
   }
+};
+
+/**
+ * Creates or updates a system setting.
+ *
+ * This is the endpoint the super-admin console actually calls
+ * (PUT /settings with `{ key, value }`). The console sends the identifier of
+ * the row it is editing, so the key is resolved in three ways:
+ *
+ *   1. "<table>:<id>"  -- the prefixed identifier returned by GET /settings
+ *   2. a setting_key  -- a row in super_admin_settings with that key
+ *   3. a numeric id   -- a row in the legacy settings table
+ *
+ * A key that matches nothing is created in super_admin_settings. The value
+ * is written to both stores, so the general configuration and the operator
+ * store never disagree about the same key.
+ */
+export const upsertSystemSetting = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ error: errors.array()[0]?.msg ?? 'Invalid request' });
+      return;
+    }
+
+    const key = String(req.body.key).trim();
+    const value = req.body.value === undefined || req.body.value === null
+      ? ''
+      : String(req.body.value);
+
+    const target = await resolveSettingTarget(key);
+
+    if (!target) {
+      await upsertSuperAdminSetting(key, value, 'general', req.user?.id ?? null);
+
+      await pool.query(
+        `INSERT INTO audit_logs (user_id, action, module, record_id, new_value, ip_address)
+         VALUES (?, 'create', 'settings', ?, ?, ?)`,
+        [req.user?.id ?? null, key, `Created setting ${key}`, req.ip ?? null]
+      );
+
+      res.status(200).json({
+        message: 'Setting saved successfully',
+        key,
+        value,
+      });
+      return;
+    }
+
+    // Both stores are written, so the value is the same wherever it is read
+    // from -- including after the console starts addressing the row by the
+    // other table's identifier.
+    await pool.query(
+      'UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?',
+      [value, target.settingKey]
+    );
+    await upsertSuperAdminSetting(target.settingKey, value, target.category ?? 'general', req.user?.id ?? null);
+
+    await pool.query(
+      `INSERT INTO audit_logs (user_id, action, module, record_id, new_value, ip_address)
+       VALUES (?, 'update', 'settings', ?, ?, ?)`,
+      [
+        req.user?.id ?? null,
+        target.settingKey,
+        `Updated setting ${target.settingKey}`,
+        req.ip ?? null,
+      ]
+    );
+
+    res.status(200).json({
+      message: 'Setting updated successfully',
+      key: target.settingKey,
+      value,
+    });
+  } catch (_error) {
+    console.error('Error saving system setting:', _error);
+    res.status(500).json({ error: 'Failed to save system setting' });
+  }
+};
+
+interface SettingTarget {
+  settingKey: string;
+  category: string | null;
+}
+
+/** Resolves the key of a PUT /settings request to a concrete setting. */
+const resolveSettingTarget = async (key: string): Promise<SettingTarget | null> => {
+  const composite = /^(settings|super_admin_settings):(\d+)$/.exec(key);
+  if (composite) {
+    const table = composite[1] as 'settings' | 'super_admin_settings';
+    const id = Number(composite[2]);
+    if (table === 'settings') {
+      const [rows] = await pool.query<RowDataPacket[]>(
+        'SELECT id, setting_key, category FROM settings WHERE id = ? LIMIT 1',
+        [id]
+      );
+      if (rows.length) {
+        return { settingKey: rows[0].setting_key, category: rows[0].category };
+      }
+    } else {
+      const [rows] = await pool.query<RowDataPacket[]>(
+        'SELECT id, setting_key, category FROM super_admin_settings WHERE id = ? LIMIT 1',
+        [id]
+      );
+      if (rows.length) {
+        return { settingKey: rows[0].setting_key, category: rows[0].category };
+      }
+    }
+    return null;
+  }
+
+  const [superRows] = await pool.query<RowDataPacket[]>(
+    'SELECT id, setting_key, category FROM super_admin_settings WHERE setting_key = ? LIMIT 1',
+    [key]
+  );
+  if (superRows.length) {
+    return { settingKey: superRows[0].setting_key, category: superRows[0].category };
+  }
+
+  if (/^\d+$/.test(key)) {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, setting_key, category FROM settings WHERE id = ? LIMIT 1',
+      [Number(key)]
+    );
+    if (rows.length) {
+      return { settingKey: rows[0].setting_key, category: rows[0].category };
+    }
+  }
+
+  return null;
 };
 
 // Manage user status (activate/deactivate/lock)

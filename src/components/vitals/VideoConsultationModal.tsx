@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAudit } from '@/contexts/AuditContext';
+import { ICE_SERVERS } from '@/config/app';
 
 interface VideoConsultationModalProps {
   isOpen: boolean;
@@ -233,7 +234,9 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       }
 
       // 2. Establish Real Local peer-to-peer WebRTC connections
-      const configuration = { iceServers: [{ urls: 'ice:localhost' }] };
+      // The ICE servers are configuration: a deployment behind a network that
+      // hides the client address needs a server to say what address it has.
+      const configuration = { iceServers: ICE_SERVERS };
       const pc1 = new RTCPeerConnection(configuration);
       const pc2 = new RTCPeerConnection(configuration);
       
@@ -424,7 +427,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                                 variant={isCurrent ? "default" : "outline"}
                                 className={`h-7 text-[11px] font-bold ${
                                   isCurrent 
-                                    ? 'bg-accent hover:bg-accent text-white' 
+                                    ? 'bg-accent hover:bg-accent text-accent-foreground' 
                                     : 'border-slate-800 text-slate-300 hover:bg-slate-900'
                                 }`}
                                 onClick={() => {
@@ -629,7 +632,7 @@ export const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       key={idx} 
                       className={`flex flex-col max-w-[85%] ${msg.sender === 'clinician' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                     >
-                      <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${msg.sender === 'clinician' ? 'bg-accent text-white rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'}`}>
+                      <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${msg.sender === 'clinician' ? 'bg-accent text-accent-foreground rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'}`}>
                         {msg.text}
                       </div>
                       <span className="text-[9px] text-slate-500 mt-1">{msg.time}</span>

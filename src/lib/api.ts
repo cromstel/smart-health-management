@@ -1,5 +1,28 @@
 import { toast } from 'sonner';
 import { ZodError, type ZodIssue } from 'zod';
+import { ApiError } from '@/services/api';
+
+/**
+ * The message a failed action is shown with.
+ *
+ * The API confines every clinical record to the caller's own hospital and
+ * answers a record of another hospital as "not found" (404) rather than
+ * "forbidden" (403). A 404 on an action therefore means "that record is not
+ * available to you" -- it is not a fault and retrying it will not change the
+ * answer -- so it is reported as that rather than as a failure to retry.
+ */
+export function describeActionFailure(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    if (error.status === 404) {
+      return 'That record is not available to you. It may belong to another hospital.';
+    }
+    if (error.status === 403) {
+      return 'You do not have permission to do that.';
+    }
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
 
 export interface ApiErrorResponse {
   error?: string;

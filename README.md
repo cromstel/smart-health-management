@@ -202,14 +202,18 @@ smart-health-management/
 
 > **Note:** `docs/`, `ai/`, `.opencode/`, and `scripts/` are local-only (kept out of this public repository). Detailed guides referenced below are available in the full internal checkout.
 
-## 🔐 Default Credentials (Development)
+## 🔐 Demo Accounts (Development)
 
-In the default dev setup, the frontend runs against the mock API (`src/server/mockApi.ts`) on the Vite server, so these demo accounts work without the backend:
+The demo accounts are created by the local database seed (`npm run db:setup` in `server/`). Their **passwords come from the environment** — no credential is stored in this repository:
 
-- Super Admin: `superadmin@smarthealth.com` / `April--2024!!!!` (login at `/super-admin/login`)
-- Administrator: `admin@smarthealth.com` / `Pass@135709`
-- Doctor: `doctor@smarthealth.com` / `Demo@135790` (TOTP demo user)
-- Patient: `patient@smarthealth.com` / `P@ssword135`
+| Account | Environment variable |
+| :--- | :--- |
+| Super Admin — `superadmin@smarthealth.com` (login at `/super-admin/login`) | `SEED_SUPER_ADMIN_PASSWORD` |
+| Administrator — `admin@smarthealth.com` | `SEED_ADMIN_PASSWORD` |
+| Doctor — `doctor@smarthealth.com` (TOTP demo user) | `SEED_DOCTOR_PASSWORD` |
+| Patient — `patient@smarthealth.com` | `SEED_PATIENT_PASSWORD` |
+
+Set the variables in `.env.local` (see `.env.example`) and re-run the seed; the seed hashes them at seed time. When a variable is unset, the seed falls back to a shared development-only password.
 
 Alternatively, create a user via the registration endpoint. Full details: **[DOCUMENTATION.md §5 Quick-Start Demo Credentials](DOCUMENTATION.md#5-quick-start-demo-credentials)**.
 

@@ -12,6 +12,10 @@ export function ApiDebugOverlay() {
   //
   // The guard sits outside the hooks rather than inside them: returning early
   // before useEffect would violate rules-of-hooks.
+  //
+  // It sits at bottom-16 rather than bottom-4 because the bottom-right corner
+  // belongs to the scroll-to-top control; sharing it made this pill intercept
+  // that button's clicks in development.
   if (!import.meta.env.DEV) return null;
   return <ApiDebugOverlayInner />;
 }
@@ -43,7 +47,7 @@ function ApiDebugOverlayInner() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 text-xs font-mono px-3 py-1.5 rounded-full shadow-lg border border-zinc-700 flex items-center gap-2 transition-all"
+        className="fixed bottom-16 right-4 z-50 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 text-xs font-mono px-3 py-1.5 rounded-full shadow-lg border border-zinc-700 flex items-center gap-2 transition-all"
         title="Toggle API Telemetry (Ctrl+Shift+D)"
         id="api-debug-trigger"
       >
@@ -54,7 +58,7 @@ function ApiDebugOverlayInner() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-96 bg-zinc-950 text-zinc-100 rounded-xl shadow-2xl border border-zinc-800 p-4 font-mono text-xs" id="api-debug-overlay">
+    <div className="fixed bottom-16 right-4 z-50 w-96 bg-zinc-950 text-zinc-100 rounded-xl shadow-2xl border border-zinc-800 p-4 font-mono text-xs" id="api-debug-overlay">
       <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
         <div className="flex items-center gap-2 font-semibold">
           <Terminal className="h-4 w-4 text-primary" />

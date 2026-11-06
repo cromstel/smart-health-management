@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { backendReachable, DB_SKIP_MESSAGE } from '@/e2e/helpers/backend';
+import { DEMO_PASSWORDS } from '@/e2e/helpers/credentials';
 
 /**
  * Full-application smoke: walk every route as admin, capture ALL issues
@@ -99,7 +100,7 @@ test('login as admin', { tag: '@db' }, async ({ page }) => {
   test.skip(!(await backendReachable()), DB_SKIP_MESSAGE);
   const issues: Issue[] = [];
   attachIssueCollectors(page, issues);
-  await login(page, 'admin@smarthealth.com', 'Pass@135709');
+  await login(page, 'admin@smarthealth.com', DEMO_PASSWORDS.admin);
   expect(issues.filter((i) => i.type !== 'console-error' || !i.detail.includes('favicon'))).toEqual([]);
 });
 
@@ -109,7 +110,7 @@ test.describe('authenticated pages', { tag: '@db' }, () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await login(page, 'admin@smarthealth.com', 'Pass@135709');
+    await login(page, 'admin@smarthealth.com', DEMO_PASSWORDS.admin);
   });
 
   for (const route of ROUTES) {
@@ -136,7 +137,7 @@ test('super admin pages render', { tag: '@db' }, async ({ page }) => {
   test.skip(!(await backendReachable()), DB_SKIP_MESSAGE);
   const issues: Issue[] = [];
   attachIssueCollectors(page, issues);
-  await login(page, 'superadmin@smarthealth.com', 'April--2024!!!!');
+  await login(page, 'superadmin@smarthealth.com', DEMO_PASSWORDS.superAdmin);
 
   const superAdminRoutes = ['/super-admin/dashboard', '/super-admin/users', '/super-admin/hospitals', '/super-admin/audit-logs', '/super-admin/settings', '/super-admin/operations'];
   for (const route of superAdminRoutes) {

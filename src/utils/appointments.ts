@@ -1,3 +1,5 @@
+import { APP_NAME, APP_HOST_LABEL } from '@/config/app';
+
 export function formatIcalDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -23,10 +25,10 @@ export function generateIcsFile(appointment: {
   const endTime = new Date(startTime.getTime() + 30 * 60000)
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Smart MediCare//EN
+PRODID:-//${APP_NAME}//EN
 CALSCALE:GREGORIAN
 BEGIN:VEVENT
-UID:${appointment.id}@smartmedicare.com
+UID:${appointment.id}@${APP_HOST_LABEL}
 DTSTART:${formatIcalDate(startTime)}
 DTEND:${formatIcalDate(endTime)}
 SUMMARY:${type} with ${doctorName}

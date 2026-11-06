@@ -22,7 +22,7 @@ router.post(
     body('email').trim().isEmail().withMessage('A valid work email is required').normalizeEmail(),
     body('organization').trim().isLength({ min: 2, max: 160 }).withMessage('Organisation must be between 2 and 160 characters').escape(),
     body('role').trim().isLength({ min: 2, max: 120 }).withMessage('Role must be between 2 and 120 characters').escape(),
-    body('organizationSize').isIn(['1-50', '51-250', '251-1000', '1000+']).withMessage('Select an organisation size'),
+    body('organizationSize').isIn(['1-50', '51-200', '201-500', '501-1000', '1000+']).withMessage('Select an organisation size'),
     body('preferredContact').isIn(['email', 'phone']).withMessage('Select a preferred contact method'),
     body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 30 }).matches(/^[0-9+().\-\s]*$/).withMessage('Enter a valid phone number'),
     body('phone').if(body('preferredContact').equals('phone')).trim().isLength({ min: 7, max: 30 }).withMessage('A phone number is required when phone contact is selected'),

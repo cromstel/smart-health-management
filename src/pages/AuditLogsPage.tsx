@@ -24,20 +24,11 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { exportAuditLogs } from '@/utils/auditExport';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-
-interface AuditLog {
-  userId: string;
-  userName: string;
-  action: string;
-  module: string;
-  recordId?: string;
-  oldValue?: string;
-  newValue?: string;
-  timestamp: string;
-}
+import { apiRequest } from '@/services/shmsApiClient';
+import { useAudit, type AuditReportSchedule } from '@/contexts/AuditContext';
 
 export default function AuditLogsPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const { logs, refreshLogs, saveReportSchedule, logAction } = useAudit();
   const [searchTerm, setSearchTerm] = useState('');
   const [moduleFilter, setModuleFilter] = useState('all');
 
@@ -51,27 +42,30 @@ export default function AuditLogsPage() {
   const [isDispatchingTest, setIsDispatchingTest] = useState(false);
 
   useEffect(() => {
-    const storedLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-    setLogs(storedLogs.reverse());
+    // The trail comes from the server. It used to be read from a local
+    // array in browser storage, which a user could clear with one DevTools
+    // call and which was capped at 100 entries.
+    void refreshLogs();
 
-    const savedConfig = localStorage.getItem('audit_report_schedule');
-    if (savedConfig) {
+    void (async () => {
       try {
-        const parsed = JSON.parse(savedConfig);
-        setScheduleEnabled(parsed.enabled ?? true);
-        setRecipientEmails(parsed.emails ?? 'admin-records@smarthospital.org');
-        setScheduleFrequency(parsed.frequency ?? 'monthly');
-        setReportFormat(parsed.format ?? 'csv');
-        setSelectedModules(parsed.modules ?? ['patients', 'vitals']);
+        const saved = await apiRequest<AuditReportSchedule>('/audit-logs/report-schedule');
+        if (saved) {
+          setScheduleEnabled(saved.enabled ?? true);
+          setRecipientEmails(saved.emails ?? 'admin-records@smarthospital.org');
+          setScheduleFrequency(saved.frequency ?? 'monthly');
+          setReportFormat(saved.format ?? 'csv');
+          setSelectedModules(saved.modules ?? ['patients', 'vitals']);
+        }
       } catch (e) {
-        // ignore
+        // The schedule is a convenience; the page still works without it.
       }
-    }
-  }, []);
+    })();
+  }, [refreshLogs]);
 
-  const handleSaveSchedule = () => {
+  const handleSaveSchedule = async () => {
     setIsSavingSchedule(true);
-    setTimeout(() => {
+    try {
       const config = {
         enabled: scheduleEnabled,
         emails: recipientEmails,
@@ -80,10 +74,13 @@ export default function AuditLogsPage() {
         modules: selectedModules,
         lastUpdated: new Date().toISOString()
       };
-      localStorage.setItem('audit_report_schedule', JSON.stringify(config));
-      setIsSavingSchedule(false);
+      await saveReportSchedule(config);
       toast.success('System report schedule successfully synchronized & locked in PACS policy.');
-    }, 800);
+    } catch (e) {
+      toast.error('Failed to save the report schedule');
+    } finally {
+      setIsSavingSchedule(false);
+    }
   };
 
   const handleDispatchTestReport = () => {
@@ -96,26 +93,20 @@ export default function AuditLogsPage() {
       setIsDispatchingTest(false);
       toast.success(`Encrypted activity report dispatched to: ${recipientEmails}`);
 
-      const newLog: AuditLog = {
-        userId: 'U-ADMIN',
-        userName: 'Clinical Administrator',
-        action: 'SCHEDULED_REPORT_DISPATCH',
-        module: 'system',
+      // The dispatch is recorded on the server trail, like every other
+      // audited action. It used to be pushed into a local array in browser
+      // storage, which meant the record of who dispatched a report could be
+      // removed with one DevTools call.
+      logAction('SCHEDULED_REPORT_DISPATCH', 'system', {
         recordId: 'REP-' + Math.floor(Math.random() * 900000 + 100000),
         newValue: `Automated test report successfully sent to ${recipientEmails} via TLS SMTP`,
-        timestamp: new Date().toISOString()
-      };
-
-      const currentLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-      currentLogs.push(newLog);
-      localStorage.setItem('auditLogs', JSON.stringify(currentLogs));
-      setLogs(currentLogs.slice().reverse());
+      });
     }, 1500);
   };
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
-      log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.userName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.module.toLowerCase().includes(searchTerm.toLowerCase());
 

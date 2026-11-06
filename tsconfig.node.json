@@ -13,7 +13,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    // vite/client types `import.meta.env`, which `src/config/app.ts` reads.
+    // The Vite config imports that module for the application-name default,
+    // so the Node-side project needs the same ambient types as the app.
+    "types": ["node", "vite/client"]
   },
   "include": ["vite.config.ts"]
 }

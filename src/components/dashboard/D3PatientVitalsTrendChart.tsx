@@ -190,30 +190,11 @@ export function D3PatientVitalsTrendChart() {
       .selectAll('path, line')
       .attr('stroke', 'transparent');
 
-    // Gradient Definitions
-    const defs = svg.append('defs');
-
-    // BP Gradient
-    const sysGrad = defs
-      .append('linearGradient')
-      .attr('id', 'sys-gradient')
-      .attr('x1', '0%')
-      .attr('y1', '0%')
-      .attr('x2', '0%')
-      .attr('y2', '100%');
-    sysGrad.append('stop').attr('offset', '0%').attr('stop-color', '#3b82f6').attr('stop-opacity', '0.25');
-    sysGrad.append('stop').attr('offset', '100%').attr('stop-color', '#3b82f6').attr('stop-opacity', '0.0');
-
-    // HR Gradient
-    const hrGrad = defs
-      .append('linearGradient')
-      .attr('id', 'hr-gradient')
-      .attr('x1', '0%')
-      .attr('y1', '0%')
-      .attr('x2', '0%')
-      .attr('y2', '100%');
-    hrGrad.append('stop').attr('offset', '0%').attr('stop-color', '#ef4444').attr('stop-opacity', '0.20');
-    hrGrad.append('stop').attr('offset', '100%').attr('stop-color', '#ef4444').attr('stop-opacity', '0.0');
+    // BP area fill uses a flat tint rather than a gradient: the gradient was
+    // the only gradient in the UI and the house rule forbids gradients, so the
+    // depth comes from the line stroke above it.
+    const sysColor = '#3b82f6';
+    const hrColor = '#ef4444';
 
     // Is BP Enabled?
     const isBpEnabled = seriesToggles.find((s) => s.key === 'bp')?.enabled;
@@ -232,7 +213,8 @@ export function D3PatientVitalsTrendChart() {
 
       g.append('path')
         .datum(fullData)
-        .attr('fill', 'url(#sys-gradient)')
+        .attr('fill', sysColor)
+        .attr('fill-opacity', 0.15)
         .attr('d', areaSys);
 
       const lineSys = d3
@@ -286,7 +268,8 @@ export function D3PatientVitalsTrendChart() {
 
       g.append('path')
         .datum(fullData)
-        .attr('fill', 'url(#hr-gradient)')
+        .attr('fill', hrColor)
+        .attr('fill-opacity', 0.12)
         .attr('d', areaHr);
 
       const lineHr = d3

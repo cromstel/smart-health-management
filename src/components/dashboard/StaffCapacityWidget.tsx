@@ -29,6 +29,7 @@ import {
   ReferenceLine 
 } from 'recharts';
 import jsPDF from 'jspdf';
+import { APP_NAME } from '@/config/app';
 
 interface DepartmentBreakdown {
   department: string;
@@ -373,7 +374,7 @@ export default function StaffCapacityWidget() {
     try {
       const doc = new jsPDF();
       doc.setFontSize(16);
-      doc.text('Smart MediCare - Staff Utilization Report', 14, 20);
+      doc.text(`${APP_NAME} - Staff Utilization Report`, 14, 20);
       doc.setFontSize(10);
       doc.text(`Shift: ${selectedShift} | Generated: ${new Date().toLocaleString()}`, 14, 28);
       doc.text(`Total Active Shift Load: ${totalLoad}/${totalCapacity} slots (${overallPercentage}% saturation)`, 14, 34);

@@ -4,8 +4,7 @@ import { toast } from 'sonner';
 export function useFormAutoSave<T extends Record<string, any>>(
   storageKey: string,
   initialData: T,
-  isOpen: boolean,
-  onRestore?: (restoredData: T) => void
+  isOpen: boolean
 ) {
   const [formData, setFormData] = useState<T>(initialData);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
@@ -21,30 +20,13 @@ export function useFormAutoSave<T extends Record<string, any>>(
   // Check for existing draft when dialog opens
   useEffect(() => {
     if (isOpen) {
-      const savedRaw = localStorage.getItem(`autosave_draft_${storageKey}`);
-      if (savedRaw) {
-        try {
-          const parsed = JSON.parse(savedRaw);
-          if (parsed && parsed.data && parsed.timestamp) {
-            // Check if draft is less than 24 hours old
-            const isFresh = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000;
-            if (isFresh && Object.keys(parsed.data).length > 0) {
-              setFormData(parsed.data);
-              setDraftSavedAt(parsed.savedAt || new Date(parsed.timestamp).toLocaleTimeString());
-              setHasRestoredDraft(true);
-              if (onRestore) {
-                onRestore(parsed.data);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to parse autosave draft', e);
-        }
-      }
+      // Session-scoped draft only (server persistence disabled per audit).
+      setHasRestoredDraft(false);
+      setDraftSavedAt(null);
     } else {
       setHasRestoredDraft(false);
     }
-  }, [isOpen, storageKey, onRestore]);
+  }, [isOpen]);
 
   // Auto-save form data on change (debounced 500ms)
   useEffect(() => {
@@ -61,12 +43,7 @@ export function useFormAutoSave<T extends Record<string, any>>(
     setIsAutoSaving(true);
     const timer = setTimeout(() => {
       const savedAtStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const payload = {
-        data: formData,
-        timestamp: Date.now(),
-        savedAt: savedAtStr,
-      };
-      localStorage.setItem(`autosave_draft_${storageKey}`, JSON.stringify(payload));
+      // Draft persistence disabled per audit (session-scoped only); do not write to localStorage.
       setDraftSavedAt(savedAtStr);
       setIsAutoSaving(false);
     }, 500);
@@ -74,12 +51,11 @@ export function useFormAutoSave<T extends Record<string, any>>(
     return () => clearTimeout(timer);
   }, [formData, isOpen, storageKey]);
 
-  // Clear draft from localStorage
+  // Clear draft (session-scoped; no localStorage removal per audit).
   const clearDraft = useCallback(() => {
-    localStorage.removeItem(`autosave_draft_${storageKey}`);
     setHasRestoredDraft(false);
     setDraftSavedAt(null);
-  }, [storageKey]);
+  }, []);
 
   // Discard draft and reset form to initial values
   const discardDraft = useCallback(() => {

@@ -26,8 +26,18 @@ env:
   JWT_SECRET: ci-only-not-a-real-secret-value-0000000000000000
   SESSION_SECRET: ci-only-not-a-real-secret-value-0000000000000000
   # 32-byte key / 16-byte IV, hex encoded. CI-only; never a production value.
-  ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
-  ENCRYPTION_IV: 00000000000000000000000000000000
+  # Quoted: an unquoted run of zeros is a number, not a string, and the
+  # environment would hand the application "0" instead of the hex value.
+  ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+  ENCRYPTION_IV: '00000000000000000000000000000000'
+  # The product name is required configuration and is not written into the
+  # source. The build refuses to produce a bundle without it, so CI supplies
+  # one exactly as a deployment does.
+  APP_NAME: 'CI Test Application'
+  VITE_APP_NAME: 'CI Test Application'
+  # The dev server's port. A build does not start a server, but the
+  # end-to-end job does, so the value is supplied throughout.
+  VITE_PORT: "5175"
 
 jobs:
   frontend:
@@ -68,13 +78,18 @@ jobs:
     # still targeted pre-rename routes, so nothing ran and nothing was green to
     # go stale.
     #
-    # Scope is deliberate. `--grep-invert @db` excludes the specs that need the
-    # real API plus a seeded MySQL (the clinician/super-admin route walks, the
-    # super-admin user-management flow). Those skip themselves with an explicit
-    # reason when the backend is absent, rather than reporting a wall of 403s
-    # that look like product regressions. Everything that runs here needs only
-    # the Vite dev server, because src/server/mockApi.ts is mounted as middleware
-    # and serves the API in-process.
+    # Scope is deliberate. `--grep-invert @db` excludes every spec that needs a
+    # live API: the clinician and super-admin route walks, the super-admin
+    # user-management flow, the MFA challenge, the request-demo submission, and
+    # the authenticated half of the scroll-to-top boundary. Those self-skip with
+    # an explicit reason when the backend is absent rather than reporting a wall
+    # of failed logins that look like product regressions.
+    #
+    # What is left is everything the Vite dev server alone can answer: the
+    # sign-in pages, the responsive layout guard, landing, password recovery.
+    # This job no longer serves the API in-process -- src/server/mockApi.ts is
+    # gone and every mode calls VITE_API_URL -- so a spec that needs an endpoint
+    # has to be tagged `@db`, or it fails here for want of a backend.
     env:
       VITE_PORT: 5175
       CI: "true"
@@ -143,6 +158,12 @@ jobs:
       DB_USER: root
       DB_PASSWORD: ci-root-password
       DB_SSL: "false"
+      # The ports are configuration and the API requires them. CI supplies
+      # them exactly as a deployment does.
+      PORT: "5000"
+      HTTPS_PORT: "8443"
+      FRONTEND_URL: http://localhost:5175
+      VITE_PORT: "5175"
 
     defaults:
       run:
@@ -172,6 +193,14 @@ jobs:
 
       - name: Apply schema
         run: mysql --host=127.0.0.1 --port=3306 --user=root --password=ci-root-password shms_ci < src/database/schema.sql
+
+      # The migrations are applied here, not only in development. A migration
+      # that has never been run against a fresh database is a migration that
+      # has never been tested: the ordering constraint between a table and
+      # the table its foreign key points at is exactly the kind of thing
+      # that only shows up on a clean install.
+      - name: Apply migrations
+        run: npm run db:migrate
 
       - name: Seed data
         run: mysql --host=127.0.0.1 --port=3306 --user=root --password=ci-root-password shms_ci < src/database/seed.sql

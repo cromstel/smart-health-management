@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/Logo';
+import { APP_NAME } from '@/config/app';
 import {
   Sidebar,
   SidebarContent,
@@ -150,7 +151,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-sidebar-foreground/60">© 2024 Smart MediCare</p>
+        <p className="text-xs text-sidebar-foreground/60">© 2024 {APP_NAME}</p>
       </SidebarFooter>
     </Sidebar>
   );

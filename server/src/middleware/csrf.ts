@@ -16,10 +16,10 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
   const token = crypto.createHash('sha1').update(req.session._csrfSecret).digest('base64');
   res.cookie('XSRF-TOKEN', token, { httpOnly: false, secure: process.env.NODE_ENV === 'production' });
   // Also expose the token as a response header. The cookie alone is unusable
-  // for this client: the API runs on a different origin than the app (VITE_API_URL
-  // is :5000 while the app is :5175), so document.cookie on the app page cannot
-  // see a cookie scoped to :5000, and the double-submit check had nothing to
-  // compare against -- every unauthenticated POST returned 403.
+  // for this client: the API runs on a different origin than the app, so
+  // document.cookie on the app page cannot see a cookie scoped to the API's
+  // origin, and the double-submit check had nothing to compare against --
+  // every unauthenticated POST returned 403.
   //
   // The header is only readable cross-origin if CORS exposes it, which
   // index.ts now does via exposedHeaders. The cookie is kept for same-origin
@@ -31,7 +31,18 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
 };
 
 export const validateCsrfToken = (req: Request, res: Response, next: NextFunction): void => {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/api/analytics/event' || req.path === '/api/demo-requests') {
+  // Exempt paths carry no ambient credential to abuse:
+  //  - /api/analytics/event and /api/demo-requests are public writes;
+  //  - /api/onboard is the public hospital-registration form. It is
+  //    unauthenticated by design (a prospective hospital has no account), so
+  //    there is no session for a forged request to ride, and the row it
+  //    creates stays inactive until a super administrator confirms it.
+  if (
+    ['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
+    req.path === '/api/analytics/event' ||
+    req.path === '/api/demo-requests' ||
+    req.path === '/api/onboard'
+  ) {
     return next();
   }
 

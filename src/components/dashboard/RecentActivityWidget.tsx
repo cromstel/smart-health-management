@@ -19,6 +19,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiRequest } from '@/services/shmsApiClient';
 import { api } from '@/services/api';
 
 export interface ActivityItem {
@@ -71,23 +72,23 @@ export default function RecentActivityWidget({ initialActivities = [], className
         // Handled silently
       }
 
-      // 2. Fetch audit logs from localStorage or context
+      // 2. Fetch the audit trail from the server. It used to be read from a
+      // local array in browser storage, which the user could edit or clear.
       const localAuditLogs: ActivityItem[] = [];
       try {
-        const rawLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-        if (Array.isArray(rawLogs)) {
-          rawLogs.slice(-10).reverse().forEach((log: any, idx: number) => {
-            localAuditLogs.push({
-              id: `audit-${idx}-${Date.now()}`,
-              category: 'audit',
-              title: log.action || 'System Action Logged',
-              description: log.module ? `Module: ${log.module} ${log.recordId ? `(ID: ${log.recordId})` : ''}` : 'Action recorded by user',
-              timestamp: log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
-              user: log.userName || user?.name || 'Current User',
-              status: 'info',
-            });
+        const res = await apiRequest<{ logs?: any[] }>('/audit-logs', { query: { limit: 10 } });
+        const recent = Array.isArray(res?.logs) ? res.logs : [];
+        recent.forEach((log: any, idx: number) => {
+          localAuditLogs.push({
+            id: `audit-${idx}-${Date.now()}`,
+            category: 'audit',
+            title: log.action || 'System Action Logged',
+            description: log.module ? `Module: ${log.module} ${log.recordId ? `(ID: ${log.recordId})` : ''}` : 'Action recorded by user',
+            timestamp: log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            user: log.userName || user?.name || 'Current User',
+            status: 'info',
           });
-        }
+        });
       } catch (_e) {
         // Handled silently
       }

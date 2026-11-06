@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { APP_NAME } from '@/config/app';
 
 type LogoVariant = 'default' | 'light' | 'sidebar';
 type LogoSize = 'xs' | 'sm' | 'md';
@@ -11,6 +12,9 @@ interface LogoProps {
   /** Set false to render just the mark (e.g. tight navbars). */
   showText?: boolean;
   className?: string;
+  /** Optional override for the wordmark size, e.g. responsive classes on narrow
+   *  layouts where the nowrap wordmark would otherwise set a min-content floor. */
+  textClassName?: string;
 }
 
 const SIZES: Record<LogoSize, { box: string; text: string }> = {
@@ -26,7 +30,7 @@ const TEXT_COLORS: Record<LogoVariant, string> = {
 };
 
 /**
- * Single source of truth for the Smart MediCare brand mark.
+ * Single source of truth for the application brand mark.
  * Every logo on the site renders through this component and points at the
  * one canonical asset: /public/medicare-logo.webp.
  */
@@ -35,14 +39,15 @@ export default function Logo({
   size = 'sm',
   showText = true,
   className,
+  textClassName,
 }: LogoProps) {
   const { box, text } = SIZES[size];
 
   return (
     <span
-      className={cn('inline-flex items-center gap-2.5', className)}
+      className={cn('inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap', className)}
       role="img"
-      aria-label="Smart MediCare"
+      aria-label={APP_NAME}
     >
       <img
         src="/medicare-logo.webp"
@@ -50,11 +55,11 @@ export default function Logo({
         aria-hidden="true"
         width={size === 'md' ? 44 : size === 'sm' ? 36 : 32}
         height={size === 'md' ? 44 : size === 'sm' ? 36 : 32}
-        className={cn(box, 'rounded-lg object-contain')}
+        className={cn(box, 'shrink-0 rounded-lg object-contain')}
       />
       {showText && (
-        <span className={cn('font-display font-semibold tracking-tight uppercase', text, TEXT_COLORS[variant])}>
-          Smart <span className="text-accent">MediCare</span>
+        <span className={cn('font-display font-semibold tracking-tight uppercase', textClassName ?? text, TEXT_COLORS[variant])}>
+          SMART <span className="text-accent">MEDICARE</span>
         </span>
       )}
     </span>

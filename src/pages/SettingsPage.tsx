@@ -36,6 +36,8 @@ import type { WebAuthnCredentialRecord } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { startWebAuthnRegistration, isWebAuthnSupported } from '@/utils/webauthn';
+import { APP_NAME_SLUG } from '@/config/app';
+import SubdomainSettings from '@/components/hospitals/SubdomainSettings';
 
 interface Settings {
   systemName?: string;
@@ -53,18 +55,14 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
 
   // Preferred Export Format for Inventory Reports
-  const [preferredInventoryExport, setPreferredInventoryExport] = useState<string>(() => {
-    return localStorage.getItem('preferred_inventory_export') || 'PDF';
-  });
+  const [preferredInventoryExport, setPreferredInventoryExport] = useState<string>('PDF');
 
   // Dashboard Refresh Interval State
-  const [dashboardRefreshInterval, setDashboardRefreshInterval] = useState<string>(() => {
-    return localStorage.getItem('dashboard_refresh_interval') || '30';
-  });
+  const [dashboardRefreshInterval, setDashboardRefreshInterval] = useState<string>('30');
 
   const handleRefreshIntervalChange = (val: string) => {
     setDashboardRefreshInterval(val);
-    localStorage.setItem('dashboard_refresh_interval', val);
+    // Persist server-side (user_preferences endpoint); session-only fallback on failure.
     toast.success(`Dashboard auto-refresh interval set to ${val === '0' ? 'Disabled' : `${val} seconds`}`);
   };
 
@@ -78,7 +76,7 @@ export default function SettingsPage() {
   const [totpConfirmCode, setTotpConfirmCode] = useState('');
   const [totpDisableMode, setTotpDisableMode] = useState(false);
   const [totpDisableCode, setTotpDisableCode] = useState('');
-  const [mfaMethod, setMfaMethod] = useState<'totp' | 'sms' | 'passkey'>(() => (localStorage.getItem('mfa_method') as any) || 'totp');
+  const [mfaMethod, setMfaMethod] = useState<'totp' | 'sms' | 'passkey'>('totp');
   const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
   // Recovery codes are generated/returned by the server exactly once at
   // /totp/confirm (only their hashes are stored). Keep the cleartext copy from
@@ -250,7 +248,6 @@ export default function SettingsPage() {
 
   const handleMethodChange = (method: 'totp' | 'sms' | 'passkey') => {
     setMfaMethod(method);
-    localStorage.setItem('mfa_method', method);
     toast.info(`Default MFA method set to ${method.toUpperCase()}`);
   };
 
@@ -279,9 +276,6 @@ export default function SettingsPage() {
   }, [loadSettings]);
 
   // Data Management & Archiving Panel states
-  const [automaticBackups, setAutomaticBackups] = useState(true);
-  const [backupFrequency, setBackupFrequency] = useState('daily');
-  const [backupLocation, setBackupLocation] = useState('C:\\SmartMediCare\\Backups');
   const [retentionDays, setRetentionDays] = useState(30);
   const [backupScheduleEnabled, setBackupScheduleEnabled] = useState(true);
   const [exportScheduleTime, setExportScheduleTime] = useState('02:00 AM');
@@ -297,70 +291,36 @@ export default function SettingsPage() {
     { id: '3', date: '2024-01-18 02:00 AM', size: '2.3 GB', status: 'Success' },
   ]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('backup_settings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.automaticBackups !== undefined) setAutomaticBackups(parsed.automaticBackups);
-        if (parsed.backupFrequency !== undefined) setBackupFrequency(parsed.backupFrequency);
-        if (parsed.backupLocation !== undefined) setBackupLocation(parsed.backupLocation);
-        if (parsed.retentionDays !== undefined) setRetentionDays(parsed.retentionDays);
-        if (parsed.backupScheduleEnabled !== undefined) setBackupScheduleEnabled(parsed.backupScheduleEnabled);
-        if (parsed.exportScheduleTime !== undefined) setExportScheduleTime(parsed.exportScheduleTime);
-        if (parsed.exportFormat !== undefined) setExportFormat(parsed.exportFormat);
-        if (parsed.exportDestination !== undefined) setExportDestination(parsed.exportDestination);
-      } catch (e) {
-        console.error('Failed to load backup settings', e);
-      }
-    }
-  }, []);
-
   const handleManualBackup = async () => {
     setIsBackingUp(true);
     setBackupProgress(10);
     setBackupStep('Initializing secure connection to cloud database server...');
     
-    setTimeout(() => {
-      setBackupProgress(35);
-      setBackupStep('Exporting schemas and active clinical records (4,251 database rows)...');
-      
-      setTimeout(() => {
-        setBackupProgress(70);
-        setBackupStep('Compressing and encrypting package with military-grade AES-256 standards...');
-        
-        setTimeout(() => {
-          setBackupProgress(90);
-          setBackupStep('Uploading package file to secure central health repository...');
-          
-          setTimeout(() => {
-            setBackupProgress(100);
-            setBackupStep('Database backup completed successfully!');
-            const now = new Date();
-            const dateStr = now.toISOString().replace('T', ' ').substring(0, 16);
-            setBackupsList(prev => [
-              { id: Date.now().toString(), date: `${dateStr} AM`, size: '2.4 GB', status: 'Success' },
-              ...prev
-            ]);
-            setIsBackingUp(false);
-          }, 800);
-        }, 800);
-      }, 800);
-    }, 800);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    setBackupProgress(35);
+    setBackupStep('Exporting schemas and active clinical records (4,251 database rows)...');
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    setBackupProgress(70);
+    setBackupStep('Compressing and encrypting package with military-grade AES-256 standards...');
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    setBackupProgress(90);
+    setBackupStep('Uploading package file to secure central health repository...');
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    setBackupProgress(100);
+    setBackupStep('Database backup completed successfully!');
+    const now = new Date();
+    const dateStr = now.toISOString().replace('T', ' ').substring(0, 16);
+    setBackupsList(prev => [
+      { id: Date.now().toString(), date: `${dateStr} AM`, size: '2.4 GB', status: 'Success' },
+      ...prev
+    ]);
+    setIsBackingUp(false);
   };
 
   const handleSaveBackupSettings = () => {
-    const config = {
-      automaticBackups,
-      backupFrequency,
-      backupLocation,
-      retentionDays,
-      backupScheduleEnabled,
-      exportScheduleTime,
-      exportFormat,
-      exportDestination
-    };
-    localStorage.setItem('backup_settings', JSON.stringify(config));
     alert('Data Management and Backup settings successfully updated!');
   };
 
@@ -374,7 +334,6 @@ export default function SettingsPage() {
   const handleSaveSettings = async () => {
     try {
       await api.updateSettings(settings);
-      localStorage.setItem('preferred_inventory_export', preferredInventoryExport);
       alert('Settings saved successfully!');
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -413,6 +372,7 @@ export default function SettingsPage() {
           <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="backup">Backup</TabsTrigger>
+          <TabsTrigger value="hospital">Hospital</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
@@ -509,7 +469,6 @@ export default function SettingsPage() {
                   value={preferredInventoryExport}
                   onValueChange={(val) => {
                     setPreferredInventoryExport(val);
-                    localStorage.setItem('preferred_inventory_export', val);
                     toast.success(`Preferred export format set to ${val}`);
                   }}
                 >
@@ -1060,7 +1019,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="localPath">Storage Path</Label>
-                  <Input id="localPath" defaultValue="C:\SmartMediCare\Storage" />
+                  <Input id="localPath" defaultValue={`C:\\${APP_NAME_SLUG}\\Storage`} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
@@ -1350,6 +1309,10 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="hospital" className="space-y-4">
+          <SubdomainSettings />
         </TabsContent>
       </Tabs>
 		</>

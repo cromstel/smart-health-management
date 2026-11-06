@@ -20,6 +20,10 @@ export default [
       'src/docs/**/*.js',
       'dist/**',
       'dev-dist/**',
+      'public/**',
+      // The deployment bundle is build output: the compiled application and
+      // the release archive. It is not source, and it is not linted.
+      'deploy/**',
     ]
   },
   js.configs.recommended,

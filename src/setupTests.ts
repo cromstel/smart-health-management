@@ -1,4 +1,10 @@
 import '@testing-library/jest-dom/vitest';
+import { configure } from '@testing-library/dom';
+
+// Radix portals (Dialog/Select) plus happy-dom event-loop stalls can exceed
+// Testing Library's 1s default async budget under parallel-worker load.
+// 5s keeps waitFor/findBy stable without masking real failures.
+configure({ asyncUtilTimeout: 5000 });
 
 // Suppress known unhandled rejections from motion/happy-dom during test teardown
 // These are benign "Animation was canceled" errors that occur when motion animations

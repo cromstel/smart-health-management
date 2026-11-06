@@ -18,5 +18,8 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["e2e", "src/e2e"]
+  // `src/vite-env.d.ts` is included so the specs (and the application-config
+  // module they import) see the same ambient `import.meta.env` types as the
+  // app project.
+  "include": ["e2e", "src/e2e", "src/vite-env.d.ts"]
 }

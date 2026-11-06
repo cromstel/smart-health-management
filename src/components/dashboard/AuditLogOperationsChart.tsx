@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ShieldAlert, Activity, FileText, CheckCircle2 } from 'lucide-react';
-import { api } from '@/services/api';
+import { apiRequest } from '@/services/shmsApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AuditLogItem {
@@ -25,43 +25,33 @@ export function AuditLogOperationsChart({ className = '' }: { className?: string
   // Gate the call on the permission and fall back to the local/mock timeline
   // without touching the network when it is not held.
   const { user } = useAuth();
-  const canReadAuditLogs = !!user && (user.role === 'Super Admin' || user.role === 'super_admin');
 
   useEffect(() => {
     async function fetchLogs() {
-      if (!canReadAuditLogs) {
+      if (!user) {
         setLoading(false);
         return;
       }
       setLoading(true);
       try {
-        const res = await api.getAuditLogs(100);
-        if (Array.isArray(res)) {
-          setLogs(res);
-        } else if (res && Array.isArray((res as any).logs)) {
-          setLogs((res as any).logs);
-        } else {
-          // Locally-recorded audit entries only.
-          //
-          // This previously invented 60 audit records here and again in the
-          // catch below, with plausible actions, users and timestamps. An audit
-          // trail is a security record: fabricating entries makes the panel
-          // indistinguishable from real activity, which is worse than showing
-          // nothing. No source means no chart.
-          const local = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-          setLogs(Array.isArray(local) ? local : []);
-        }
+        // The trail comes from the server, which decides the scope: an
+        // administrator sees everything, everyone else sees their own
+        // actions. The local copy in browser storage is not consulted -- it
+        // was editable and removable by the user, which is not a property an
+        // audit record can have.
+        const res = await apiRequest<{ logs?: any[] }>('/audit-logs', { query: { limit: 100 } });
+        setLogs(Array.isArray(res?.logs) ? res.logs : []);
       } catch (err) {
         console.warn('Failed to load audit logs for chart', err);
-        // A failed audit fetch leaves the panel empty on purpose. See the note
-        // in the success branch: invented security records are worse than none.
+        // A failed audit fetch leaves the panel empty on purpose. Invented
+        // security records are worse than none.
         setLogs([]);
       } finally {
         setLoading(false);
       }
     }
     fetchLogs();
-  }, [canReadAuditLogs]);
+  }, [user]);
 
   const chartData = useMemo(() => {
     const daysCount = timeRange === '30d' ? 30 : timeRange === '14d' ? 14 : 7;

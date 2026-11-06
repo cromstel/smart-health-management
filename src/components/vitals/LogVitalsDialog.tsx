@@ -113,17 +113,7 @@ export function LogVitalsDialog({
   } = useFormAutoSave(
     `log_vitals_${selectedPatientId}`,
     currentFormData,
-    open,
-    (restored) => {
-      if (restored.systolic) setSystolic(restored.systolic);
-      if (restored.diastolic) setDiastolic(restored.diastolic);
-      if (restored.heartRate) setHeartRate(restored.heartRate);
-      if (restored.temperature) setTemperature(restored.temperature);
-      if (restored.tempUnit) setTempUnit(restored.tempUnit);
-      if (restored.respiratoryRate) setRespiratoryRate(restored.respiratoryRate);
-      if (restored.oxygenSaturation) setOxygenSaturation(restored.oxygenSaturation);
-      if (restored.notes !== undefined) setNotes(restored.notes);
-    }
+    open
   );
 
   const handleDiscard = () => {

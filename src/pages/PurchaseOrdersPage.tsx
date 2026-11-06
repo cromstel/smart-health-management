@@ -12,6 +12,35 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
+// The database stores the purchase-order workflow in lowercase:
+// pending -> ordered -> shipped -> delivered, with cancellation allowed while
+// the order is still in flight. The screen used to send "Ordered",
+// "Completed" and "Cancelled", and "Completed" is not a value the column
+// accepts, so those requests were rejected.
+type PurchaseOrderStatus = 'pending' | 'ordered' | 'shipped' | 'delivered' | 'cancelled';
+
+const nextActionsFor = (status: string): Array<{ label: string; value: PurchaseOrderStatus }> => {
+  // The stored status is lowercase, but the value can arrive from a cached
+  // response or an older record in a different case, so it is normalised
+  // before the workflow is resolved.
+  switch (String(status || '').toLowerCase()) {
+    case 'pending':
+      return [
+        { label: 'Approve', value: 'ordered' },
+        { label: 'Cancel', value: 'cancelled' },
+      ];
+    case 'ordered':
+      return [
+        { label: 'Ship', value: 'shipped' },
+        { label: 'Cancel', value: 'cancelled' },
+      ];
+    case 'shipped':
+      return [{ label: 'Mark delivered', value: 'delivered' }];
+    default:
+      return [];
+  }
+};
+
 export default function PurchaseOrdersPage() {
   const { hasPermission } = useAuth();
   const { logAction } = useAudit();
@@ -71,11 +100,14 @@ export default function PurchaseOrdersPage() {
     }
   };
 
-  const advanceStatus = async (order: any, status: 'Ordered' | 'Delivered' | 'Completed' | 'Cancelled') => {
+  const advanceStatus = async (order: any, status: PurchaseOrderStatus) => {
     try {
       await api.updatePurchaseOrder(order.id, { status });
       logAction('update_status', 'purchaseOrder', { recordId: String(order.id), newValue: status });
-      if (status === 'Completed') {
+      // Goods are received when the order is marked delivered, so the
+      // inventory transaction is posted at that point. The old code keyed it
+      // off a "Completed" status that is not a value the database accepts.
+      if (status === 'delivered') {
         try {
           const accounts: any[] = (await api.getAccounts()) as any[];
           const inventory = accounts.find((a) => String(a.name).toLowerCase().includes('inventory')) || accounts[0];
@@ -206,9 +238,11 @@ export default function PurchaseOrdersPage() {
                         <TableCell>{o.status}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Ordered')}>Approve</Button>
-                            <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Completed')}>Complete</Button>
-                            <Button variant="ghost" size="sm" onClick={() => advanceStatus(o, 'Cancelled')}>Cancel</Button>
+                            {nextActionsFor(o.status).map((action) => (
+                              <Button key={action.value} variant="ghost" size="sm" onClick={() => advanceStatus(o, action.value)}>
+                                {action.label}
+                              </Button>
+                            ))}
                           </div>
                         </TableCell>
                       </TableRow>

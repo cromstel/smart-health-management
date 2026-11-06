@@ -81,6 +81,16 @@ export default function SuperAdminHospitals() {
                 <p className="text-muted-foreground">{hospital.address}</p>
                 <p className="text-muted-foreground">{hospital.phone}</p>
                 <p className="text-muted-foreground">{hospital.email}</p>
+                {/* The tenant address. A hospital without one is simply not
+                    addressable by subdomain yet — say so rather than hiding it. */}
+                <p className="font-mono text-xs text-muted-foreground">
+                  {hospital.subdomain
+                    ? `${hospital.subdomain}.medicare.cromstelit.com`
+                    : 'No subdomain assigned'}
+                </p>
+                {hospital.domain && (
+                  <p className="font-mono text-xs text-muted-foreground">{hospital.domain}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">

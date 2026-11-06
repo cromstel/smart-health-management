@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,114 +23,250 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Shield, Edit, Trash2 } from 'lucide-react';
-import { api } from '@/services/api';
+import { Plus, Shield, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, type RolePermissionFlags, type RoleRecord } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudit } from '@/contexts/AuditContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { describeActionFailure } from '@/lib/api';
+import {
+  GLOBAL_MODULE,
+  PERMISSION_ACTIONS,
+  buildPermissionDraft,
+  buildPermissionPayload,
+  hasUnsavedChanges,
+} from '@/lib/rolePermissions';
 
-interface Role {
-  id: string;
+/**
+ * Roles and the permissions they hold.
+ *
+ * The page used to be able to list the roles and create them, and nothing
+ * else: the switches in the permissions table were not connected to
+ * anything, the "Save Changes" button did nothing, and the "Delete Role"
+ * button only wrote an audit entry about itself. The permissions a role
+ * holds are what decides what the clinical workforce can reach, so the
+ * editor is the point of the page and it now writes through the API:
+ * GET /roles/:id reads the role that is about to be changed, and
+ * PUT /roles/:id/permissions writes the capabilities back.
+ */
+
+interface RoleSummary {
+  /** `roles.id`. The service returns the numeric key. */
+  id: string | number;
   name: string;
-  description: string;
-  userCount: number;
-  permissions: {
-    patients: { view: boolean; add: boolean; edit: boolean; delete: boolean };
-    appointments: { view: boolean; add: boolean; edit: boolean; delete: boolean };
-    staff: { view: boolean; add: boolean; edit: boolean; delete: boolean };
-    financial: { view: boolean; add: boolean; edit: boolean; delete: boolean };
-  };
+  description: string | null;
+  user_count: number;
+  permissions: Record<string, RolePermissionFlags>;
 }
 
+const ACTION_LABEL: Record<(typeof PERMISSION_ACTIONS)[number], string> = {
+  view: 'View',
+  add: 'Add',
+  edit: 'Edit',
+  delete: 'Delete',
+};
+
 export default function RolesPage() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { logAction } = useAudit();
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newRole, setNewRole] = useState({
-    name: '',
-    description: '',
-  });
+
+  const [roles, setRoles] = useState<RoleSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // The role the editor is showing, and the copy of it the server holds.
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [roleDetail, setRoleDetail] = useState<RoleRecord | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [draft, setDraft] = useState<Record<string, RolePermissionFlags>>({});
+  const [saving, setSaving] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+
+  // The create dialog.
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newRole, setNewRole] = useState({ name: '', description: '' });
+  const [creating, setCreating] = useState(false);
+
+  // The delete confirmation.
+  const [rolePendingDelete, setRolePendingDelete] = useState<RoleSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const canEdit = hasPermission('role:edit');
+  const canDelete = hasPermission('role:delete');
+  const canAdd = hasPermission('role:add');
+
+  // The platform administrator holds the wildcard grant. Only they may
+  // change it, because it decides access to every module at once.
+  const isPlatformAdmin = user?.role === 'super_admin' || user?.role === 'Super Admin';
 
   const loadRoles = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.getRoles() as any[];
-      if (Array.isArray(data)) {
-        const transformedData = data.map((role: any) => {
-          const perms = role.permissions || {};
-          return {
-            id: role.id,
-            name: role.name,
-            description: role.description || `Permissions for ${role.name} role`,
-            userCount: role.userCount || role.user_count || 0,
-            permissions: {
-              patients: {
-                view: perms.patients?.view ?? true,
-                add: perms.patients?.add ?? (role.name !== 'Nurse'),
-                edit: perms.patients?.edit ?? true,
-                delete: perms.patients?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-              },
-              appointments: {
-                view: perms.appointments?.view ?? true,
-                add: perms.appointments?.add ?? true,
-                edit: perms.appointments?.edit ?? true,
-                delete: perms.appointments?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-              },
-              staff: {
-                view: perms.staff?.view ?? (role.name !== 'Nurse'),
-                add: perms.staff?.add ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-                edit: perms.staff?.edit ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-                delete: perms.staff?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-              },
-              financial: {
-                view: perms.financial?.view ?? (role.name === 'Admin' || role.name === 'Super Admin' || role.name === 'Accountant'),
-                add: perms.financial?.add ?? (role.name === 'Admin' || role.name === 'Super Admin' || role.name === 'Accountant'),
-                edit: perms.financial?.edit ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-                delete: perms.financial?.delete ?? (role.name === 'Admin' || role.name === 'Super Admin'),
-              },
-            },
-          };
-        });
-        setRoles(transformedData);
-      } else {
-        setRoles([]);
-      }
-    } catch (error: any) {
-      console.error('Failed to load roles from API:', error);
+      const data = (await api.getRoles()) as RoleSummary[];
+      setRoles(Array.isArray(data) ? data : []);
+      setLoadError(null);
+    } catch (error) {
       setRoles([]);
+      setLoadError(describeActionFailure(error, 'Failed to load roles'));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadRoles();
+    void loadRoles();
   }, [loadRoles]);
+
+  /**
+   * The modules the installation knows about.
+   *
+   * They are read from the roles that exist rather than from a list written
+   * into this file: a module the API guards but no role holds yet would
+   * still be offered, and a module that no longer exists disappears on its
+   * own instead of lingering in a hard-coded table.
+   */
+  const knownModules = useMemo(() => {
+    const modules = new Set<string>();
+    roles.forEach((role) =>
+      Object.keys(role.permissions ?? {}).forEach((module) => modules.add(module))
+    );
+    return Array.from(modules).sort();
+  }, [roles]);
+
+  /**
+   * Reads the role that is about to be edited.
+   *
+   * The list is a summary for the picker; the record that is about to
+   * change deserves to be the one the server read back.
+   */
+  const selectRole = useCallback(
+    async (roleId: string) => {
+      setSelectedRoleId(roleId);
+      setDetailLoading(true);
+      setEditorError(null);
+
+      try {
+        const detail = await api.getRole(roleId);
+        setRoleDetail(detail);
+        setDraft(buildPermissionDraft(detail.permissions, knownModules));
+      } catch (error) {
+        setRoleDetail(null);
+        setDraft({});
+        setEditorError(describeActionFailure(error, 'Failed to load the role'));
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [knownModules]
+  );
+
+  const selectedRole = useMemo(
+    () => roles.find((role) => String(role.id) === selectedRoleId) ?? null,
+    [roles, selectedRoleId]
+  );
+
+  const editableModules = useMemo(() => {
+    const modules = new Set(knownModules);
+    Object.keys(draft).forEach((module) => modules.add(module));
+    return Array.from(modules).sort();
+  }, [knownModules, draft]);
+
+  const dirty = useMemo(
+    () => hasUnsavedChanges(draft, roleDetail?.permissions ?? {}),
+    [draft, roleDetail]
+  );
+
+  const handleToggle = (module: string, action: (typeof PERMISSION_ACTIONS)[number], checked: boolean) => {
+    setDraft((previous) => {
+      const current = previous[module] ?? { view: false, add: false, edit: false, delete: false };
+      return {
+        ...previous,
+        [module]: { ...current, [action]: checked },
+      };
+    });
+  };
+
+  const handleSavePermissions = async () => {
+    if (!roleDetail) return;
+
+    setSaving(true);
+    setEditorError(null);
+
+    try {
+      const existingModules = Object.keys(roleDetail.permissions ?? {});
+      await api.updateRolePermissions(roleDetail.id, buildPermissionPayload(draft, existingModules));
+      logAction('permission_update', 'role', {
+        recordId: String(roleDetail.id),
+        newValue: Object.keys(draft).length + ' modules',
+      });
+      toast.success(`Permissions updated for ${roleDetail.name}`);
+      await loadRoles();
+      await selectRole(String(roleDetail.id));
+    } catch (error) {
+      const message = describeActionFailure(error, 'Failed to update permissions');
+      setEditorError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddRole = async () => {
+    if (newRole.name.trim() === '') {
+      toast.error('A role needs a name');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const created = await api.createRole({
+        name: newRole.name.trim(),
+        description: newRole.description.trim(),
+      });
+      logAction('create', 'role', { recordId: String(created.id), newValue: newRole.name.trim() });      toast.success(`Role ${newRole.name.trim()} created. Grant its permissions next.`);
+      setIsDialogOpen(false);
+      setNewRole({ name: '', description: '' });
+      await loadRoles();
+      // The new role has no permissions yet, so it is opened in the editor
+      // straight away: that is the next thing that has to happen.
+      await selectRole(String(created.id));
+    } catch (error) {
+      toast.error(describeActionFailure(error, 'Failed to create the role'));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteRole = async () => {
+    if (!rolePendingDelete) return;
+
+    setDeleting(true);
+    try {
+      await api.deleteRole(rolePendingDelete.id);
+      logAction('delete', 'role', {
+        recordId: String(rolePendingDelete.id),
+        oldValue: rolePendingDelete.name,
+      });
+      toast.success(`Role ${rolePendingDelete.name} deleted`);
+      setRolePendingDelete(null);
+      if (selectedRoleId === String(rolePendingDelete.id)) {
+        setSelectedRoleId(null);
+        setRoleDetail(null);
+        setDraft({});
+      }
+      await loadRoles();
+    } catch (error) {
+      toast.error(describeActionFailure(error, 'Failed to delete the role'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setNewRole((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleAddRole = async () => {
-    try {
-      await api.createRole({
-        name: newRole.name,
-        description: newRole.description,
-      });
-      await loadRoles();
-      setIsDialogOpen(false);
-      setNewRole({
-        name: '',
-        description: '',
-      });
-    } catch (error) {
-      console.error('Failed to create role:', error);
-    }
   };
 
   return (
@@ -158,66 +295,63 @@ export default function RolesPage() {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2" disabled={!hasPermission('role:add')}>
+                <Button className="gap-2" disabled={!canAdd}>
                   <Plus className="h-4 w-4" aria-hidden="true" />
                   Create Role
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl">
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Create New Role</DialogTitle>
                   <DialogDescription>
-                    Define a new role with specific permissions
+                    Give the role a name and a description. Its permissions are granted in the editor
+                    once it exists.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Role Name</Label>
-                    <Input id="name" placeholder="e.g., Pharmacist" value={newRole.name} onChange={handleInputChange} />
+                    <Input
+                      id="name"
+                      placeholder="e.g., Pharmacist"
+                      value={newRole.name}
+                      onChange={handleInputChange}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Input id="description" placeholder="Brief description of the role" value={newRole.description} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-4">
-                    <h3 className="font-medium text-foreground">Permissions</h3>
-                    <div className="space-y-4">
-                      {['Patients', 'Appointments', 'Staff', 'Financial'].map((module) => (
-                        <Card key={module}>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm">{module}</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-4 gap-4">
-                              {['View', 'Add', 'Edit', 'Delete'].map((action) => (
-                                <div key={action} className="flex items-center space-x-2">
-                                  <Switch id={`${module}-${action}`} />
-                                  <Label htmlFor={`${module}-${action}`} className="text-sm">
-                                    {action}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                    <Input
+                      id="description"
+                      placeholder="Brief description of the role"
+                      value={newRole.description}
+                      onChange={handleInputChange}
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAddRole} disabled={!hasPermission('role:add')}>Create Role</Button>
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => void handleAddRole()} disabled={!canAdd || creating}>
+                    {creating ? 'Creating...' : 'Create Role'}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
+
+          {loadError && (
+            <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {loadError}
+            </p>
+          )}
 
           <ErrorBoundary fallbackTitle="Error loading Roles">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>System Roles</CardTitle>
-                  <CardDescription>Click a role to view and edit permissions</CardDescription>
+                  <CardDescription>Select a role to view and edit its permissions</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {roles.length === 0 && !loading ? (
@@ -227,10 +361,12 @@ export default function RolesPage() {
                   ) : (
                     <div className="space-y-2">
                       {roles.map((role) => (
-                        <div
+                        <button
                           key={role.id}
-                          onClick={() => setSelectedRole(role)}
-                          className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors ${
+                          type="button"
+                          onClick={() => void selectRole(String(role.id))}
+                          aria-pressed={selectedRole?.id === role.id}
+                          className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors ${
                             selectedRole?.id === role.id
                               ? 'border-accent bg-accent/10'
                               : 'border-border hover:bg-muted/50'
@@ -240,38 +376,18 @@ export default function RolesPage() {
                             <Shield className="h-5 w-5 text-accent" aria-hidden="true" />
                             <div>
                               <p className="font-medium text-foreground">{role.name}</p>
-                              <p className="text-sm text-muted-foreground">{role.description}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {role.description ?? `Permissions for the ${role.name} role`}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="secondary">{role.userCount} users</Badge>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={!hasPermission('role:edit')}
-                                    onClick={() => {
-                                      if (!hasPermission('role:edit')) {
-                                        logAction('permission_block', 'role', { recordId: role.id, oldValue: 'edit' });
-                                        return;
-                                      }
-                                    }}
-                                    className="border-border text-muted-foreground hover:text-foreground"
-                                  >
-                                    <Edit className="h-4 w-4" aria-hidden="true" />
-                                  </Button>
-                                </TooltipTrigger>
-                                {!hasPermission('role:edit') && (
-                                  <TooltipContent>
-                                    Requires permission: role:edit
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Badge variant="secondary">{role.user_count} users</Badge>
+                            <Badge variant="outline">
+                              {Object.keys(role.permissions ?? {}).length} modules
+                            </Badge>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -285,96 +401,120 @@ export default function RolesPage() {
                   </CardTitle>
                   <CardDescription>
                     {selectedRole
-                      ? 'View and modify role permissions'
+                      ? 'The capabilities this role holds in each module'
                       : 'Select a role from the list to view permissions'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {selectedRole ? (
                     <div className="space-y-4">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Module</TableHead>
-                            <TableHead className="text-center">View</TableHead>
-                            <TableHead className="text-center">Add</TableHead>
-                            <TableHead className="text-center">Edit</TableHead>
-                            <TableHead className="text-center">Delete</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {Object.entries(selectedRole.permissions).map(([module, perms]) => (
-                            <TableRow key={module}>
-                              <TableCell className="font-medium capitalize">{module}</TableCell>
-                              <TableCell className="text-center">
-                                <Switch checked={perms.view} />
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Switch checked={perms.add} />
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Switch checked={perms.edit} disabled={!hasPermission('role:edit')} />
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Switch checked={perms.delete} disabled={!hasPermission('role:edit')} />
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      <div className="flex justify-end gap-2 pt-4">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span>
-                                <Button
-                                  variant="outline"
-                                  className="gap-2"
-                                  disabled={!hasPermission('role:delete')}
-                                  onClick={() => {
-                                    if (!hasPermission('role:delete')) {
-                                      logAction('permission_block', 'role', { recordId: selectedRole?.id, oldValue: 'delete' });
-                                      return;
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                                  Delete Role
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            {!hasPermission('role:delete') && (
-                              <TooltipContent>
-                                Requires permission: role:delete
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span>
-                                <Button
-                                  disabled={!hasPermission('role:edit')}
-                                  onClick={() => {
-                                    if (!hasPermission('role:edit')) {
-                                      logAction('permission_block', 'role', { recordId: selectedRole?.id, oldValue: 'edit' });
-                                      return;
-                                    }
-                                  }}
-                                >
-                                  Save Changes
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            {!hasPermission('role:edit') && (
-                              <TooltipContent>
-                                Requires permission: role:edit
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
+                      {detailLoading ? (
+                        <div className="space-y-2" role="status" aria-label="Loading permissions">
+                          <span className="sr-only">Loading permissions...</span>
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      ) : (
+                        <>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Module</TableHead>
+                                {PERMISSION_ACTIONS.map((action) => (
+                                  <TableHead key={action} className="text-center">
+                                    {ACTION_LABEL[action]}
+                                  </TableHead>
+                                ))}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {editableModules.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={PERMISSION_ACTIONS.length + 1} className="text-center text-muted-foreground">
+                                    No module is configured for this installation.
+                                  </TableCell>
+                                </TableRow>
+                              ) : (
+                                editableModules.map((module) => (
+                                  <TableRow key={module}>
+                                    <TableCell className="font-medium capitalize">
+                                      {module}
+                                      {module === GLOBAL_MODULE && (
+                                        <span className="ml-2 text-xs text-muted-foreground">
+                                          every module
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    {PERMISSION_ACTIONS.map((action) => {
+                                      const switchId = `permission-${module}-${action}`;
+                                      // The wildcard grant decides access to
+                                      // every module at once, so it is only
+                                      // editable by the platform administrator.
+                                      const locked =
+                                        module === GLOBAL_MODULE && !isPlatformAdmin;
+                                      return (
+                                        <TableCell key={action} className="text-center">
+                                          <Switch
+                                            id={switchId}
+                                            aria-label={`${module} — ${ACTION_LABEL[action]}`}
+                                            checked={Boolean(draft[module]?.[action])}
+                                            disabled={!canEdit || locked}
+                                            onCheckedChange={(checked) =>
+                                              handleToggle(module, action, checked === true)
+                                            }
+                                          />
+                                        </TableCell>
+                                      );
+                                    })}
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+
+                          {editorError && (
+                            <p role="alert" className="text-sm text-destructive">
+                              {editorError}
+                            </p>
+                          )}
+
+                          <div className="flex justify-end gap-2 pt-2 flex-wrap">
+                            <Button
+                              variant="outline"
+                              onClick={() => setRolePendingDelete(selectedRole)}
+                              disabled={!canDelete}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              Delete Role
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                setDraft(buildPermissionDraft(roleDetail?.permissions, knownModules))
+                              }
+                              disabled={!canEdit || !dirty}
+                            >
+                              Discard changes
+                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button
+                                      onClick={() => void handleSavePermissions()}
+                                      disabled={!canEdit || !dirty || saving}
+                                    >
+                                      {saving ? 'Saving...' : 'Save permissions'}
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                {!canEdit && <TooltipContent>Requires permission: role:edit</TooltipContent>}
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="flex h-64 items-center justify-center text-muted-foreground">
@@ -385,6 +525,43 @@ export default function RolesPage() {
               </Card>
             </div>
           </ErrorBoundary>
+
+          <Dialog
+            open={rolePendingDelete !== null}
+            onOpenChange={(open) => {
+              if (!open) setRolePendingDelete(null);
+            }}
+          >
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Delete role</DialogTitle>
+                <DialogDescription>
+                  {rolePendingDelete
+                    ? `${rolePendingDelete.name} and the permissions it holds are removed.`
+                    : 'The role and the permissions it holds are removed.'}
+                </DialogDescription>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                {rolePendingDelete && rolePendingDelete.user_count > 0
+                  ? `${rolePendingDelete.user_count} account${
+                      rolePendingDelete.user_count === 1 ? '' : 's'
+                    } use this role. Deleting it leaves those accounts without access.`
+                  : 'No account uses this role.'}
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRolePendingDelete(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => void handleDeleteRole()}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete role'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
