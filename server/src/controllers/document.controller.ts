@@ -7,22 +7,16 @@ import { patientBelongsToTenant } from '../middleware/tenant.js';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+import crypto from 'crypto';
 import { getStorageProvider } from '../services/storage.service.js';
-
-/** Maps frontend title-case categories to the schema snake_case ENUM values. */
-const CATEGORY_MAP: Record<string, string> = {
-  'Medical Record': 'medical_record',
-  'Lab Report': 'lab_report',
-  'Prescription': 'prescription',
-  'Administrative': 'administrative',
-};
-
-const normalizeCategory = (category: string | undefined | null): string | null => {
-  if (!category) return null;
-  const trimmed = String(category).trim();
-  if (!trimmed) return null;
-  return CATEGORY_MAP[trimmed] || trimmed.toLowerCase().replace(/\s+/g, '_');
-};
+import {
+  normalizeCategory,
+  isDocumentStorageProvider,
+  allowedDocumentExtension,
+  documentMimeType,
+  declaredMimeAllowed,
+} from '../utils/documents.js';
+import { safeFileName } from '../utils/files.js';
 
 /**
  * The columns a client may change through PUT /api/documents/:id.
@@ -164,15 +158,69 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
     return;
   }
 
+  // Refuse everything that can be refused before the transaction opens.
+
+  if (!allowedDocumentExtension(file.originalname)) {
+    res.status(400).json({ error: 'File type not allowed' });
+    return;
+  }
+  if (file.mimetype && !declaredMimeAllowed(file.mimetype)) {
+    res.status(400).json({ error: 'File type not allowed' });
+    return;
+  }
+
+  const normalizedCategory = normalizeCategory(category);
+  if (category !== undefined && category !== null && String(category).trim() !== '' && !normalizedCategory) {
+    res.status(400).json({ error: 'Invalid document category' });
+    return;
+  }
+
+  if (!isDocumentStorageProvider(storageLocation)) {
+    res.status(400).json({ error: 'Invalid storage location' });
+    return;
+  }
+
+  if (storageLocation !== 'local') {
+    const column = storageLocation === 'googledrive' ? 'googledrive_access_token' : 'onedrive_access_token';
+    const [tokenRows] = await pool.query(`SELECT ${column} FROM users WHERE id = ?`, [req.user.id]);
+    const token = (tokenRows as any[])[0]?.[column];
+    if (!token) {
+      res.status(409).json({ error: 'Storage provider not connected' });
+      return;
+    }
+  }
+
+  if (notes !== undefined && notes !== null && String(notes).length > 2000) {
+    res.status(400).json({ error: 'Notes too long' });
+    return;
+  }
+
+  const tagList = tags
+    ? String(tags).split(',').map((t: string) => t.trim()).filter(Boolean).slice(0, 20)
+    : [];
+  if (tags && String(tags).split(',').map((t: string) => t.trim()).filter(Boolean).length > 20) {
+    res.status(400).json({ error: 'Too many tags' });
+    return;
+  }
+
+  if (patientId !== undefined && patientId !== null && String(patientId).trim() !== '') {
+    const belongs = await patientBelongsToTenant(Number(patientId), req.tenant);
+    if (!belongs) {
+      res.status(404).json({ error: 'Patient not found' });
+      return;
+    }
+  }
+
+  const safeName = safeFileName(file.originalname, 'document');
+
   const connection = await pool.getConnection();
   let writtenFilePath: string | null = null;
   try {
     await connection.beginTransaction();
 
-    // Select the storage backend: inbuilt local filesystem or a connected cloud provider.
     const currentStorageProvider = getStorageProvider(storageLocation, Number(req.user.id));
 
-    const { originalname, mimetype, size } = file;
+    const { size } = file;
     const now = new Date();
 
     try {
@@ -183,17 +231,12 @@ export const createDocument = async (req: AuthRequest, res: Response): Promise<R
       const [result] = await connection.query(
         `INSERT INTO documents (patient_id, document_id, name, file_type, file_size, category, file_path, storage_type, uploaded_by, uploaded_at, notes)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [patientId || null, documentIdStr, originalname, mimetype, size, normalizeCategory(category), finalPath, storageType, req.user.id, now, notes || null]
+        [patientId || null, documentIdStr, safeName, documentMimeType(file.originalname), size, normalizedCategory, finalPath, storageType, req.user.id, now, notes || null]
       );
       const documentId = (result as any).insertId;
 
-      if (tags) {
-        const tagList = String(tags).split(',').map((tag: string) => tag.trim()).filter(Boolean);
+      if (tagList.length > 0) {
         for (const tagName of tagList) {
-          // The tag is created if it is not there yet. The insert is an
-          // upsert, so two uploads carrying the same new tag cannot collide:
-          // a check followed by an insert could, and the loser would fail a
-          // request that had already written the file.
           const [tagResult] = await connection.query(
             'INSERT INTO tags (name) VALUES (?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)',
             [tagName]
@@ -233,14 +276,34 @@ export const updateDocument = async (req: AuthRequest, res: Response): Promise<R
     const { id } = req.params;
     const updates = req.body;
 
-    const allowedFields = ALLOWED_UPDATE_FIELDS.filter((field) => field in updates);
+    // The document must belong to the caller's hospital before it can be
+    // changed. A document in another hospital is not found.
+    const [rows] = await pool.query('SELECT patient_id FROM documents WHERE document_id = ?', [id]);
+    const doc = (rows as any[])[0];
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (!(await patientBelongsToTenant(doc.patient_id, req.tenant))) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // A category change must land on a value the schema accepts.
+    if (updates && updates.category !== undefined) {
+      const normalized = normalizeCategory(updates.category);
+      if (updates.category !== null && String(updates.category).trim() !== '' && !normalized) {
+        return res.status(400).json({ error: 'Invalid document category' });
+      }
+      updates.category = normalized;
+    }
+
+    const allowedFields = ALLOWED_UPDATE_FIELDS.filter((field) => field in (updates || {}));
     if (allowedFields.length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
     const fields = allowedFields.map((field) => `${field} = ?`).join(', ');
     const values = allowedFields.map((field) => {
-      const value = updates[field];
+      const value = (updates as any)[field];
       return field === 'category' ? normalizeCategory(value) : value;
     });
 
@@ -259,9 +322,14 @@ export const deleteDocument = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const [rows] = await pool.query('SELECT storage_type FROM documents WHERE document_id = ?', [id]);
+    const [rows] = await pool.query('SELECT storage_type, patient_id FROM documents WHERE document_id = ?', [id]);
     const doc = (rows as any[])[0];
     if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // A document in another hospital is not found rather than forbidden.
+    if (!(await patientBelongsToTenant(doc.patient_id, req.tenant))) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
@@ -391,30 +459,96 @@ export const previewDocument = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-export const initiateOneDriveOAuth = (_req: AuthRequest, res: Response): void => {
+export const initiateOneDriveOAuth = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   const client_id = process.env.ONEDRIVE_CLIENT_ID;
   const redirect_uri = process.env.ONEDRIVE_REDIRECT_URI;
-  const scope = 'Files.ReadWrite.All User.Read'; // Adjust scopes as needed
-  const response_type = 'code';
-  const authorizeUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${client_id}&scope=${scope}&response_type=${response_type}&redirect_uri=${redirect_uri}`;
+  if (!client_id || !redirect_uri) {
+    return res.status(503).json({ error: 'OneDrive is not configured' });
+  }
+
+  // A single-use, expiring authorization transaction. The state is the CSRF
+  // token for the callback; the PKCE verifier is the proof that the initiator
+  // and the callback are the same client.
+  const state = crypto.randomBytes(32).toString('hex');
+  const codeVerifier = crypto.randomBytes(48).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await pool.query(
+    'INSERT INTO oauth_authorization_requests (state, user_id, provider, code_verifier, expires_at) VALUES (?, ?, ?, ?, ?)',
+    [state, req.user!.id, 'onedrive', codeVerifier, expiresAt]
+  );
+
+  const scope = 'Files.ReadWrite.All User.Read';
+  const authorizeUrl =
+    `https://login.microsoftonline.com/common/oauth2/v2.0/authorize` +
+    `?client_id=${encodeURIComponent(client_id)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&response_type=code` +
+    `&redirect_uri=${encodeURIComponent(redirect_uri)}` +
+    `&state=${state}` +
+    `&code_challenge=${codeChallenge}` +
+    `&code_challenge_method=S256`;
   res.redirect(authorizeUrl);
 };
 
-export const initiateGoogleDriveOAuth = (_req: AuthRequest, res: Response): void => {
+export const initiateGoogleDriveOAuth = async (req: AuthRequest, res: Response): Promise<Response | void> => {
   const client_id = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const redirect_uri = process.env.GOOGLE_DRIVE_REDIRECT_URI;
+  if (!client_id || !redirect_uri) {
+    return res.status(503).json({ error: 'Google Drive is not configured' });
+  }
+
+  const state = crypto.randomBytes(32).toString('hex');
+  const codeVerifier = crypto.randomBytes(48).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await pool.query(
+    'INSERT INTO oauth_authorization_requests (state, user_id, provider, code_verifier, expires_at) VALUES (?, ?, ?, ?, ?)',
+    [state, req.user!.id, 'googledrive', codeVerifier, expiresAt]
+  );
+
   const scope = 'https://www.googleapis.com/auth/drive.file';
-  const response_type = 'code';
-  const access_type = 'offline';
-  const prompt = 'consent';
-  const authorizeUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${redirect_uri}&scope=${scope}&response_type=${response_type}&access_type=${access_type}&prompt=${prompt}`;
+  const authorizeUrl =
+    `https://accounts.google.com/o/oauth2/v2/auth` +
+    `?client_id=${encodeURIComponent(client_id)}` +
+    `&redirect_uri=${encodeURIComponent(redirect_uri)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&response_type=code` +
+    `&access_type=offline` +
+    `&prompt=consent` +
+    `&state=${state}` +
+    `&code_challenge=${codeChallenge}` +
+    `&code_challenge_method=S256`;
   res.redirect(authorizeUrl);
 };
 
 export const handleOneDriveCallback = async (req: AuthRequest, res: Response): Promise<Response | void> => {
-  const { code } = req.query;
-  if (!code) {
-    return res.status(400).json({ error: 'Authorization code not provided' });
+  const code = req.query.code;
+  const state = req.query.state;
+  if (!code || !state || typeof state !== 'string') {
+    return res.status(400).json({ error: 'Authorization code or state not provided' });
+  }
+
+  // Consume the state: single-use, must not have been used, must not have
+  // expired. The update is the check, so two concurrent callbacks cannot both
+  // succeed.
+  const [upd] = await pool.query(
+    'UPDATE oauth_authorization_requests SET consumed_at = NOW() WHERE state = ? AND consumed_at IS NULL AND expires_at > NOW()',
+    [state]
+  );
+  if ((upd as any).affectedRows === 0) {
+    return res.status(400).json({ error: 'Invalid or expired authorization state' });
+  }
+
+  const [rows] = await pool.query(
+    'SELECT user_id, provider, code_verifier FROM oauth_authorization_requests WHERE state = ?',
+    [state]
+  );
+  const record = (rows as any[])[0];
+  if (!record || record.provider !== 'onedrive') {
+    return res.status(400).json({ error: 'Invalid authorization state' });
   }
 
   try {
@@ -431,25 +565,18 @@ export const handleOneDriveCallback = async (req: AuthRequest, res: Response): P
         code: code as string,
         redirect_uri: redirect_uri as string,
         grant_type: 'authorization_code',
+        code_verifier: record.code_verifier,
       }).toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
     const { access_token, refresh_token } = tokenResponse.data;
+    await pool.query(
+      'UPDATE users SET onedrive_access_token = ?, onedrive_refresh_token = ? WHERE id = ?',
+      [access_token, refresh_token, record.user_id]
+    );
 
-    // Securely store access and refresh tokens associated with the user
-    if (req.user && req.user.id) {
-      await pool.query(
-        'UPDATE users SET onedrive_access_token = ?, onedrive_refresh_token = ? WHERE id = ?',
-        [access_token, refresh_token, req.user.id]
-      );
-    }
-
-    res.redirect('/'); // Redirect to a success page or dashboard
+    res.redirect('/');
   } catch (error) {
     console.error('OneDrive OAuth callback error:', error);
     res.status(500).json({ error: 'Failed to authenticate with OneDrive' });
@@ -457,9 +584,27 @@ export const handleOneDriveCallback = async (req: AuthRequest, res: Response): P
 };
 
 export const handleGoogleDriveCallback = async (req: AuthRequest, res: Response): Promise<Response | void> => {
-  const { code } = req.query;
-  if (!code) {
-    return res.status(400).json({ error: 'Authorization code not provided' });
+  const code = req.query.code;
+  const state = req.query.state;
+  if (!code || !state || typeof state !== 'string') {
+    return res.status(400).json({ error: 'Authorization code or state not provided' });
+  }
+
+  const [upd] = await pool.query(
+    'UPDATE oauth_authorization_requests SET consumed_at = NOW() WHERE state = ? AND consumed_at IS NULL AND expires_at > NOW()',
+    [state]
+  );
+  if ((upd as any).affectedRows === 0) {
+    return res.status(400).json({ error: 'Invalid or expired authorization state' });
+  }
+
+  const [rows] = await pool.query(
+    'SELECT user_id, provider, code_verifier FROM oauth_authorization_requests WHERE state = ?',
+    [state]
+  );
+  const record = (rows as any[])[0];
+  if (!record || record.provider !== 'googledrive') {
+    return res.status(400).json({ error: 'Invalid authorization state' });
   }
 
   try {
@@ -475,25 +620,18 @@ export const handleGoogleDriveCallback = async (req: AuthRequest, res: Response)
         code: code as string,
         redirect_uri: redirect_uri as string,
         grant_type: 'authorization_code',
+        code_verifier: record.code_verifier,
       }).toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
     const { access_token, refresh_token } = tokenResponse.data;
+    await pool.query(
+      'UPDATE users SET googledrive_access_token = ?, googledrive_refresh_token = ? WHERE id = ?',
+      [access_token, refresh_token, record.user_id]
+    );
 
-    // Securely store access and refresh tokens associated with the user
-    if (req.user && req.user.id) {
-      await pool.query(
-        'UPDATE users SET googledrive_access_token = ?, googledrive_refresh_token = ? WHERE id = ?',
-        [access_token, refresh_token, req.user.id]
-      );
-    }
-
-    res.redirect('/'); // Redirect to a success page or dashboard
+    res.redirect('/');
   } catch (error) {
     console.error('Google Drive OAuth callback error:', error);
     res.status(500).json({ error: 'Failed to authenticate with Google Drive' });

@@ -50,6 +50,24 @@ CREATE TABLE IF NOT EXISTS users (
   FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL
 );
 
+-- 2b. Single-use OAuth authorization transactions for document storage providers.
+-- The callback is a top-level browser navigation and carries no bearer token, so
+-- the account that initiated the connection is resolved from this row.
+CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  state VARCHAR(64) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  provider ENUM('googledrive', 'onedrive') NOT NULL,
+  code_verifier VARCHAR(128) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  consumed_at DATETIME NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_oauth_state (state),
+  KEY idx_oauth_user (user_id),
+  KEY idx_oauth_expires (expires_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 3. Permissions for each role
 CREATE TABLE IF NOT EXISTS permissions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
