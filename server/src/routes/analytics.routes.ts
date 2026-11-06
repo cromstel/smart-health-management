@@ -25,7 +25,19 @@ router.post(
   body('timestamp').optional({ nullable: true }).isInt({ min: 0 }).withMessage('timestamp must be an epoch milliseconds integer').toInt(),
   body('sessionId').optional({ nullable: true }).isString().withMessage('sessionId must be a string').bail().isLength({ max: 100 }),
   body('pageUrl').optional({ nullable: true }).isString().withMessage('pageUrl must be a string').bail().isLength({ max: 500 }),
-  body('payload').optional({ nullable: true }).isObject().withMessage('payload must be an object'),
+  body('payload').optional({ nullable: true }).isObject().withMessage('payload must be an object').bail().custom((value) => {
+    if (value === null || value === undefined) return true;
+    const keys = Object.keys(value);
+    if (keys.length > 50) throw new Error('payload has too many keys');
+    try {
+      const serialized = JSON.stringify(value);
+      if (serialized.length > 4096) throw new Error('payload too large');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'payload too large') throw err;
+      throw new Error('payload must be JSON-serializable', { cause: err });
+    }
+    return true;
+  }),
   validate,
   analyticsController.recordEvent
 );
