@@ -67,17 +67,6 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
 ];
 
 /**
- * The development-only password used when none of the seed variables is set.
- *
- * It exists so that a fresh checkout has a working demo account without
- * anyone having to invent a password first, and it is deliberately
- * conspicuous: it says what it is. It is not a secret and it must never be
- * used anywhere but a local seed -- set the `SEED_*_PASSWORD` variables
- * instead, and the seed uses those.
- */
-export const DEV_DEMO_PASSWORD = 'DevOnly#2026';
-
-/**
  * The password for a demo account, taken from the environment.
  *
  * Falls back to the shared development password when the account's variable
@@ -90,7 +79,9 @@ export const resolveDemoPassword = (account: DemoAccount): string => {
       return value;
     }
   }
-  return DEV_DEMO_PASSWORD;
+  throw new Error(
+    `No password configured for ${account.id}: set ${account.envVar} (or one of ${account.aliasEnvVars.join(', ')}) before seeding or running the tests.`
+  );
 };
 
 /** Every demo account's password, keyed by account id. */
@@ -114,7 +105,7 @@ export const resolveDemoPasswordSource = (account: DemoAccount): string => {
       return name;
     }
   }
-  return 'the shared development password';
+  return 'unset (must be configured)';
 };
 
 /** The placeholder token the seed file carries for a password hash. */
