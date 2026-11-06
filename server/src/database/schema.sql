@@ -867,3 +867,30 @@ CREATE TABLE IF NOT EXISTS sessions (
   PRIMARY KEY (session_id),
   INDEX idx_sessions_expires (expires)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 41. User preferences
+--
+-- Per-user settings that used to live in the browser's storage. A preference
+-- belongs to exactly one account, so the row carries the account's own key
+-- and is removed with it: an orphaned preference has no reader (every query
+-- is scoped by user_id) and is therefore only dead weight.
+--
+-- `user_id` is BIGINT UNSIGNED to match `users.id`; a foreign key requires
+-- both sides to have the same type and sign, and mismatched widths are
+-- rejected at creation time rather than at write time.
+--
+-- The unique key is the upsert target: a preference is identified by its
+-- account, category and key, so saving it twice replaces the value instead
+-- of accumulating rows.
+CREATE TABLE IF NOT EXISTS user_preferences (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  category VARCHAR(32) NOT NULL COMMENT 'theme | settings | dashboard | inventory | pharmacy | form_draft | auth',
+  preference_key VARCHAR(64) NOT NULL,
+  preference_value TEXT DEFAULT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY user_pref_unique (user_id, category, preference_key),
+  INDEX idx_user_pref_lookup (user_id, category),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

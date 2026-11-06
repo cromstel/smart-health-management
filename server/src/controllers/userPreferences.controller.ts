@@ -2,6 +2,17 @@ import type { Response } from 'express';
 import pool from '../config/database.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
+/**
+ * The most preference rows one account may hold.
+ *
+ * The key space is chosen by the client, so without a ceiling an authenticated
+ * account could write rows without bound — the table only ever grows and the
+ * read that hydrates the browser returns all of them. The limit is generous
+ * for real use (a few settings per surface) and is refused as a client error,
+ * not as a failure of the service.
+ */
+const MAX_PREFERENCES_PER_ACCOUNT = 200;
+
 export interface UserPreference {
   id: number;
   user_id: number;
@@ -47,6 +58,26 @@ export const setPreference = async (req: AuthRequest, res: Response): Promise<Re
       res.status(400).json({ error: 'Missing category or key' });
       return;
     }
+
+    // Replacing an existing preference is always allowed; only a new row can
+    // push the account over its ceiling.
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total,
+              SUM(category = ? AND preference_key = ?) AS existing
+       FROM user_preferences
+       WHERE user_id = ?`,
+      [category, key, userId]
+    );
+    const counts = (countRows as Array<{ total: number | string; existing: number | string | null }>)[0];
+    const total = Number(counts?.total ?? 0);
+    const existing = Number(counts?.existing ?? 0);
+    if (total >= MAX_PREFERENCES_PER_ACCOUNT && existing === 0) {
+      res.status(400).json({
+        error: `This account already holds the maximum of ${MAX_PREFERENCES_PER_ACCOUNT} preferences`,
+      });
+      return;
+    }
+
     await pool.query(
       `INSERT INTO user_preferences (user_id, category, preference_key, preference_value)
        VALUES (?, ?, ?, ?)

@@ -50,6 +50,7 @@ TRUNCATE TABLE shared_summaries;
 TRUNCATE TABLE analytics_events;
 TRUNCATE TABLE password_resets;
 TRUNCATE TABLE revoked_tokens;
+TRUNCATE TABLE user_preferences;
 -- schema_migrations is deliberately NOT truncated: it is the migration
 -- ledger, and clearing it would make every migration re-apply.
 SET FOREIGN_KEY_CHECKS = 1;
